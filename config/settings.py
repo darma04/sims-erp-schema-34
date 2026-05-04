@@ -52,43 +52,132 @@ CSRF_TRUSTED_ORIGINS = [host.strip() for host in os.environ.get("CSRF_TRUSTED_OR
 ENVIRONMENT = os.environ.get("DJANGO_ENVIRONMENT", default="local")
 
 
-# Application definition
+# ==========================================================================
+#  MULTI-TENANT (ISOLATED SCHEMA) — django-tenants Configuration
+# ==========================================================================
+# Mode PostgreSQL: Aktifkan django-tenants dengan isolated schema per klien
+# Mode SQLite:     Development lokal tanpa multi-tenant (single database)
+# ==========================================================================
 
-INSTALLED_APPS = [
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-    "django.contrib.humanize",
-    # Auth Module
-    "auth.apps.AuthConfig",
-    # Core (untuk custom template filters)
-    "apps.core.apps.CoreConfig",
-    # ERP Apps
-    "apps.dashboard",
-    "apps.user_management",
-    "apps.produk",
-    "apps.inventory",
-    "apps.pembelian",
-    "apps.penjualan",
-    "apps.pos",
-    "apps.biaya",
-    "apps.laporan",
-    "apps.activity_log",
-    "apps.pengaturan",
-    "apps.permission_management",
-    "apps.hr",
-    "apps.automation",
-    "apps.ai_assistant",
-    "apps.fraud_detection",
-    # Original Apps
-    "apps.sample",
-    "apps.pages",
-]
+# Deteksi mode database
+_USE_MULTI_TENANT = os.environ.get("DATABASE_ENGINE") == "postgresql"
+
+if _USE_MULTI_TENANT:
+    # ── PRODUCTION: Multi-Tenant Mode (PostgreSQL) ──────────────────────
+    SHARED_APPS = [
+        "django_tenants",
+        "apps.tenants",
+        "django.contrib.contenttypes",
+        "django.contrib.admin",
+        "django.contrib.auth",
+        "django.contrib.sessions",
+        "django.contrib.messages",
+        "django.contrib.staticfiles",
+        "django.contrib.humanize",
+        # Tenant apps juga di-share ke public schema agar:
+        # 1. Development bisa akses langsung via domain utama
+        # 2. createsuperuser berfungsi di public schema
+        # 3. Tabel tetap dibuat di setiap tenant schema juga
+        "auth.apps.AuthConfig",
+        "apps.core.apps.CoreConfig",
+        "apps.dashboard",
+        "apps.user_management",
+        "apps.produk",
+        "apps.inventory",
+        "apps.pembelian",
+        "apps.penjualan",
+        "apps.pos",
+        "apps.biaya",
+        "apps.laporan",
+        "apps.activity_log",
+        "apps.pengaturan",
+        "apps.permission_management",
+        "apps.hr",
+        "apps.automation",
+        "apps.ai_assistant",
+        "apps.fraud_detection",
+        "apps.service_center",
+        "apps.sample",
+        "apps.pages",
+    ]
+
+    TENANT_APPS = [
+        "django.contrib.admin",
+        "django.contrib.auth",
+        "django.contrib.sessions",
+        "django.contrib.messages",
+        "django.contrib.staticfiles",
+        "django.contrib.humanize",
+        "auth.apps.AuthConfig",
+        "apps.core.apps.CoreConfig",
+        "apps.dashboard",
+        "apps.user_management",
+        "apps.produk",
+        "apps.inventory",
+        "apps.pembelian",
+        "apps.penjualan",
+        "apps.pos",
+        "apps.biaya",
+        "apps.laporan",
+        "apps.activity_log",
+        "apps.pengaturan",
+        "apps.permission_management",
+        "apps.hr",
+        "apps.automation",
+        "apps.ai_assistant",
+        "apps.fraud_detection",
+        "apps.service_center",
+        "apps.sample",
+        "apps.pages",
+    ]
+
+    INSTALLED_APPS = list(SHARED_APPS) + [
+        app for app in TENANT_APPS if app not in SHARED_APPS
+    ]
+
+    TENANT_MODEL = "tenants.TenantClient"
+    TENANT_DOMAIN_MODEL = "tenants.TenantDomain"
+    TENANT_SYNC_ROUTER = "apps.tenants.routers.SafeTenantSyncRouter"
+else:
+    # ── DEVELOPMENT: Single-Tenant Mode (SQLite) ────────────────────────
+    INSTALLED_APPS = [
+        "django.contrib.admin",
+        "django.contrib.auth",
+        "django.contrib.contenttypes",
+        "django.contrib.sessions",
+        "django.contrib.messages",
+        "django.contrib.staticfiles",
+        "django.contrib.humanize",
+        "apps.tenants",
+        "auth.apps.AuthConfig",
+        "apps.core.apps.CoreConfig",
+        "apps.dashboard",
+        "apps.user_management",
+        "apps.produk",
+        "apps.inventory",
+        "apps.pembelian",
+        "apps.penjualan",
+        "apps.pos",
+        "apps.biaya",
+        "apps.laporan",
+        "apps.activity_log",
+        "apps.pengaturan",
+        "apps.permission_management",
+        "apps.hr",
+        "apps.automation",
+        "apps.ai_assistant",
+        "apps.fraud_detection",
+        "apps.service_center",
+        "apps.sample",
+        "apps.pages",
+    ]
+    # Model tenant tetap didaftarkan meskipun django_tenants tidak aktif
+    TENANT_MODEL = "tenants.TenantClient"
+    TENANT_DOMAIN_MODEL = "tenants.TenantDomain"
 
 MIDDLEWARE = [
+    # TenantMainMiddleware hanya diperlukan saat multi-tenant mode (PostgreSQL)
+    *(["django_tenants.middleware.main.TenantMainMiddleware"] if _USE_MULTI_TENANT else []),
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.gzip.GZipMiddleware",  # Compress responses for faster load
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -100,6 +189,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "apps.core.double_submit_middleware.PreventDoubleSubmitMiddleware",
     "apps.activity_log.middleware.ActivityLogMiddleware",
     "apps.core.license_middleware.LicenseMiddleware",
     "apps.core.maintenance_middleware.MaintenanceMiddleware",
@@ -109,8 +199,8 @@ MIDDLEWARE = [
 #  LICENSE CONFIGURATION — Konfigurasi Lisensi Software
 # ==========================================================================
 LICENSE_SERVER_URL = os.environ.get("LICENSE_SERVER_URL", "https://cls.serpgroup.cloud")
-PRODUCT_CODE = "ERP"
-DEVICE_NAME = os.environ.get("DEVICE_NAME", "SERPTECH Server")
+PRODUCT_CODE = "SIMS"
+DEVICE_NAME = os.environ.get("DEVICE_NAME", "SIMS Server")
 
 ROOT_URLCONF = "config.urls"
 
@@ -149,13 +239,28 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
+# Multi-tenant membutuhkan PostgreSQL. Fallback ke SQLite untuk dev tanpa multi-tenant.
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+if _USE_MULTI_TENANT:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django_tenants.postgresql_backend",
+            "NAME": os.environ.get("DATABASE_NAME", "sims_db"),
+            "USER": os.environ.get("DATABASE_USER", "postgres"),
+            "PASSWORD": os.environ.get("DATABASE_PASSWORD", ""),
+            "HOST": os.environ.get("DATABASE_HOST", "localhost"),
+            "PORT": os.environ.get("DATABASE_PORT", "5432"),
+        }
     }
-}
+    DATABASE_ROUTERS = ["apps.tenants.routers.SafeTenantSyncRouter"]
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+    DATABASE_ROUTERS = []
 
 
 # Password validation
@@ -264,11 +369,18 @@ SESSION_SAVE_EVERY_REQUEST = True  # Refresh session expiry setiap request (cega
 
 # Cookie name unik per aplikasi — WAJIB agar session & CSRF tidak saling tabrakan
 # saat multiple Django app berjalan di localhost (port berbeda)
-SESSION_COOKIE_NAME = "serptech_sessionid"
-CSRF_COOKIE_NAME = "serptech_csrftoken"
+SESSION_COOKIE_NAME = "sims_sessionid"
+CSRF_COOKIE_NAME = "sims_csrftoken"
 
 # CSRF Failure Handler — Redirect ramah saat token kedaluwarsa (bukan error 403)
 CSRF_FAILURE_VIEW = "auth.csrf_failure.csrf_failure_view"
+
+# Cookie domain — untuk subdomain tenant (production)
+# Contoh: .sims.serpgroup.cloud → cookie berlaku untuk semua *.sims.serpgroup.cloud
+_cookie_domain = os.environ.get("SESSION_COOKIE_DOMAIN", "").strip()
+if _cookie_domain:
+    SESSION_COOKIE_DOMAIN = _cookie_domain
+    CSRF_COOKIE_DOMAIN = _cookie_domain
 
 # ==========================================================================
 #  SECURITY HARDENING — Perlindungan dari Serangan Cyber

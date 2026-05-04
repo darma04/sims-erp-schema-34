@@ -235,3 +235,67 @@ def kirim_notifikasi_penggajian(instance):
         kirim_dokumen_async('penggajian', nomor_ref, instance, generate_penggajian_pdf, data)
     else:
         kirim_notifikasi_async('penggajian', nomor_ref, data)
+
+
+def kirim_notifikasi_order_service(instance):
+    """
+    Kirim notifikasi Telegram untuk Order Service Center.
+    Dipanggil dari service_center/views.py saat:
+    - Order baru diterima (OrderServiceCreateView)
+    - Status order berubah (update_status)
+    Jika kirim_pdf aktif: kirim PDF dengan caption template (1 pesan).
+    Jika tidak: kirim teks notifikasi saja.
+    """
+    instance.refresh_from_db()
+
+    # Detail items layanan
+    items = instance.items.all()
+    detail_items = ""
+    for i, item in enumerate(items, 1):
+        detail_items += f"  {i}. {item.nama_layanan} = Rp {format_angka(item.biaya)}\n"
+
+    if not detail_items:
+        detail_items = "  (Belum ada item layanan)"
+
+    # Detail sparepart
+    detail_sparepart = ""
+    total_sparepart = 0
+    for sp in instance.penggunaan_sparepart.select_related('produk').all():
+        detail_sparepart += f"  • {sp.produk.nama} x{sp.jumlah} = Rp {format_angka(sp.subtotal)}\n"
+        total_sparepart += float(sp.subtotal)
+
+    if not detail_sparepart:
+        detail_sparepart = "  (Tidak ada sparepart)"
+
+    data = {
+        'nomor_service': instance.nomor_service,
+        'kode_tracking': instance.kode_unik,
+        'tanggal_masuk': instance.tanggal_masuk.strftime('%d/%m/%Y %H:%M') if instance.tanggal_masuk else '-',
+        'pelanggan': str(instance.pelanggan) if instance.pelanggan else '-',
+        'telepon': instance.pelanggan.telepon if instance.pelanggan else '-',
+        'perangkat': f'{instance.merek} {instance.model_tipe or ""}',
+        'jenis_perangkat': str(instance.jenis_perangkat) if instance.jenis_perangkat else '-',
+        'keluhan': instance.keluhan or '-',
+        'status': instance.get_status_display() if hasattr(instance, 'get_status_display') else instance.status,
+        'prioritas': instance.get_prioritas_display() if hasattr(instance, 'get_prioritas_display') else instance.prioritas,
+        'teknisi': instance.teknisi.get_full_name() or instance.teknisi.username if instance.teknisi else '-',
+        'detail_items': detail_items.strip(),
+        'detail_sparepart': detail_sparepart.strip(),
+        'total_sparepart': format_angka(total_sparepart),
+        'biaya_akhir': format_angka(instance.biaya_akhir or 0),
+        'dp_bayar': format_angka(instance.dp_bayar or 0),
+        'sisa_bayar': format_angka(instance.sisa_bayar or 0),
+        'status_bayar': instance.get_status_bayar_display() if hasattr(instance, 'get_status_bayar_display') else instance.status_bayar,
+        'diterima_oleh': instance.diterima_oleh.get_full_name() or instance.diterima_oleh.username if instance.diterima_oleh else '-',
+    }
+
+    if _is_kirim_pdf_aktif():
+        # Kirim PDF nota service dengan caption template
+        try:
+            from .pdf_generator import generate_service_pdf
+            kirim_dokumen_async('order_service', instance.nomor_service, instance, generate_service_pdf, data)
+        except (ImportError, AttributeError):
+            # Fallback: kirim teks saja jika PDF generator belum tersedia
+            kirim_notifikasi_async('order_service', instance.nomor_service, data)
+    else:
+        kirim_notifikasi_async('order_service', instance.nomor_service, data)

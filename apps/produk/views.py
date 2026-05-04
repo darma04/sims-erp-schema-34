@@ -59,6 +59,7 @@ from apps.core.mixins import (                                         # Permiss
 )
 import logging  # Modul logging standar Python - pengganti print() untuk production
 from django.db import transaction
+from django import forms  # Django forms — untuk widget override (HiddenInput)
 
 # Inisialisasi logger untuk modul Produk
 logger = logging.getLogger(__name__)
@@ -362,7 +363,9 @@ class ProdukListView(SubModulePermissionMixin, ListView):
         Tanpa optimasi: 1 query produk + N query stok + N query gudang = N*2+1 query
         Dengan optimasi: 3 query saja (produk, stok+gudang, kategori+satuan)
         """
-        return Produk.objects.prefetch_related(
+        return Produk.objects.filter(
+            tipe='produk'             # Hanya tampilkan tipe Produk (bukan Sparepart)
+        ).prefetch_related(
             'stok_set',           # Prefetch semua stok (reverse FK)
             'stok_set__gudang'    # Prefetch gudang dari setiap stok
         ).select_related(
@@ -616,6 +619,254 @@ class ProdukDeleteView(SubModulePermissionMixin, DeleteView):
             return JsonResponse({
                 'success': False,
                 'message': f'Gagal menghapus produk: {str(e)}'
+            }, status=400)
+
+
+# ╔══════════════════════════════════════════════════════════════╗
+#                ║                   SPAREPART CRUD                              ║
+# ╚══════════════════════════════════════════════════════════════╝
+
+class SparepartListView(SubModulePermissionMixin, ListView):
+    paginate_by = 50
+    """
+    Menampilkan daftar semua sparepart (tipe='sparepart').
+
+    URL: /produk/sparepart/
+    Permission: produk.daftar_sparepart.read
+    """
+    model = Produk
+    template_name = 'produk/sparepart_list.html'
+    context_object_name = 'produk_list'
+    permission_module = 'sparepart'
+    permission_sub_module = 'daftar_sparepart'
+    permission_action = 'read'
+
+    def get_queryset(self):
+        """Override queryset — hanya sparepart."""
+        return Produk.objects.filter(
+            tipe='sparepart'
+        ).prefetch_related(
+            'stok_set',
+            'stok_set__gudang'
+        ).select_related(
+            'kategori',
+            'satuan',
+            'cabang'
+        )
+
+    def get_context_data(self, **kwargs):
+        """Menghitung data summary untuk template."""
+        context = TemplateLayout.init(self, super().get_context_data(**kwargs))
+        produk_list = context['produk_list']
+
+        context['gudang_list'] = Gudang.objects.filter(aktif=True)
+
+        total_produk = 0
+        total_stok = 0
+        total_nilai_beli = 0
+        total_nilai_jual = 0
+
+        for produk in produk_list:
+            total_produk += 1
+            stok = produk.stok_total
+            total_stok += stok
+            total_nilai_beli += produk.harga_beli * stok
+            total_nilai_jual += produk.harga_jual * stok
+
+        context['total_produk'] = total_produk
+        context['total_stok'] = total_stok
+        context['total_nilai_beli'] = total_nilai_beli
+        context['total_nilai_jual'] = total_nilai_jual
+
+        return context
+
+
+class SparepartCreateView(SubModulePermissionMixin, CreateView):
+    """
+    Form untuk menambahkan sparepart baru (auto-set tipe='sparepart').
+
+    URL: /produk/sparepart/tambah/
+    Permission: produk.tambah_sparepart.create
+    """
+    model = Produk
+    form_class = ProdukForm
+    template_name = 'produk/produk_form.html'
+    success_url = reverse_lazy('produk:sparepart_list')
+    permission_module = 'sparepart'
+    permission_sub_module = 'tambah_sparepart'
+    permission_action = 'create'
+
+    def get_context_data(self, **kwargs):
+        """Menambahkan data konteks tambahan ke template."""
+        context = TemplateLayout.init(self, super().get_context_data(**kwargs))
+        context['title'] = 'Tambah Sparepart'
+        context['is_sparepart'] = True
+        return context
+
+    def get_form(self, form_class=None):
+        """Override form — set default tipe='sparepart' dan hide field tipe."""
+        form = super().get_form(form_class)
+        form.fields['tipe'].initial = 'sparepart'
+        form.fields['tipe'].widget = forms.HiddenInput()
+        return form
+
+    def form_valid(self, form):
+        """Set tipe='sparepart' dan handle stok awal."""
+        form.instance.dibuat_oleh = self.request.user
+        form.instance.tipe = 'sparepart'  # Force sparepart
+        response = super().form_valid(form)
+
+        # Handle stok awal
+        stok_awal = self.request.POST.get('stok_awal')
+        if stok_awal and float(stok_awal) > 0:
+            gudang = form.instance.cabang
+            if not gudang:
+                gudang = Gudang.objects.filter(aktif=True).first()
+                if not gudang:
+                    gudang = Gudang.objects.create(
+                        kode='GD-DEFAULT',
+                        nama='Gudang Utama',
+                        aktif=True
+                    )
+
+            Stok.objects.update_or_create(
+                produk=form.instance,
+                gudang=gudang,
+                defaults={'jumlah': float(stok_awal)}
+            )
+
+        messages.success(self.request, 'Sparepart berhasil ditambahkan')
+        return response
+
+
+class SparepartUpdateView(SubModulePermissionMixin, UpdateView):
+    """
+    Form untuk mengedit sparepart.
+
+    URL: /produk/sparepart/<pk>/edit/
+    Permission: produk.write
+    """
+    model = Produk
+    form_class = ProdukForm
+    template_name = 'produk/produk_form.html'
+    success_url = reverse_lazy('produk:sparepart_list')
+    permission_module = 'sparepart'
+    permission_sub_module = 'daftar_sparepart'
+    permission_action = 'write'
+
+    def get_queryset(self):
+        """Hanya bisa edit sparepart."""
+        return Produk.objects.filter(tipe='sparepart')
+
+    def get_context_data(self, **kwargs):
+        """Menambahkan data konteks tambahan ke template."""
+        context = TemplateLayout.init(self, super().get_context_data(**kwargs))
+        context['title'] = 'Edit Sparepart'
+        context['is_sparepart'] = True
+
+        # Stok per-cabang
+        stok_queryset = Stok.objects.filter(
+            produk=self.object
+        ).select_related('gudang').order_by('gudang__nama')
+
+        stok_per_cabang = []
+        total_stok = 0
+        for stok_item in stok_queryset:
+            stok_per_cabang.append({
+                'gudang_id': stok_item.gudang.id,
+                'gudang_kode': stok_item.gudang.kode,
+                'gudang_nama': stok_item.gudang.nama,
+                'jumlah': stok_item.jumlah,
+            })
+            total_stok += stok_item.jumlah
+
+        context['stok_per_cabang'] = stok_per_cabang
+        context['total_stok'] = total_stok
+        if stok_per_cabang:
+            context['stok_saat_ini'] = total_stok
+
+        return context
+
+    def get_form(self, form_class=None):
+        """Override form — hide field tipe karena sudah pasti sparepart."""
+        form = super().get_form(form_class)
+        form.fields['tipe'].widget = forms.HiddenInput()
+        return form
+
+    def form_valid(self, form):
+        """Handle update stok per-cabang."""
+        form.instance.tipe = 'sparepart'  # Force tetap sparepart
+        response = super().form_valid(form)
+
+        has_per_cabang_input = False
+        for key in self.request.POST:
+            if key.startswith('stok_cabang_'):
+                has_per_cabang_input = True
+                gudang_id = key.replace('stok_cabang_', '')
+                stok_value = self.request.POST.get(key, '').strip()
+                if stok_value:
+                    try:
+                        jumlah = float(stok_value)
+                        Stok.objects.update_or_create(
+                            produk=form.instance,
+                            gudang_id=int(gudang_id),
+                            defaults={'jumlah': jumlah}
+                        )
+                    except (ValueError, TypeError):
+                        pass
+
+        if not has_per_cabang_input:
+            stok_input = self.request.POST.get('stok_awal')
+            if stok_input:
+                gudang = form.instance.cabang
+                if not gudang:
+                    gudang = Gudang.objects.filter(aktif=True).first()
+                    if not gudang:
+                        gudang = Gudang.objects.create(
+                            kode='GD-DEFAULT',
+                            nama='Gudang Utama',
+                            aktif=True
+                        )
+                Stok.objects.update_or_create(
+                    produk=form.instance,
+                    gudang=gudang,
+                    defaults={'jumlah': float(stok_input)}
+                )
+
+        messages.success(self.request, 'Sparepart berhasil diupdate')
+        return response
+
+
+class SparepartDeleteView(SubModulePermissionMixin, DeleteView):
+    """Hapus sparepart via AJAX. URL: /produk/sparepart/<pk>/delete/"""
+    model = Produk
+    success_url = reverse_lazy('produk:sparepart_list')
+    permission_module = 'sparepart'
+    permission_sub_module = 'daftar_sparepart'
+    permission_action = 'delete'
+
+    def get_queryset(self):
+        """Hanya bisa hapus sparepart."""
+        return Produk.objects.filter(tipe='sparepart')
+
+    def delete(self, request, *args, **kwargs):
+        """Hapus data - return JSON response untuk AJAX."""
+        from django.http import JsonResponse
+        self.object = self.get_object()
+
+        try:
+            produk_name = self.object.nama
+            self.object.delete()
+            return JsonResponse({
+                'success': True,
+                'message': f'Sparepart {produk_name} berhasil dihapus'
+            })
+        except ProtectedError:
+            return JsonResponse({'success': False, 'message': 'Data tidak dapat dihapus karena sedang digunakan atau terkait dengan data lain.'}, status=400)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Gagal menghapus sparepart: {str(e)}'
             }, status=400)
 
 

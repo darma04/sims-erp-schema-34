@@ -63,12 +63,14 @@
 <link rel="stylesheet" href="{% static 'vendor/css/pages/cards-analytics.css' %}" />
 {# CSS Kustom Dashboard — Styling badge dan layout yang tidak ada di Bootstrap #}
 <style>
-  /* Badge angka pada slider penjualan mingguan (latar semi-transparan putih) */
-  .weekly-sales-text-bg-primary {
-    background-color: rgba(255, 255, 255, 0.2);
+  /* Badge angka pada slider penjualan mingguan (latar hijau terang) */
+  .weekly-sales-text-bg-success-dark {
+    background-color: #28c76f !important;
     color: #fff !important;
     padding: 0.2rem 0.5rem;
     border-radius: 0.375rem;
+    min-width: 42px;
+    text-align: center;
   }
 
   /* Badge angka penjualan (latar ungu semi-transparan) */
@@ -723,22 +725,20 @@
         <div class="d-flex justify-content-between">
           <h5 class="mb-1">Ringkasan Penjualan</h5>
           <div class="dropdown">
-            <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button"
-              data-bs-toggle="dropdown">
+            <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown">
               <i class="ri-more-2-line ri-20px"></i>
             </button>
             <div class="dropdown-menu dropdown-menu-end">
               <a class="dropdown-item" href="javascript:window.location.reload();"><i
                   class="ri-loop-left-line me-2"></i>Refresh Data</a>
-              <a class="dropdown-item" href="{% url 'laporan:keuangan' %}"><i class="ri-file-chart-line me-2"></i>Lihat
-                Laporan</a>
+              <a class="dropdown-item" href="{% url 'laporan:keuangan' %}"><i class="ri-file-chart-line me-2"></i>Lihat Laporan</a>
               <a class="dropdown-item" href="{% url 'penjualan:sales-order' %}"><i
                   class="ri-shopping-cart-line me-2"></i>Lihat Penjualan</a>
             </div>
           </div>
         </div>
         <div class="d-flex align-items-center card-subtitle">
-          <div class="me-2">Total {{ sales_overview.total_sales }} Penjualan</div>
+          <div class="me-2">Total {{ sales_overview.total_sales }} Transaksi</div>
           <div class="d-flex align-items-center text-success">
             <p class="mb-0 fw-medium">+{{ sales_overview.growth }}%</p>
             <i class="ri-arrow-up-s-line ri-20px"></i>
@@ -754,7 +754,7 @@
           </div>
           <div class="card-info">
             <h5 class="mb-0" data-bs-toggle="tooltip" data-bs-placement="top"
-              title="Total harga beli × (stok saat ini + qty terjual) dari semua produk yang pernah masuk ke sistem">{{ sales_overview.total_keseluruhan_aset|rupiah }}</h5>
+              title="Harga beli x (stok saat ini + qty terjual SO + qty terjual POS + qty adjustment keluar + qty sparepart terpakai di Service Center) dari semua Produk & Sparepart. Bersifat kumulatif historis.">{{ sales_overview.total_keseluruhan_aset|rupiah }}</h5>
             <p class="mb-0">Total Aset</p>
           </div>
         </div>
@@ -766,7 +766,7 @@
           </div>
           <div class="card-info">
             <h5 class="mb-0" data-bs-toggle="tooltip" data-bs-placement="top"
-              title="Total harga beli × stok dari produk yang masih tersedia (stok > 0)">{{ sales_overview.total_harga_beli|rupiah }}</h5>
+              title="Total harga beli x jumlah stok dari semua item (Produk & Sparepart) yang masih tersedia (stok > 0) di seluruh gudang/cabang.">{{ sales_overview.total_harga_beli|rupiah }}</h5>
             <p class="mb-0">Total Harga Beli</p>
           </div>
         </div>
@@ -778,7 +778,7 @@
           </div>
           <div class="card-info">
             <h5 class="mb-0" data-bs-toggle="tooltip" data-bs-placement="top"
-              title="Total harga jual × stok dari produk yang masih tersedia (stok > 0)">{{ sales_overview.total_harga_jual|rupiah }}</h5>
+              title="Total harga jual x jumlah stok dari semua item (Produk & Sparepart) yang masih tersedia (stok > 0) di seluruh gudang/cabang.">{{ sales_overview.total_harga_jual|rupiah }}</h5>
             <p class="mb-0">Total Harga Jual</p>
           </div>
         </div>
@@ -800,7 +800,7 @@
         </div>
         <div class="d-flex align-items-center flex-wrap gap-2">
           <h4 class="mb-0" data-bs-toggle="tooltip" data-bs-placement="top"
-            title="Selisih antara Total Harga Jual dan Total Harga Beli dari produk yang masih ready (stok > 0)">{{ sales_overview.estimasi_keuntungan|rupiah }}</h4>
+            title="Selisih Total Harga Jual - Total Harga Beli dari semua item (Produk & Sparepart) yang masih ready (stok > 0). Estimasi keuntungan jika seluruh stok terjual.">{% if sales_overview.estimasi_keuntungan >= 0 %}+{% endif %}{{ sales_overview.estimasi_keuntungan|rupiah }}</h4>
         </div>
         <small
           class="{% if sales_overview.estimasi_keuntungan >= 0 %}text-success{% else %}text-danger{% endif %} fw-medium mt-1 d-block">Produk
@@ -830,12 +830,12 @@
         </div>
         <div class="mb-2">
           <h4 class="mb-0 text-truncate" data-bs-toggle="tooltip" data-bs-placement="top"
-            title="Keuntungan kotor = (Harga Jual − Harga Beli) × Jumlah terjual, dari Sales Order + POS Transaction">{{ profit_data.gross_profit|rupiah }}</h4>
+            title="Keuntungan kotor = (Harga Jual - Harga Beli) x Qty terjual dari SO + POS + Revenue Service Center (biaya layanan + biaya sparepart dari order lunas) - Modal Sparepart terpakai.">{% if profit_data.is_profit %}+{% endif %}{{ profit_data.gross_profit|rupiah }}</h4>
         </div>
         <div>
           <small class="{% if profit_data.is_profit %}text-success{% else %}text-danger{% endif %} fw-medium"
             data-bs-toggle="tooltip" data-bs-placement="bottom"
-            title="Profit Margin = Keuntungan Kotor ÷ Total Pendapatan × 100%">{% if profit_data.is_profit %}+{% endif %}{{ profit_data.margin_percent }}% margin</small>
+            title="Profit Margin = Keuntungan Kotor / Total Pendapatan (SO + POS + Service Center) x 100%. Semakin tinggi semakin baik.">{% if profit_data.is_profit %}+{% endif %}{{ profit_data.margin_percent }}% margin</small>
         </div>
         <div class="position-absolute" style="top: 1.5rem; right: 1.5rem;">
           <div class="avatar">
@@ -852,29 +852,29 @@
 
   <!-- Weekly Sales with bg-->
   <div class="col-lg-6">
-    <div class="swiper-container swiper-container-horizontal swiper text-bg-primary h-100"
+    <div class="swiper-container swiper-container-horizontal swiper bg-label-success h-100"
       id="swiper-weekly-sales-with-bg">
       <div class="swiper-wrapper">
         {% for week_data in weekly_sales_data %}
         <div class="swiper-slide pb-5">
           <div class="row">
             <div class="col-12">
-              <h5 class="text-white mb-0">{{ week_data.category }}</h5>
+              <h5 class="text-dark mb-0">{{ week_data.category }}</h5>
               <div class="d-flex align-items-center gap-2">
-                <div>Total {{ week_data.earning }} Pendapatan</div>
+                <div class="text-dark">Total {{ week_data.earning }} Pendapatan</div>
                 <div class="d-flex align-items-center text-success">
                   <p class="mb-0 fw-medium">{{ week_data.growth }} Trx</p>
                 </div>
               </div>
             </div>
             <div class="col-lg-7 col-md-9 col-12 order-2 order-md-1">
-              <h6 class="text-white mt-0 mt-md-4 mb-4 py-1">{{ week_data.category }}</h6>
+              <h6 class="text-dark mt-0 mt-md-4 mb-4 py-1">{{ week_data.category }}</h6>
               <div class="row g-2">
                 {% for item in week_data.items %}
                 <div class="col-6">
                   <div class="d-flex mb-2 align-items-center">
-                    <p class="mb-0 me-2 weekly-sales-text-bg-primary fw-medium">{{ item.count }}</p>
-                    <p class="mb-0 text-truncate" style="font-size: 0.85rem;">{{ item.name }}</p>
+                    <p class="mb-0 me-2 weekly-sales-text-bg-success-dark fw-medium">{{ item.count }}</p>
+                    <p class="mb-0 text-truncate text-dark" style="font-size: 0.85rem;">{{ item.name }}</p>
                   </div>
                 </div>
                 {% endfor %}
@@ -898,12 +898,12 @@
   </div>
   <!--/ Weekly Sales with bg-->
 
-  <!-- Total Visits -->
+  <!-- Cabang, Produk & Karyawan -->
   <div class="col-lg-3 col-sm-6">
     <div class="card h-100">
-      <div class="card-header">
+      <div class="card-header pb-1">
         <div class="d-flex justify-content-between flex-wrap gap-2">
-          <p class="d-block mb-0 text-body">Gudang & Produk</p>
+          <p class="d-block mb-0 text-body">Cabang, Produk & Karyawan</p>
           <div class="d-flex align-items-center">
             <div class="avatar">
               <div class="avatar-initial bg-label-success rounded">
@@ -913,53 +913,60 @@
           </div>
         </div>
         <h4 class="mb-0" data-bs-toggle="tooltip" data-bs-placement="top"
-          title="Jumlah gudang/cabang aktif yang terdaftar dalam sistem">{{ cabang_data.total_gudang }} Gudang</h4>
+          title="Jumlah gudang/cabang aktif, produk terdaftar, dan karyawan aktif dalam sistem">{{ cabang_data.total_gudang }} Cabang</h4>
       </div>
-      <div class="card-body">
+      <div class="card-body pt-2">
         <div class="row">
-          <div class="col-5">
-            <div class="d-flex gap-2 align-items-center mb-2">
+          <div class="col-4">
+            <div class="d-flex gap-1 align-items-center mb-1">
               <div class="avatar avatar-xs flex-shrink-0">
                 <div class="avatar-initial rounded bg-label-warning">
-                  <i class="ri-home-8-line ri-16px"></i>
+                  <i class="ri-home-8-line ri-14px"></i>
                 </div>
               </div>
-              <p class="mb-0">Gudang</p>
+              <p class="mb-0" style="font-size:0.75rem">Cabang</p>
             </div>
-            <h4 class="mb-2" data-bs-toggle="tooltip" data-bs-placement="top" title="Jumlah gudang/cabang yang aktif">{{ cabang_data.total_gudang }}</h4>
+            <h5 class="mb-0" data-bs-toggle="tooltip" data-bs-placement="top" title="Jumlah gudang/cabang aktif">{{ cabang_data.total_gudang }}</h5>
           </div>
-          <div class="col-2">
-            <div class="divider divider-vertical">
-              <div class="divider-text">
-                <span class="badge-divider-bg">:</span>
-              </div>
-            </div>
-          </div>
-          <div class="col-5 text-end">
-            <div class="d-flex gap-2 justify-content-end align-items-center mb-2">
-              <p class="mb-0">Produk</p>
+          <div class="col-4 text-center">
+            <div class="d-flex gap-1 justify-content-center align-items-center mb-1">
               <div class="avatar avatar-xs flex-shrink-0">
                 <div class="avatar-initial rounded bg-label-primary">
-                  <i class="ri-box-3-line ri-16px"></i>
+                  <i class="ri-box-3-line ri-14px"></i>
+                </div>
+              </div>
+              <p class="mb-0" style="font-size:0.75rem">Produk</p>
+            </div>
+            <h5 class="mb-0" data-bs-toggle="tooltip" data-bs-placement="top"
+              title="Total produk aktif (Produk & Sparepart) yang tersedia di sistem">{{ cabang_data.total_produk }}</h5>
+          </div>
+          <div class="col-4 text-end">
+            <div class="d-flex gap-1 justify-content-end align-items-center mb-1">
+              <p class="mb-0" style="font-size:0.75rem">Karyawan</p>
+              <div class="avatar avatar-xs flex-shrink-0">
+                <div class="avatar-initial rounded bg-label-info">
+                  <i class="ri-team-line ri-14px"></i>
                 </div>
               </div>
             </div>
-            <h4 class="mb-2" data-bs-toggle="tooltip" data-bs-placement="top"
-              title="Total produk aktif yang tersedia di sistem">{{ cabang_data.total_produk }}</h4>
+            <h5 class="mb-0" data-bs-toggle="tooltip" data-bs-placement="top"
+              title="Total pengguna/karyawan aktif yang terdaftar dalam sistem">{{ cabang_data.total_karyawan }}</h5>
           </div>
         </div>
-        <div class="d-flex align-items-center mt-4">
+        <div class="d-flex align-items-center mt-3">
           <div class="progress w-100 rounded" style="height: 8px;">
             <div class="progress-bar bg-warning" style="width: {{ cabang_data.gudang_percent }}%" role="progressbar">
             </div>
             <div class="progress-bar bg-primary" role="progressbar" style="width: {{ cabang_data.produk_percent }}%">
+            </div>
+            <div class="progress-bar bg-info" role="progressbar" style="width: {{ cabang_data.karyawan_percent }}%">
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-  <!--/ Total Visits -->
+  <!--/ Cabang, Produk & Karyawan -->
 
   <!-- Sales This Months -->
   <div class="col-lg-3 col-sm-6">
@@ -969,7 +976,7 @@
           <h5 class="mb-2">Bulan Ini</h5>
           <p class="mb-0">Total Penjualan</p>
           <h5 class="mb-0" data-bs-toggle="tooltip" data-bs-placement="top"
-            title="Total penjualan bulan ini dari Sales Order + Transaksi POS yang sudah lunas">{{ sales_this_month|rupiah }}</h5>
+            title="Total penjualan bulan ini dari Sales Order + Transaksi POS + Service Center yang sudah lunas">{{ sales_this_month|rupiah }}</h5>
         </div>
         <div class="position-absolute" style="top: 1.5rem; right: 1.5rem;">
           <div class="avatar">
@@ -1014,6 +1021,93 @@
   </div>
 </div>
 <!--/ Grafik Besar Penjualan per Cabang (Wave Chart) -->
+
+<!-- ═══ SERVICE CENTER OVERVIEW ═══ -->
+<div class="row g-6 mb-6">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="mb-1"><i class="ri-tools-line me-2 text-warning"></i>Service Center</h5>
+          <p class="text-muted mb-0" style="font-size: 0.85rem;">Ringkasan order service & sparepart</p>
+        </div>
+        <a href="{% url 'service_center:dashboard' %}" class="btn btn-sm btn-label-primary"><i
+            class="ri-external-link-line me-1"></i>Lihat Detail</a>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-6 col-lg">
+            <div class="d-flex align-items-center gap-3">
+              <div class="avatar">
+                <div class="avatar-initial bg-label-success rounded"><i class="ri-money-dollar-circle-line ri-24px"></i></div>
+              </div>
+              <div>
+                <h5 class="mb-0 text-success">+{{ service_overview.pemasukan_layanan|rupiah }}</h5>
+                <p class="mb-0 text-muted">Pemasukan Layanan</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-lg">
+            <div class="d-flex align-items-center gap-3">
+              <div class="avatar">
+                <div class="avatar-initial bg-label-info rounded"><i class="ri-settings-3-line ri-24px"></i></div>
+              </div>
+              <div>
+                <h5 class="mb-0 text-success">+{{ service_overview.pemasukan_sparepart|rupiah }}</h5>
+                <p class="mb-0 text-muted">Pemasukan Sparepart</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-lg">
+            <div class="d-flex align-items-center gap-3">
+              <div class="avatar">
+                <div class="avatar-initial bg-label-info rounded"><i class="ri-cpu-line ri-24px"></i></div>
+              </div>
+              <div>
+                <h5 class="mb-0">{{ service_overview.total_sparepart }}</h5>
+                <p class="mb-0 text-muted">Total Sparepart</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-lg">
+            <div class="d-flex align-items-center gap-3">
+              <div class="avatar">
+                <div class="avatar-initial bg-label-warning rounded"><i class="ri-tools-line ri-24px"></i></div>
+              </div>
+              <div>
+                <h5 class="mb-0">{{ service_overview.total_orders }}</h5>
+                <p class="mb-0 text-muted">Total Order</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-lg">
+            <div class="d-flex align-items-center gap-3">
+              <div class="avatar">
+                <div class="avatar-initial bg-label-primary rounded"><i class="ri-checkbox-circle-line ri-24px"></i></div>
+              </div>
+              <div>
+                <h5 class="mb-0">{{ service_overview.order_selesai }}</h5>
+                <p class="mb-0 text-muted">Orderan Selesai</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-lg">
+            <div class="d-flex align-items-center gap-3">
+              <div class="avatar">
+                <div class="avatar-initial bg-label-secondary rounded"><i class="ri-user-heart-line ri-24px"></i></div>
+              </div>
+              <div>
+                <h5 class="mb-0">{{ service_overview.total_pelanggan }}</h5>
+                <p class="mb-0 text-muted">Pelanggan</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!--/ Service Center Overview -->
 
 <div class="row g-6 mb-6">
   <!-- Activity Timeline -->
@@ -1209,7 +1303,7 @@
                 </div>
                 {% else %}
                 <span class="badge bg-label-secondary">
-                    <i class="ri-eye-line me-1"></i>View Only
+                  <i class="ri-eye-line me-1"></i>View Only
                 </span>
                 {% endif %}
               </td>

@@ -315,31 +315,55 @@ class MetodePembayaranDetailView(ReadPermissionMixin, DetailView):
         # Statistik SO
         context['total_transaksi_so'] = SalesOrder.objects.filter(metode_pembayaran=self.object).count()
 
-        # Total transaksi keseluruhan (POS + SO + Biaya + PO)
+        # Statistik Service Center
+        total_transaksi_sc = 0
+        try:
+            from apps.service_center.models import OrderService as SC_OrderMetode
+            total_transaksi_sc = SC_OrderMetode.objects.filter(metode_pembayaran=self.object).count()
+        except Exception:
+            pass
+        context['total_transaksi_sc'] = total_transaksi_sc
+
+        # Statistik Produk/Sparepart
+        from apps.produk.models import Produk
+        total_transaksi_produk = Produk.objects.filter(metode_pembayaran=self.object).count()
+        context['total_transaksi_produk'] = total_transaksi_produk
+
+        # Total transaksi keseluruhan (POS + SO + Biaya + PO + Service Center + Produk)
         context['total_transaksi'] = (
             context['total_transaksi_pos'] + 
             context['total_transaksi_so'] + 
+            total_transaksi_sc +
+            total_transaksi_produk +
             TransaksiBiaya.objects.filter(metode_pembayaran=self.object).count() +
             PurchaseOrder.objects.filter(metode_pembayaran=self.object).count()
         )
 
-        # Hitung total pendapatan dari POS + SO (gunakan property model)
+        # Hitung total pendapatan dari POS + SO + Service Center (sudah include di model property)
         context['total_pendapatan'] = self.object.total_pendapatan
 
         # Hitung total pengeluaran dari Biaya + PO (gunakan property model)
         context['total_pengeluaran'] = self.object.total_pengeluaran
 
-        # Saldo terhitung (dinamis) - bisa negatif
+        # Saldo terhitung (dinamis) - menggunakan property model yang sudah include SC
         context['saldo_terhitung'] = self.object.saldo_terhitung
 
-        # Pendapatan tertinggi (POS atau SO)
+        # Pendapatan tertinggi (POS atau SO atau Service)
         pos_max = POSTransaction.objects.filter(
             metode_pembayaran=self.object, status='paid'
         ).aggregate(max_val=Max('total_harga'))['max_val'] or 0
         so_max = SalesOrder.objects.filter(
             metode_pembayaran=self.object, status__in=['confirmed', 'delivered', 'completed']
         ).aggregate(max_val=Max('total_harga'))['max_val'] or 0
-        context['pendapatan_tertinggi'] = max(pos_max, so_max)
+        sc_max = 0
+        try:
+            from apps.service_center.models import OrderService as SC_OrderMax
+            sc_max = SC_OrderMax.objects.filter(
+                metode_pembayaran=self.object, status_bayar='lunas'
+            ).aggregate(max_val=Max('biaya_akhir'))['max_val'] or 0
+        except Exception:
+            pass
+        context['pendapatan_tertinggi'] = max(pos_max, so_max, sc_max)
 
         # Pengeluaran tertinggi (Biaya atau PO)
         biaya_max = TransaksiBiaya.objects.filter(
@@ -551,6 +575,13 @@ class ManajemenDataView(ReadPermissionMixin, TemplateView):
         from auth.models import Profile
         # Import model Fraud Detection - untuk statistik anomali & rekonsiliasi kas
         from apps.fraud_detection.models import FraudAlert, CashReconciliation
+        # Import model Service Center - untuk statistik order service & sparepart
+        from apps.service_center.models import (
+            OrderService as SC_Order, ItemService as SC_Item,
+            Pelanggan as SC_Pelanggan, Perangkat as SC_Perangkat,
+            KategoriService as SC_Kategori, JenisService as SC_Jenis,
+            RiwayatStatus as SC_Riwayat, PenggunaanSparepart as SC_Sparepart
+        )
 
         # Statistik Database - SEMUA model
         context['stats'] = {
@@ -596,6 +627,15 @@ class ManajemenDataView(ReadPermissionMixin, TemplateView):
             # Fraud Detection - anomali kecurangan & rekonsiliasi kas
             'fraud_alert': FraudAlert.objects.count(),
             'cash_reconciliation': CashReconciliation.objects.count(),
+            # Service Center - order service & sparepart
+            'order_service': SC_Order.objects.count(),
+            'item_service': SC_Item.objects.count(),
+            'pelanggan_service': SC_Pelanggan.objects.count(),
+            'perangkat_service': SC_Perangkat.objects.count(),
+            'kategori_service': SC_Kategori.objects.count(),
+            'jenis_service': SC_Jenis.objects.count(),
+            'riwayat_status': SC_Riwayat.objects.count(),
+            'penggunaan_sparepart': SC_Sparepart.objects.count(),
             # Pengaturan
             'template_cetak': TemplateCetak.objects.count(),
             'backup_history': BackupHistory.objects.count(),
@@ -604,11 +644,12 @@ class ManajemenDataView(ReadPermissionMixin, TemplateView):
         # Total seluruh record database
         context['total_record'] = sum(context['stats'].values())
 
-        # Total transaksi
+        # Total transaksi (termasuk order service)
         context['total_transaksi'] = (
             context['stats']['pos'] + context['stats']['sales_order'] + 
             context['stats']['purchase_order'] + context['stats']['biaya'] +
-            context['stats']['transfer_stok'] + context['stats']['adjustment_stok']
+            context['stats']['transfer_stok'] + context['stats']['adjustment_stok'] +
+            context['stats']['order_service']
         )
 
         # Total master data
@@ -616,7 +657,9 @@ class ManajemenDataView(ReadPermissionMixin, TemplateView):
             context['stats']['produk'] + context['stats']['kategori'] + 
             context['stats']['satuan'] + context['stats']['gudang'] +
             context['stats']['customer'] + context['stats']['supplier'] +
-            context['stats']['karyawan'] + context['stats']['departemen']
+            context['stats']['karyawan'] + context['stats']['departemen'] +
+            context['stats']['pelanggan_service'] + context['stats']['perangkat_service'] +
+            context['stats']['kategori_service'] + context['stats']['jenis_service']
         )
 
         # Riwayat Backup
@@ -894,6 +937,25 @@ def restore_data(request):
         # Hapus data Fraud Detection
         FraudAlert.objects.all().delete()
         CashReconciliation.objects.all().delete()
+
+        # Hapus data Service Center (child tables dulu)
+        try:
+            from apps.service_center.models import (
+                PenggunaanSparepart as SC_SP_R, RiwayatStatus as SC_RW_R,
+                ItemService as SC_IS_R, OrderService as SC_OS_R,
+                JenisService as SC_JS_R, KategoriService as SC_KS_R,
+                Perangkat as SC_PR_R, Pelanggan as SC_PL_R
+            )
+            SC_SP_R.objects.all().delete()
+            SC_RW_R.objects.all().delete()
+            SC_IS_R.objects.all().delete()
+            SC_OS_R.objects.all().delete()
+            SC_JS_R.objects.all().delete()
+            SC_KS_R.objects.all().delete()
+            SC_PR_R.objects.all().delete()
+            SC_PL_R.objects.all().delete()
+        except Exception:
+            pass
 
         # Hapus master data produk
         Stok.objects.all().delete()
@@ -1262,6 +1324,27 @@ def reset_data(request):
             'Riwayat Backup': BackupHistory.objects.count(),
         }
 
+        # Tambah counts Service Center (safe import)
+        try:
+            from apps.service_center.models import (
+                OrderService as SC_OC, ItemService as SC_IC,
+                Pelanggan as SC_PC, Perangkat as SC_PRC,
+                KategoriService as SC_KC, JenisService as SC_JC,
+                RiwayatStatus as SC_RC, PenggunaanSparepart as SC_SPC
+            )
+            counts.update({
+                'Order Service': SC_OC.objects.count(),
+                'Item Service': SC_IC.objects.count(),
+                'Pelanggan Service': SC_PC.objects.count(),
+                'Perangkat Service': SC_PRC.objects.count(),
+                'Kategori Service': SC_KC.objects.count(),
+                'Jenis Service': SC_JC.objects.count(),
+                'Riwayat Status': SC_RC.objects.count(),
+                'Penggunaan Sparepart': SC_SPC.objects.count(),
+            })
+        except Exception:
+            pass
+
         total_deleted = sum(counts.values())
 
         # ===== HAPUS SEMUA DATA (urutan penting: child dulu, lalu parent) =====
@@ -1308,6 +1391,25 @@ def reset_data(request):
         # 5. Hapus data Fraud Detection (sebelum AI dan log)
         FraudAlert.objects.all().delete()
         CashReconciliation.objects.all().delete()
+
+        # 5b. Hapus data Service Center (child tables dulu)
+        try:
+            from apps.service_center.models import (
+                PenggunaanSparepart as SC_SP_D, RiwayatStatus as SC_RW_D,
+                ItemService as SC_IS_D, OrderService as SC_OS_D,
+                JenisService as SC_JS_D, KategoriService as SC_KS_D,
+                Perangkat as SC_PR_D, Pelanggan as SC_PL_D
+            )
+            SC_SP_D.objects.all().delete()
+            SC_RW_D.objects.all().delete()
+            SC_IS_D.objects.all().delete()
+            SC_OS_D.objects.all().delete()
+            SC_JS_D.objects.all().delete()
+            SC_KS_D.objects.all().delete()
+            SC_PR_D.objects.all().delete()
+            SC_PL_D.objects.all().delete()
+        except Exception:
+            pass
 
         # 6. Hapus AI data
         ChatFeedback.objects.all().delete()

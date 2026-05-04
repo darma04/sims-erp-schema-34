@@ -35,7 +35,7 @@
                     <div class="d-flex justify-content-between">
                         <div class="card-info">
                             <p class="card-text text-muted">Total Pembelian</p>
-                            <h4 class="mb-0 text-danger summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>╬ú total_harga Purchase Order (approved/received).<br><br><b>Sumber:</b> Tabel PurchaseOrder.<br>Mendukung filter tanggal.">{{ total_pembelian|rupiah }}</h4>
+                            <h4 class="mb-0 text-danger summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Σ total_harga Purchase Order (approved/received).<br><br><b>Sumber:</b> Tabel PurchaseOrder.<br>Mendukung filter tanggal.">{{ total_pembelian|rupiah }}</h4>
                         </div>
                         <div class="card-icon">
                             <span class="badge bg-label-danger rounded p-2">
@@ -86,7 +86,7 @@
                     <div class="d-flex justify-content-between">
                         <div class="card-info">
                             <p class="card-text text-muted">Rata-rata PO</p>
-                            <h4 class="mb-0 text-warning summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Total Pembelian ├À Jumlah PO.<br><br><b>Sumber:</b> Rata-rata nilai per Purchase Order.">{{ rata_rata_po|rupiah }}</h4>
+                            <h4 class="mb-0 text-warning summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Total Pembelian / Jumlah PO.<br><br><b>Sumber:</b> Rata-rata nilai per Purchase Order.">{{ rata_rata_po|rupiah }}</h4>
                         </div>
                         <div class="card-icon">
                             <span class="badge bg-label-warning rounded p-2">
@@ -178,6 +178,7 @@
                             </div>
                         </div>
                     </div>
+                    <small class="text-muted d-block mt-1">Klik untuk memilih kolom</small>
                 </div>
                 <div class="col-md-6"></div>
                 <div class="col-md-3">

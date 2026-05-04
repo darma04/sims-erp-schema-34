@@ -233,6 +233,9 @@ class PurchaseOrderCreateView(CreatePermissionMixin, CreateView):
         # Query database — ambil semua data context['satuan_list']
         # Data konteks: satuan_list — untuk ditampilkan di template
         context['satuan_list'] = Satuan.objects.all()
+        # Data konteks: tipe_choices — untuk dropdown tipe Produk/Sparepart
+        from apps.produk.models import Produk
+        context['tipe_choices'] = Produk.TIPE_CHOICES
         return context
     
     def form_valid(self, form):
@@ -244,119 +247,131 @@ class PurchaseOrderCreateView(CreatePermissionMixin, CreateView):
         from decimal import Decimal
         import random
         
-        # Simpan PO (tanpa items dulu)
-        po = form.save(commit=False)
-        po.dibuat_oleh = self.request.user
-        
-        if not po.nomor_po:
-            po.nomor_po = po.generate_nomor()
-        
-        # Seluruh proses dalam atomic transaction
-        # untuk mencegah data korup saat concurrent PO creation + stok update
-        po.save()
+        # DIPERBAIKI QA-P1: Seluruh proses dalam atomic transaction
+        # agar tidak ada produk/stok orphan jika error di tengah loop
+        with transaction.atomic():
+            # Simpan PO (tanpa items dulu)
+            po = form.save(commit=False)
+            po.dibuat_oleh = self.request.user
             
-        # Proses setiap item dari POST data
-        items_created = 0
-        i = 0
-        while True:
-            nama_produk = self.request.POST.get(f'items-{i}-nama_produk')
-            if nama_produk is None:
-                break
-                
-            # Skip baris kosong
-            if not nama_produk.strip():
-                i += 1
-                continue
-                
-            jumlah = self.request.POST.get(f'items-{i}-jumlah', '0')
-            harga_satuan = self.request.POST.get(f'items-{i}-harga_satuan', '0')
-            kategori_id = self.request.POST.get(f'items-{i}-kategori')
-            satuan_id = self.request.POST.get(f'items-{i}-satuan')
-            catatan = self.request.POST.get(f'items-{i}-catatan', '')
-                
-            # Blok penanganan error — coba jalankan kode di bawah
-            try:
-                jumlah = Decimal(jumlah) if jumlah else Decimal('0')
-                harga_satuan = Decimal(harga_satuan) if harga_satuan else Decimal('0')
-            except (ValueError, InvalidOperation):
-                i += 1
-                continue
-                
-            if jumlah <= 0 or harga_satuan <= 0:
-                i += 1
-                continue
-                
-            # Dapatkan kategori dan satuan (fallback ke yang pertama jika tidak valid)
-            kategori = None
-            satuan = None
-                
-            if kategori_id:
-                try:
-                    kategori = Kategori.objects.get(pk=kategori_id)
-                except Kategori.DoesNotExist:
-                    pass
-            if not kategori:
-                kategori = Kategori.objects.first()
-                
-            if satuan_id:
-                try:
-                    satuan = Satuan.objects.get(pk=satuan_id)
-                except Satuan.DoesNotExist:
-                    pass
-            if not satuan:
-                satuan = Satuan.objects.first()
-                
-            # Generate SKU unik (PRD-xxxxxxxxxx)
-            sku = f"PRD-{random.randint(1000000000, 9999999999)}"
-            while Produk.objects.filter(sku=sku).exists():
-                sku = f"PRD-{random.randint(1000000000, 9999999999)}"
-                
-            # Buat Produk baru
-            produk = Produk.objects.create(
-                sku=sku,
-                nama=nama_produk.strip(),
-                kategori=kategori,
-                satuan=satuan,
-                harga_beli=harga_satuan,
-                harga_jual=harga_satuan * Decimal('1.2'),  # Markup 20%
-                aktif=True,
-                dibuat_oleh=self.request.user
-            )
-                
-            # Buat PurchaseOrderItem
-            PurchaseOrderItem.objects.create(
-                purchase_order=po,
-                produk=produk,
-                jumlah=jumlah,
-                harga_satuan=harga_satuan,
-                catatan=catatan
-            )
-                
-            # Update stok langsung di gudang tujuan (dengan lock)
-            from apps.produk.models import Stok
-            stok, created = Stok.objects.select_for_update().get_or_create(
-                produk=produk,
-                gudang=po.gudang,
-                defaults={'jumlah': 0}
-            )
-            stok.jumlah += jumlah
-            stok.save()
-                
-            items_created += 1
-            i += 1
+            if not po.nomor_po:
+                po.nomor_po = po.generate_nomor()
             
-        # Set status langsung ke received
-        po.status = 'received'
-        po.calculate_total()
-        po.save()
+            po.save()
+                
+            # Proses setiap item dari POST data
+            items_created = 0
+            i = 0
+            while True:
+                nama_produk = self.request.POST.get(f'items-{i}-nama_produk')
+                if nama_produk is None:
+                    break
+                    
+                # Skip baris kosong
+                if not nama_produk.strip():
+                    i += 1
+                    continue
+                    
+                jumlah = self.request.POST.get(f'items-{i}-jumlah', '0')
+                harga_satuan = self.request.POST.get(f'items-{i}-harga_satuan', '0')
+                kategori_id = self.request.POST.get(f'items-{i}-kategori')
+                satuan_id = self.request.POST.get(f'items-{i}-satuan')
+                catatan = self.request.POST.get(f'items-{i}-catatan', '')
+                tipe_item = self.request.POST.get(f'items-{i}-tipe', 'produk')  # Tipe: produk atau sparepart
+                    
+                # Blok penanganan error — coba jalankan kode di bawah
+                try:
+                    jumlah = Decimal(jumlah) if jumlah else Decimal('0')
+                    harga_satuan = Decimal(harga_satuan) if harga_satuan else Decimal('0')
+                except (ValueError, InvalidOperation):
+                    i += 1
+                    continue
+                    
+                if jumlah <= 0 or harga_satuan <= 0:
+                    i += 1
+                    continue
+                    
+                # Dapatkan kategori dan satuan (fallback ke yang pertama jika tidak valid)
+                kategori = None
+                satuan = None
+                    
+                if kategori_id:
+                    try:
+                        kategori = Kategori.objects.get(pk=kategori_id)
+                    except Kategori.DoesNotExist:
+                        pass
+                if not kategori:
+                    kategori = Kategori.objects.first()
+                    
+                if satuan_id:
+                    try:
+                        satuan = Satuan.objects.get(pk=satuan_id)
+                    except Satuan.DoesNotExist:
+                        pass
+                if not satuan:
+                    satuan = Satuan.objects.first()
+                    
+                # Generate SKU unik berdasarkan tipe (SPR untuk sparepart, PRD untuk produk)
+                sku_prefix = 'SPR' if tipe_item == 'sparepart' else 'PRD'
+                sku = f"{sku_prefix}-{random.randint(1000000000, 9999999999)}"
+                while Produk.objects.filter(sku=sku).exists():
+                    sku = f"{sku_prefix}-{random.randint(1000000000, 9999999999)}"
+                    
+                # Buat Produk baru
+                produk = Produk.objects.create(
+                    sku=sku,
+                    nama=nama_produk.strip(),
+                    kategori=kategori,
+                    satuan=satuan,
+                    harga_beli=harga_satuan,
+                    harga_jual=harga_satuan * Decimal('1.2'),  # Markup 20%
+                    tipe=tipe_item,  # Tipe: produk atau sparepart
+                    aktif=True,
+                    dibuat_oleh=self.request.user
+                )
+                    
+                # Buat PurchaseOrderItem
+                PurchaseOrderItem.objects.create(
+                    purchase_order=po,
+                    produk=produk,
+                    jumlah=jumlah,
+                    harga_satuan=harga_satuan,
+                    catatan=catatan
+                )
+                    
+                # Update stok langsung di gudang tujuan (dengan lock)
+                from apps.produk.models import Stok
+                stok, created = Stok.objects.select_for_update().get_or_create(
+                    produk=produk,
+                    gudang=po.gudang,
+                    defaults={'jumlah': 0}
+                )
+                stok.jumlah += jumlah
+                stok.save()
+
+                # Update cabang produk ke gudang dengan stok terbanyak
+                stok_terbanyak = Stok.objects.filter(
+                    produk=produk, jumlah__gt=0
+                ).order_by('-jumlah').first()
+
+                if stok_terbanyak:
+                    if produk.cabang != stok_terbanyak.gudang:
+                        produk.cabang = stok_terbanyak.gudang
+                        produk.save(update_fields=['cabang'])
+                    
+                items_created += 1
+                i += 1
+                
+            # Set status langsung ke received
+            po.status = 'received'
+            po.calculate_total()
+            po.save()
         
-        # Notifikasi dan log di luar atomic (opsional)
+        # Notifikasi dan log di luar atomic (opsional, tidak boleh rollback PO)
         try:
             from apps.automation.signals import kirim_notifikasi_purchase_order
             kirim_notifikasi_purchase_order(po)
-        except ProtectedError:
-            return JsonResponse({'success': False, 'message': 'Data tidak dapat dihapus karena sedang digunakan atau terkait dengan data lain.'}, status=400)
-        except Exception as e:
+        except Exception:
             pass
         
         # Log activity
@@ -521,6 +536,7 @@ class PurchaseOrderDeleteView(DeletePermissionMixin, DeleteView):
         from django.http import JsonResponse
         # Import dari modul internal proyek
         from apps.produk.models import Stok
+        from apps.fraud_detection.signals import set_current_delete_user, clear_current_delete_user
         
         self.object = self.get_object()
         po = self.object
@@ -550,6 +566,16 @@ class PurchaseOrderDeleteView(DeletePermissionMixin, DeleteView):
                     if stok.jumlah < 0:
                         stok.jumlah = 0  # Pastikan tidak negatif
                     stok.save()
+
+                    # Update cabang produk ke gudang dengan stok terbanyak
+                    stok_terbanyak = Stok.objects.filter(
+                        produk=item.produk, jumlah__gt=0
+                    ).order_by('-jumlah').first()
+
+                    if stok_terbanyak:
+                        if item.produk.cabang != stok_terbanyak.gudang:
+                            item.produk.cabang = stok_terbanyak.gudang
+                            item.produk.save(update_fields=['cabang'])
                 except Stok.DoesNotExist:
                     pass
                     
@@ -561,7 +587,9 @@ class PurchaseOrderDeleteView(DeletePermissionMixin, DeleteView):
                         orphan_products.append(item.produk.pk)
                 
             # 2. Hapus PO dulu (items CASCADE otomatis → FK ke produk terlepas)
+            set_current_delete_user(request.user)
             po.delete()
+            clear_current_delete_user()
             
             # 3. Hapus produk orphan SETELAH PO & items sudah dihapus
             from apps.produk.models import Produk
@@ -570,8 +598,10 @@ class PurchaseOrderDeleteView(DeletePermissionMixin, DeleteView):
             
             return JsonResponse({'success': True, 'message': 'Purchase Order berhasil dihapus'})
         except ProtectedError:
+            clear_current_delete_user()
             return JsonResponse({'success': False, 'message': 'Data tidak dapat dihapus karena sedang digunakan atau terkait dengan data lain.'}, status=400)
         except Exception as e:
+            clear_current_delete_user()
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
 

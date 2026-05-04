@@ -45,11 +45,15 @@ class ProdukForm(forms.ModelForm):
         """Konfigurasi form Produk — field dan widget termasuk Select2 dropdown."""
         model = Produk  # Form berdasarkan model Produk
         # Field yang ditampilkan di form (urutan sesuai tampilan)
-        fields = ['sku', 'barcode', 'nama', 'kategori', 'satuan', 'cabang',
-                  'harga_beli', 'harga_jual', 'deskripsi', 'gambar', 'aktif']
+        fields = ['tipe', 'sku', 'barcode', 'nama', 'kategori', 'satuan', 'cabang',
+                  'harga_beli', 'harga_jual', 'deskripsi', 'gambar', 'aktif', 'metode_pembayaran']
 
         # Kustomisasi widget HTML untuk setiap field
         widgets = {
+            'tipe': forms.Select(attrs={
+                'class': 'form-select',
+                'id': 'productTipe'
+            }),
             'sku': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'SKU (Auto-generated jika kosong)',
@@ -109,6 +113,10 @@ class ProdukForm(forms.ModelForm):
             'aktif': forms.CheckboxInput(attrs={
                 'class': 'form-check-input',
                 'id': 'productActive'
+            }),
+            'metode_pembayaran': forms.Select(attrs={
+                'class': 'form-select',
+                'id': 'productMetodePembayaran'
             })
         }
 
@@ -155,3 +163,9 @@ class ProdukForm(forms.ModelForm):
         self.fields['gambar'].label = 'Gambar Produk'
         # Set label field aktif dalam Bahasa Indonesia
         self.fields['aktif'].label = 'Produk Aktif'
+        # Set label field tipe dalam Bahasa Indonesia
+        self.fields['tipe'].label = 'Tipe'
+        self.fields['tipe'].help_text = 'Pilih Produk untuk barang penjualan, Sparepart untuk service center'
+        # Set field metode_pembayaran sebagai opsional
+        self.fields['metode_pembayaran'].required = False
+        self.fields['metode_pembayaran'].label = 'Metode Pembayaran'

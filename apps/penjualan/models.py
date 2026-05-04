@@ -222,12 +222,20 @@ class SalesOrder(models.Model):
                 last_number = int(last_so.nomor_so.split('/')[-1])
                 new_number = last_number + 1
             except (ValueError, IndexError):
-                new_number = 1
+                # DIPERBAIKI: fallback aman — hitung jumlah SO + 1
+                new_number = SalesOrder.objects.filter(
+                    nomor_so__startswith=prefix
+                ).count() + 1
         else:
             new_number = 1
 
         # Format dengan zero-padding 4 digit
-        return f"{prefix}/{new_number:04d}"
+        # Tambahan: loop untuk memastikan nomor unik
+        nomor = f"{prefix}/{new_number:04d}"
+        while SalesOrder.objects.filter(nomor_so=nomor).exists():
+            new_number += 1
+            nomor = f"{prefix}/{new_number:04d}"
+        return nomor
 
     def calculate_total(self):
         """
@@ -290,6 +298,16 @@ class SalesOrder(models.Model):
                     # Kurangi stok sesuai quantity dalam satuan dasar
                     stok.jumlah -= qty_stok
                     stok.save()  # Simpan perubahan stok
+
+                    # Update cabang produk ke gudang dengan stok terbanyak
+                    stok_terbanyak = Stok.objects.filter(
+                        produk=item.produk, jumlah__gt=0
+                    ).order_by('-jumlah').first()
+
+                    if stok_terbanyak:
+                        if item.produk.cabang != stok_terbanyak.gudang:
+                            item.produk.cabang = stok_terbanyak.gudang
+                            item.produk.save(update_fields=['cabang'])
 
                 except Stok.DoesNotExist:
                     # Produk tidak punya record stok di gudang ini

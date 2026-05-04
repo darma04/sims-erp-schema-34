@@ -10,3 +10,5 @@ python-barcode==0.15.1
 Pillow==12.1.1
 numpy==1.26.4
 xhtml2pdf==0.2.16
+django-tenants>=3.10
+psycopg2-binary>=2.9

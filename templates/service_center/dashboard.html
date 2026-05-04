@@ -1,0 +1,272 @@
+{% extends 'layout/layout_vertical.html' %}
+{% comment %}
+==========================================================================
+   DASHBOARD SERVICE CENTER — Ringkasan statistik & chart
+   Fitur: Statistik card, ApexCharts area/donut, order terbaru
+==========================================================================
+{% endcomment %}
+{% load static %}
+{% load currency_filters %}
+
+{% block title %}Dashboard Service Center{% endblock title %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/apex-charts/apex-charts.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/apex-charts/apexcharts.js' %}"></script>
+{% endblock vendor_js %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="ri-tools-line me-2"></i>Dashboard Service Center</h4>
+            <p class="text-muted mb-0">Ringkasan operasional service elektronik</p>
+        </div>
+        <a href="{% url 'service_center:order_create' %}" class="btn btn-primary">
+            <i class="ri-add-line me-1"></i>Terima Unit Baru
+        </a>
+    </div>
+
+    <!-- ROW 1: Summary Cards -->
+    <div class="row g-6 mb-6">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h6 class="mb-2 text-muted">Total Order</h6>
+                            <h3 class="mb-0">{{ total_order }}</h3>
+                        </div>
+                        <div class="avatar">
+                            <div class="avatar-initial bg-label-primary rounded">
+                                <i class="ri-file-list-3-line ri-24px"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <small class="text-muted">Seluruh order service</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h6 class="mb-2 text-muted">Order Aktif</h6>
+                            <h3 class="mb-0 text-warning">{{ order_aktif }}</h3>
+                        </div>
+                        <div class="avatar">
+                            <div class="avatar-initial bg-label-warning rounded">
+                                <i class="ri-tools-line ri-24px"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <small class="text-warning">{{ order_menunggu }} menunggu konfirmasi</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h6 class="mb-2 text-muted">Selesai Bulan Ini</h6>
+                            <h3 class="mb-0 text-success">{{ order_selesai_bulan_ini }}</h3>
+                        </div>
+                        <div class="avatar">
+                            <div class="avatar-initial bg-label-success rounded">
+                                <i class="ri-checkbox-circle-line ri-24px"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <small class="text-success">+{{ order_baru_hari_ini }} baru hari ini</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h6 class="mb-2 text-muted">Pendapatan Bulan Ini</h6>
+                            <h3 class="mb-0 text-info">{{ pendapatan_bulan_ini|rupiah }}</h3>
+                        </div>
+                        <div class="avatar">
+                            <div class="avatar-initial bg-label-info rounded">
+                                <i class="ri-money-dollar-circle-line ri-24px"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <small class="text-muted">{{ total_pelanggan }} pelanggan terdaftar</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 2: Charts -->
+    <div class="row g-6 mb-6">
+        <!-- Tren Order Service (Area Chart) -->
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between">
+                    <h5 class="mb-0">Tren Order Service (30 Hari Terakhir)</h5>
+                </div>
+                <div class="card-body">
+                    <div id="trenOrderChart" style="min-height: 320px;"></div>
+                </div>
+            </div>
+        </div>
+        <!-- Distribusi Status (Donut Chart) -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">Distribusi Status</h5>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    <div id="statusDonutChart" style="min-height: 280px; width: 100%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 3: Top Perangkat + Top Jenis Service + Order Terbaru -->
+    <div class="row g-6 mb-6">
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="ri-smartphone-line me-2"></i>Perangkat Tersering</h5>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for item in top_perangkat %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>{{ item.jenis_perangkat__nama }}</span>
+                            <span class="badge bg-label-primary rounded-pill">{{ item.total }} order</span>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item text-center text-muted py-4">Belum ada data</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="ri-hammer-line me-2"></i>Layanan Populer</h5>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for item in top_jenis_service %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>{{ item.nama_layanan }}</span>
+                            <span class="badge bg-label-success rounded-pill">{{ item.total }}x</span>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item text-center text-muted py-4">Belum ada data</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="ri-time-line me-2"></i>Order Terbaru</h5>
+                    <a href="{% url 'service_center:order_list' %}" class="btn btn-sm btn-label-primary">Lihat Semua</a>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for order in order_terbaru|slice:":5" %}
+                        <li class="list-group-item">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <a href="{% url 'service_center:order_detail' order.pk %}" class="fw-medium text-body">{{ order.nomor_service }}</a>
+                                    <br><small class="text-muted">{{ order.pelanggan.nama }} — {{ order.merek }}</small>
+                                </div>
+                                <span class="badge bg-label-{{ order.status_badge_class }} align-self-center">{{ order.get_status_display }}</span>
+                            </div>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item text-center text-muted py-4">Belum ada order</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block page_js %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var isDark = (typeof isDarkStyle !== 'undefined' && isDarkStyle) || document.documentElement.classList.contains('dark-style');
+    var labelColor = isDark ? '#b4b5ba' : '#a5a3ae';
+    var borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+
+    // === TREN ORDER CHART (Area — style Penjualan per Cabang) ===
+    var trenEl = document.getElementById('trenOrderChart');
+    if (trenEl) {
+        var trenLabels = {{ tren_labels_json|safe }};
+        var trenData = {{ tren_data_json|safe }};
+        new ApexCharts(trenEl, {
+            chart: {
+                type: 'area', height: 320,
+                fontFamily: 'Inter, -apple-system, sans-serif',
+                background: 'transparent',
+                toolbar: { show: true, tools: { download: '<i class="ri-download-2-line" style="font-size:16px"></i>', selection: false, zoom: false, zoomin: false, zoomout: false, pan: false, reset: false } },
+                animations: { enabled: true, easing: 'easeinout', speed: 800, dynamicAnimation: { enabled: true, speed: 350 } },
+                dropShadow: { enabled: true, top: 6, left: 0, blur: 6, opacity: isDark ? 0.15 : 0.08, color: '#7367f0' }
+            },
+            colors: ['#7367f0'],
+            dataLabels: { enabled: false },
+            stroke: { curve: 'smooth', width: 3, lineCap: 'round' },
+            fill: { type: 'gradient', gradient: { shade: isDark ? 'dark' : 'light', type: 'vertical', shadeIntensity: 0.3, opacityFrom: isDark ? 0.25 : 0.4, opacityTo: 0.02, stops: [0, 95, 100] } },
+            series: [{ name: 'Jumlah Order', data: trenData }],
+            xaxis: {
+                categories: trenLabels,
+                labels: { style: { colors: labelColor, fontSize: '13px', fontWeight: 400 } },
+                axisBorder: { show: false }, axisTicks: { show: false },
+                crosshairs: { stroke: { color: isDark ? '#555' : '#ddd', dashArray: 4 } }
+            },
+            yaxis: { labels: { style: { colors: labelColor, fontSize: '13px' } } },
+            tooltip: { theme: isDark ? 'dark' : 'light', shared: true, intersect: false, style: { fontSize: '13px' }, x: { show: true }, marker: { show: true } },
+            legend: { position: 'top', horizontalAlign: 'left', fontSize: '13px', fontWeight: 500, labels: { colors: isDark ? '#ccc' : '#555' }, markers: { size: 5, shape: 'circle', strokeWidth: 0, offsetX: -3 }, itemMargin: { horizontal: 12, vertical: 4 } },
+            markers: { size: 0, hover: { size: 6, sizeOffset: 3 }, strokeWidth: 2, strokeColors: isDark ? '#2b2c40' : '#fff' },
+            grid: { borderColor: borderColor, strokeDashArray: 4, padding: { top: -10, left: 10, right: 10, bottom: 0 }, xaxis: { lines: { show: false } }, yaxis: { lines: { show: true } } },
+            responsive: [{ breakpoint: 768, options: { chart: { height: 280 }, legend: { fontSize: '11px' }, stroke: { width: 2 } } }]
+        }).render();
+    }
+
+    // === STATUS DONUT CHART (style Skor Kesehatan) ===
+    var donutEl = document.getElementById('statusDonutChart');
+    if (donutEl) {
+        var statusLabels = {{ status_labels_json|safe }};
+        var statusData = {{ status_data_json|safe }};
+        if (statusData.length > 0) {
+            new ApexCharts(donutEl, {
+                chart: { type: 'donut', height: 280, fontFamily: 'Inter, -apple-system, sans-serif' },
+                labels: statusLabels,
+                series: statusData,
+                colors: ['#03c3ec', '#ff9f43', '#696cff', '#ffab00', '#28c76f', '#8592a3', '#ea5455'],
+                stroke: { width: 2, colors: [isDark ? '#2b2c40' : '#fff'] },
+                legend: { position: 'bottom', fontSize: '13px', fontWeight: 500, labels: { colors: labelColor }, markers: { size: 5, shape: 'circle', strokeWidth: 0, offsetX: -3 }, itemMargin: { horizontal: 8, vertical: 4 } },
+                plotOptions: { pie: { donut: { size: '65%', labels: { show: true, name: { fontSize: '14px', fontWeight: 600, color: labelColor }, value: { fontSize: '22px', fontWeight: 700, color: isDark ? '#fff' : '#2b2c40', formatter: function(val) { return val; } }, total: { show: true, label: 'Total Order', fontSize: '12px', fontWeight: 500, color: labelColor, formatter: function(w) { return w.globals.seriesTotals.reduce(function(a,b){ return a+b; }, 0); } } } } } },
+                dataLabels: { enabled: false },
+                responsive: [{ breakpoint: 480, options: { chart: { height: 250 }, legend: { position: 'bottom', fontSize: '11px' } } }]
+            }).render();
+        } else {
+            donutEl.innerHTML = '<div class="text-center text-muted py-5"><i class="ri-pie-chart-line ri-3x mb-2 d-block"></i>Belum ada data order aktif</div>';
+        }
+    }
+});
+</script>
+{% endblock page_js %}
+

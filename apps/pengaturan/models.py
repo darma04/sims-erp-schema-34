@@ -211,6 +211,8 @@ class TemplateCetak(models.Model):
         ('sales_order', 'Sales Order'),
         ('expense', 'Transaksi Biaya'),
         ('slip_gaji', 'Slip Gaji'),
+        ('nota_service', 'Nota Service'),
+        ('bukti_bayar_service', 'Bukti Bayar Service'),
         ('export_excel', 'Export Excel'),
         ('export_pdf', 'Export PDF'),
     )
@@ -328,6 +330,20 @@ class TemplateCetak(models.Model):
                 'nama': 'Template POS Invoice Default',
                 'signature_kiri_label': 'Kasir',
                 'signature_kanan_label': 'Customer',
+            },
+            'nota_service': {
+                'nama': 'Template Nota Service Default',
+                'signature_kiri_label': 'Teknisi',
+                'signature_kanan_label': 'Pelanggan',
+                'footer_ucapan': 'Terima kasih telah mempercayakan perangkat Anda kepada kami!',
+                'footer_keterangan': 'Nota ini merupakan bukti penerimaan dan penyelesaian service.',
+            },
+            'bukti_bayar_service': {
+                'nama': 'Template Bukti Bayar Service Default',
+                'signature_kiri_label': 'Kasir',
+                'signature_kanan_label': 'Pelanggan',
+                'footer_ucapan': 'Terima kasih atas pembayaran Anda!',
+                'footer_keterangan': 'Bukti pembayaran ini sah sebagai tanda lunas.',
             },
         }
         

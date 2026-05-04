@@ -1,0 +1,239 @@
+{% extends layout_path %}
+
+{% load i18n %}
+
+{% block title %}{{ form_title }} - Service Center{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-6">
+  <div>
+    <h4 class="mb-1"><i class="ri-tools-line me-2"></i>{{ form_title }}</h4>
+    <p class="text-muted mb-0">Isi formulir penerimaan unit service</p>
+  </div>
+  <a href="{% url 'service_center:order_list' %}" class="btn btn-outline-secondary">
+    <i class="ri-arrow-left-line me-1"></i> Kembali
+  </a>
+</div>
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+
+  {% if form.errors %}
+  <div class="alert alert-danger alert-dismissible mb-4">
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <i class="ri-error-warning-line me-2"></i>
+    Terdapat kesalahan pada form. Silakan periksa kembali.
+    <ul class="mb-0 mt-2">
+      {% for field, errors in form.errors.items %}
+      {% for error in errors %}
+      <li>{{ field }}: {{ error }}</li>
+      {% endfor %}
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <!-- Data Pelanggan & Perangkat -->
+  <div class="card mb-6">
+    <div class="card-header">
+      <h5 class="card-title mb-0"><i class="ri-user-line me-2"></i>Data Pelanggan & Perangkat</h5>
+    </div>
+    <div class="card-body">
+      <div class="row g-4">
+        <div class="col-md-6">
+          <label class="form-label">Pelanggan <span class="text-danger">*</span></label>
+          {{ form.pelanggan }}
+          <div class="form-text">
+            <a href="{% url 'service_center:pelanggan_create' %}" target="_blank">
+              <i class="ri-add-line"></i> Tambah pelanggan baru
+            </a>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Jenis Perangkat <span class="text-danger">*</span></label>
+          {{ form.jenis_perangkat }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Merek <span class="text-danger">*</span></label>
+          {{ form.merek }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Model / Tipe</label>
+          {{ form.model_tipe }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Warna</label>
+          {{ form.warna }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Nomor Seri / IMEI</label>
+          {{ form.nomor_seri }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Password / PIN Perangkat</label>
+          {{ form.password_perangkat }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Keluhan & Kondisi -->
+  <div class="card mb-6">
+    <div class="card-header">
+      <h5 class="card-title mb-0"><i class="ri-stethoscope-line me-2"></i>Keluhan & Kondisi</h5>
+    </div>
+    <div class="card-body">
+      <div class="row g-4">
+        <div class="col-12">
+          <label class="form-label">Keluhan Pelanggan <span class="text-danger">*</span></label>
+          {{ form.keluhan }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Kondisi Fisik</label>
+          {{ form.kondisi_fisik }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Kelengkapan</label>
+          {{ form.kelengkapan }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Foto Perangkat</label>
+          {{ form.gambar_perangkat }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pengaturan Service -->
+  <div class="card mb-6">
+    <div class="card-header">
+      <h5 class="card-title mb-0"><i class="ri-settings-3-line me-2"></i>Pengaturan Service</h5>
+    </div>
+    <div class="card-body">
+      <div class="row g-4">
+        <div class="col-md-4">
+          <label class="form-label">Prioritas</label>
+          {{ form.prioritas }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Estimasi Biaya (Rp)</label>
+          {{ form.estimasi_biaya }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Estimasi Selesai</label>
+          {{ form.estimasi_selesai }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Teknisi</label>
+          {{ form.teknisi }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Cabang / Gudang</label>
+          {{ form.cabang }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Metode Pembayaran</label>
+          {{ form.metode_pembayaran }}
+        </div>
+        <div class="col-12">
+          <label class="form-label">Catatan Internal</label>
+          {{ form.catatan_internal }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail Layanan (Formset) -->
+  <div class="card mb-6">
+    <div class="card-header d-flex align-items-center justify-content-between">
+      <h5 class="card-title mb-0"><i class="ri-list-check me-2"></i>Detail Layanan / Perbaikan</h5>
+      <button type="button" class="btn btn-outline-primary" id="addItemBtn">
+        <i class="ri-add-line me-1"></i>Tambah Layanan
+      </button>
+    </div>
+    <div class="card-body">
+      {{ item_formset.management_form }}
+      <div id="item-formset-container">
+        {% for item_form in item_formset %}
+        <div class="row g-3 mb-3 item-form-row align-items-end">
+          <div class="col-md-5">
+            {% if forloop.first %}
+            <label class="form-label">Nama Layanan</label>
+            {% endif %}
+            {{ item_form.nama_layanan }}
+            {% for hidden in item_form.hidden_fields %}{{ hidden }}{% endfor %}
+          </div>
+          <div class="col-md-3">
+            {% if forloop.first %}
+            <label class="form-label">Biaya (Rp)</label>
+            {% endif %}
+            {{ item_form.biaya }}
+          </div>
+          <div class="col-md-3">
+            {% if forloop.first %}
+            <label class="form-label">Catatan</label>
+            {% endif %}
+            {{ item_form.catatan }}
+          </div>
+          <div class="col-md-1">
+            {% if item_form.DELETE %}
+            <div style="display:none">{{ item_form.DELETE }}</div>
+            <button type="button" class="btn btn-outline-danger btn-delete-row" onclick="this.previousElementSibling.querySelector('input').checked=!this.previousElementSibling.querySelector('input').checked;this.classList.toggle('btn-danger');this.classList.toggle('btn-outline-danger')" title="Hapus">
+              <i class="ri-delete-bin-line"></i>
+            </button>
+            {% else %}
+            <button type="button" class="btn btn-outline-danger btn-remove-row" onclick="this.closest('.item-form-row').remove()" title="Hapus">
+              <i class="ri-delete-bin-line"></i>
+            </button>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="form-text text-muted">
+        <i class="ri-information-line me-1"></i>
+        Klik "Tambah Layanan" untuk menambahkan layanan baru. Detail layanan juga bisa diubah dari halaman detail order.
+      </div>
+    </div>
+  </div>
+
+  <script>
+  document.getElementById('addItemBtn').addEventListener('click', function() {
+    var container = document.getElementById('item-formset-container');
+    var totalFormsInput = document.getElementById('id_items-TOTAL_FORMS');
+    var idx = parseInt(totalFormsInput.value);
+    var maxForms = parseInt(document.getElementById('id_items-MAX_NUM_FORMS').value);
+    if (idx >= maxForms) { alert('Maksimal ' + maxForms + ' layanan'); return; }
+
+    var newRow = document.createElement('div');
+    newRow.className = 'row g-3 mb-3 item-form-row align-items-end';
+    newRow.innerHTML =
+      '<div class="col-md-5">' +
+        '<input type="text" name="items-' + idx + '-nama_layanan" class="form-control form-control-sm" placeholder="Nama layanan" id="id_items-' + idx + '-nama_layanan">' +
+        '<input type="hidden" name="items-' + idx + '-id" id="id_items-' + idx + '-id">' +
+        '<input type="hidden" name="items-' + idx + '-order_service" id="id_items-' + idx + '-order_service">' +
+      '</div>' +
+      '<div class="col-md-3">' +
+        '<input type="number" name="items-' + idx + '-biaya" class="form-control form-control-sm" placeholder="0" id="id_items-' + idx + '-biaya">' +
+      '</div>' +
+      '<div class="col-md-3">' +
+        '<input type="text" name="items-' + idx + '-catatan" class="form-control form-control-sm" placeholder="Catatan" id="id_items-' + idx + '-catatan">' +
+      '</div>' +
+      '<div class="col-md-1">' +
+        '<button type="button" class="btn btn-outline-danger btn-remove-row" onclick="this.closest(\'.item-form-row\').remove()" title="Hapus"><i class="ri-delete-bin-line"></i></button>' +
+      '</div>';
+
+    container.appendChild(newRow);
+    totalFormsInput.value = idx + 1;
+  });
+  </script>
+
+  <!-- Tombol Submit -->
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-primary">
+      <i class="ri-save-line me-1"></i> Simpan Order Service
+    </button>
+    <a href="{% url 'service_center:order_list' %}" class="btn btn-outline-secondary">Batal</a>
+  </div>
+</form>
+{% endblock %}

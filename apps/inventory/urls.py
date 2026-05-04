@@ -65,7 +65,8 @@ urlpatterns = [
     path('adjustment/', views.AdjustmentStokView.as_view(), name='adjustment'),
     # URL: /inventory/adjustment/add/ — adjustment_add
     path('adjustment/add/', views.AdjustmentStokCreateView.as_view(), name='adjustment_add'),
-    
+    # URL: /inventory/adjustment/<int:pk>/delete/ — adjustment_delete
+    path('adjustment/<int:pk>/delete/', views.AdjustmentStokDeleteView.as_view(), name='adjustment_delete'),
     # ===== API ENDPOINTS (JSON) =====
     path('api/stok-tersedia/', views.get_stok_tersedia, name='api_stok_tersedia'),
     # URL: /inventory/api/stok-produk-gudang/ — api_stok_produk_gudang

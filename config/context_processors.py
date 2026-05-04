@@ -104,24 +104,31 @@ def export_templates(request):
     - apps/pengaturan/models.py → Model TemplateCetak
     - Template HTML export → Menggunakan data ini untuk header/footer dokumen
     """
-    from django.core.cache import cache
-    from apps.pengaturan.models import TemplateCetak
+    try:
+        from django.core.cache import cache
+        from apps.pengaturan.models import TemplateCetak
 
-    cache_key = 'ctx_export_templates'
-    cached = cache.get(cache_key)
-    if cached:
-        return cached
+        cache_key = 'ctx_export_templates'
+        cached = cache.get(cache_key)
+        if cached:
+            return cached
 
-    # Ambil atau buat template export PDF dan Excel
-    export_pdf = TemplateCetak.get_template('export_pdf')
-    export_excel = TemplateCetak.get_template('export_excel')
+        # Ambil atau buat template export PDF dan Excel
+        export_pdf = TemplateCetak.get_template('export_pdf')
+        export_excel = TemplateCetak.get_template('export_excel')
 
-    result = {
-        'export_pdf_template': export_pdf,      # Template untuk export PDF
-        'export_excel_template': export_excel,   # Template untuk export Excel
-    }
-    cache.set(cache_key, result, 60)  # Cache 60 detik
-    return result
+        result = {
+            'export_pdf_template': export_pdf,      # Template untuk export PDF
+            'export_excel_template': export_excel,   # Template untuk export Excel
+        }
+        cache.set(cache_key, result, 60)  # Cache 60 detik
+        return result
+    except Exception:
+        # Fallback saat tabel belum ada (multi-tenant public schema)
+        return {
+            'export_pdf_template': None,
+            'export_excel_template': None,
+        }
 
 
 def pengaturan_perusahaan(request):

@@ -17,6 +17,7 @@
  - generate_purchase_order_pdf(instance) → PDF Purchase Order
  - generate_biaya_pdf(instance)          → PDF Bukti Pengeluaran
  - generate_penggajian_pdf(instance)     → PDF Slip Gaji
+ - generate_service_pdf(instance)        → PDF Nota Service
 ==========================================================================
 """
 
@@ -414,6 +415,91 @@ def generate_penggajian_pdf(instance):
         return None
 
 
+def generate_service_pdf(instance):
+    """
+    Generate PDF Nota Service menggunakan template cetak YANG SAMA
+    dengan halaman cetak browser (service_center/cetak_nota.html).
+    Context: 'order', 'items', 'spareparts_used', 'total_biaya_sparepart',
+             'total_biaya_layanan', 'tanggal_cetak', 'perusahaan', 'template'
+    """
+    try:
+        _ensure_db_connection()
+        instance.refresh_from_db()
+        template = _get_template_cetak('nota_service')
+
+        # Ambil data perusahaan untuk logo di header
+        try:
+            from apps.pengaturan.models import PengaturanPerusahaan
+            perusahaan = PengaturanPerusahaan.load()
+        except Exception:
+            perusahaan = None
+
+        # Hitung total biaya layanan dan sparepart
+        from django.db.models import Sum, F
+        from decimal import Decimal
+
+        items = instance.items.all()
+        spareparts_used = instance.penggunaan_sparepart.select_related('produk', 'gudang').all()
+        total_biaya_sparepart = instance.penggunaan_sparepart.aggregate(
+            total=Sum(F('jumlah') * F('harga_satuan'))
+        )['total'] or Decimal('0')
+        total_biaya_layanan = instance.items.aggregate(
+            total=Sum('biaya')
+        )['total'] or Decimal('0')
+
+        # Generate QR Code base64
+        qr_base64 = ""
+        try:
+            import qrcode
+            import io
+            import base64
+            import os
+            from django.conf import settings
+
+            base_url = getattr(settings, 'BASE_URL', os.environ.get('BASE_URL', 'http://127.0.0.1:8000')).rstrip('/')
+            tracking_url = f"{base_url}/service/cek-status/?q={instance.kode_unik}"
+
+            qr = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_M,
+                box_size=10,
+                border=0,
+            )
+            qr.add_data(tracking_url)
+            qr.make(fit=True)
+            img = qr.make_image(fill_color="#2b2c40", back_color="white")
+            buffer = io.BytesIO()
+            img.save(buffer, format="PNG")
+            qr_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+        except Exception as e:
+            logger.warning(f"[PDF] Gagal generate QR base64: {e}")
+
+        context = {
+            'order': instance,
+            'items': items,
+            'spareparts_used': spareparts_used,
+            'total_biaya_sparepart': total_biaya_sparepart,
+            'total_biaya_layanan': total_biaya_layanan,
+            'tanggal_cetak': datetime.now(),
+            'perusahaan': perusahaan,
+            'template': template,
+            'qr_base64': qr_base64,
+        }
+
+        try:
+            html = _render_django_template('service_center/cetak_nota.html', context)
+        except Exception:
+            # Fallback: generate HTML sederhana
+            html = _generate_service_html(instance, template)
+
+        nomor = instance.nomor_service.replace('/', '_')
+        return _html_to_pdf(html, f"SERVICE_{nomor}")
+
+    except Exception as e:
+        logger.error(f"[PDF] Error generate Service PDF: {e}", exc_info=True)
+        return None
+
+
 def _format_rupiah(angka):
     """Format angka ke Rupiah."""
     try:
@@ -516,6 +602,69 @@ def _generate_slip_gaji_html(instance, template):
             <tr style="font-weight:bold;background:#ffebee;"><td>Total Potongan</td><td class="text-right">{_format_rupiah(instance.total_potongan)}</td></tr>
         </tbody></table>
         <div class="amount">GAJI BERSIH: {_format_rupiah(instance.gaji_bersih)}</div>
+        <div class="footer"><p>{company.footer_ucapan}</p><p>{company.footer_keterangan}</p></div>
+    </div></body></html>"""
+
+def _generate_service_html(instance, template):
+    """Fallback HTML generator untuk Nota Service jika template Django tidak ada."""
+    company = template if template else type('obj', (object,), {
+        'header_nama_perusahaan': 'SERPTECH', 'header_alamat': '', 'header_telepon': '',
+        'header_email': '', 'footer_ucapan': '', 'footer_keterangan': '',
+        'signature_kiri_label': 'Teknisi', 'signature_kanan_label': 'Pelanggan',
+    })()
+
+    # Items layanan
+    items_html = ""
+    for i, item in enumerate(instance.items.all(), 1):
+        items_html += f"""<tr><td>{i}</td><td>{item.nama_layanan}</td>
+        <td>{item.catatan or '-'}</td><td class="text-right">{_format_rupiah(item.biaya)}</td></tr>"""
+
+    # Sparepart
+    sparepart_html = ""
+    total_sp = 0
+    for sp in instance.penggunaan_sparepart.select_related('produk').all():
+        sparepart_html += f"""<tr><td>{sp.produk.nama if sp.produk else '-'}</td>
+        <td class="text-right">{sp.jumlah}</td>
+        <td class="text-right">{_format_rupiah(sp.harga_satuan)}</td>
+        <td class="text-right">{_format_rupiah(sp.subtotal)}</td></tr>"""
+        total_sp += float(sp.subtotal)
+
+    return f"""<!DOCTYPE html><html><head><meta charset="utf-8"><title>Nota Service {instance.nomor_service}</title>
+    <style>
+        * {{ margin:0; padding:0; box-sizing:border-box; }}
+        body {{ font-family:Arial,sans-serif; font-size:12px; color:#333; padding:20px; }}
+        .container {{ max-width:800px; margin:0 auto; padding:30px; border:1px solid #ddd; }}
+        .company {{ font-size:22px; font-weight:bold; color:#696cff; }}
+        .details {{ font-size:10px; color:#666; }}
+        .title {{ font-size:24px; color:#696cff; text-align:right; }}
+        .info-label {{ font-weight:bold; display:inline-block; width:130px; }}
+        table.items {{ width:100%; border-collapse:collapse; margin:10px 0; }}
+        table.items th {{ background:#f8f9fa; border-bottom:2px solid #696cff; padding:8px; text-align:left; font-size:10px; text-transform:uppercase; }}
+        table.items td {{ padding:6px 8px; border-bottom:1px solid #eee; font-size:10px; }}
+        .text-right {{ text-align:right; }}
+        .amount {{ text-align:center; font-size:18px; font-weight:bold; color:#696cff;
+                   border:2px solid #696cff; padding:12px; margin:15px 0; }}
+        .footer {{ margin-top:40px; border-top:1px solid #ddd; padding-top:15px; text-align:center; font-size:10px; color:#666; }}
+    </style></head><body><div class="container">
+        <table width="100%"><tr>
+            <td><div class="company">{company.header_nama_perusahaan}</div>
+            <div class="details">{company.header_alamat}<br>Telp: {company.header_telepon}<br>Email: {company.header_email}</div></td>
+            <td align="right"><div class="title">NOTA SERVICE</div><div style="color:#666;">#{instance.nomor_service}</div>
+            <div style="font-size:11px;color:#696cff;font-weight:bold;">Tracking: {instance.kode_unik}</div></td>
+        </tr></table>
+        <hr style="border:none;border-top:3px solid #696cff;margin:15px 0;">
+        <div style="margin-bottom:15px;">
+            <div><span class="info-label">Pelanggan:</span> {instance.pelanggan.nama if instance.pelanggan else '-'}</div>
+            <div><span class="info-label">Telepon:</span> {instance.pelanggan.telepon if instance.pelanggan else '-'}</div>
+            <div><span class="info-label">Perangkat:</span> {instance.merek or ''} {instance.model_tipe or ''}</div>
+            <div><span class="info-label">Keluhan:</span> {instance.keluhan or '-'}</div>
+            <div><span class="info-label">Status:</span> {instance.get_status_display()}</div>
+            <div><span class="info-label">Tanggal Masuk:</span> {instance.tanggal_masuk.strftime('%d/%m/%Y %H:%M') if instance.tanggal_masuk else '-'}</div>
+        </div>
+        {'<table class="items"><thead><tr><th>No</th><th>Layanan</th><th>Catatan</th><th class="text-right">Biaya</th></tr></thead><tbody>' + items_html + '</tbody></table>' if items_html else ''}
+        {'<table class="items"><thead><tr><th>Sparepart</th><th class="text-right">Qty</th><th class="text-right">Harga</th><th class="text-right">Subtotal</th></tr></thead><tbody>' + sparepart_html + '</tbody></table>' if sparepart_html else ''}
+        <div class="amount">TOTAL: {_format_rupiah(instance.biaya_akhir or instance.total_biaya or 0)}</div>
+        {f'<div style="text-align:center;margin-bottom:10px;"><span style="color:#28c76f;font-weight:bold;">DP: {_format_rupiah(instance.dp_bayar)}</span> | <span style="color:#ea5455;font-weight:bold;">Sisa: {_format_rupiah(instance.sisa_bayar)}</span></div>' if instance.dp_bayar else ''}
         <div class="footer"><p>{company.footer_ucapan}</p><p>{company.footer_keterangan}</p></div>
     </div></body></html>"""
 

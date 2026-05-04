@@ -291,90 +291,112 @@ def create_transaction(request):
         logger.info("Memulai proses transaksi POS — user: %s, gudang: %s, jumlah items: %d",
                     request.user.username, gudang.id, len(data['items']))
 
-        # VALIDASI STOK DENGAN LOCK — semua item dicek dalam atomic block
-        for item_data in data['items']:
-            produk = get_object_or_404(Produk, pk=item_data['id'])
-            qty_stok = hitung_qty_stok(item_data, produk)
+        with transaction.atomic():
+            # VALIDASI STOK DENGAN LOCK — semua item dicek dalam atomic block
+            for item_data in data['items']:
+                produk = get_object_or_404(Produk, pk=item_data['id'])
+                qty_stok = hitung_qty_stok(item_data, produk)
 
-            try:
-                # select_for_update() mengunci baris stok agar thread lain menunggu
-                stok = Stok.objects.select_for_update().get(produk=produk, gudang=gudang)
-                if stok.jumlah < qty_stok:
-                    satuan_nama = produk.satuan.singkatan if produk.satuan else 'pcs'
+                try:
+                    # select_for_update() mengunci baris stok agar thread lain menunggu
+                    stok = Stok.objects.select_for_update().get(produk=produk, gudang=gudang)
+                    if stok.jumlah < qty_stok:
+                        satuan_nama = produk.satuan.singkatan if produk.satuan else 'pcs'
+                        return JsonResponse({
+                            'success': False,
+                            'message': f'Stok {produk.nama} tidak mencukupi! Tersedia: {stok.jumlah} {satuan_nama}'
+                        }, status=400)
+                except Stok.DoesNotExist:
                     return JsonResponse({
                         'success': False,
-                        'message': f'Stok {produk.nama} tidak mencukupi! Tersedia: {stok.jumlah} {satuan_nama}'
+                        'message': f'Stok {produk.nama} tidak ditemukan di gudang {gudang.nama}!'
                     }, status=400)
-            except Stok.DoesNotExist:
-                return JsonResponse({
-                    'success': False,
-                    'message': f'Stok {produk.nama} tidak ditemukan di gudang {gudang.nama}!'
-                }, status=400)
 
-        # Buat transaksi header
-        pos_transaction = POSTransaction(
-            kasir=request.user,
-            gudang=gudang,
-            nama_customer=data.get('customer_name', 'Umum'),
-            diskon=Decimal(str(data.get('diskon', 0))),
-            pajak=Decimal(str(data.get('pajak', 0))),
-            metode_pembayaran=metode_pembayaran,
-            jumlah_bayar=Decimal(str(data.get('jumlah_bayar', 0))),
-            status='paid',  # Langsung paid
-            catatan=data.get('catatan', '')
-        )
-
-        # Hubungkan dengan customer terdaftar jika ada
-        customer_id = data.get('customer_id')
-        if customer_id:
-            from apps.penjualan.models import Customer
-            try:
-                customer_obj = Customer.objects.get(pk=customer_id, aktif=True)
-                pos_transaction.customer = customer_obj
-                # Otomatis isi nama_customer dari data customer terdaftar
-                pos_transaction.nama_customer = customer_obj.nama
-            except Customer.DoesNotExist:
-                pass  # Customer tidak ditemukan, lanjut dengan nama manual
-            
-        # Save dulu untuk generate PK dan nomor_transaksi
-        pos_transaction.save()
-        logger.info("Transaksi berhasil disave — ID: %s, Nomor: %s",
-                    pos_transaction.id, pos_transaction.nomor_transaksi)
-            
-        # Buat items + kurangi stok (stok sudah ter-lock oleh select_for_update di atas)
-        for idx, item_data in enumerate(data['items'], 1):
-            produk = Produk.objects.get(pk=item_data['id'])
-            qty_input = Decimal(str(item_data['qty']))
-
-            logger.debug("Processing item %d/%d — Produk: %s, Qty: %s",
-                         idx, len(data['items']), produk.nama, item_data['qty'])
-                
-            # Buat item transaksi (harga & qty sesuai satuan transaksi)
-            POSTransactionItem.objects.create(
-                transaction=pos_transaction,
-                produk=produk,
-                jumlah=qty_input,
-                harga_satuan=Decimal(str(item_data['price'])),
-                diskon=Decimal(str(item_data.get('diskon', 0)))
+            # Buat transaksi header
+            pos_transaction = POSTransaction(
+                kasir=request.user,
+                gudang=gudang,
+                nama_customer=data.get('customer_name', 'Umum'),
+                diskon=Decimal(str(data.get('diskon', 0))),
+                pajak=Decimal(str(data.get('pajak', 0))),
+                metode_pembayaran=metode_pembayaran,
+                jumlah_bayar=Decimal(str(data.get('jumlah_bayar', 0))),
+                status='paid',  # Langsung paid
+                catatan=data.get('catatan', '')
             )
-            logger.debug("Item transaksi berhasil dibuat untuk produk: %s", produk.nama)
-                
-            # Hitung qty dalam satuan dasar dan kurangi stok
-            qty_stok = hitung_qty_stok(item_data, produk)
 
-            # Kurangi stok (dalam satuan dasar produk) — baris sudah ter-lock
-            stok = Stok.objects.select_for_update().get(produk=produk, gudang=gudang)
-            stok_awal = stok.jumlah
-            logger.debug("Stok awal: %s", stok_awal)
-            stok.jumlah -= qty_stok
-            stok.save()
-            logger.debug("Stok akhir: %s — dikurangi sebanyak %s (satuan dasar)", stok.jumlah, qty_stok)
-            
-        logger.info("Transaksi %s BERHASIL!", pos_transaction.nomor_transaksi)
-            
-        # Hitung ulang total
-        pos_transaction.calculate_total()
-        pos_transaction.save()
+            # Hubungkan dengan customer terdaftar jika ada
+            customer_id = data.get('customer_id')
+            if customer_id:
+                from apps.penjualan.models import Customer
+                try:
+                    customer_obj = Customer.objects.get(pk=customer_id, aktif=True)
+                    pos_transaction.customer = customer_obj
+                    # Otomatis isi nama_customer dari data customer terdaftar
+                    pos_transaction.nama_customer = customer_obj.nama
+                except Customer.DoesNotExist:
+                    pass  # Customer tidak ditemukan, lanjut dengan nama manual
+                
+            # Save dulu untuk generate PK dan nomor_transaksi
+            pos_transaction.save()
+            logger.info("Transaksi berhasil disave — ID: %s, Nomor: %s",
+                        pos_transaction.id, pos_transaction.nomor_transaksi)
+                
+            # Buat items + kurangi stok dalam atomic block yang sama
+            for idx, item_data in enumerate(data['items'], 1):
+                produk = Produk.objects.get(pk=item_data['id'])
+                qty_input = Decimal(str(item_data['qty']))
+
+                logger.debug("Processing item %d/%d — Produk: %s, Qty: %s",
+                             idx, len(data['items']), produk.nama, item_data['qty'])
+
+                # Hitung qty dalam satuan dasar untuk stok
+                qty_stok = hitung_qty_stok(item_data, produk)
+
+                # Tentukan satuan transaksi
+                from apps.produk.models import Satuan
+                satuan_trx_id = item_data.get('satuan_id')
+                satuan_trx_obj = None
+                if satuan_trx_id:
+                    try:
+                        satuan_trx_obj = Satuan.objects.get(pk=satuan_trx_id)
+                    except Satuan.DoesNotExist:
+                        pass
+                    
+                # Buat item transaksi (harga & qty sesuai satuan transaksi)
+                POSTransactionItem.objects.create(
+                    transaction=pos_transaction,
+                    produk=produk,
+                    jumlah=qty_input,
+                    harga_satuan=Decimal(str(item_data['price'])),
+                    diskon=Decimal(str(item_data.get('diskon', 0))),
+                    satuan_transaksi=satuan_trx_obj,
+                    jumlah_konversi=qty_stok
+                )
+                logger.debug("Item transaksi berhasil dibuat untuk produk: %s (jumlah_konversi: %s)", produk.nama, qty_stok)
+                    
+                # Kurangi stok (dalam satuan dasar produk) — baris sudah ter-lock
+                stok = Stok.objects.select_for_update().get(produk=produk, gudang=gudang)
+                stok_awal = stok.jumlah
+                logger.debug("Stok awal: %s", stok_awal)
+                stok.jumlah -= qty_stok
+                stok.save()
+                logger.debug("Stok akhir: %s — dikurangi sebanyak %s (satuan dasar)", stok.jumlah, qty_stok)
+
+                # Update cabang produk ke gudang dengan stok terbanyak
+                stok_terbanyak = Stok.objects.filter(
+                    produk=produk, jumlah__gt=0
+                ).order_by('-jumlah').first()
+
+                if stok_terbanyak and produk.cabang != stok_terbanyak.gudang:
+                    produk.cabang = stok_terbanyak.gudang
+                    produk.save(update_fields=['cabang'])
+                
+            logger.info("Transaksi %s BERHASIL!", pos_transaction.nomor_transaksi)
+                
+            # Hitung ulang total
+            pos_transaction.calculate_total()
+            pos_transaction.save()
         
         # Notifikasi dan log di luar atomic (opsional, tidak boleh rollback transaksi)
         try:
@@ -679,18 +701,23 @@ class InvoiceDeleteView(DeletePermissionMixin, DetailView):
     def delete(self, request, *args, **kwargs):
         """Hapus data — return JSON response untuk AJAX."""
         from django.http import JsonResponse
+        from apps.fraud_detection.signals import set_current_delete_user, clear_current_delete_user
         self.object = self.get_object()
         
         try:
             nomor_transaksi = self.object.nomor_transaksi
+            set_current_delete_user(request.user)
             self.object.delete()
+            clear_current_delete_user()
             return JsonResponse({
                 'success': True, 
                 'message': f'Invoice {nomor_transaksi} berhasil dihapus'
             })
         except ProtectedError:
+            clear_current_delete_user()
             return JsonResponse({'success': False, 'message': 'Data tidak dapat dihapus karena sedang digunakan atau terkait dengan data lain.'}, status=400)
         except Exception as e:
+            clear_current_delete_user()
             return JsonResponse({
                 'success': False, 
                 'message': f'Gagal menghapus invoice: {str(e)}'

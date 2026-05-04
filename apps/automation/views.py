@@ -101,6 +101,7 @@ class PengaturanTelegramView(ReadPermissionMixin, TemplateView):
         pengaturan.notif_purchase_order = request.POST.get('notif_purchase_order') == 'on'
         pengaturan.notif_biaya = request.POST.get('notif_biaya') == 'on'
         pengaturan.notif_penggajian = request.POST.get('notif_penggajian') == 'on'
+        pengaturan.notif_service_order = request.POST.get('notif_service_order') == 'on'
         pengaturan.kirim_pdf = request.POST.get('kirim_pdf') == 'on'
         pengaturan.system_prompt_bot = request.POST.get('system_prompt_bot', '').strip()
         pengaturan.save()

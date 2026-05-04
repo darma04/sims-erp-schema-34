@@ -72,14 +72,6 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-12">
-                    <button class="btn btn-primary" onclick="applyFilter()">
-                        <i class="ri-filter-3-line me-1"></i>Terapkan Filter
-                    </button>
-                    <button class="btn btn-label-secondary" onclick="resetFilter()">
-                        <i class="ri-refresh-line me-1"></i>Reset
-                    </button>
-                </div>
             </div>
             <!-- Baris kedua: Pilih Kolom -->
             <div class="row g-3 mt-2 align-items-end">
@@ -141,6 +133,16 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
                         </div>
                     </div>
                     <small class="text-muted d-block mt-1">Klik untuk memilih kolom</small>
+                </div>
+                <div class="col-md-3 offset-md-6">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" onclick="applyFilter()">
+                            <i class="ri-filter-3-line me-1"></i>Terapkan Filter
+                        </button>
+                        <button class="btn btn-label-secondary" onclick="resetFilter()">
+                            <i class="ri-refresh-line me-1"></i>Reset
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

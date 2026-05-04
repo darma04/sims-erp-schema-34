@@ -125,7 +125,24 @@ class DashboardView(TemplateView):
             
             total_sales_so = SalesOrder.objects.exclude(status='cancelled').filter(**so_date_filter).count()
             total_sales_pos = POSTransaction.objects.exclude(status='cancelled').filter(**pos_date_filter).count()
-            total_sales = total_sales_so + total_sales_pos
+
+            # Service Center order count & revenue (untuk Ringkasan Penjualan)
+            try:
+                from apps.service_center.models import OrderService as SC_OrderOverview
+                sc_overview_filter = {}
+                if filter_start:
+                    sc_overview_filter['tanggal_masuk__date__gte'] = filter_start
+                if filter_end:
+                    sc_overview_filter['tanggal_masuk__date__lte'] = filter_end
+                total_sales_sc = SC_OrderOverview.objects.exclude(status='dibatalkan').filter(**sc_overview_filter).count()
+                revenue_sc = SC_OrderOverview.objects.filter(
+                    status_bayar='lunas', **sc_overview_filter
+                ).aggregate(total=Sum('biaya_akhir'))['total'] or 0
+            except Exception:
+                total_sales_sc = 0
+                revenue_sc = 0
+
+            total_sales = total_sales_so + total_sales_pos + total_sales_sc
             
             revenue_so = SalesOrder.objects.filter(
                 status__in=['confirmed', 'delivered', 'completed'],
@@ -137,9 +154,9 @@ class DashboardView(TemplateView):
                 **pos_date_filter
             ).aggregate(total=Sum('total_harga'))['total'] or 0
             
-            total_revenue = revenue_so + revenue_pos
+            total_revenue = revenue_so + revenue_pos + revenue_sc
             
-            # Hitung pertumbuhan pendapatan dibanding bulan lalu (SO + POS)
+            # Hitung pertumbuhan pendapatan dibanding bulan lalu (SO + POS + SC)
             this_month_revenue_so = SalesOrder.objects.filter(
                 tanggal__date__gte=month_start,
                 status__in=['confirmed', 'delivered', 'completed']
@@ -149,8 +166,17 @@ class DashboardView(TemplateView):
                 tanggal__date__gte=month_start,
                 status='paid'
             ).aggregate(total=Sum('total_harga'))['total'] or 0
+
+            # SC revenue bulan ini
+            try:
+                this_month_revenue_sc = SC_OrderOverview.objects.filter(
+                    tanggal_masuk__date__gte=month_start,
+                    status_bayar='lunas'
+                ).aggregate(total=Sum('biaya_akhir'))['total'] or 0
+            except Exception:
+                this_month_revenue_sc = 0
             
-            this_month_revenue = this_month_revenue_so + this_month_revenue_pos
+            this_month_revenue = this_month_revenue_so + this_month_revenue_pos + this_month_revenue_sc
             
             last_month_revenue_so = SalesOrder.objects.filter(
                 tanggal__date__gte=last_month_start,
@@ -163,8 +189,18 @@ class DashboardView(TemplateView):
                 tanggal__date__lt=month_start,
                 status='paid'
             ).aggregate(total=Sum('total_harga'))['total'] or 0
+
+            # SC revenue bulan lalu
+            try:
+                last_month_revenue_sc = SC_OrderOverview.objects.filter(
+                    tanggal_masuk__date__gte=last_month_start,
+                    tanggal_masuk__date__lt=month_start,
+                    status_bayar='lunas'
+                ).aggregate(total=Sum('biaya_akhir'))['total'] or 0
+            except Exception:
+                last_month_revenue_sc = 0
             
-            last_month_revenue = last_month_revenue_so + last_month_revenue_pos
+            last_month_revenue = last_month_revenue_so + last_month_revenue_pos + last_month_revenue_sc
             
             if last_month_revenue > 0:
                 growth_percentage = ((this_month_revenue - last_month_revenue) / last_month_revenue) * 100
@@ -207,7 +243,7 @@ class DashboardView(TemplateView):
                 pos_sold_by_produk = {}
                 for item in POSTransactionItem.objects.filter(
                     transaction__status='paid'
-                ).values('produk_id').annotate(total_qty=Sum('jumlah')):
+                ).values('produk_id').annotate(total_qty=Sum('jumlah_konversi')):
                     pos_sold_by_produk[item['produk_id']] = item['total_qty']
                 
                 # Qty adjustment per produk — TANPA filter tanggal (kumulatif historis)
@@ -217,6 +253,18 @@ class DashboardView(TemplateView):
                     tipe='out'
                 ).values('produk_id').annotate(total_qty=Sum('jumlah')):
                     adj_out_by_produk[item['produk_id']] = item['total_qty']
+
+                # Qty sparepart terpakai dari Service Center — kumulatif historis
+                sc_used_by_produk = {}
+                try:
+                    from apps.service_center.models import PenggunaanSparepart as SC_SP_Asset
+                    for item in SC_SP_Asset.objects.values('produk_id').annotate(
+                        total_qty=Sum('jumlah')
+                    ):
+                        if item['produk_id']:
+                            sc_used_by_produk[item['produk_id']] = item['total_qty']
+                except Exception:
+                    pass
                 
                 # Hitung per produk
                 for produk in Produk.objects.prefetch_related('stok_set').all():
@@ -224,8 +272,9 @@ class DashboardView(TemplateView):
                     qty_sold_so = so_sold_by_produk.get(produk.pk, Decimal('0'))
                     qty_sold_pos = pos_sold_by_produk.get(produk.pk, Decimal('0'))
                     qty_adj_out = adj_out_by_produk.get(produk.pk, Decimal('0'))
-                    # Total Aset = harga_beli × (stok saat ini + terjual + yg keluar via adjustment)
-                    qty_total_pernah_masuk = stok_saat_ini + qty_sold_so + qty_sold_pos + qty_adj_out
+                    qty_sc_used = sc_used_by_produk.get(produk.pk, Decimal('0'))
+                    # Total Aset = harga_beli × (stok saat ini + terjual + yg keluar via adjustment + service)
+                    qty_total_pernah_masuk = stok_saat_ini + qty_sold_so + qty_sold_pos + qty_adj_out + qty_sc_used
                     
                     # Total Keseluruhan Aset = harga_beli × total stok pernah masuk
                     total_keseluruhan_aset += produk.harga_beli * qty_total_pernah_masuk
@@ -461,6 +510,168 @@ class DashboardView(TemplateView):
                 })
 
             
+            # ===== SLIDER 4: Sparepart Terbanyak Digunakan =====
+            try:
+                from apps.service_center.models import PenggunaanSparepart as SC_SP_Slider
+
+                # Filter tanggal opsional
+                sp_slider_filter = {}
+                if filter_start:
+                    sp_slider_filter['order_service__tanggal_masuk__date__gte'] = filter_start
+                if filter_end:
+                    sp_slider_filter['order_service__tanggal_masuk__date__lte'] = filter_end
+
+                # Total harga sparepart
+                total_sp_cost = SC_SP_Slider.objects.filter(
+                    **sp_slider_filter
+                ).annotate(
+                    _sub=ExpressionWrapper(
+                        F('jumlah') * F('harga_satuan'),
+                        output_field=DecimalField()
+                    )
+                ).aggregate(total=Sum('_sub'))['total'] or 0
+
+                total_sp_usage_count = SC_SP_Slider.objects.filter(**sp_slider_filter).count()
+
+                # Top sparepart berdasarkan jumlah penggunaan
+                top_sp_items = SC_SP_Slider.objects.filter(
+                    **sp_slider_filter
+                ).values('produk__id', 'produk__nama', 'produk__gambar').annotate(
+                    total_qty=Sum('jumlah'),
+                    total_cost=Sum(ExpressionWrapper(
+                        F('jumlah') * F('harga_satuan'),
+                        output_field=DecimalField()
+                    ))
+                ).order_by('-total_qty')[:4]
+
+                sp_items_list = []
+                top_sp_product = None
+                for item in top_sp_items:
+                    sp_items_list.append({
+                        'name': item['produk__nama'][:30],
+                        'count': int(item['total_qty'])
+                    })
+                    if top_sp_product is None and item['produk__id']:
+                        sp_obj = Produk.objects.filter(pk=item['produk__id']).first()
+                        if sp_obj:
+                            top_sp_product = sp_obj
+
+                # Format biaya
+                if total_sp_cost < 1000000:
+                    sp_earning_str = f'Rp {total_sp_cost/1000:.1f}k'
+                else:
+                    sp_earning_str = f'Rp {total_sp_cost/1000000:.1f}jt'
+
+                while len(sp_items_list) < 4:
+                    sp_items_list.append({'name': 'Belum ada data', 'count': 0})
+
+                weekly_sales_data.append({
+                    'category': 'Sparepart Terbanyak',
+                    'items': sp_items_list[:4],
+                    'earning': sp_earning_str,
+                    'growth': total_sp_usage_count,
+                    'product_image': top_sp_product.gambar if top_sp_product and top_sp_product.gambar else None
+                })
+
+            except Exception as e:
+                weekly_sales_data.append({
+                    'category': 'Sparepart Terbanyak',
+                    'items': [
+                        {'name': 'Belum ada data', 'count': 0},
+                        {'name': 'Belum ada data', 'count': 0},
+                        {'name': 'Belum ada data', 'count': 0},
+                        {'name': 'Belum ada data', 'count': 0},
+                    ],
+                    'earning': 'Rp 0',
+                    'growth': 0,
+                    'product_image': None
+                })
+
+            # === SERVICE CENTER OVERVIEW ===
+            try:
+                from apps.service_center.models import OrderService as SC_OrderDash
+                from apps.service_center.models import Pelanggan as SC_PelangganDash
+
+                sc_dash_filter = {}
+                if filter_start:
+                    sc_dash_filter['tanggal_masuk__date__gte'] = filter_start
+                if filter_end:
+                    sc_dash_filter['tanggal_masuk__date__lte'] = filter_end
+
+                sc_aktif = SC_OrderDash.objects.filter(
+                    status__in=['diterima', 'diagnosa', 'menunggu_konfirmasi', 'dikerjakan'],
+                    **sc_dash_filter
+                ).count()
+                sc_selesai = SC_OrderDash.objects.filter(
+                    status__in=['selesai', 'diambil'],
+                    **sc_dash_filter
+                ).count()
+                sc_pending_bayar = SC_OrderDash.objects.filter(
+                    status_bayar__in=['belum_bayar', 'dp'],
+                    status__in=['selesai'],
+                    **sc_dash_filter
+                ).count()
+                sc_revenue_total = SC_OrderDash.objects.filter(
+                    status_bayar='lunas',
+                    **sc_dash_filter
+                ).aggregate(total=Sum('biaya_akhir'))['total'] or 0
+
+                # Pemasukan Sparepart = total harga jual sparepart dari order LUNAS
+                from apps.service_center.models import PenggunaanSparepart as SC_Sparepart
+                sp_filter = {}
+                if filter_start:
+                    sp_filter['order_service__tanggal_masuk__date__gte'] = filter_start
+                if filter_end:
+                    sp_filter['order_service__tanggal_masuk__date__lte'] = filter_end
+
+                sc_pemasukan_sparepart = SC_Sparepart.objects.filter(
+                    order_service__status_bayar='lunas',
+                    **sp_filter
+                ).annotate(
+                    _subtotal=ExpressionWrapper(
+                        F('jumlah') * F('harga_satuan'),
+                        output_field=DecimalField()
+                    )
+                ).aggregate(total=Sum('_subtotal'))['total'] or 0
+
+                # Pemasukan Layanan = total biaya ItemService dari order LUNAS (tanpa sparepart)
+                from apps.service_center.models import ItemService as SC_ItemService
+                item_filter = {}
+                if filter_start:
+                    item_filter['order_service__tanggal_masuk__date__gte'] = filter_start
+                if filter_end:
+                    item_filter['order_service__tanggal_masuk__date__lte'] = filter_end
+
+                sc_pemasukan_layanan = SC_ItemService.objects.filter(
+                    order_service__status_bayar='lunas',
+                    **item_filter
+                ).aggregate(total=Sum('biaya'))['total'] or 0
+
+                # Total order (exclude cancelled)
+                sc_total_orders = SC_OrderDash.objects.exclude(
+                    status='dibatalkan'
+                ).filter(**sc_dash_filter).count()
+
+                # Total sparepart usage count
+                sc_total_sparepart = SC_Sparepart.objects.filter(
+                    **sp_filter
+                ).count()
+
+                context['service_overview'] = {
+                    'total_revenue': sc_revenue_total,
+                    'pemasukan_layanan': sc_pemasukan_layanan,
+                    'pemasukan_sparepart': sc_pemasukan_sparepart,
+                    'total_sparepart': sc_total_sparepart,
+                    'total_orders': sc_total_orders,
+                    'order_selesai': sc_selesai,
+                    'total_pelanggan': SC_PelangganDash.objects.filter(aktif=True).count(),
+                }
+            except Exception:
+                context['service_overview'] = {
+                    'total_revenue': 0, 'pemasukan_layanan': 0, 'pemasukan_sparepart': 0,
+                    'total_sparepart': 0, 'total_orders': 0, 'order_selesai': 0, 'total_pelanggan': 0,
+                }
+
             context['weekly_sales_data'] = weekly_sales_data
             
             # --- 3. TOP PRODUCTS TABLE - Real Data (Sales Order + POS) ---
@@ -644,10 +855,16 @@ class DashboardView(TemplateView):
                 from apps.pos.models import MetodePembayaran
                 
                 # Ambil semua metode pembayaran beserta total revenue
-                # Gunakan Coalesce agar None menjadi 0
+                # DIPERBAIKI QA-D1: Tambahkan filter tanggal agar konsisten saat filter aktif
+                pos_revenue_q = Q(postransaction__status='paid')
+                if filter_start:
+                    pos_revenue_q &= Q(postransaction__tanggal__date__gte=filter_start)
+                if filter_end:
+                    pos_revenue_q &= Q(postransaction__tanggal__date__lte=filter_end)
+                
                 payment_methods = MetodePembayaran.objects.annotate(
-                    revenue=Coalesce(Sum('postransaction__total_harga', filter=Q(postransaction__status='paid')), Decimal('0')),
-                    trx_count=Count('postransaction', filter=Q(postransaction__status='paid'))
+                    revenue=Coalesce(Sum('postransaction__total_harga', filter=pos_revenue_q), Decimal('0')),
+                    trx_count=Count('postransaction', filter=pos_revenue_q)
                 ).order_by('-revenue')
                 
                 # Hitung total revenue seluruh metode untuk persentase share
@@ -686,9 +903,9 @@ class DashboardView(TemplateView):
                         # Label dibuat minimalis agar tampilan ringkas tanpa menghilangkan konteks
                         
                         stats = [
-                            {'label': 'Pemasukan', 'value': fmt(saldo)},
-                            {'label': 'Pengeluaran', 'value': fmt(pendapatan)},
-                            {'label': 'Biaya', 'value': fmt(pengeluaran)},
+                            {'label': 'Saldo', 'value': fmt(saldo)},
+                            {'label': 'Pendapatan', 'value': fmt(pendapatan)},
+                            {'label': 'Pengeluaran', 'value': fmt(pengeluaran)},
                             {'label': 'Transaksi', 'value': str(trx_total)},
                         ]
                         
@@ -751,7 +968,17 @@ class DashboardView(TemplateView):
                     tanggal__date=date,
                     status='paid'
                 ).aggregate(total=Sum('total_harga'))['total'] or 0
-                sales_data.append(float(total_so) + float(total_pos_day))
+                # Service Center: revenue dari order lunas pada tanggal ini
+                total_sc_day = 0
+                try:
+                    from apps.service_center.models import OrderService as SC_DayChart
+                    total_sc_day = SC_DayChart.objects.filter(
+                        tanggal_masuk__date=date,
+                        status_bayar='lunas'
+                    ).aggregate(total=Sum('biaya_akhir'))['total'] or 0
+                except Exception:
+                    pass
+                sales_data.append(float(total_so) + float(total_pos_day) + float(total_sc_day))
                 sales_labels.append(date.day)
             context['sales_chart_data'] = sales_data
             context['sales_chart_labels'] = sales_labels
@@ -835,16 +1062,24 @@ class DashboardView(TemplateView):
                 
 
                 
-                # 1. Cabang/Gudang data
+                # 1. Cabang/Gudang data + Karyawan
                 total_gudang = Gudang.objects.filter(aktif=True).count()
+                from django.contrib.auth import get_user_model
+                UserModel = get_user_model()
+                total_karyawan = UserModel.objects.filter(is_active=True).count()
                 
-                gudang_ratio_percent = round((total_gudang / (total_produk + total_gudang) * 100)) if (total_produk + total_gudang) > 0 else 0
+                total_all = total_gudang + total_produk + total_karyawan
+                gudang_ratio_percent = round((total_gudang / total_all * 100)) if total_all > 0 else 0
+                karyawan_ratio_percent = round((total_karyawan / total_all * 100)) if total_all > 0 else 0
+                produk_ratio_percent = 100 - gudang_ratio_percent - karyawan_ratio_percent
                 
                 context['cabang_data'] = {
                     'total_gudang': total_gudang,
                     'total_produk': total_produk,
+                    'total_karyawan': total_karyawan,
                     'gudang_percent': gudang_ratio_percent,
-                    'produk_percent': 100 - gudang_ratio_percent
+                    'produk_percent': produk_ratio_percent,
+                    'karyawan_percent': karyawan_ratio_percent,
                 }
 
                 
@@ -880,7 +1115,7 @@ class DashboardView(TemplateView):
                     **profit_pos_filter
                 ).annotate(
                     margin=ExpressionWrapper(
-                        (F('harga_satuan') - F('produk__harga_beli')) * F('jumlah'),
+                        (F('harga_satuan') - F('produk__harga_beli')) * F('jumlah_konversi'),
                         output_field=DecimalField()
                     )
                 ).aggregate(total=Sum('margin'))['total'] or 0
@@ -908,6 +1143,41 @@ class DashboardView(TemplateView):
                 ).aggregate(total=Sum('total_harga'))['total'] or 0
                 
                 total_revenue = float(total_sales_revenue or 0) + float(revenue_pos or 0)
+
+                # Tambahkan pendapatan Service Center ke total revenue & keuntungan
+                try:
+                    from apps.service_center.models import OrderService as SC_OrderProfit
+                    sc_profit_filter = {'status_bayar': 'lunas'}
+                    if filter_start:
+                        sc_profit_filter['tanggal_masuk__date__gte'] = filter_start
+                    if filter_end:
+                        sc_profit_filter['tanggal_masuk__date__lte'] = filter_end
+                    sc_revenue = SC_OrderProfit.objects.filter(
+                        **sc_profit_filter
+                    ).aggregate(total=Sum('biaya_akhir'))['total'] or 0
+
+                    # Hitung modal sparepart (COGS service) — menggunakan harga_beli produk
+                    # bukan harga_satuan (yang merupakan harga jual ke pelanggan)
+                    from apps.service_center.models import PenggunaanSparepart as SC_SP
+                    sc_sp_filter = {'order_service__status_bayar': 'lunas'}
+                    if filter_start:
+                        sc_sp_filter['order_service__tanggal_masuk__date__gte'] = filter_start
+                    if filter_end:
+                        sc_sp_filter['order_service__tanggal_masuk__date__lte'] = filter_end
+                    sc_sparepart_cogs = SC_SP.objects.filter(
+                        **sc_sp_filter
+                    ).annotate(
+                        _subtotal=ExpressionWrapper(
+                            F('jumlah') * F('produk__harga_beli'),
+                            output_field=DecimalField()
+                        )
+                    ).aggregate(total=Sum('_subtotal'))['total'] or 0
+
+                    sc_profit = float(sc_revenue or 0) - float(sc_sparepart_cogs or 0)
+                    total_revenue += float(sc_revenue or 0)
+                    total_keuntungan += sc_profit
+                except Exception:
+                    pass
                 
                 # Persentase margin keuntungan
                 profit_margin = round((total_keuntungan / total_revenue * 100), 1) if total_revenue > 0 else 0
@@ -1025,13 +1295,53 @@ class DashboardView(TemplateView):
                         **gudang_pos_filter
                     ).annotate(
                         margin=ExpressionWrapper(
-                            (F('harga_satuan') - F('produk__harga_beli')) * F('jumlah'),
+                            (F('harga_satuan') - F('produk__harga_beli')) * F('jumlah_konversi'),
                             output_field=DecimalField()
                         )
                     ).aggregate(total=Sum('margin'))['total'] or 0
                     
                     gudang_revenue = float(gudang_revenue_so or 0) + float(gudang_revenue_pos or 0)
                     gudang_profit = float(gudang_profit_so or 0) + float(gudang_profit_pos or 0)
+                    
+                    # === SERVICE CENTER per cabang (sparepart.gudang) ===
+                    try:
+                        from apps.service_center.models import PenggunaanSparepart as SC_SP_Cabang
+                        from apps.service_center.models import OrderService as SC_OrdCabang
+                        
+                        # Revenue SC: order service lunas yang sparepart-nya dari gudang ini
+                        gudang_sc_sp_filter = {
+                            'gudang': gudang,
+                            'order_service__status_bayar': 'lunas',
+                        }
+                        if filter_start:
+                            gudang_sc_sp_filter['order_service__tanggal_masuk__date__gte'] = filter_start
+                        if filter_end:
+                            gudang_sc_sp_filter['order_service__tanggal_masuk__date__lte'] = filter_end
+                        
+                        # Revenue sparepart per gudang (harga jual ke pelanggan)
+                        gudang_sc_revenue = SC_SP_Cabang.objects.filter(
+                            **gudang_sc_sp_filter
+                        ).annotate(
+                            _sub=ExpressionWrapper(
+                                F('jumlah') * F('harga_satuan'),
+                                output_field=DecimalField()
+                            )
+                        ).aggregate(total=Sum('_sub'))['total'] or 0
+                        
+                        # Profit sparepart per gudang (harga_jual - harga_beli) × qty
+                        gudang_sc_profit = SC_SP_Cabang.objects.filter(
+                            **gudang_sc_sp_filter
+                        ).annotate(
+                            margin=ExpressionWrapper(
+                                (F('harga_satuan') - F('produk__harga_beli')) * F('jumlah'),
+                                output_field=DecimalField()
+                            )
+                        ).aggregate(total=Sum('margin'))['total'] or 0
+                        
+                        gudang_revenue += float(gudang_sc_revenue or 0)
+                        gudang_profit += float(gudang_sc_profit or 0)
+                    except Exception:
+                        pass
                     
                     # === PEMBELIAN per cabang (dengan filter waktu) ===
                     gudang_po_filter = {
@@ -1148,6 +1458,23 @@ class DashboardView(TemplateView):
                             'name': gudang.nama,
                             'data': daily_data
                         })
+                    
+                    # === Service Center series (tidak per gudang) ===
+                    try:
+                        from apps.service_center.models import OrderService as SC_OrdDaily
+                        sc_daily_data = []
+                        for hari in hari_list:
+                            sc_rev = SC_OrdDaily.objects.filter(
+                                status_bayar='lunas',
+                                tanggal_masuk__date=hari
+                            ).aggregate(total=Sum('biaya_akhir'))['total'] or 0
+                            sc_daily_data.append(float(sc_rev or 0))
+                        sales_cabang_series.append({
+                            'name': 'Service Center',
+                            'data': sc_daily_data
+                        })
+                    except Exception:
+                        pass
                 else:
                     # ═══ MODE BULANAN — untuk filter panjang / default ═══
                     # Tentukan rentang bulan berdasarkan filter
@@ -1228,7 +1555,32 @@ class DashboardView(TemplateView):
                             'name': gudang.nama,
                             'data': monthly_data
                         })
-                
+                    
+                    # === Service Center series bulanan (tidak per gudang) ===
+                    try:
+                        from apps.service_center.models import OrderService as SC_OrdMonthly
+                        sc_monthly_data = []
+                        for bulan in bulan_list:
+                            sc_m_filter = {
+                                'status_bayar': 'lunas',
+                                'tanggal_masuk__year': bulan['year'],
+                                'tanggal_masuk__month': bulan['month'],
+                            }
+                            if filter_start and bulan['year'] == filter_start.year and bulan['month'] == filter_start.month:
+                                sc_m_filter['tanggal_masuk__date__gte'] = filter_start
+                            if filter_end and bulan['year'] == filter_end.year and bulan['month'] == filter_end.month:
+                                sc_m_filter['tanggal_masuk__date__lte'] = filter_end
+                            
+                            sc_rev = SC_OrdMonthly.objects.filter(**sc_m_filter).aggregate(
+                                total=Sum('biaya_akhir')
+                            )['total'] or 0
+                            sc_monthly_data.append(float(sc_rev or 0))
+                        sales_cabang_series.append({
+                            'name': 'Service Center',
+                            'data': sc_monthly_data
+                        })
+                    except Exception:
+                        pass
                 context['sales_cabang_labels'] = sales_cabang_labels
                 context['sales_cabang_series'] = sales_cabang_series
 
@@ -1355,6 +1707,11 @@ class DashboardView(TemplateView):
                 'sales_chart_labels': [],
                 'sales_cabang_labels': [],
                 'sales_cabang_series': [],
+                # Nilai default aman untuk Service Center
+                'service_overview': {
+                    'order_aktif': 0, 'order_selesai': 0, 'pending_bayar': 0,
+                    'total_revenue': 0, 'total_pelanggan': 0, 'sparepart_cost': 0,
+                },
             })
 
         return context

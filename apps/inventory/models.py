@@ -155,12 +155,20 @@ class TransferStok(models.Model):
                 last_number = int(last_transfer.nomor_transfer.split('/')[-1])
                 new_number = last_number + 1  # Increment
             except (ValueError, IndexError):
-                new_number = 1  # Fallback jika format tidak standar
+                # DIPERBAIKI: fallback aman — hitung jumlah transfer + 1
+                new_number = TransferStok.objects.filter(
+                    nomor_transfer__startswith=prefix
+                ).count() + 1
         else:
             new_number = 1  # Transfer pertama bulan ini
 
         # Format dengan zero-padding 4 digit
-        return f"{prefix}/{new_number:04d}"
+        # Tambahan: loop untuk memastikan nomor unik
+        nomor = f"{prefix}/{new_number:04d}"
+        while TransferStok.objects.filter(nomor_transfer=nomor).exists():
+            new_number += 1
+            nomor = f"{prefix}/{new_number:04d}"
+        return nomor
 
     def approve(self, user):
         """
@@ -234,6 +242,17 @@ class TransferStok(models.Model):
                 )
                 stok_tujuan.jumlah += item.jumlah  # Tambah sesuai qty transfer
                 stok_tujuan.save()  # Simpan perubahan
+
+                # 2c. Update cabang produk ke gudang dengan stok terbanyak
+                produk = item.produk
+                stok_terbanyak = Stok.objects.filter(
+                    produk=produk, jumlah__gt=0
+                ).order_by('-jumlah').first()
+
+                if stok_terbanyak:
+                    if produk.cabang != stok_terbanyak.gudang:
+                        produk.cabang = stok_terbanyak.gudang
+                        produk.save(update_fields=['cabang'])
 
             # Update status dan catat siapa yang approve
             self.status = 'completed'
@@ -417,6 +436,16 @@ class AdjustmentStok(models.Model):
 
                 stok.save()  # Simpan perubahan stok ke database
 
+                # Update cabang produk ke gudang dengan stok terbanyak
+                stok_terbanyak = Stok.objects.filter(
+                    produk=self.produk, jumlah__gt=0
+                ).order_by('-jumlah').first()
+
+                if stok_terbanyak:
+                    if self.produk.cabang != stok_terbanyak.gudang:
+                        self.produk.cabang = stok_terbanyak.gudang
+                        self.produk.save(update_fields=['cabang'])
+
         # Log adjustment ke activity_log (opsional, di luar atomic agar tidak rollback)
         if is_new:
             try:
@@ -458,9 +487,17 @@ class AdjustmentStok(models.Model):
                 last_number = int(last_adj.nomor_adjustment.split('/')[-1])
                 new_number = last_number + 1  # Increment
             except (ValueError, IndexError):
-                new_number = 1  # Fallback jika format tidak standar
+                # DIPERBAIKI: fallback aman — hitung jumlah adjustment + 1
+                new_number = AdjustmentStok.objects.filter(
+                    nomor_adjustment__startswith=prefix
+                ).count() + 1
         else:
             new_number = 1  # Adjustment pertama bulan ini
 
         # Format dengan zero-padding 4 digit
-        return f"{prefix}/{new_number:04d}"
+        # Tambahan: loop untuk memastikan nomor unik
+        nomor = f"{prefix}/{new_number:04d}"
+        while AdjustmentStok.objects.filter(nomor_adjustment=nomor).exists():
+            new_number += 1
+            nomor = f"{prefix}/{new_number:04d}"
+        return nomor

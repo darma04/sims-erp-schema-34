@@ -1,0 +1,63 @@
+{% extends layout_path %}
+
+{% load i18n %}
+
+{% block title %}{{ form_title }} - Service Center{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-6">
+  <div>
+    <h4 class="mb-1"><i class="ri-smartphone-line me-2"></i>{{ form_title }}</h4>
+    <p class="text-muted mb-0">Isi data jenis perangkat</p>
+  </div>
+  <a href="{% url 'service_center:perangkat_list' %}" class="btn btn-outline-secondary">
+    <i class="ri-arrow-left-line me-1"></i> Kembali
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+
+      {% if form.errors %}
+      <div class="alert alert-danger alert-dismissible mb-4">
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <i class="ri-error-warning-line me-2"></i>
+        Terdapat kesalahan pada form.
+      </div>
+      {% endif %}
+
+      <div class="row g-4">
+        <div class="col-md-6">
+          <label class="form-label" for="id_nama">Nama Perangkat <span class="text-danger">*</span></label>
+          {{ form.nama }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="id_icon">Icon</label>
+          {{ form.icon }}
+          <div class="form-text">Gunakan class Remix Icon, contoh: ri-smartphone-line, ri-tv-line</div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="id_aktif">Status</label>
+          <div class="form-check form-switch mt-2">
+            {{ form.aktif }}
+            <label class="form-check-label" for="id_aktif">Aktif</label>
+          </div>
+        </div>
+        <div class="col-12">
+          <label class="form-label" for="id_deskripsi">Deskripsi</label>
+          {{ form.deskripsi }}
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <button type="submit" class="btn btn-primary me-2">
+          <i class="ri-save-line me-1"></i> Simpan
+        </button>
+        <a href="{% url 'service_center:perangkat_list' %}" class="btn btn-outline-secondary">Batal</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,616 @@
+{% extends 'layout/layout_vertical.html' %}
+{% comment %}
+==========================================================================
+   LAPORAN SPAREPART - Laporan Penggunaan Sparepart Service
+   Halaman laporan analitik penggunaan sparepart pada service center.
+   Filter: periode. Export Excel & PDF.
+==========================================================================
+{% endcomment %}
+{% load static %}
+{% load currency_filters %}
+
+{% block title %}Laporan Sparepart - ERP{% endblock title %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+{% endblock vendor_js %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <h4 class="mb-4"><i class="ri-cpu-line me-2"></i>Laporan Penggunaan Sparepart</h4>
+
+    <!-- 4 Summary Cards -->
+    <div class="row g-2 g-md-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div class="card-info">
+                            <p class="card-text text-muted">Total Penggunaan</p>
+                            <h4 class="mb-0 text-primary summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Jumlah transaksi penggunaan sparepart pada order service.<br><br><b>Sumber:</b> Tabel PenggunaanSparepart.">{{ total_penggunaan }}</h4>
+                        </div>
+                        <div class="card-icon">
+                            <span class="badge bg-label-primary rounded p-2">
+                                <i class="ri-archive-line ri-24px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div class="card-info">
+                            <p class="card-text text-muted">Total COGS</p>
+                            <h4 class="mb-0 text-danger summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Total Harga Modal (HPP) sparepart yang digunakan.<br><br><b>Sumber:</b> Penjumlahan Qty × Harga Satuan.">{{ total_cogs|rupiah }}</h4>
+                        </div>
+                        <div class="card-icon">
+                            <span class="badge bg-label-danger rounded p-2">
+                                <i class="ri-money-dollar-circle-line ri-24px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div class="card-info">
+                            <p class="card-text text-muted">Total Qty Terpakai</p>
+                            <h4 class="mb-0 text-info summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Jumlah total item sparepart yang berhasil dikeluarkan.<br><br><b>Sumber:</b> SUM qty dari Tabel PenggunaanSparepart.">{{ total_qty }}</h4>
+                        </div>
+                        <div class="card-icon">
+                            <span class="badge bg-label-info rounded p-2">
+                                <i class="ri-stack-line ri-24px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div class="card-info">
+                            <p class="card-text text-muted">Jenis Sparepart</p>
+                            <h4 class="mb-0 text-warning summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Total varian/tipe produk sparepart yang digunakan.<br><br><b>Sumber:</b> Daftar unik SKU produk di PenggunaanSparepart.">{{ top_sparepart|length }}</h4>
+                        </div>
+                        <div class="card-icon">
+                            <span class="badge bg-label-warning rounded p-2">
+                                <i class="ri-list-check-2 ri-24px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Tanggal Mulai</label>
+                    <input type="date" class="form-control" id="startDate" value="{{ filter_start_date }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Tanggal Akhir</label>
+                    <input type="date" class="form-control" id="endDate" value="{{ filter_end_date }}">
+                </div>
+                <div class="col-md-4">
+                </div>
+            </div>
+            <div class="row g-3 mt-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Pilih Kolom</label>
+                    <div class="dropdown">
+                        <button class="btn btn-label-secondary dropdown-toggle w-100" type="button"
+                            data-bs-toggle="dropdown"><i class="ri-layout-column-line me-1"></i>Pilih Kolom</button>
+                        <div class="dropdown-menu p-3" style="min-width:280px;">
+                            <h6 class="dropdown-header px-0 mb-2">Kolom Tabel</h6>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="0" checked
+                                    onchange="toggleColumns()">
+                                <label class="form-check-label">No. Service</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="1" checked
+                                    onchange="toggleColumns()">
+                                <label class="form-check-label">Tanggal</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="2" checked
+                                    onchange="toggleColumns()">
+                                <label class="form-check-label">Sparepart</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="3" checked
+                                    onchange="toggleColumns()">
+                                <label class="form-check-label">Gudang</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="4" checked
+                                    onchange="toggleColumns()">
+                                <label class="form-check-label">Qty</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="5" checked
+                                    onchange="toggleColumns()">
+                                <label class="form-check-label">Harga Satuan</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="6" checked
+                                    onchange="toggleColumns()">
+                                <label class="form-check-label">Subtotal</label>
+                            </div>
+                            <div class="dropdown-divider my-2"></div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-primary flex-fill"
+                                    onclick="selectAllColumns()">Semua</button>
+                                <button class="btn btn-sm btn-label-secondary flex-fill"
+                                    onclick="deselectAllColumns()">Kosongkan</button>
+                            </div>
+                        </div>
+                    </div>
+                    <small class="text-muted d-block mt-1">Klik untuk memilih kolom</small>
+                </div>
+                <div class="col-md-6"></div>
+                <div class="col-md-3">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" onclick="applyFilter()"><i class="ri-filter-3-line me-1"></i>Terapkan Filter</button>
+                        <button class="btn btn-label-secondary" onclick="resetFilter()"><i class="ri-refresh-line me-1"></i>Reset</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Breakdown Cards -->
+    <div class="row g-2 g-md-3 mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header"><h6 class="mb-0"><i class="ri-bar-chart-2-line me-2"></i>Top 10 Sparepart Terpakai</h6></div>
+                <div class="card-body">
+                    {% for sp in top_sparepart %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <span class="fw-medium">{{ sp.produk__nama }}</span>
+                            <small class="d-block text-muted">{{ sp.produk__sku|default:"-" }}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-label-primary">{{ sp.total_qty }} unit</span>
+                            <small class="d-block text-muted">{{ sp.total_used }}x digunakan</small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center mb-0">Tidak ada data</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header"><h6 class="mb-0"><i class="ri-store-2-line me-2"></i>Impact per Gudang</h6></div>
+                <div class="card-body">
+                    {% for g in gudang_impact %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <span class="fw-medium">{{ g.gudang__nama }}</span>
+                            <small class="d-block text-muted">{{ g.total_items }} item diambil</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-label-danger">{{ g.total_qty }} unit</span>
+                            <small class="d-block text-muted">Rp {{ g.total_cost|floatformat:0 }}</small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center mb-0">Tidak ada data</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sparepart Usage Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-0">Riwayat Penggunaan Sparepart</h5>
+                <small class="text-muted">{{ total_penggunaan }} record — COGS: {{ total_cogs|rupiah }}</small>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-label-success" onclick="exportExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+            </div>
+        </div>
+        <div class="card-datatable table-responsive">
+            <table class="table table-hover" id="sparepartTable">
+                <thead>
+                    <tr>
+                        <th>No. Service</th>
+                        <th>Tanggal</th>
+                        <th>Sparepart</th>
+                        <th>Gudang</th>
+                        <th>Qty</th>
+                        <th>Harga Satuan</th>
+                        <th>Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sp in sparepart_list %}
+                    <tr>
+                        <td><code>{{ sp.order_service.nomor_service }}</code></td>
+                        <td>{{ sp.dibuat_pada|date:"d M Y" }}</td>
+                        <td>{{ sp.produk.nama }}</td>
+                        <td>{{ sp.gudang.nama }}</td>
+                        <td>{{ sp.jumlah }}</td>
+                        <td>{{ sp.harga_satuan|rupiah }}</td>
+                        <td class="text-danger fw-medium">{{ sp.subtotal|rupiah }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <p class="text-muted">Belum ada data penggunaan sparepart</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="4" class="text-start ps-4 py-3" style="vertical-align: middle;">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ total_penggunaan }} penggunaan sparepart</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3" style="vertical-align: middle;">
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="badge bg-label-info d-flex align-items-center gap-1 mb-1"
+                                    style="font-size: 0.8rem; padding: 0.4rem 0.6rem;">
+                                    <i class="ri-stack-line"></i>
+                                    <span>{{ total_qty|floatformat:0 }}</span>
+                                </span>
+                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Total Qty</small>
+                            </div>
+                        </td>
+                        <td class="py-3"></td>
+                        <td class="py-3" style="vertical-align: middle;">
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="badge bg-label-danger d-flex align-items-center gap-1 mb-1"
+                                    style="font-size: 0.8rem; padding: 0.4rem 0.6rem;">
+                                    <i class="ri-money-dollar-circle-line"></i>
+                                    <span>{{ total_cogs|rupiah }}</span>
+                                </span>
+                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Total COGS</small>
+                            </div>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block page_js %}
+<style>
+    .dataTables_wrapper .dataTables_info { padding: 1rem 1.5rem }
+    .card-datatable { padding-bottom: 0 }
+    @media(max-width:768px){.card-datatable{overflow-x:hidden!important}#sparepartTable{min-width:900px!important}.dataTables_wrapper{overflow-x:hidden!important;max-width:100%!important}}
+</style>
+<script>
+    $(document).ready(function () {
+        {% if sparepart_list %}
+        window.sparepartTable = $('#sparepartTable').DataTable({
+            language: { "sEmptyTable": "Tidak ada data", "sLengthMenu": "Tampilkan _MENU_ data", "sInfo": "_START_ - _END_ dari _TOTAL_ data", "sInfoEmpty": "0 data", "sInfoFiltered": "(dari _MAX_ total)", "sSearch": "Cari:", "oPaginate": { "sPrevious": "Sebelumnya", "sNext": "Selanjutnya" } },
+            order: [[1, 'desc']],
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], ['10', '25', '50', '100', 'Semua']],
+            responsive: false,
+            columnDefs: [{ orderable: false, targets: [] }],
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
+        });
+        {% endif %}
+    });
+
+    function applyFilter() {
+        var params = new URLSearchParams();
+        var s = document.getElementById('startDate').value;
+        var e = document.getElementById('endDate').value;
+        if (s) params.set('start_date', s);
+        if (e) params.set('end_date', e);
+        var qs = params.toString();
+        window.location.href = window.location.pathname + (qs ? '?' + qs : '');
+    }
+    function resetFilter() {
+        window.location.href = window.location.pathname;
+    }
+
+    function toggleColumns() {
+        const checkboxes = document.querySelectorAll('.column-checkbox');
+        checkboxes.forEach(cb => {
+            var colIdx = parseInt(cb.value);
+            new $.fn.dataTable.Api('#sparepartTable').column(colIdx).visible(cb.checked);
+        });
+    }
+    function selectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(e => { e.checked = true }); toggleColumns(); }
+    function deselectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(e => { e.checked = false }); toggleColumns(); }
+
+    // Template Data for Independent Headers/Footers
+    const EXCEL_INFO = {
+        name: "{{ export_pdf_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
+        address: "{{ export_pdf_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
+        phone: "{{ export_pdf_template.header_telepon|escapejs|default:'No Telp' }}",
+        email: "Email: {{ export_pdf_template.header_email|escapejs|default:'email@domain.com' }}",
+        website: "{{ export_pdf_template.header_website|escapejs|default:'' }}",
+        copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
+    };
+    const PDF_INFO = EXCEL_INFO;
+
+    // === FOOTER DATA: Explicit summary values per column index ===
+    const FOOTER_DATA = { 4: "{{ total_qty|floatformat:0 }}", 6: "{{ total_cogs|escapejs }}" };
+    const FOOTER_LABEL = 'RINGKASAN';
+
+    function exportExcel() {
+        const table = document.getElementById('sparepartTable');
+        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+
+        const tableObj = new $.fn.dataTable.Api('#sparepartTable');
+
+        let colCount = 0;
+        let visibleColumns = [];
+
+        tableObj.columns().every(function(index) {
+            const headerNode = this.header();
+            const headerText = headerNode ? headerNode.textContent.trim() : '';
+            if (this.visible() && headerText.toLowerCase() !== 'aksi' && headerText.toLowerCase() !== 'gambar') {
+                visibleColumns.push({ index: index, text: headerText });
+                colCount++;
+            }
+        });
+
+        let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+        html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
+        html += '<body>';
+
+        // --- ADD EXCEL HEADER (Company Info) ---
+        html += '<table border="0">';
+        if (typeof EXCEL_INFO !== 'undefined') {
+            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
+            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
+            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
+            html += `<tr><td colspan="${colCount}"></td></tr>`;
+        }
+        html += '</table>';
+
+        html += '<table border="1">';
+        html += '<thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;">';
+
+        visibleColumns.forEach(col => {
+            html += `<th>${col.text}</th>`;
+        });
+
+        html += '</tr></thead><tbody>';
+
+        tableObj.rows({ page: 'current' }).every(function(rowIdx, tableLoop, rowLoop) {
+            html += '<tr>';
+            visibleColumns.forEach(col => {
+                let cellNode = tableObj.cell(rowIdx, col.index).node();
+                let text = cellNode ? cellNode.textContent.trim().replace(/\s+/g, ' ') : '';
+                html += `<td>${text}</td>`;
+            });
+            html += '</tr>';
+        });
+
+        // Build summary row from explicit FOOTER_DATA
+        if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
+            html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
+            let ri = 0;
+            while (ri < visibleColumns.length) {
+                let colIdx = visibleColumns[ri].index;
+                if (FOOTER_DATA[colIdx] !== undefined) {
+                    html += `<td>${FOOTER_DATA[colIdx]}</td>`;
+                    ri++;
+                } else {
+                    let spanCount = 0;
+                    let si = ri;
+                    while (si < visibleColumns.length && FOOTER_DATA[visibleColumns[si].index] === undefined) {
+                        spanCount++;
+                        si++;
+                    }
+                    if (ri === 0) {
+                        html += `<td colspan="${spanCount}">${FOOTER_LABEL}</td>`;
+                    } else {
+                        html += `<td colspan="${spanCount}"></td>`;
+                    }
+                    ri += spanCount;
+                }
+            }
+            html += '</tr>';
+        }
+        html += '</tbody></table>';
+
+        // --- ADD EXCEL FOOTER ---
+        html += '<table border="0">';
+        html += `<tr><td colspan="${colCount}"></td></tr>`;
+        if (typeof EXCEL_INFO !== 'undefined') {
+            html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</td></tr>`;
+            html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">${EXCEL_INFO.copyright}</td></tr>`;
+        }
+        html += '</table></body></html>';
+
+        const BOM = '\uFEFF';
+        const blob = new Blob([BOM + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+        const link = document.createElement('a');
+        link.setAttribute('href', URL.createObjectURL(blob));
+        link.setAttribute('download', 'Laporan_Sparepart_' + new Date().toISOString().slice(0, 10) + '.xls');
+        link.click();
+    }
+
+    function exportPDF() {
+        if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
+
+        const table = document.getElementById('sparepartTable');
+        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+
+        const tableObj = new $.fn.dataTable.Api('#sparepartTable');
+
+        const headers = [];
+        let visibleColumns = [];
+
+        tableObj.columns().every(function(index) {
+            const headerNode = this.header();
+            const headerText = headerNode ? headerNode.textContent.trim() : '';
+            if (this.visible() && headerText.toLowerCase() !== 'aksi' && headerText.toLowerCase() !== 'gambar') {
+                headers.push({
+                    text: headerText,
+                    style: 'tableHeader',
+                    fillColor: '#696CFF',
+                    color: '#FFFFFF',
+                    bold: true
+                });
+                visibleColumns.push({ index: index });
+            }
+        });
+
+        const body = [headers];
+
+        tableObj.rows({ page: 'current' }).every(function(rowIdx, tableLoop, rowLoop) {
+            const row = [];
+            visibleColumns.forEach(col => {
+                let cellNode = tableObj.cell(rowIdx, col.index).node();
+                let text = cellNode ? cellNode.textContent.trim().replace(/\s+/g, ' ') : '';
+                row.push(text);
+            });
+            if (row.length > 0) body.push(row);
+        });
+
+        // Build summary row from explicit FOOTER_DATA
+        if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
+            const summaryRow = [];
+            let ri = 0;
+            while (ri < visibleColumns.length) {
+                let colIdx = visibleColumns[ri].index;
+                if (FOOTER_DATA[colIdx] !== undefined) {
+                    summaryRow.push({ text: String(FOOTER_DATA[colIdx]), bold: true, fillColor: '#f8f9fa' });
+                    ri++;
+                } else {
+                    let spanCount = 0;
+                    let si = ri;
+                    while (si < visibleColumns.length && FOOTER_DATA[visibleColumns[si].index] === undefined) {
+                        spanCount++;
+                        si++;
+                    }
+                    let labelText = (ri === 0) ? FOOTER_LABEL : '';
+                    summaryRow.push({ text: labelText, colSpan: spanCount, bold: true, fillColor: '#f8f9fa' });
+                    for (let k = 1; k < spanCount; k++) { summaryRow.push({}); }
+                    ri += spanCount;
+                }
+            }
+            if (summaryRow.length > 0) body.push(summaryRow);
+        }
+
+        let companyInfoExists = typeof PDF_INFO !== 'undefined';
+
+        const docDefinition = {
+            pageOrientation: 'landscape',
+            pageMargins: [40, 100, 40, 60],
+            header: function (currentPage) {
+                if (companyInfoExists) {
+                    return {
+                        margin: [40, 20, 40, 10],
+                        columns: [
+                            {
+                                width: '*',
+                                stack: [
+                                    { text: PDF_INFO.name, style: 'companyName' },
+                                    { text: PDF_INFO.address, style: 'companyInfo' },
+                                    { text: PDF_INFO.phone + ' | ' + PDF_INFO.email, style: 'companyInfo' }
+                                ]
+                            },
+                            { width: 'auto', stack: [{ text: 'Halaman ' + currentPage, style: 'pageNumber', alignment: 'right' }] }
+                        ]
+                    };
+                }
+                return { text: 'Halaman ' + currentPage, margin: [40, 20, 40, 10], alignment: 'right', style: 'pageNumber' };
+            },
+            content: [
+                { text: 'LAPORAN PENGGUNAAN SPAREPART', style: 'documentTitle', margin: [0, 0, 0, 5] },
+                { text: 'Tanggal: ' + new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }), style: 'dateText', margin: [0, 0, 0, 20] },
+                {
+                    table: { headerRows: 1, widths: Array(headers.length).fill('auto'), body: body },
+                    layout: {
+                        fillColor: (rowIndex) => (rowIndex === 0) ? '#696CFF' : ((rowIndex % 2 === 0) ? '#F5F5F9' : null),
+                        hLineWidth: () => 0.5,
+                        vLineWidth: () => 0.5,
+                        hLineColor: () => '#DBDADE',
+                        vLineColor: () => '#DBDADE'
+                    }
+                }
+            ],
+            footer: function (currentPage, pageCount) {
+                if (companyInfoExists) {
+                    return {
+                        margin: [40, 10, 40, 10],
+                        columns: [
+                            { text: 'Dicetak pada: ' + new Date().toLocaleString('id-ID'), style: 'footerText' },
+                            { text: PDF_INFO.copyright, style: 'footerText', alignment: 'right' }
+                        ]
+                    };
+                }
+                return { text: 'Dicetak pada: ' + new Date().toLocaleString('id-ID'), margin: [40, 10, 40, 10], style: 'footerText' };
+            },
+            styles: {
+                companyName: { fontSize: 14, bold: true, color: '#5F61E6' },
+                companyInfo: { fontSize: 9, color: '#697A8D' },
+                pageNumber: { fontSize: 9, color: '#697A8D' },
+                documentTitle: { fontSize: 18, bold: true, color: '#5F61E6' },
+                dateText: { fontSize: 10, color: '#697A8D' },
+                tableHeader: { bold: true, fontSize: 10, color: '#FFFFFF' },
+                footerText: { fontSize: 8, color: '#697A8D' }
+            },
+            defaultStyle: { fontSize: 9 }
+        };
+
+        pdfMake.createPdf(docDefinition).download('Laporan_Sparepart_' + new Date().toISOString().slice(0, 10) + '.pdf');
+    }
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.forEach(function(el) {
+            new bootstrap.Tooltip(el, { trigger: 'hover focus click' });
+        });
+    });
+</script>
+<style>
+@media (max-width: 575.98px) {
+    .summary-nominal { font-size: 10px !important; white-space: nowrap; }
+    .card-info .card-text { font-size: 0.68rem; margin-bottom: 0.15rem !important; line-height: 1.2; }
+    .card-body { padding: 0.5rem 0.6rem !important; }
+}
+@media (min-width: 576px) and (max-width: 767.98px) {
+    .summary-nominal { font-size: 0.9rem !important; }
+}
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .summary-nominal { font-size: 1.05rem !important; }
+}
+</style>
+{% endblock page_js %}

@@ -7,24 +7,65 @@
       "slug": "dashboard"
     },
     {
-      "menu_header": "MASTER DATA",
-      "permission": "produk:view,inventory:view"
+      "menu_header": "SERVICE CENTER",
+      "permission": "service_center:view"
+    },
+    {
+      "name": "Service Center",
+      "icon": "menu-icon tf-icons ri-tools-line",
+      "slug": "service-center",
+      "submenu": [
+        {
+          "url": "service_center:dashboard",
+          "name": "Dashboard Service",
+          "slug": "service-center-dashboard"
+        },
+        {
+          "url": "service_center:pelanggan_list",
+          "name": "Pelanggan",
+          "slug": "service-center-pelanggan"
+        },
+        {
+          "url": "service_center:perangkat_list",
+          "name": "Jenis Perangkat",
+          "slug": "service-center-perangkat"
+        },
+        {
+          "url": "service_center:kategori_list",
+          "name": "Kategori Service",
+          "slug": "service-center-kategori"
+        },
+        {
+          "url": "service_center:jenis_list",
+          "name": "Jenis Service",
+          "slug": "service-center-jenis"
+        },
+        {
+          "url": "service_center:order_list",
+          "name": "Daftar Order",
+          "slug": "service-center-order"
+        },
+        {
+          "url": "service_center:order_create",
+          "name": "Terima Unit Baru",
+          "slug": "service-center-terima"
+        },
+        {
+          "url": "service_center:laporan",
+          "name": "Laporan Service",
+          "slug": "service-center-laporan"
+        }
+      ]
+    },
+    {
+      "menu_header": "PRODUK & INVENTARIS",
+      "permission": "produk:view,inventory:view,sparepart:view"
     },
     {
       "name": "Produk",
-      "icon": "menu-icon tf-icons ri-box-3-line",
+      "icon": "menu-icon tf-icons ri-shopping-bag-line",
       "slug": "produk",
       "submenu": [
-        {
-          "url": "produk:kategori",
-          "name": "Kategori",
-          "slug": "produk-kategori"
-        },
-        {
-          "url": "produk:satuan",
-          "name": "Satuan",
-          "slug": "produk-satuan"
-        },
         {
           "url": "produk:list",
           "name": "Daftar Produk",
@@ -34,6 +75,43 @@
           "url": "produk:tambah",
           "name": "Tambah Produk",
           "slug": "produk-tambah"
+        },
+        {
+          "url": "produk:kategori",
+          "name": "Kategori Produk",
+          "slug": "produk-kategori"
+        },
+        {
+          "url": "produk:satuan",
+          "name": "Satuan",
+          "slug": "produk-satuan"
+        }
+      ]
+    },
+    {
+      "name": "Sparepart",
+      "icon": "menu-icon tf-icons ri-cpu-line",
+      "slug": "sparepart",
+      "submenu": [
+        {
+          "url": "produk:sparepart_list",
+          "name": "Daftar Sparepart",
+          "slug": "sparepart-daftar_sparepart"
+        },
+        {
+          "url": "produk:sparepart_tambah",
+          "name": "Tambah Sparepart",
+          "slug": "sparepart-tambah_sparepart"
+        },
+        {
+          "url": "produk:kategori",
+          "name": "Kategori Sparepart",
+          "slug": "sparepart-kategori"
+        },
+        {
+          "url": "produk:satuan",
+          "name": "Satuan",
+          "slug": "sparepart-satuan"
         }
       ]
     },
@@ -215,6 +293,21 @@
           "url": "laporan:keuangan",
           "name": "Laporan Keuangan",
           "slug": "laporan-keuangan"
+        },
+        {
+          "url": "laporan:service",
+          "name": "Laporan Service",
+          "slug": "laporan-service"
+        },
+        {
+          "url": "laporan:sparepart",
+          "name": "Laporan Sparepart",
+          "slug": "laporan-sparepart"
+        },
+        {
+          "url": "laporan:cabang",
+          "name": "Laporan Cabang",
+          "slug": "laporan-cabang"
         }
       ]
     },

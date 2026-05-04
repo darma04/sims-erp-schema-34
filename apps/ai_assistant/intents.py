@@ -179,6 +179,14 @@ INTENT_KEYWORDS = {
         'instagram', 'konten sosmed', 'konten media sosial',
         'generate konten', 'buat konten', 'ide konten',
     ],
+    # ═══ SERVICE CENTER ═══
+    'service_center': [
+        'service', 'servis', 'reparasi', 'perbaikan', 'teknisi',
+        'order service', 'service center', 'service hp', 'service laptop',
+        'sparepart', 'spare part', 'suku cadang', 'onderdil',
+        'pelanggan service', 'status service', 'diagnosa',
+        'garansi service', 'biaya service', 'nota service',
+    ],
 }
 
 
@@ -341,6 +349,8 @@ def gather_data(intent, message=''):
             return _gather_multi_branch_analyzer(today, month_start)
         elif intent == 'content_generator':
             return _gather_content_generator()
+        elif intent == 'service_center':
+            return _gather_service_center(today, month_start)
         else:
             return _gather_umum(today, month_start)
     # Tangkap error Exception — lanjutkan tanpa crash
@@ -379,8 +389,22 @@ def _gather_penjualan(today, month_start):
     pos_count = pos_qs.count()
     pos_revenue = float(pos_qs.aggregate(t=Sum('total_harga'))['t'] or 0)
 
-    total_revenue = so_revenue + pos_revenue
-    total_trx = so_count + pos_count
+    # Service Center bulan ini (order lunas)
+    sc_count = 0
+    sc_revenue = 0
+    try:
+        from apps.service_center.models import OrderService as SC_AIPenj
+        sc_qs = SC_AIPenj.objects.filter(
+            status_bayar='lunas',
+            tanggal_masuk__date__gte=month_start, tanggal_masuk__date__lte=today
+        )
+        sc_count = sc_qs.count()
+        sc_revenue = float(sc_qs.aggregate(t=Sum('biaya_akhir'))['t'] or 0)
+    except Exception:
+        pass
+
+    total_revenue = so_revenue + pos_revenue + sc_revenue
+    total_trx = so_count + pos_count + sc_count
 
     # Bulan lalu untuk growth
     prev_month_end = month_start - timedelta(days=1)
@@ -395,7 +419,16 @@ def _gather_penjualan(today, month_start):
         status='paid',
         tanggal__date__gte=prev_month_start, tanggal__date__lte=prev_month_end
     ).aggregate(t=Sum('total_harga'))['t'] or 0)
-    prev_total = prev_so + prev_pos
+    # Service Center bulan lalu
+    prev_sc = 0
+    try:
+        prev_sc = float(SC_AIPenj.objects.filter(
+            status_bayar='lunas',
+            tanggal_masuk__date__gte=prev_month_start, tanggal_masuk__date__lte=prev_month_end
+        ).aggregate(t=Sum('biaya_akhir'))['t'] or 0)
+    except Exception:
+        pass
+    prev_total = prev_so + prev_pos + prev_sc
     growth = round(((total_revenue - prev_total) / prev_total * 100), 1) if prev_total > 0 else 0
 
     # Top 5 produk terlaris bulan ini
@@ -430,6 +463,7 @@ def _gather_penjualan(today, month_start):
 - Total Transaksi: {total_trx} transaksi
 - Sales Order: {so_count} SO (Rp {so_revenue:,.0f})
 - Transaksi POS: {pos_count} POS (Rp {pos_revenue:,.0f})
+- Service Center: {sc_count} Order (Rp {sc_revenue:,.0f})
 - Growth vs bulan lalu: {'+' if growth >= 0 else ''}{growth}%
 - Omzet bulan lalu: Rp {prev_total:,.0f}
 
@@ -626,12 +660,31 @@ def _gather_keuntungan(today, month_start):
         transaction__status='paid'
     ).annotate(
         margin=ExpressionWrapper(
-            (F('harga_satuan') - F('produk__harga_beli')) * F('jumlah'),
+            (F('harga_satuan') - F('produk__harga_beli')) * F('jumlah_konversi'),
             output_field=DecimalField()
         )
     ).aggregate(t=Sum('margin'))['t'] or 0)
 
-    gross_profit = keuntungan_so + keuntungan_pos
+    # Keuntungan dari Service Center (revenue - COGS sparepart)
+    keuntungan_sc = 0
+    sc_revenue_total = 0
+    try:
+        from apps.service_center.models import OrderService as SC_AIProfit, PenggunaanSparepart as SC_SP_AIProfit
+        sc_revenue_total = float(SC_AIProfit.objects.filter(
+            status_bayar='lunas'
+        ).aggregate(t=Sum('biaya_akhir'))['t'] or 0)
+        # COGS sparepart = sum(jumlah × harga_beli produk)
+        sc_cogs = 0
+        for sp in SC_SP_AIProfit.objects.select_related('produk').filter(
+            order_service__status_bayar='lunas'
+        ):
+            if sp.produk:
+                sc_cogs += float(sp.jumlah * sp.produk.harga_beli)
+        keuntungan_sc = sc_revenue_total - sc_cogs
+    except Exception:
+        pass
+
+    gross_profit = keuntungan_so + keuntungan_pos + keuntungan_sc
 
     # Total revenue
     revenue_so = float(SalesOrder.objects.filter(
@@ -641,7 +694,7 @@ def _gather_keuntungan(today, month_start):
     revenue_pos = float(POSTransaction.objects.filter(
         status='paid'
     ).aggregate(t=Sum('total_harga'))['t'] or 0)
-    total_revenue = revenue_so + revenue_pos
+    total_revenue = revenue_so + revenue_pos + sc_revenue_total
 
     # Total biaya
     total_biaya = float(TransaksiBiaya.objects.aggregate(t=Sum('jumlah'))['t'] or 0)
@@ -659,7 +712,8 @@ def _gather_keuntungan(today, month_start):
 
 Rincian Keuntungan:
 - Dari Sales Order: Rp {keuntungan_so:,.0f}
-- Dari POS: Rp {keuntungan_pos:,.0f}"""
+- Dari POS: Rp {keuntungan_pos:,.0f}
+- Dari Service Center: Rp {keuntungan_sc:,.0f}"""
 
     return {'intent': 'keuntungan', 'ringkasan': ringkasan}
 
@@ -996,6 +1050,20 @@ def _gather_umum(today, month_start):
     # Import dari modul internal proyek
     from apps.hr.models import Karyawan
 
+    # Service Center stats
+    sc_order_count = 0
+    sc_pelanggan_count = 0
+    sc_revenue_total = 0
+    try:
+        from apps.service_center.models import OrderService as SC_AIUmum, Pelanggan as SC_Plg
+        sc_order_count = SC_AIUmum.objects.count()
+        sc_pelanggan_count = SC_Plg.objects.count()
+        sc_revenue_total = float(SC_AIUmum.objects.filter(
+            status_bayar='lunas'
+        ).aggregate(t=Sum('biaya_akhir'))['t'] or 0)
+    except Exception:
+        pass
+
     ringkasan = f"""Ringkasan Umum Sistem ERP ({today.strftime('%d %B %Y')}):
 - Total Produk Aktif: {Produk.objects.filter(aktif=True).count()}
 - Total Gudang: {Gudang.objects.filter(aktif=True).count()}
@@ -1006,8 +1074,11 @@ def _gather_umum(today, month_start):
 - Transaksi POS: {POSTransaction.objects.filter(status='paid').count()}
 - Purchase Order: {PurchaseOrder.objects.exclude(status='cancelled').count()}
 - Total Biaya: Rp {float(TransaksiBiaya.objects.aggregate(t=Sum('jumlah'))['t'] or 0):,.0f}
+- Order Service: {sc_order_count}
+- Pelanggan Service: {sc_pelanggan_count}
+- Revenue Service Center: Rp {sc_revenue_total:,.0f}
 
-Sistem ini adalah ERP SERPTECH yang mengelola seluruh operasi bisnis: produk, inventory, penjualan, pembelian, biaya, HR, dan laporan keuangan."""
+Sistem ini adalah ERP SERPTECH + Service Center yang mengelola seluruh operasi bisnis: produk, inventory, penjualan, pembelian, biaya, HR, service center, sparepart, dan laporan keuangan."""
 
     return {'intent': 'umum', 'ringkasan': ringkasan}
 
@@ -1039,13 +1110,27 @@ def _gather_laporan_meeting(today, month_start):
     pos_rev = float(POSTransaction.objects.filter(
         status='paid', tanggal__date__gte=month_start, tanggal__date__lte=today
     ).aggregate(t=Sum('total_harga'))['t'] or 0)
-    total_rev = so_rev + pos_rev
+    # Service Center revenue bulan ini
+    sc_rev_meeting = 0
+    sc_trx_meeting = 0
+    try:
+        from apps.service_center.models import OrderService as SC_AIMeeting
+        sc_rev_meeting = float(SC_AIMeeting.objects.filter(
+            status_bayar='lunas',
+            tanggal_masuk__date__gte=month_start, tanggal_masuk__date__lte=today
+        ).aggregate(t=Sum('biaya_akhir'))['t'] or 0)
+        sc_trx_meeting = SC_AIMeeting.objects.filter(
+            tanggal_masuk__date__gte=month_start, tanggal_masuk__date__lte=today
+        ).count()
+    except Exception:
+        pass
+    total_rev = so_rev + pos_rev + sc_rev_meeting
     # Query database — ambil data total_trx yang sesuai filter
     total_trx = SalesOrder.objects.filter(
         tanggal__date__gte=month_start, status__in=['confirmed', 'delivered', 'completed']
     ).count() + POSTransaction.objects.filter(
         status='paid', tanggal__date__gte=month_start
-    ).count()
+    ).count() + sc_trx_meeting
 
     # Bulan lalu
     prev_end = month_start - timedelta(days=1)
@@ -1213,7 +1298,7 @@ def _gather_swot(today, month_start):
         transaction__status='paid'
     ).annotate(
         margin=ExpressionWrapper(
-            (F('harga_satuan') - F('produk__harga_beli')) * F('jumlah'),
+            (F('harga_satuan') - F('produk__harga_beli')) * F('jumlah_konversi'),
             output_field=DecimalField()
         )
     ).aggregate(t=Sum('margin'))
@@ -2622,3 +2707,110 @@ Selisih Kas:
 - Status: {'🔴 Ada potensi kerugian' if shortage_count > 0 else '🟢 Tidak ada shortage'}"""
 
     return {'intent': 'fraud_detection', 'ringkasan': ringkasan}
+
+
+def _gather_service_center(today, month_start):
+    """Data service center: order, revenue, status, teknisi, sparepart."""
+    from apps.service_center.models import (
+        OrderService, ItemService, PenggunaanSparepart,
+        Pelanggan, Perangkat, KategoriService, JenisService
+    )
+
+    # === Order stats ===
+    total_order = OrderService.objects.count()
+    order_bulan_ini = OrderService.objects.filter(
+        tanggal_masuk__date__gte=month_start, tanggal_masuk__date__lte=today
+    ).count()
+
+    # Status breakdown
+    status_counts = []
+    for code, label in OrderService.STATUS_CHOICES:
+        count = OrderService.objects.filter(status=code).count()
+        if count > 0:
+            status_counts.append(f"- {label}: {count}")
+
+    # Revenue
+    revenue_total = float(OrderService.objects.filter(
+        status_bayar='lunas'
+    ).aggregate(t=Sum('biaya_akhir'))['t'] or 0)
+
+    revenue_bulan_ini = float(OrderService.objects.filter(
+        status_bayar='lunas',
+        tanggal_masuk__date__gte=month_start, tanggal_masuk__date__lte=today
+    ).aggregate(t=Sum('biaya_akhir'))['t'] or 0)
+
+    # Pending payment
+    pending_bayar = OrderService.objects.filter(
+        status_bayar__in=['belum_bayar', 'dp']
+    ).exclude(status='dibatalkan').count()
+
+    # Order by priority
+    urgent_count = OrderService.objects.filter(
+        prioritas__in=['urgent', 'express']
+    ).exclude(status__in=['selesai', 'diambil', 'dibatalkan']).count()
+
+    # Sparepart usage
+    total_sparepart_used = PenggunaanSparepart.objects.count()
+    sparepart_cost = float(PenggunaanSparepart.objects.aggregate(
+        total=Sum(
+            ExpressionWrapper(
+                F('jumlah') * F('harga_satuan'),
+                output_field=DecimalField()
+            )
+        )
+    )['total'] or 0)
+
+    # Master data stats
+    total_pelanggan = Pelanggan.objects.filter(aktif=True).count()
+    total_perangkat = Perangkat.objects.filter(aktif=True).count()
+    total_kategori = KategoriService.objects.filter(aktif=True).count()
+    total_jenis = JenisService.objects.filter(aktif=True).count()
+
+    # Top 5 teknisi
+    top_teknisi = OrderService.objects.filter(
+        teknisi__isnull=False,
+        status__in=['selesai', 'diambil']
+    ).values(
+        'teknisi__username', 'teknisi__first_name'
+    ).annotate(
+        total=Count('id')
+    ).order_by('-total')[:5]
+    teknisi_list = [
+        f"- {t['teknisi__first_name'] or t['teknisi__username']}: {t['total']} order"
+        for t in top_teknisi
+    ]
+
+    # Top 5 perangkat
+    top_perangkat = OrderService.objects.values(
+        'jenis_perangkat__nama'
+    ).annotate(total=Count('id')).order_by('-total')[:5]
+    perangkat_list = [f"- {p['jenis_perangkat__nama']}: {p['total']} order" for p in top_perangkat]
+
+    ringkasan = f"""Data Service Center:
+- Total Order Service: {total_order}
+- Order Bulan Ini: {order_bulan_ini}
+- Revenue Total (Lunas): Rp {revenue_total:,.0f}
+- Revenue Bulan Ini: Rp {revenue_bulan_ini:,.0f}
+- Pending Pembayaran: {pending_bayar} order
+- Order Urgent/Express Aktif: {urgent_count}
+
+Master Data:
+- Total Pelanggan: {total_pelanggan}
+- Jenis Perangkat: {total_perangkat}
+- Kategori Service: {total_kategori}
+- Jenis Layanan: {total_jenis}
+
+Status Order:
+{chr(10).join(status_counts) if status_counts else '- Belum ada data'}
+
+Sparepart:
+- Total Penggunaan: {total_sparepart_used} record
+- Total Harga Sparepart: Rp {sparepart_cost:,.0f}
+
+Top Teknisi:
+{chr(10).join(teknisi_list) if teknisi_list else '- Belum ada data'}
+
+Top Perangkat:
+{chr(10).join(perangkat_list) if perangkat_list else '- Belum ada data'}"""
+
+    return {'intent': 'service_center', 'ringkasan': ringkasan}

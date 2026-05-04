@@ -86,6 +86,7 @@ class TemplateBootstrapLayoutVertical:
             'ai-assistant': 'ai',
             'ai-dashboard': 'ai',
             'fraud-detection': 'fraud_detection',
+            'service-center': 'service_center',
         }
 
         filtered_menu = {"menu": []}

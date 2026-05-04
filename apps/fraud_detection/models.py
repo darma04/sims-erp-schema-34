@@ -135,6 +135,19 @@ class FraudRule(models.Model):
     )
 
     # =================================================================
+    # FIELD 6: max_sparepart_qty — Batas Jumlah Sparepart per Item
+    # =================================================================
+    # Jika teknisi menambahkan sparepart melebihi jumlah ini dalam
+    # satu penggunaan, sistem buat FraudAlert jenis 'anomali_lainnya'.
+    # Default: 10 unit per item — admin bisa sesuaikan via pengaturan.
+    # Signal: detect_sparepart_anomali() di signals.py cek field ini.
+    max_sparepart_qty = models.PositiveIntegerField(
+        default=10,
+        verbose_name="Batas Jumlah Sparepart per Item",
+        help_text="Jumlah maksimal sparepart per item yang dianggap wajar. Lebih dari ini akan memicu alert fraud."
+    )
+
+    # =================================================================
     # FIELD 6-7: Tracking — Siapa & kapan terakhir mengubah pengaturan
     # =================================================================
     updated_at = models.DateTimeField(auto_now=True)  # Otomatis update setiap kali save()
@@ -213,6 +226,7 @@ class FraudAlert(models.Model):
         ('diluar_jam', 'Aktivitas Diluar Jam'),         # Transaksi di luar jam operasional
         ('adjustment_besar', 'Adjustment Stok Besar'),  # Adjustment qty > 50 atau nominal > 1 juta
         ('void_transaksi', 'Void Transaksi'),           # Void/batal transaksi
+        ('anomali_lainnya', 'Anomali Lainnya'),         # Anomali service center (sparepart/biaya)
         ('lainnya', 'Lainnya'),                         # Catch-all untuk jenis lain
     ]
 

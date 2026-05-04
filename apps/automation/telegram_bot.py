@@ -178,7 +178,7 @@ def start_polling():
 
     thread = threading.Thread(target=_polling_loop, daemon=True)
     thread.start()
-    print("[TelegramBot] ✅ Auto-polling dimulai di background thread")
+    print("[TelegramBot] Auto-polling dimulai di background thread")
     logger.info("[TelegramBot] Auto-polling dimulai di background thread")
 
 
@@ -191,11 +191,18 @@ def _polling_loop():
 
     try:
         from .models import PengaturanTelegram
-        pengaturan = PengaturanTelegram.load()
+        try:
+            pengaturan = PengaturanTelegram.load()
+        except Exception:
+            # Tabel belum ada di schema ini (multi-tenant public schema)
+            logger.debug("[TelegramBot] Polling dilewati (tabel belum tersedia di schema ini)")
+            print("[TelegramBot] Polling dilewati (tabel belum tersedia di schema ini)")
+            _polling_active = False
+            return
 
         if not pengaturan.bot_token:
             logger.warning("[TelegramBot] Bot Token belum dikonfigurasi, polling tidak dimulai")
-            print("[TelegramBot] ⚠️ Bot Token belum dikonfigurasi")
+            print("[TelegramBot] Bot Token belum dikonfigurasi, polling tidak dimulai")
             _polling_active = False
             return
 
@@ -212,7 +219,7 @@ def _polling_loop():
         # Skip pesan lama yang menumpuk — mulai dari update terbaru saja
         offset = _get_latest_offset(bot_token, ssl_ctx)
 
-        print(f"[TelegramBot] 🤖 Polling aktif — Token: {_mask_token(bot_token)}")
+        print(f"[TelegramBot] Polling aktif -- Token: {_mask_token(bot_token)}")
         logger.info(f"[TelegramBot] Polling aktif — Token: {_mask_token(bot_token)}")
 
         conflict_count = 0
@@ -259,7 +266,7 @@ def _polling_loop():
                     wait = min(conflict_count * 10, 35)
                     # Hanya log SEKALI, jangan spam terminal
                     if not conflict_logged:
-                        print(f"[TelegramBot] ⚠️ Ada sesi polling lain yang aktif, menunggu...")
+                        print("[TelegramBot] Ada sesi polling lain yang aktif, menunggu...")
                         conflict_logged = True
                     time.sleep(wait)
                     continue

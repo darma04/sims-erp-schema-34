@@ -136,6 +136,14 @@
                                         <input type="text" name="items-0-nama_produk" id="id_items-0-nama_produk"
                                             class="form-control" placeholder="Masukkan nama produk" required>
                                     </div>
+                                    <div class="col-6 col-lg-1">
+                                        <label class="form-label mb-1">Tipe</label>
+                                        <select name="items-0-tipe" id="id_items-0-tipe" class="form-select">
+                                            {% for value, label in tipe_choices %}
+                                            <option value="{{ value }}">{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
                                     <div class="col-6 col-lg-2">
                                         <label class="form-label mb-1">Kategori</label>
                                         <select name="items-0-kategori" id="id_items-0-kategori" class="form-select">
@@ -275,9 +283,10 @@
             const totalForms = $('#id_items-TOTAL_FORMS');
             const formIdx = parseInt(totalForms.val());
 
-            // Ambil opsi kategori dan satuan dari baris pertama
+            // Ambil opsi kategori, satuan, dan tipe dari baris pertama
             const kategoriOptions = $('#id_items-0-kategori').html();
             const satuanOptions = $('#id_items-0-satuan').html();
+            const tipeOptions = $('#id_items-0-tipe').html();
 
             // Bangun HTML form baru dengan field produk baru
             const newFormHTML = `
@@ -287,6 +296,12 @@
                         <label class="form-label mb-1">Nama Produk Baru <span class="text-danger">*</span></label>
                         <input type="text" name="items-${formIdx}-nama_produk" id="id_items-${formIdx}-nama_produk"
                                class="form-control" placeholder="Masukkan nama produk" required>
+                    </div>
+                    <div class="col-6 col-lg-1">
+                        <label class="form-label mb-1">Tipe</label>
+                        <select name="items-${formIdx}-tipe" id="id_items-${formIdx}-tipe" class="form-select">
+                            ${tipeOptions}
+                        </select>
                     </div>
                     <div class="col-6 col-lg-2">
                         <label class="form-label mb-1">Kategori</label>

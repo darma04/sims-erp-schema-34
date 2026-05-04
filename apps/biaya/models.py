@@ -208,9 +208,18 @@ class TransaksiBiaya(models.Model):
                 last_number = int(last_exp.nomor_transaksi.split('/')[-1])
                 new_number = last_number + 1  # Increment: 5 → 6
             except (ValueError, IndexError):
-                new_number = 1  # Fallback jika format tidak standar
+                # DIPERBAIKI: fallback aman — hitung jumlah transaksi + 1
+                # Mencegah IntegrityError jika nomor 0001 sudah ada
+                new_number = TransaksiBiaya.objects.filter(
+                    nomor_transaksi__startswith=prefix
+                ).count() + 1
         else:
             new_number = 1  # Transaksi biaya pertama bulan ini
 
         # Format dengan zero-padding 4 digit: 1 → '0001'
-        return f"{prefix}/{new_number:04d}"
+        # Tambahan: loop untuk memastikan nomor yang dihasilkan benar-benar unik
+        nomor = f"{prefix}/{new_number:04d}"
+        while TransaksiBiaya.objects.filter(nomor_transaksi=nomor).exists():
+            new_number += 1
+            nomor = f"{prefix}/{new_number:04d}"
+        return nomor

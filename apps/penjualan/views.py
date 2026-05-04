@@ -437,17 +437,22 @@ class SalesOrderDeleteView(DeletePermissionMixin, DeleteView):
     def delete(self, request, *args, **kwargs):
         """Hapus data - return JSON response untuk AJAX."""
         from django.http import JsonResponse
+        from apps.fraud_detection.signals import set_current_delete_user, clear_current_delete_user
         self.object = self.get_object()
 
         # Blok penanganan error - coba jalankan kode di bawah
         try:
+            set_current_delete_user(request.user)
             self.object.delete()
+            clear_current_delete_user()
             # Kembalikan respons JSON sukses ke klien
             return JsonResponse({'success': True, 'message': 'Sales Order berhasil dihapus'})
         # Tangkap error Exception - lanjutkan tanpa crash
         except ProtectedError:
+            clear_current_delete_user()
             return JsonResponse({'success': False, 'message': 'Data tidak dapat dihapus karena sedang digunakan atau terkait dengan data lain.'}, status=400)
         except Exception as e:
+            clear_current_delete_user()
             # Kembalikan respons JSON gagal ke klien
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
@@ -647,20 +652,25 @@ class TransactionDeleteView(DeletePermissionMixin, DeleteView):
     def delete(self, request, *args, **kwargs):
         """Hapus data - return JSON response untuk AJAX."""
         from django.http import JsonResponse
+        from apps.fraud_detection.signals import set_current_delete_user, clear_current_delete_user
         self.object = self.get_object()
 
         # Blok penanganan error - coba jalankan kode di bawah
         try:
             nomor_transaksi = self.object.nomor_transaksi
+            set_current_delete_user(request.user)
             self.object.delete()
+            clear_current_delete_user()
             return JsonResponse({
                 'success': True, 
                 'message': f'Transaksi {nomor_transaksi} berhasil dihapus'
             })
         # Tangkap error Exception - lanjutkan tanpa crash
         except ProtectedError:
+            clear_current_delete_user()
             return JsonResponse({'success': False, 'message': 'Data tidak dapat dihapus karena sedang digunakan atau terkait dengan data lain.'}, status=400)
         except Exception as e:
+            clear_current_delete_user()
             return JsonResponse({
                 'success': False, 
                 'message': f'Gagal menghapus transaksi: {str(e)}'

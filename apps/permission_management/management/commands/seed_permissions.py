@@ -58,6 +58,16 @@ class Command(BaseCommand):
                 'automation__pengaturan_telegram': {'view': True, 'create': True, 'edit': True, 'delete': False},
                 'automation__template_pesan': {'view': True, 'create': True, 'edit': True, 'delete': False},
                 'automation__log_notifikasi': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                # Service Center module + sub-modules
+                'service_center': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'service_center__dashboard_service': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'service_center__pelanggan_service': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'service_center__perangkat': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'service_center__kategori_service': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'service_center__jenis_service': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'service_center__order_service': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'service_center__terima_unit': {'view': True, 'create': True, 'edit': False, 'delete': False},
+                'service_center__laporan_service': {'view': True, 'create': False, 'edit': False, 'delete': False},
             },
             'USER': {
                 'dashboard': {'view': True, 'create': False, 'edit': False, 'delete': False},
@@ -74,12 +84,27 @@ class Command(BaseCommand):
                 'automation__pengaturan_telegram': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'automation__template_pesan': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'automation__log_notifikasi': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                # Service Center module + sub-modules
+                'service_center': {'view': True, 'create': True, 'edit': False, 'delete': False},
+                'service_center__dashboard_service': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'service_center__pelanggan_service': {'view': True, 'create': True, 'edit': False, 'delete': False},
+                'service_center__perangkat': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'service_center__kategori_service': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'service_center__jenis_service': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'service_center__order_service': {'view': True, 'create': True, 'edit': False, 'delete': False},
+                'service_center__terima_unit': {'view': True, 'create': True, 'edit': False, 'delete': False},
+                'service_center__laporan_service': {'view': True, 'create': False, 'edit': False, 'delete': False},
             },
             'KASIR': {
                 'dashboard': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'produk': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'penjualan': {'view': True, 'create': True, 'edit': False, 'delete': False},
                 'pos': {'view': True, 'create': True, 'edit': False, 'delete': False},
+                # Service Center — kasir bisa lihat order dan terima unit
+                'service_center': {'view': True, 'create': True, 'edit': False, 'delete': False},
+                'service_center__dashboard_service': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'service_center__order_service': {'view': True, 'create': True, 'edit': False, 'delete': False},
+                'service_center__terima_unit': {'view': True, 'create': True, 'edit': False, 'delete': False},
             },
         }
         

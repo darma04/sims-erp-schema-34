@@ -44,6 +44,14 @@
             <a href="{% url 'biaya:transaksi' %}" class="btn btn-label-secondary">
                 <i class="ri-arrow-left-line me-1"></i>Kembali
             </a>
+            {% if can_edit.biaya and transaksi.status == 'draft' or transaksi.status == 'submitted' %}
+            <button type="button" class="btn btn-success" onclick="confirmApprove()">
+                <i class="ri-check-double-line me-1"></i>Setujui
+            </button>
+            <button type="button" class="btn btn-warning" onclick="confirmReject()">
+                <i class="ri-close-circle-line me-1"></i>Tolak
+            </button>
+            {% endif %}
             {% if can_edit.biaya %}
             <a href="{% url 'biaya:transaksi_edit' transaksi.pk %}" class="btn btn-label-primary">
                 <i class="ri-edit-line me-1"></i>Edit
@@ -189,4 +197,130 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Konfirmasi Approve -->
+<div class="modal fade" id="approveModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success py-3">
+                <h5 class="modal-title text-white"><i class="ri-check-double-line me-2"></i>Setujui Transaksi</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <i class="ri-checkbox-circle-line text-success" style="font-size: 4rem;"></i>
+                <h4 class="mt-3">Setujui transaksi ini?</h4>
+                <p class="text-muted">{{ transaksi.nomor_transaksi }}</p>
+                <p class="text-success small">Setelah disetujui, nominal akan dihitung sebagai pengeluaran nyata.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-success" id="btnApproveConfirm">
+                    <i class="ri-check-double-line me-1"></i>Ya, Setujui
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Konfirmasi Reject -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning py-3">
+                <h5 class="modal-title text-white"><i class="ri-close-circle-line me-2"></i>Tolak Transaksi</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <i class="ri-close-circle-line text-warning" style="font-size: 4rem;"></i>
+                <h4 class="mt-3">Tolak transaksi ini?</h4>
+                <p class="text-muted">{{ transaksi.nomor_transaksi }}</p>
+                <p class="text-warning small">Transaksi yang ditolak tidak akan dihitung sebagai pengeluaran.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-warning" id="btnRejectConfirm">
+                    <i class="ri-close-circle-line me-1"></i>Ya, Tolak
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% csrf_token %}
 {% endblock content %}
+
+{% block page_js %}
+<script>
+// APPROVE / REJECT TRANSAKSI BIAYA — AJAX
+
+function confirmApprove() {
+    var modal = new bootstrap.Modal(document.getElementById('approveModal'));
+    modal.show();
+}
+
+function confirmReject() {
+    var modal = new bootstrap.Modal(document.getElementById('rejectModal'));
+    modal.show();
+}
+
+// Approve handler
+var btnApprove = document.getElementById('btnApproveConfirm');
+if (btnApprove) {
+    btnApprove.addEventListener('click', function () {
+        var originalText = btnApprove.innerHTML;
+        btnApprove.disabled = true;
+        btnApprove.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Memproses...';
+
+        fetch("{% url 'biaya:transaksi_approve' transaksi.pk %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json'
+            }
+        }).then(r => r.json()).then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message || 'Gagal menyetujui.');
+                btnApprove.disabled = false;
+                btnApprove.innerHTML = originalText;
+            }
+        }).catch(() => {
+            alert('Terjadi kesalahan.');
+            btnApprove.disabled = false;
+            btnApprove.innerHTML = originalText;
+        });
+    });
+}
+
+// Reject handler
+var btnReject = document.getElementById('btnRejectConfirm');
+if (btnReject) {
+    btnReject.addEventListener('click', function () {
+        var originalText = btnReject.innerHTML;
+        btnReject.disabled = true;
+        btnReject.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Memproses...';
+
+        fetch("{% url 'biaya:transaksi_reject' transaksi.pk %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json'
+            }
+        }).then(r => r.json()).then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message || 'Gagal menolak.');
+                btnReject.disabled = false;
+                btnReject.innerHTML = originalText;
+            }
+        }).catch(() => {
+            alert('Terjadi kesalahan.');
+            btnReject.disabled = false;
+            btnReject.innerHTML = originalText;
+        });
+    });
+}
+</script>
+{% endblock page_js %}

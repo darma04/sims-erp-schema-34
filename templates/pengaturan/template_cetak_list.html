@@ -122,14 +122,6 @@
                         <option value="Nonaktif">Nonaktif</option>
                     </select>
                 </div>
-                <div class="col-md-3 d-flex gap-2">
-                    <button type="button" class="btn btn-primary flex-grow-1" onclick="applyFilters()">
-                        <i class="ri-filter-3-line me-1"></i>Filter
-                    </button>
-                    <button type="button" class="btn btn-label-secondary flex-grow-1" onclick="resetFilters()">
-                        <i class="ri-refresh-line me-1"></i>Reset
-                    </button>
-                </div>
             </div>
             <!-- Baris kedua: Pilih Kolom -->
             <div class="row g-3 mt-2 align-items-end">
@@ -188,6 +180,17 @@
                         </div>
                     </div>
                     <small class="text-muted d-block mt-1">Klik untuk memilih kolom</small>
+                </div>
+                <div class="col-md-6"></div>
+                <div class="col-md-3">
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-primary" onclick="applyFilters()">
+                            <i class="ri-filter-3-line me-1"></i>Terapkan Filter
+                        </button>
+                        <button type="button" class="btn btn-label-secondary" onclick="resetFilters()">
+                            <i class="ri-refresh-line me-1"></i>Reset
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

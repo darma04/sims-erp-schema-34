@@ -52,6 +52,7 @@ class LicenseMiddleware:
         '/media/',
         '/admin/',
         '/favicon.ico',
+        '/api/internal/',      # Internal API untuk CLS tenant provisioning
         # Halaman maintenance sengaja DIKELUARKAN dari exempt agar middleware bisa mendeteksi saat statusnya OFF
     ]
 

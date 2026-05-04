@@ -44,9 +44,9 @@
     <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
-            <div class="row g-3 align-items-end">
+            <div class="row g-3">
                 <!-- Filter Status -->
-                <div class="col-md-3 col-sm-6">
+                <div class="col-md-3">
                     <label class="form-label" for="filterStatus">Status</label>
                     <select class="form-select" id="filterStatus" onchange="filterByStatus()">
                         <option value="">Semua Status</option>
@@ -55,19 +55,21 @@
                     </select>
                 </div>
                 <!-- Filter Nama Pemilik -->
-                <div class="col-md-3 col-sm-6">
+                <div class="col-md-3">
                     <label class="form-label" for="filterPemilik">Nama Pemilik</label>
                     <input type="text" class="form-control" id="filterPemilik" placeholder="Cari nama pemilik..." oninput="filterByPemilik()">
                 </div>
-                <!-- Pilih Kolom -->
-                <div class="col-md-3 col-sm-6">
+            </div>
+            <!-- Baris kedua: Pilih Kolom (kiri) dan Tombol Filter (kanan) -->
+            <div class="row g-3 mt-2 align-items-end">
+                <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
                     <div class="dropdown">
                         <button class="btn btn-label-secondary dropdown-toggle waves-effect w-100" type="button"
                             id="columnFilterDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside"
                             aria-expanded="false">
                             <i class="ri-layout-column-line me-1"></i>
-                            Kolom Ditampilkan
+                            Pilih Kolom yang Ditampilkan
                         </button>
                         <div class="dropdown-menu p-3" aria-labelledby="columnFilterDropdown" style="min-width: 280px;">
                             <h6 class="dropdown-header px-0 mb-2">Kolom Tabel</h6>
@@ -132,12 +134,18 @@
                             </div>
                         </div>
                     </div>
+                    <small class="text-muted d-block mt-1">Klik untuk memilih kolom</small>
                 </div>
-                <!-- Tombol Reset -->
-                <div class="col-md-3 col-sm-6">
-                    <button class="btn btn-label-secondary w-100" onclick="resetFilter()">
-                        <i class="ri-refresh-line me-1"></i>Reset Filter
-                    </button>
+                <div class="col-md-6"></div>
+                <div class="col-md-3">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" onclick="applyFilter()">
+                            <i class="ri-filter-3-line me-1"></i>Terapkan Filter
+                        </button>
+                        <button class="btn btn-label-secondary" onclick="resetFilter()">
+                            <i class="ri-refresh-line me-1"></i>Reset
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

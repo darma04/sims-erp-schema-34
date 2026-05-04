@@ -68,6 +68,33 @@ logger = logging.getLogger(__name__)
 #   fraud_signals._BYPASS_FRAUD_SIGNALS = False  # nyalakan kembali
 _BYPASS_FRAUD_SIGNALS = False
 
+# Thread-local storage untuk menyimpan user yang sedang melakukan delete.
+# Digunakan oleh detect_hapus_lunas untuk mengecualikan superuser dari
+# FRAUD_BLOCK, sesuai deskripsi UI: "tidak bisa dihapus kecuali superuser".
+#
+# Penggunaan dari views.py sebelum delete:
+#   from apps.fraud_detection import signals as fraud_signals
+#   fraud_signals.set_current_delete_user(request.user)
+#   instance.delete()
+#   fraud_signals.clear_current_delete_user()
+import threading
+_thread_locals = threading.local()
+
+
+def set_current_delete_user(user):
+    """Set user yang sedang melakukan aksi delete (dipanggil dari views)."""
+    _thread_locals.current_delete_user = user
+
+
+def clear_current_delete_user():
+    """Bersihkan user setelah delete selesai."""
+    _thread_locals.current_delete_user = None
+
+
+def _get_current_delete_user():
+    """Ambil user yang sedang melakukan delete (internal)."""
+    return getattr(_thread_locals, 'current_delete_user', None)
+
 
 # ═══════════════════════════════════════════════════════════════
 #  HELPER FUNCTIONS — Fungsi pendukung yang dipakai oleh signals
@@ -143,21 +170,28 @@ def detect_hapus_lunas(sender, instance, **kwargs):
     # BYPASS: Jika flag bypass aktif (saat reset/restore data), skip semua pengecekan
     if _BYPASS_FRAUD_SIGNALS:
         return
-    # Hanya pantau 3 model transaksi utama
-    if model_name in ['POSTransaction', 'SalesOrder', 'PurchaseOrder']:
+    # Hanya pantau model transaksi utama (termasuk OrderService)
+    if model_name in ['POSTransaction', 'SalesOrder', 'PurchaseOrder', 'OrderService']:
         try:
-            status = getattr(instance, 'status', '')
+            # OrderService punya 2 jenis status: status (workflow) dan status_bayar (pembayaran)
+            # Untuk deteksi fraud hapus-lunas, gunakan status_bayar pada OrderService
+            if model_name == 'OrderService':
+                status = getattr(instance, 'status_bayar', '')
+            else:
+                status = getattr(instance, 'status', '')
             # Hanya cek jika status = lunas/dikonfirmasi/selesai
-            if status in ['paid', 'confirmed', 'delivered', 'completed']:
+            if status in ['paid', 'confirmed', 'delivered', 'completed', 'lunas', 'selesai', 'diambil']:
                 rule = FraudRule.load()
 
                 # Ambil user pelaku (kasir/pembuat) — berbeda field per model
                 user = getattr(instance, 'kasir',
                     getattr(instance, 'created_by',
-                        getattr(instance, 'dibuat_oleh', None)))
+                        getattr(instance, 'dibuat_oleh',
+                            getattr(instance, 'diterima_oleh', None))))
                 # Ambil nominal transaksi
                 nominal = getattr(instance, 'total_harga',
-                    getattr(instance, 'grand_total', 0))
+                    getattr(instance, 'grand_total',
+                        getattr(instance, 'biaya_akhir', 0)))
 
                 # BUAT FRAUD ALERT — record anomali di database
                 FraudAlert.objects.create(
@@ -170,10 +204,16 @@ def detect_hapus_lunas(sender, instance, **kwargs):
                     object_id=str(instance.pk)
                 )
 
-                # BLOKIR DELETE jika pengaturan aktif
-                # raise Exception akan membatalkan proses delete
+                # BLOKIR DELETE jika pengaturan aktif DAN user bukan superuser
+                # Superuser dikecualikan sesuai deskripsi UI:
+                # "tidak bisa dihapus oleh siapapun kecuali superuser"
                 if rule.block_delete_paid:
-                    raise Exception("FRAUD_BLOCK: Penghapusan transaksi lunas diblokir oleh sistem keamanan Fraud Rule.")
+                    current_user = _get_current_delete_user()
+                    if current_user and getattr(current_user, 'is_superuser', False):
+                        # Superuser diizinkan hapus — alert tetap tercatat
+                        pass
+                    else:
+                        raise Exception("FRAUD_BLOCK: Penghapusan transaksi lunas diblokir oleh sistem keamanan Fraud Rule.")
 
         except Exception as e:
             # Jika exception berasal dari FRAUD_BLOCK → lempar kembali
@@ -204,8 +244,8 @@ def detect_transaksi_diluar_jam(sender, instance, created, **kwargs):
     Hanya berjalan saat record BARU dibuat (created=True),
     agar tidak trigger saat update data lama.
     """
-    # Hanya untuk record BARU dari 3 model transaksi utama
-    if created and sender.__name__ in ['POSTransaction', 'SalesOrder', 'PurchaseOrder']:
+    # Hanya untuk record BARU dari model transaksi utama (termasuk OrderService)
+    if created and sender.__name__ in ['POSTransaction', 'SalesOrder', 'PurchaseOrder', 'OrderService']:
         try:
             is_outside, rule = check_operasional_time()
             if is_outside:
@@ -356,23 +396,37 @@ def blokir_stok_minus_pos(sender, instance, **kwargs):
     ──────────────────────────────────────────────
     Hanya aktif jika FraudRule.block_negative_stock = True.
     Hanya cek untuk record BARU (instance.pk belum ada).
+
+    Target model: POSTransactionItem (bukan POSItem — nama model aktual di pos/models.py)
+    Field mapping:
+        - instance.jumlah     = qty yang dibeli
+        - instance.transaction = FK ke POSTransaction (parent)
+        - instance.transaction.gudang = gudang terkait
     """
-    if sender.__name__ == 'POSItem':
+    if _BYPASS_FRAUD_SIGNALS:
+        return
+
+    if sender.__name__ == 'POSTransactionItem':
         try:
             rule = FraudRule.load()
             # Hanya berlaku jika flag block_negative_stock aktif
             if rule.block_negative_stock:
                 produk = getattr(instance, 'produk', None)
-                qty = getattr(instance, 'kuantitas', 0)
+                qty = getattr(instance, 'jumlah', 0)
 
-                if produk and qty > 0:
+                if produk and qty and qty > 0:
                     # Ambil gudang dari transaksi POS parent
-                    transaksi = getattr(instance, 'transaksi', None)
-                    gudang = getattr(transaksi, 'gudang', None)
+                    transaksi = getattr(instance, 'transaction', None)
+                    gudang = getattr(transaksi, 'gudang', None) if transaksi else None
 
-                    # Cek stok tersedia di gudang terkait
-                    if hasattr(produk, 'get_stok') and gudang:
-                        stok_tersedia = produk.get_stok(gudang=gudang)
+                    if gudang:
+                        # Cek stok tersedia di gudang terkait via Stok model
+                        from apps.produk.models import Stok
+                        try:
+                            stok_obj = Stok.objects.get(produk=produk, gudang=gudang)
+                            stok_tersedia = stok_obj.jumlah
+                        except Stok.DoesNotExist:
+                            stok_tersedia = 0
 
                         # Jika record BARU dan qty > stok → BLOKIR
                         if not instance.pk and qty > stok_tersedia:
@@ -384,7 +438,7 @@ def blokir_stok_minus_pos(sender, instance, **kwargs):
                                 deskripsi=f"POS Item diblokir: Kuantitas {qty} melebihi stok tersedia ({stok_tersedia}) untuk produk {produk.nama}",
                                 user_terkait=user,
                                 nominal=0,
-                                model_name='POSItem',
+                                model_name='POSTransactionItem',
                                 object_id=''
                             )
                             # Raise exception → cancel save
@@ -393,3 +447,129 @@ def blokir_stok_minus_pos(sender, instance, **kwargs):
             if "FRAUD_BLOCK" in str(e):
                 raise  # Re-raise agar save dibatalkan
             logger.error(f"Error in blokir_stok_minus_pos: {e}")
+
+
+# ═══════════════════════════════════════════════════════════════
+#  SIGNAL 6: PENGGUNAAN SPAREPART ANOMALI (post_save)
+# ═══════════════════════════════════════════════════════════════
+# Trigger: Setiap kali PenggunaanSparepart disimpan (create)
+# Target model: PenggunaanSparepart (dari service_center)
+# Aksi:
+#   1. Deteksi jumlah sparepart yang sangat besar (> 10 unit per item)
+#   2. Deteksi jika harga jual sparepart ke pelanggan LEBIH RENDAH dari harga modal
+#
+# Kenapa penting?
+# → Teknisi bisa mengklaim penggunaan sparepart berlebihan untuk dijual kembali.
+# → Harga jual sparepart di bawah modal bisa mengindikasikan manipulasi harga.
+
+@receiver(post_save)
+def detect_sparepart_anomali(sender, instance, created, **kwargs):
+    """
+    Deteksi penggunaan sparepart anomali pada service center.
+    ─────────────────────────────────────────────────────────
+    Hanya berjalan saat record BARU dibuat (created=True).
+    """
+    if _BYPASS_FRAUD_SIGNALS:
+        return
+
+    if created and sender.__name__ == 'PenggunaanSparepart':
+        try:
+            rule = FraudRule.load()
+
+            # Ambil user teknisi dari order service
+            order_service = getattr(instance, 'order_service', None)
+            user = None
+            if order_service:
+                user = getattr(order_service, 'teknisi', None) or getattr(order_service, 'diterima_oleh', None)
+
+            produk = getattr(instance, 'produk', None)
+            jumlah = float(getattr(instance, 'jumlah', 0))
+            harga_satuan = float(getattr(instance, 'harga_satuan', 0))
+
+            produk_nama = produk.nama if produk else 'Unknown'
+            order_nomor = order_service.nomor_service if order_service else 'N/A'
+
+            # DIPERBAIKI #19: Baca threshold dari FraudRule (configurable via admin)
+            max_qty = rule.max_sparepart_qty or 10  # fallback ke 10 jika 0/null
+
+            # 1. Deteksi jumlah sparepart yang sangat besar (> threshold)
+            if jumlah > max_qty:
+                FraudAlert.objects.create(
+                    jenis='anomali_lainnya',
+                    severity='medium',
+                    deskripsi=(
+                        f"Penggunaan sparepart dalam jumlah besar: {produk_nama} x{jumlah} "
+                        f"pada Order Service {order_nomor}. "
+                        f"Jumlah ini melebihi batas wajar (>{max_qty} unit per item)."
+                    ),
+                    user_terkait=user,
+                    nominal=Decimal(str(jumlah * harga_satuan)),
+                    model_name='PenggunaanSparepart',
+                    object_id=str(instance.pk)
+                )
+
+            # 2. Deteksi harga jual LEBIH RENDAH dari harga modal
+            if produk and hasattr(produk, 'harga_beli'):
+                harga_modal = float(produk.harga_beli or 0)
+                if harga_modal > 0 and harga_satuan < harga_modal:
+                    selisih = harga_modal - harga_satuan
+                    FraudAlert.objects.create(
+                        jenis='anomali_lainnya',
+                        severity='high',
+                        deskripsi=(
+                            f"Harga sparepart di bawah modal: {produk_nama} dijual Rp {harga_satuan:,.0f} "
+                            f"(modal: Rp {harga_modal:,.0f}, selisih: Rp {selisih:,.0f}) "
+                            f"pada Order Service {order_nomor}."
+                        ),
+                        user_terkait=user,
+                        nominal=Decimal(str(selisih * jumlah)),
+                        model_name='PenggunaanSparepart',
+                        object_id=str(instance.pk)
+                    )
+
+        except Exception as e:
+            logger.error(f"Error in detect_sparepart_anomali: {e}")
+
+
+# ═══════════════════════════════════════════════════════════════
+#  SIGNAL 7: BIAYA SERVICE ANOMALI (post_save)
+# ═══════════════════════════════════════════════════════════════
+# Trigger: Setiap kali OrderService disimpan (update biaya_akhir)
+# Deteksi: Biaya akhir = Rp 0 padahal sudah status selesai/diambil
+#
+# Kenapa penting?
+# → Teknisi bisa menyelesaikan service tanpa mencatat biaya,
+#   lalu menerima pembayaran langsung dari pelanggan secara tunai.
+
+@receiver(post_save)
+def detect_biaya_service_anomali(sender, instance, created, **kwargs):
+    """
+    Deteksi order service selesai tanpa biaya (gratis mencurigakan).
+    """
+    if _BYPASS_FRAUD_SIGNALS:
+        return
+
+    if sender.__name__ == 'OrderService' and not created:
+        try:
+            status = getattr(instance, 'status', '')
+            biaya_akhir = float(getattr(instance, 'biaya_akhir', 0) or 0)
+
+            # Order selesai/diambil tapi biaya Rp 0 → mencurigakan
+            if status in ['selesai', 'diambil'] and biaya_akhir == 0:
+                user = getattr(instance, 'teknisi', None) or getattr(instance, 'diterima_oleh', None)
+
+                FraudAlert.objects.create(
+                    jenis='anomali_lainnya',
+                    severity='medium',
+                    deskripsi=(
+                        f"Order Service {instance.nomor_service} berstatus '{instance.get_status_display()}' "
+                        f"tetapi biaya akhir Rp 0. Kemungkinan biaya tidak dicatat ke sistem."
+                    ),
+                    user_terkait=user,
+                    nominal=Decimal('0'),
+                    model_name='OrderService',
+                    object_id=str(instance.pk)
+                )
+        except Exception as e:
+            logger.error(f"Error in detect_biaya_service_anomali: {e}")
+

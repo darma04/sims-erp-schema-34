@@ -25,6 +25,7 @@ class MaintenanceMiddleware:
         '/logout/',
         '/license/',
         '/license/ping/',
+        '/api/internal/',      # Internal API untuk CLS tenant provisioning
         '/pages/misc/under_maintenance/',
     ]
 

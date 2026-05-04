@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cek Status Service — Service Center</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #696cff; --primary-rgb: 105,108,255; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f9; min-height: 100vh; padding: 2rem 1rem; }
+        .main-container { max-width: 760px; margin: 0 auto; }
+
+        /* Search Card */
+        .search-card { background: #fff; border-radius: 0.5rem; padding: 2.5rem; box-shadow: 0 2px 6px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.05); text-align: center; }
+        .logo-icon { width: 72px; height: 72px; background: rgba(var(--primary-rgb), 0.08); border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; }
+        .logo-icon i { font-size: 2.2rem; color: var(--primary); }
+        .search-card h1 { font-size: 1.5rem; font-weight: 700; color: #2b2c40; margin-bottom: 0.3rem; }
+        .search-card .desc { color: #697a8d; margin-bottom: 1.5rem; font-size: 0.9rem; }
+        .search-box { position: relative; }
+        .search-box input { width: 100%; padding: 0.85rem 1rem 0.85rem 3rem; border: 1px solid #d9dee3; border-radius: 0.375rem; font-size: 0.9375rem; transition: all 0.2s; background: #fff; font-family: inherit; }
+        .search-box input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.16); }
+        .search-box .search-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #697a8d; font-size: 1.1rem; }
+        .btn-cek { background: var(--primary); border: none; color: white; padding: 0.75rem 2rem; border-radius: 0.375rem; font-size: 0.9375rem; font-weight: 600; width: 100%; margin-top: 1rem; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+        .btn-cek:hover { background: #5f61e6; box-shadow: 0 0.125rem 0.25rem rgba(var(--primary-rgb), 0.4); }
+        .btn-cek:disabled { opacity: 0.65; }
+        .tips-row { display: flex; gap: 0.75rem; margin-top: 1.25rem; text-align: left; }
+        .tip-card { flex: 1; background: #f5f5f9; padding: 0.75rem; border-radius: 0.375rem; font-size: 0.75rem; color: #697a8d; }
+        .tip-card i { display: block; font-size: 1.1rem; margin-bottom: 0.25rem; color: var(--primary); }
+        .tip-card strong { color: #566a7f; }
+
+        /* Result Card */
+        .result-card { background: #fff; border-radius: 0.5rem; padding: 0; margin-top: 1.5rem; box-shadow: 0 2px 6px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.05); animation: slideUp 0.4s ease-out; display: none; overflow: hidden; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Status Header */
+        .status-header { padding: 1.5rem; text-align: center; border-bottom: 1px solid #d9dee3; }
+        .status-badge { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 1.25rem; border-radius: 0.25rem; font-weight: 600; font-size: 0.9375rem; }
+        .status-info { background: rgba(3,195,236,0.1); color: #03c3ec; }
+        .status-warning { background: rgba(255,159,67,0.1); color: #ff9f43; }
+        .status-primary { background: rgba(105,108,255,0.1); color: #696cff; }
+        .status-success { background: rgba(40,199,111,0.1); color: #28c76f; }
+        .status-secondary { background: rgba(133,146,163,0.1); color: #8592a3; }
+        .status-danger { background: rgba(234,84,85,0.1); color: #ea5455; }
+
+        /* Progress Stepper */
+        .progress-stepper { display: flex; justify-content: space-between; padding: 0 1.5rem 1.5rem; margin: 1.5rem 0; position: relative; border-bottom: 1px solid #f0f0f0; }
+        .progress-stepper::before { content: ''; position: absolute; top: 18px; left: calc(1.5rem + 18px); right: calc(1.5rem + 18px); height: 2px; background: #d9dee3; z-index: 0; }
+        .progress-stepper .progress-line { position: absolute; top: 18px; left: calc(1.5rem + 18px); height: 2px; background: var(--primary); z-index: 1; transition: width 0.5s ease; }
+        .step { text-align: center; z-index: 2; flex: 1; }
+        .step-dot { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.4rem; font-size: 0.85rem; font-weight: 700; border: 2px solid transparent; }
+        .step-dot.done { background: #28c76f; color: white; border-color: #28c76f; }
+        .step-dot.active { background: var(--primary); color: white; border-color: var(--primary); animation: pulseDot 2s infinite; }
+        .step-dot.pending { background: #f5f5f9; color: #a5a3ae; border-color: #d9dee3; }
+        @keyframes pulseDot { 0%,100% { box-shadow: 0 0 0 0 rgba(var(--primary-rgb),0.4); } 50% { box-shadow: 0 0 0 6px rgba(var(--primary-rgb),0); } }
+        .step-label { font-size: 0.625rem; color: #a5a3ae; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+        .step-label.active-label { color: var(--primary); }
+        .step-label.done-label { color: #28c76f; }
+
+        /* Info Sections */
+        .result-body { padding: 0 1.5rem 1.5rem; }
+        .info-section { margin-bottom: 1.25rem; }
+        .info-section-title { font-size: 0.75rem; color: #697a8d; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.4rem; }
+        .info-section-title i { font-size: 1rem; color: var(--primary); }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+        .info-item { background: #f5f5f9; padding: 0.7rem 0.85rem; border-radius: 0.375rem; }
+        .info-item .label { font-size: 0.65rem; color: #a5a3ae; text-transform: uppercase; font-weight: 600; letter-spacing: 0.3px; margin-bottom: 0.1rem; }
+        .info-item .value { font-size: 0.875rem; font-weight: 600; color: #2b2c40; word-break: break-word; }
+
+        /* Items Table */
+        .items-table { width: 100%; font-size: 0.8125rem; border-collapse: collapse; }
+        .items-table th { color: #697a8d; font-weight: 600; padding: 0.5rem 0; border-bottom: 1px solid #d9dee3; font-size: 0.7rem; text-transform: uppercase; }
+        .items-table td { padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0; }
+
+        /* Timeline */
+        .timeline-list { list-style: none; padding: 0; position: relative; }
+        .timeline-list::before { content: ''; position: absolute; left: 15px; top: 6px; bottom: 6px; width: 2px; background: #d9dee3; }
+        .timeline-entry { display: flex; gap: 0.85rem; padding: 0.5rem 0; position: relative; }
+        .timeline-entry .t-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--primary); margin-top: 4px; flex-shrink: 0; z-index: 1; border: 2px solid #fff; box-shadow: 0 0 0 2px var(--primary); position: relative; left: 10px; }
+        .timeline-entry:first-child .t-dot { background: #28c76f; box-shadow: 0 0 0 2px #28c76f; width: 12px; height: 12px; left: 9px; }
+        .timeline-entry .t-content { padding-left: 0.4rem; }
+        .timeline-entry .t-time { font-size: 0.6875rem; color: #a5a3ae; }
+        .timeline-entry .t-detail { font-size: 0.8125rem; color: #2b2c40; font-weight: 600; }
+        .timeline-entry .t-note { font-size: 0.75rem; color: #697a8d; }
+
+        /* Payment Summary */
+        .payment-summary { background: #f5f5f9; border-radius: 0.375rem; padding: 1rem; }
+        .payment-row { display: flex; justify-content: space-between; align-items: center; padding: 0.3rem 0; }
+        .payment-row .pay-label { font-size: 0.8125rem; color: #697a8d; }
+        .payment-row .pay-value { font-size: 0.875rem; font-weight: 600; color: #2b2c40; }
+        .payment-row.total { border-top: 1px solid #d9dee3; margin-top: 0.4rem; padding-top: 0.6rem; }
+        .payment-row.total .pay-label { font-weight: 700; color: #2b2c40; }
+        .payment-row.total .pay-value { font-size: 1rem; font-weight: 700; color: var(--primary); }
+
+        /* Not found */
+        .not-found { color: #ea5455; font-weight: 600; text-align: center; padding: 2rem 1.5rem; }
+        .not-found i { font-size: 3rem; display: block; margin-bottom: 0.75rem; opacity: 0.7; }
+
+        /* Footer */
+        .footer-text { text-align: center; margin-top: 1.5rem; color: #a5a3ae; font-size: 0.8rem; }
+
+        /* Responsive */
+        @media (max-width: 576px) {
+            body { padding: 1rem 0.75rem; }
+            .search-card { padding: 1.5rem 1.25rem; }
+            .search-card h1 { font-size: 1.25rem; }
+            .info-grid { grid-template-columns: 1fr; }
+            .tips-row { flex-direction: column; }
+            .progress-stepper { padding: 0 0.75rem; }
+            .progress-stepper::before { left: calc(0.75rem + 14px); right: calc(0.75rem + 14px); }
+            .progress-stepper .progress-line { left: calc(0.75rem + 14px); }
+            .step-dot { width: 30px; height: 30px; font-size: 0.7rem; }
+            .step-label { font-size: 0.55rem; }
+            .result-body { padding: 0 1rem 1.25rem; }
+            .status-header { padding: 1.25rem 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Search Card -->
+        <div class="search-card">
+            <div class="logo-icon"><i class="ri-tools-line"></i></div>
+            <h1>Cek Status Service</h1>
+            <p class="desc">Masukkan nomor service atau kode tracking untuk melihat progress perbaikan perangkat Anda secara real-time</p>
+            <div class="search-box">
+                <i class="ri-search-line search-icon"></i>
+                <input type="text" id="queryInput" placeholder="Contoh: SVC/2026/03/0001 atau A1B2C3D4" autocomplete="off">
+            </div>
+            <button class="btn-cek" id="btnCek" onclick="cekStatus()">
+                <i class="ri-search-2-line me-1"></i>Cek Status Sekarang
+            </button>
+            <div class="tips-row">
+                <div class="tip-card"><i class="ri-file-list-3-line"></i><strong>Nomor Service</strong><br>Format: SVC/XXXX/XX/XXXX</div>
+                <div class="tip-card"><i class="ri-qr-code-line"></i><strong>Kode Tracking</strong><br>8 karakter unik dari nota</div>
+                <div class="tip-card"><i class="ri-phone-line"></i><strong>No. Telepon</strong><br>Nomor HP terdaftar</div>
+            </div>
+        </div>
+
+        <!-- Result Card -->
+        <div class="result-card" id="resultCard">
+            <div id="resultContent"></div>
+        </div>
+
+        <p class="footer-text">
+            <i class="ri-shield-check-line me-1"></i>Data Anda aman. Sistem ini hanya menampilkan informasi terbatas terkait status service Anda.
+        </p>
+    </div>
+
+    <script>
+    const queryInput = document.getElementById('queryInput');
+    queryInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') cekStatus(); });
+
+    const STATUS_STEPS = ['diterima','dikonfirmasi','dikerjakan','selesai','diambil'];
+    const STATUS_LABELS = ['Diterima','Konfirmasi','Dikerjakan','Selesai','Diambil'];
+    const STATUS_ICONS = ['ri-inbox-line','ri-check-double-line','ri-tools-line','ri-checkbox-circle-line','ri-hand-heart-line'];
+
+    function getStepIndex(statusCode) { return STATUS_STEPS.indexOf(statusCode); }
+
+    function buildProgressStepper(statusCode) {
+        var currentIdx = getStepIndex(statusCode);
+        if (statusCode === 'dibatalkan') return '<div class="text-center py-2"><span class="status-badge status-danger"><i class="ri-close-circle-line"></i>DIBATALKAN</span></div>';
+        if (currentIdx < 0) return '';
+        var totalSteps = STATUS_STEPS.length;
+        var progressPct = currentIdx / (totalSteps - 1) * 100;
+        var html = '<div class="progress-stepper"><div class="progress-line" style="width:' + progressPct + '%"></div>';
+        for (var i = 0; i < totalSteps; i++) {
+            var cls = i < currentIdx ? 'done' : (i === currentIdx ? 'active' : 'pending');
+            var labelCls = i < currentIdx ? 'done-label' : (i === currentIdx ? 'active-label' : '');
+            var icon = i < currentIdx ? '<i class="ri-check-line"></i>' : '<i class="' + STATUS_ICONS[i] + '"></i>';
+            html += '<div class="step"><div class="step-dot ' + cls + '">' + icon + '</div><div class="step-label ' + labelCls + '">' + STATUS_LABELS[i] + '</div></div>';
+        }
+        return html + '</div>';
+    }
+
+    function formatRupiah(val) { return 'Rp ' + Math.round(val).toLocaleString('id-ID'); }
+
+    function cekStatus() {
+        const query = queryInput.value.trim();
+        if (!query) { queryInput.focus(); return; }
+        const btn = document.getElementById('btnCek');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Mencari...';
+
+        fetch('/service/api/cek-status/?q=' + encodeURIComponent(query))
+            .then(r => r.json())
+            .then(data => {
+                const card = document.getElementById('resultCard');
+                const content = document.getElementById('resultContent');
+                card.style.display = 'block';
+                card.style.animation = 'none';
+                setTimeout(() => { card.style.animation = 'slideUp 0.4s ease-out'; }, 10);
+
+                if (!data.found) {
+                    content.innerHTML = '<div class="not-found"><i class="ri-error-warning-line"></i>' + data.message + '<br><small style="color:#a5a3ae;font-weight:400">Pastikan nomor service / kode tracking sudah benar</small></div>';
+                    return;
+                }
+
+                var statusClassMap = { 'info': 'status-info', 'warning': 'status-warning', 'primary': 'status-primary', 'success': 'status-success', 'secondary': 'status-secondary', 'danger': 'status-danger' };
+                var statusCls = statusClassMap[data.status_class] || 'status-primary';
+                var stepperHtml = buildProgressStepper(data.status_code);
+
+                var itemsHtml = '';
+                if (data.items && data.items.length > 0) {
+                    itemsHtml = '<div class="info-section"><div class="info-section-title"><i class="ri-list-check"></i>Detail Layanan</div>';
+                    itemsHtml += '<table class="items-table"><thead><tr><th>Layanan</th><th style="text-align:right">Biaya</th></tr></thead><tbody>';
+                    data.items.forEach(function(item) { itemsHtml += '<tr><td>' + item.nama + '</td><td style="text-align:right;font-weight:600">' + formatRupiah(item.biaya) + '</td></tr>'; });
+                    itemsHtml += '</tbody></table></div>';
+                }
+
+                // Sparepart section
+                var sparepartHtml = '';
+                if (data.spareparts && data.spareparts.length > 0) {
+                    sparepartHtml = '<div class="info-section"><div class="info-section-title"><i class="ri-cpu-line"></i>Sparepart Digunakan</div>';
+                    sparepartHtml += '<table class="items-table"><thead><tr><th>Sparepart</th><th style="text-align:right">Qty</th><th style="text-align:right">Subtotal</th></tr></thead><tbody>';
+                    data.spareparts.forEach(function(sp) { sparepartHtml += '<tr><td>' + sp.nama + '</td><td style="text-align:right">' + sp.jumlah + ' ' + sp.satuan + '</td><td style="text-align:right;font-weight:600">' + formatRupiah(sp.subtotal) + '</td></tr>'; });
+                    sparepartHtml += '</tbody></table></div>';
+                }
+
+                // Payment summary with breakdown
+                var subtotalLayanan = 0;
+                if (data.items) data.items.forEach(function(i) { subtotalLayanan += i.biaya; });
+                var subtotalSparepart = 0;
+                if (data.spareparts) data.spareparts.forEach(function(s) { subtotalSparepart += s.subtotal; });
+
+                var payHtml = '<div class="info-section"><div class="info-section-title"><i class="ri-wallet-3-line"></i>Ringkasan Pembayaran</div><div class="payment-summary">';
+                if (subtotalSparepart > 0) {
+                    payHtml += '<div class="payment-row"><span class="pay-label">Subtotal Layanan</span><span class="pay-value">' + formatRupiah(subtotalLayanan) + '</span></div>';
+                    payHtml += '<div class="payment-row"><span class="pay-label">Subtotal Sparepart</span><span class="pay-value">' + formatRupiah(subtotalSparepart) + '</span></div>';
+                }
+                payHtml += '<div class="payment-row"><span class="pay-label" style="font-weight:700">Total Biaya</span><span class="pay-value" style="font-weight:700;color:var(--bs-primary,#7367f0)">' + formatRupiah(data.biaya) + '</span></div>';
+                if (data.dp > 0) payHtml += '<div class="payment-row"><span class="pay-label">DP / Uang Muka</span><span class="pay-value" style="color:#28c76f">- ' + formatRupiah(data.dp) + '</span></div>';
+                payHtml += '<div class="payment-row total"><span class="pay-label">Sisa Bayar</span><span class="pay-value" style="color:' + (data.sisa > 0 ? '#ea5455' : '#28c76f') + '">' + formatRupiah(data.sisa) + '</span></div>';
+                payHtml += '<div class="payment-row"><span class="pay-label">Status Pembayaran</span><span class="pay-value"><span class="status-badge ' + (data.status_bayar === 'Lunas' ? 'status-success' : 'status-warning') + '" style="font-size:0.8rem;padding:0.25rem 0.75rem">' + data.status_bayar + '</span></span></div>';
+                payHtml += '</div></div>';
+
+                var timelineHtml = '';
+                if (data.riwayat && data.riwayat.length > 0) {
+                    timelineHtml = '<div class="info-section"><div class="info-section-title"><i class="ri-history-line"></i>Riwayat Proses</div><ul class="timeline-list">';
+                    data.riwayat.forEach(function(r) {
+                        timelineHtml += '<li class="timeline-entry"><div class="t-dot"></div><div class="t-content"><div class="t-time">' + r.waktu + '</div><div class="t-detail">' + r.dari + ' → ' + r.ke + '</div>';
+                        if (r.catatan) timelineHtml += '<div class="t-note">' + r.catatan + '</div>';
+                        timelineHtml += '</div></li>';
+                    });
+                    timelineHtml += '</ul></div>';
+                }
+
+                var selesaiHtml = data.tanggal_selesai ? '<div class="info-item"><div class="label">Tanggal Selesai</div><div class="value" style="color:#28c76f"><i class="ri-checkbox-circle-line me-1"></i>' + data.tanggal_selesai + '</div></div>' : '';
+
+                content.innerHTML =
+                    '<div class="status-header"><div class="status-badge ' + statusCls + '"><i class="ri-pulse-line"></i>' + data.status + '</div>' +
+                    '<div class="mt-2" style="font-size:0.8rem;color:#a5a3ae"><strong style="color:#566a7f">' + data.nomor_service + '</strong> · Tracking: <code style="background:#f5f5f9;padding:2px 8px;border-radius:0.25rem;color:var(--primary);font-weight:600;border:1px solid #d9dee3">' + data.kode_tracking + '</code></div></div>' +
+                    stepperHtml +
+                    '<div class="result-body">' +
+                    '<div class="info-section"><div class="info-section-title"><i class="ri-smartphone-line"></i>Informasi Perangkat</div><div class="info-grid">' +
+                    '<div class="info-item"><div class="label">Pelanggan</div><div class="value"><i class="ri-user-line me-1" style="color:var(--primary)"></i>' + data.pelanggan + '</div></div>' +
+                    '<div class="info-item"><div class="label">Perangkat</div><div class="value">' + data.perangkat + '</div></div>' +
+                    '<div class="info-item"><div class="label">Jenis</div><div class="value">' + data.jenis + '</div></div>' +
+                    '<div class="info-item"><div class="label">Prioritas</div><div class="value">' + data.prioritas + '</div></div></div></div>' +
+                    '<div class="info-section"><div class="info-section-title"><i class="ri-stethoscope-line"></i>Keluhan</div><div class="info-item" style="grid-column:1/-1"><div class="value" style="font-weight:500;font-size:0.8125rem;line-height:1.5">' + data.keluhan + '</div></div></div>' +
+                    '<div class="info-section"><div class="info-section-title"><i class="ri-calendar-line"></i>Jadwal</div><div class="info-grid">' +
+                    '<div class="info-item"><div class="label">Tanggal Masuk</div><div class="value">' + data.tanggal_masuk + '</div></div>' +
+                    '<div class="info-item"><div class="label">Estimasi Selesai</div><div class="value">' + data.estimasi_selesai + '</div></div>' +
+                    '<div class="info-item"><div class="label">Teknisi</div><div class="value"><i class="ri-user-settings-line me-1" style="color:var(--primary)"></i>' + data.teknisi + '</div></div>' +
+                    selesaiHtml + '</div></div>' +
+                    itemsHtml + sparepartHtml + payHtml + timelineHtml + '</div>';
+            })
+            .catch(err => {
+                console.error(err);
+                var card = document.getElementById('resultCard');
+                card.style.display = 'block';
+                document.getElementById('resultContent').innerHTML = '<div class="not-found"><i class="ri-error-warning-line"></i>Terjadi kesalahan. Silakan coba lagi.</div>';
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="ri-search-2-line me-1"></i>Cek Status Sekarang';
+            });
+    }
+    </script>
+</body>
+</html>

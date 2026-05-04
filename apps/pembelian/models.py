@@ -232,12 +232,20 @@ class PurchaseOrder(models.Model):
                 last_number = int(last_po.nomor_po.split('/')[-1])
                 new_number = last_number + 1  # Increment: 5 → 6
             except (ValueError, IndexError):
-                new_number = 1  # Fallback jika format tidak standar
+                # DIPERBAIKI: fallback aman — hitung jumlah PO + 1
+                new_number = PurchaseOrder.objects.filter(
+                    nomor_po__startswith=prefix
+                ).count() + 1
         else:
             new_number = 1  # PO pertama bulan ini
 
         # Format dengan zero-padding 4 digit: 1 → '0001'
-        return f"{prefix}/{new_number:04d}"
+        # Tambahan: loop untuk memastikan nomor unik
+        nomor = f"{prefix}/{new_number:04d}"
+        while PurchaseOrder.objects.filter(nomor_po=nomor).exists():
+            new_number += 1
+            nomor = f"{prefix}/{new_number:04d}"
+        return nomor
 
     def calculate_total(self):
         """
@@ -315,6 +323,16 @@ class PurchaseOrder(models.Model):
                 qty_stok = item.jumlah_konversi if item.jumlah_konversi else item.jumlah
                 stok.jumlah += qty_stok
                 stok.save()
+
+                # Update cabang produk ke gudang dengan stok terbanyak
+                stok_terbanyak = Stok.objects.filter(
+                    produk=item.produk, jumlah__gt=0
+                ).order_by('-jumlah').first()
+
+                if stok_terbanyak:
+                    if item.produk.cabang != stok_terbanyak.gudang:
+                        item.produk.cabang = stok_terbanyak.gudang
+                        item.produk.save(update_fields=['cabang'])
 
             # LANGKAH 3: Update status PO menjadi 'received'
             self.status = 'received'

@@ -44,7 +44,7 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
                             <p class="card-text text-muted">Total Keseluruhan Aset</p>
                             <h4 class="mb-0 text-primary summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
-                                title="<b>Alur Data:</b><br>╬ú (harga_beli ├ù qty_total_pernah_masuk)<br><br><b>Sumber:</b> Semua produk yang pernah masuk ke sistem (stok + terjual + adjustment).<br>Bersifat kumulatif historis.">
+                                title="<b>Alur Data:</b><br>Σ harga_beli x (stok saat ini + qty terjual SO + qty terjual POS + qty adjustment keluar + qty sparepart terpakai di Service Center) dari semua Produk &amp; Sparepart.<br><br><b>Sumber:</b> Semua item yang pernah masuk ke sistem.<br>Bersifat kumulatif historis.">
                                 {{ total_keseluruhan_aset|rupiah }}</h4>
                             <small class="text-muted">Semua produk masuk</small>
                         </div>
@@ -65,7 +65,7 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
                             <p class="card-text text-muted">Total Harga Beli</p>
                             <h4 class="mb-0 text-danger summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
-                                title="<b>Alur Data:</b><br>╬ú (harga_beli ├ù stok_saat_ini)<br><br><b>Sumber:</b> Hanya produk yang stoknya > 0 (ready).<br>Dari tabel Produk ├ù Stok.">
+                                title="<b>Alur Data:</b><br>Σ (harga_beli x stok_saat_ini) untuk semua item (Produk &amp; Sparepart).<br><br><b>Sumber:</b> Hanya item yang stoknya &gt; 0 (ready) di seluruh gudang.<br>Dari tabel Produk x Stok.">
                                 {{ total_harga_beli_ready|rupiah }}</h4>
                             <small class="text-muted">Produk ready (stok > 0)</small>
                         </div>
@@ -86,7 +86,7 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
                             <p class="card-text text-muted">Total Harga Jual</p>
                             <h4 class="mb-0 text-success summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
-                                title="<b>Alur Data:</b><br>╬ú (harga_jual ├ù stok_saat_ini)<br><br><b>Sumber:</b> Hanya produk yang stoknya > 0 (ready).<br>Dari tabel Produk ├ù Stok.">
+                                title="<b>Alur Data:</b><br>Σ (harga_jual x stok_saat_ini) untuk semua item (Produk &amp; Sparepart).<br><br><b>Sumber:</b> Hanya item yang stoknya &gt; 0 (ready) di seluruh gudang.<br>Dari tabel Produk x Stok.">
                                 {{ total_harga_jual_ready|rupiah }}</h4>
                             <small class="text-muted">Produk ready (stok > 0)</small>
                         </div>
@@ -108,7 +108,7 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
                             <h4 class="mb-0 {% if estimasi_keuntungan >= 0 %}text-success{% else %}text-danger{% endif %} summary-nominal"
                                 style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom"
                                 data-bs-html="true"
-                                title="<b>Alur Data:</b><br>Total Harga Jual (Ready) ÔêÆ Total Harga Beli (Ready)<br><br><b>Sumber:</b> Selisih harga jual dan harga beli dari produk yang masih punya stok > 0.<br>Potensi keuntungan jika semua stok terjual.">
+                                title="<b>Alur Data:</b><br>Total Harga Jual (Ready) - Total Harga Beli (Ready).<br><br><b>Sumber:</b> Selisih harga jual dan harga beli dari item (Produk &amp; Sparepart) yang masih punya stok &gt; 0.<br>Potensi keuntungan jika semua stok terjual.">
                                 {{ estimasi_keuntungan|rupiah }}</h4>
                             <small class="text-muted">Produk ready (stok > 0)</small>
                         </div>
@@ -215,6 +215,7 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
                             </div>
                         </div>
                     </div>
+                    <small class="text-muted d-block mt-1">Klik untuk memilih kolom</small>
                 </div>
                 <div class="col-md-6"></div>
                 <div class="col-md-3">

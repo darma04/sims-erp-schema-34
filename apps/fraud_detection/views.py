@@ -120,6 +120,18 @@ class FraudDashboardView(SubModulePermissionMixin, TemplateView):
         from apps.pos.models import POSTransactionItem
 
         total_aset = Decimal('0')
+        # Qty sparepart terpakai dari Service Center — kumulatif historis
+        sc_used_by_produk = {}
+        try:
+            from apps.service_center.models import PenggunaanSparepart as SC_SP_Fraud
+            for item in SC_SP_Fraud.objects.values('produk_id').annotate(
+                total_qty=Sum('jumlah')
+            ):
+                if item['produk_id']:
+                    sc_used_by_produk[item['produk_id']] = item['total_qty'] or 0
+        except Exception:
+            pass
+
         for produk in Produk.objects.all():
             # Stok fisik saat ini di semua gudang
             stok_sekarang = Stok.objects.filter(produk=produk).aggregate(
@@ -133,13 +145,15 @@ class FraudDashboardView(SubModulePermissionMixin, TemplateView):
             total_terjual_pos = POSTransactionItem.objects.filter(
                 produk=produk,
                 transaction__status='paid'
-            ).aggregate(total=Sum('jumlah'))['total'] or 0
+            ).aggregate(total=Sum('jumlah_konversi'))['total'] or 0
             # Stok yang keluar via adjustment manual
             total_adj_out = AdjustmentStok.objects.filter(
                 produk=produk, tipe='out'
             ).aggregate(total=Sum('jumlah'))['total'] or 0
+            # Qty sparepart terpakai di Service Center
+            qty_sc_used = sc_used_by_produk.get(produk.pk, 0)
             # Total kuantitas seharusnya = semua stok + semua yang keluar
-            qty_total = stok_sekarang + total_terjual_so + total_terjual_pos + total_adj_out
+            qty_total = stok_sekarang + total_terjual_so + total_terjual_pos + total_adj_out + qty_sc_used
             # Nilai aset = kuantitas × harga beli per unit
             total_aset += Decimal(str(qty_total)) * produk.harga_beli
         context['total_aset_asli'] = total_aset
@@ -151,19 +165,25 @@ class FraudDashboardView(SubModulePermissionMixin, TemplateView):
         from apps.pembelian.models import PurchaseOrder
         from apps.biaya.models import TransaksiBiaya
 
-        # Total pemasukan: POS (lunas) + Sales Order (terkonfirmasi/selesai)
+        # Total pemasukan: POS (lunas) + Sales Order (terkonfirmasi/selesai) + Service (lunas)
         total_pemasukan_pos = POSTransaction.objects.filter(
             status='paid'
         ).aggregate(total=Sum('total_harga'))['total'] or Decimal('0')
         total_pemasukan_so = SalesOrder.objects.filter(
             status__in=['confirmed', 'delivered', 'completed']
         ).aggregate(total=Sum('total_harga'))['total'] or Decimal('0')
-        total_pemasukan = total_pemasukan_pos + total_pemasukan_so
+        # Service Center: order service yang lunas
+        from apps.service_center.models import OrderService
+        total_pemasukan_service = OrderService.objects.filter(
+            status_bayar='lunas'
+        ).aggregate(total=Sum('biaya_akhir'))['total'] or Decimal('0')
+        total_pemasukan = total_pemasukan_pos + total_pemasukan_so + total_pemasukan_service
         context['total_pemasukan'] = total_pemasukan
+        context['total_pemasukan_service'] = total_pemasukan_service
 
-        # Total pengeluaran: Purchase Order (terkonfirmasi) + Biaya operasional (disetujui)
+        # Total pengeluaran: Purchase Order (disetujui/diterima) + Biaya operasional (disetujui)
         total_pengeluaran_po = PurchaseOrder.objects.filter(
-            status__in=['confirmed', 'received', 'completed']
+            status__in=['approved', 'received']
         ).aggregate(total=Sum('total_harga'))['total'] or Decimal('0')
         total_pengeluaran_biaya = TransaksiBiaya.objects.filter(
             status='approved'
@@ -373,6 +393,12 @@ class FraudAlertDetailView(SubModulePermissionMixin, TemplateView):
                 elif alert.model_name == 'CashReconciliation':
                     from apps.fraud_detection.models import CashReconciliation
                     context['related_object_cash'] = CashReconciliation.objects.filter(id=alert.object_id).first()
+                elif alert.model_name == 'OrderService':
+                    from apps.service_center.models import OrderService
+                    context['related_object_service'] = OrderService.objects.filter(pk=alert.object_id).first()
+                elif alert.model_name == 'PenggunaanSparepart':
+                    from apps.service_center.models import PenggunaanSparepart
+                    context['related_object_sparepart'] = PenggunaanSparepart.objects.filter(pk=alert.object_id).first()
             except Exception:
                 pass
 

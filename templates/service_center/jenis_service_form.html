@@ -1,0 +1,36 @@
+{% extends 'layout/layout_vertical.html' %}
+{% load static %}
+{% block title %}{{ form_title }} - Service Center{% endblock %}
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div><h4 class="mb-1"><i class="ri-hammer-line me-2"></i>{{ form_title }}</h4><p class="text-muted mb-0">Kelola jenis layanan service dan harga standar</p></div>
+        <a href="{% url 'service_center:jenis_list' %}" class="btn btn-label-secondary"><i class="ri-arrow-left-line me-1"></i>Kembali</a>
+    </div>
+    <div class="card">
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">{% csrf_token %}
+                <div class="row g-4">
+                    <div class="col-md-6"><label class="form-label">Kategori <span class="text-danger">*</span></label>{{ form.kategori }}{% if form.kategori.errors %}<div class="text-danger small mt-1">{{ form.kategori.errors.0 }}</div>{% endif %}</div>
+                    <div class="col-md-6"><label class="form-label">Nama Layanan <span class="text-danger">*</span></label>{{ form.nama }}{% if form.nama.errors %}<div class="text-danger small mt-1">{{ form.nama.errors.0 }}</div>{% endif %}</div>
+                    <div class="col-md-6"><label class="form-label">Harga Standar (Rp)</label>{{ form.harga_standar }}</div>
+                    <div class="col-md-6"><label class="form-label">Estimasi Waktu</label>{{ form.estimasi_waktu }}</div>
+                    <div class="col-12"><label class="form-label">Deskripsi</label>{{ form.deskripsi }}</div>
+                    <div class="col-md-6">
+                        <label class="form-label">Foto Layanan</label>
+                        {{ form.foto }}
+                        <small class="form-text text-muted">Format: JPG, PNG. Maks 2MB.</small>
+                        {% if form.instance.foto %}
+                        <div class="mt-2">
+                            <img src="{{ form.instance.foto.url }}" alt="Foto" style="max-height:100px; border-radius:6px; border:1px solid #d9dee3">
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3"><div class="form-check form-switch mt-3">{{ form.aktif }}<label class="form-check-label ms-2">Aktif</label></div></div>
+                </div>
+                <div class="mt-4"><button type="submit" class="btn btn-primary me-2"><i class="ri-save-line me-1"></i>Simpan</button><a href="{% url 'service_center:jenis_list' %}" class="btn btn-label-secondary">Batal</a></div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

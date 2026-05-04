@@ -99,6 +99,7 @@ class MetodePembayaran(models.Model):
         Sumber pendapatan:
         1. POSTransaction (status='paid') → penjualan retail kasir
         2. SalesOrder (status in confirmed/delivered/completed) → penjualan B2B
+        3. OrderService (status_bayar='lunas') → service center
 
         Return: Decimal — total pendapatan
         """
@@ -114,32 +115,87 @@ class MetodePembayaran(models.Model):
             status__in=['confirmed', 'delivered', 'completed']
         ).aggregate(total=Sum('total_harga'))['total'] or 0
 
-        return pos_total + so_total
+        # Sumber 3: Order Service yang sudah lunas
+        sc_total = self.order_services.filter(
+            status_bayar='lunas'
+        ).aggregate(total=Sum('biaya_akhir'))['total'] or 0
+
+        return pos_total + so_total + sc_total
 
     @property
     def total_pengeluaran(self):
         """
         Hitung total PENGELUARAN dari metode pembayaran ini.
 
-        Pengeluaran berasal dari 2 sumber:
+        Pengeluaran berasal dari 3 sumber:
         1. TransaksiBiaya (biaya operasional) — yang statusnya 'approved'
         2. PurchaseOrder (pembelian ke supplier) — yang statusnya 'received'
+        3. Produk (pembelian stok awal/import) — harga_beli × qty_historis
+
+        DIPERBAIKI: Sumber 3 menggunakan qty_historis (stok + terjual + adj_out)
+        bukan hanya stok_total, agar pengeluaran produk yang sudah terjual tetap terhitung.
 
         Return: Decimal — total pengeluaran
         """
         from django.db.models import Sum
+        from decimal import Decimal
+        from apps.penjualan.models import SalesOrderItem
+        from apps.inventory.models import AdjustmentStok
+        # Note: POSTransactionItem didefinisikan setelah MetodePembayaran, import dari modul pos
+        import apps.pos.models as pos_models
 
-        # Sumber 1: Total dari transaksi biaya yang sudah disetujui
+        # Sumber 1: Total dari transaksi biaya (HANYA status 'approved')
         biaya_total = self.transaksi_biaya.filter(
             status='approved'
-        ).aggregate(total=Sum('jumlah'))['total'] or 0
+        ).aggregate(total=Sum('jumlah'))['total'] or Decimal('0')
 
         # Sumber 2: Total dari Purchase Order yang sudah diterima
         po_total = self.purchase_orders.filter(
             status='received'
-        ).aggregate(total=Sum('total_harga'))['total'] or 0
+        ).aggregate(total=Sum('total_harga'))['total'] or Decimal('0')
 
-        return biaya_total + po_total
+        # Sumber 3: Total pembelian produk/sparepart yang menggunakan metode ini
+        # Menggunakan qty_historis (stok_saat_ini + terjual_so + terjual_pos + adj_out)
+        produk_total = Decimal('0')
+        try:
+            for produk in self.produk_set.all():
+                stok_saat_ini = produk.stok_total
+                
+                # Hitung qty terjual di SO
+                qty_sold_so = SalesOrderItem.objects.filter(
+                    produk=produk,
+                    sales_order__status__in=['confirmed', 'delivered', 'completed']
+                ).aggregate(total=Sum('jumlah'))['total'] or Decimal('0')
+                
+                # Hitung qty terjual di POS (gunakan jumlah_konversi = satuan dasar)
+                qty_sold_pos = pos_models.POSTransactionItem.objects.filter(
+                    produk=produk,
+                    transaction__status='paid'
+                ).aggregate(total=Sum('jumlah_konversi'))['total'] or Decimal('0')
+                
+                # Hitung qty keluar di Adjustment
+                qty_adj_out = AdjustmentStok.objects.filter(
+                    produk=produk,
+                    tipe='out'
+                ).aggregate(total=Sum('jumlah'))['total'] or Decimal('0')
+                
+                # Hitung qty terpakai di Service Center (yang sudah mengurangi stok)
+                qty_sc_used = Decimal('0')
+                try:
+                    from apps.service_center.models import PenggunaanSparepart
+                    qty_sc_used = PenggunaanSparepart.objects.filter(
+                        produk=produk,
+                        stok_dikurangi=True
+                    ).aggregate(total=Sum('jumlah'))['total'] or Decimal('0')
+                except Exception:
+                    pass
+                
+                qty_historis = stok_saat_ini + qty_sold_so + qty_sold_pos + qty_adj_out + qty_sc_used
+                produk_total += produk.harga_beli * qty_historis
+        except Exception:
+            pass
+
+        return biaya_total + po_total + produk_total
 
     @property
     def saldo_terhitung(self):
@@ -163,6 +219,7 @@ class MetodePembayaran(models.Model):
         2. SalesOrder (semua status)
         3. PurchaseOrder (semua status)
         4. TransaksiBiaya (semua status)
+        5. OrderService (semua status)
 
         Return: int — jumlah total transaksi
         """
@@ -170,7 +227,9 @@ class MetodePembayaran(models.Model):
         so_count = self.sales_orders.count()
         po_count = self.purchase_orders.count()
         biaya_count = self.transaksi_biaya.count()
-        return pos_count + so_count + po_count + biaya_count
+        sc_count = self.order_services.count()
+        produk_count = self.produk_set.count()
+        return pos_count + so_count + po_count + biaya_count + sc_count + produk_count
 
 
 class POSTransaction(models.Model):
@@ -315,12 +374,20 @@ class POSTransaction(models.Model):
                 last_number = int(last_trx.nomor_transaksi.split('/')[-1])
                 new_number = last_number + 1  # Increment: 5 → 6
             except (ValueError, IndexError):
-                new_number = 1  # Fallback jika format tidak standar
+                # DIPERBAIKI: fallback aman — hitung jumlah transaksi + 1
+                new_number = POSTransaction.objects.filter(
+                    nomor_transaksi__startswith=prefix
+                ).count() + 1
         else:
             new_number = 1  # Transaksi pertama hari ini
 
         # Format dengan zero-padding 4 digit: 1 → '0001'
-        return f"{prefix}/{new_number:04d}"
+        # Tambahan: loop untuk memastikan nomor unik
+        nomor = f"{prefix}/{new_number:04d}"
+        while POSTransaction.objects.filter(nomor_transaksi=nomor).exists():
+            new_number += 1
+            nomor = f"{prefix}/{new_number:04d}"
+        return nomor
 
     def calculate_total(self):
         """
@@ -423,6 +490,23 @@ class POSTransactionItem(models.Model):
 
     # Subtotal per item — dihitung otomatis: (jumlah × harga_satuan) - diskon
     subtotal = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name="Subtotal")
+
+    # Satuan transaksi — satuan yang digunakan kasir saat transaksi (bisa berbeda dari satuan produk)
+    # Contoh: produk dalam Kg, tapi kasir jual dalam Gram
+    satuan_transaksi = models.ForeignKey(
+        'produk.Satuan', on_delete=models.SET_NULL, null=True, blank=True,
+        verbose_name="Satuan Transaksi",
+        help_text="Kosongkan jika menggunakan satuan asli produk"
+    )
+
+    # Jumlah setelah konversi ke satuan dasar produk
+    # Contoh: kasir jual 500 gram → jumlah=500, jumlah_konversi=0.5 (kg)
+    # Digunakan untuk kalkulasi qty_historis di Laporan Keuangan & Metode Pembayaran
+    jumlah_konversi = models.DecimalField(
+        max_digits=15, decimal_places=4, default=0,
+        verbose_name="Jumlah (Satuan Dasar)",
+        help_text="Jumlah dalam satuan dasar produk, dihitung otomatis"
+    )
 
     class Meta:
         """Konfigurasi metadata model POSTransactionItem."""

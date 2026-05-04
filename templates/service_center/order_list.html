@@ -1,0 +1,388 @@
+{% extends 'layout/layout_vertical.html' %}
+{% comment %}
+==========================================================================
+   ORDER LIST — Daftar Order Service
+   Fitur: DataTables, filter status, export Excel/PDF, filter kolom
+==========================================================================
+{% endcomment %}
+{% load static %}
+{% load currency_filters %}
+
+{% block title %}Daftar Order Service{% endblock title %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="{% static 'js/export_utils.js' %}"></script>
+{% endblock vendor_js %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="ri-file-list-3-line me-2"></i>Daftar Order Service</h4>
+            <p class="text-muted mb-0">{{ total_order }} total order | {{ order_aktif }} aktif</p>
+        </div>
+        {% if can_create.service_center %}
+        <a href="{% url 'service_center:order_create' %}" class="btn btn-primary">
+            <i class="ri-add-line me-1"></i>Terima Unit Baru
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Cari Order</label>
+                    <input type="text" class="form-control" id="searchOrder" placeholder="Nomor service, pelanggan, merek...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Filter Status</label>
+                    <select class="form-select" id="filterStatus">
+                        <option value="">Semua Status</option>
+                        {% for value, label in status_choices %}
+                        <option value="{{ label }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Dari Tanggal</label>
+                    <input type="date" class="form-control" id="filterDateFrom">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Sampai Tanggal</label>
+                    <input type="date" class="form-control" id="filterDateTo">
+                </div>
+            </div>
+            <div class="row g-3 mt-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Pilih Kolom</label>
+                    <div class="dropdown">
+                        <button class="btn btn-label-secondary dropdown-toggle w-100" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside"><i class="ri-layout-column-line me-1"></i>Pilih Kolom</button>
+                        <div class="dropdown-menu p-3" style="min-width:280px">
+                            <h6 class="dropdown-header px-0 mb-2">Kolom Tabel</h6>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="0" checked onchange="toggleColumns()"><label class="form-check-label">No. Service</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="1" checked onchange="toggleColumns()"><label class="form-check-label">Pelanggan</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="2" checked onchange="toggleColumns()"><label class="form-check-label">Perangkat</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="3" checked onchange="toggleColumns()"><label class="form-check-label">Status</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="4" checked onchange="toggleColumns()"><label class="form-check-label">Prioritas</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="5" checked onchange="toggleColumns()"><label class="form-check-label">Biaya</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="6" checked onchange="toggleColumns()"><label class="form-check-label">Tanggal</label></div>
+                            <div class="dropdown-divider my-2"></div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-primary flex-fill" onclick="selectAllColumns()">Semua</button>
+                                <button class="btn btn-sm btn-label-secondary flex-fill" onclick="deselectAllColumns()">Kosongkan</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6"></div>
+                <div class="col-md-3">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" onclick="applyFilter()"><i class="ri-filter-3-line me-1"></i>Terapkan Filter</button>
+                        <button class="btn btn-label-secondary" onclick="resetFilter()"><i class="ri-refresh-line me-1"></i>Reset</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Order Service</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportToPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+            </div>
+        </div>
+        <div class="card-datatable table-responsive">
+            <table class="table table-hover" id="orderTable">
+                <thead>
+                    <tr>
+                        <th>No. Service</th>
+                        <th>Pelanggan</th>
+                        <th>Perangkat</th>
+                        <th>Status</th>
+                        <th>Prioritas</th>
+                        <th>Biaya</th>
+                        <th>Tanggal Masuk</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in order_list %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'service_center:order_detail' order.pk %}" class="fw-medium text-primary">{{ order.nomor_service }}</a>
+                            <br><small class="text-muted">{{ order.kode_unik }}</small>
+                        </td>
+                        <td>
+                            <strong>{{ order.pelanggan.nama }}</strong>
+                            <br><small class="text-muted">{{ order.pelanggan.telepon }}</small>
+                        </td>
+                        <td>
+                            {{ order.merek }} {{ order.model_tipe|default:"" }}
+                            <br><small class="text-muted">{{ order.jenis_perangkat.nama }}</small>
+                        </td>
+                        <td><span class="badge bg-label-{{ order.status_badge_class }}">{{ order.get_status_display }}</span></td>
+                        <td><span class="badge bg-label-{{ order.prioritas_badge_class }}">{{ order.get_prioritas_display }}</span></td>
+                        <td>{{ order.biaya_akhir|rupiah }}</td>
+                        <td>{{ order.tanggal_masuk|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            <div class="dropdown">
+                                <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ri-more-2-line"></i></button>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="{% url 'service_center:order_detail' order.pk %}"><i class="ri-eye-line me-2"></i>Detail</a>
+                                    {% if can_edit.service_center %}
+                                    <a class="dropdown-item" href="{% url 'service_center:order_update' order.pk %}"><i class="ri-edit-line me-2"></i>Edit</a>
+                                    {% endif %}
+                                    <a class="dropdown-item" href="{% url 'service_center:cetak_nota' order.pk %}" target="_blank"><i class="ri-printer-line me-2"></i>Cetak Nota</a>
+                                    {% if can_delete.service_center %}
+                                    <div class="dropdown-divider"></div>
+                                    <form method="post" action="{% url 'service_center:order_delete' order.pk %}" class="d-inline" onsubmit="return confirm('Hapus order {{ order.nomor_service }}?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item text-danger"><i class="ri-delete-bin-line me-2"></i>Hapus</button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="8" class="text-center py-5"><i class="ri-file-list-3-line ri-3x text-muted mb-3 d-block"></i><p class="text-muted">Belum ada order service</p></td></tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="5" class="text-start ps-4 py-3">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ total_order }} Order | {{ order_aktif }} Aktif</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-end py-3" colspan="3">
+                            <div class="text-end">
+                                <strong class="d-block text-success" style="font-size: 1rem;">{{ total_pendapatan|rupiah }}</strong>
+                                <small class="text-muted" style="font-size: 0.75rem;">Total Pendapatan</small>
+                            </div>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block page_js %}
+<style>
+    .dataTables_wrapper .dataTables_info{padding:1rem 1.5rem;font-size:.875rem;color:#697a8d}.dataTables_wrapper .dataTables_paginate{padding:1rem 1.5rem}.dataTables_wrapper .dataTables_length,.dataTables_wrapper .dataTables_filter{padding:0 1.5rem 1rem}.dataTables_wrapper .dataTables_filter input{border:1px solid #d9dee3;border-radius:.375rem;padding:.4375rem .875rem}.dataTables_wrapper .dataTables_length select{border:1px solid #d9dee3;border-radius:.375rem;padding:.4375rem 2rem .4375rem .875rem}.dataTables_wrapper .dataTables_paginate .paginate_button{padding:.438rem .875rem;border-radius:.375rem;margin:0 .125rem;border:none;background:transparent;color:#697a8d}.dataTables_wrapper .dataTables_paginate .paginate_button.current{background:#696cff !important;color:white !important;border:none}.dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.disabled){background:rgba(105,108,255,.08)!important;color:#696cff !important;border:none}.card-datatable{padding-bottom:0}
+    @media(max-width:768px){.card-datatable{overflow-x:hidden!important}.dataTables_wrapper{overflow-x:hidden!important;max-width:100%!important}#orderTable{min-width:1000px!important}}
+</style>
+<script>
+$(document).ready(function(){
+    {% if order_list %}
+    var dt = $('#orderTable').DataTable({
+        language:{"sEmptyTable":"Tidak ada data","sLengthMenu":"Tampilkan _MENU_ data","sZeroRecords":"Tidak ditemukan","sInfo":"Menampilkan _START_-_END_ dari _TOTAL_","sInfoEmpty":"0 data","sInfoFiltered":"(dari _MAX_ total)","sSearch":"Cari:","oPaginate":{"sPrevious":"Sebelumnya","sNext":"Selanjutnya"}},
+        order:[[6,'desc']],pageLength:25,lengthMenu:[[10,25,50,100,-1],['10','25','50','100','Semua']],
+        responsive:false,columnDefs:[{orderable:false,targets:[7]}],
+        dom:'<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+        initComplete:function(){$('.dataTables_filter input').attr('placeholder','Cari order...')}
+    });
+    // Status filter
+    $('#filterStatus').on('change', function(){dt.column(3).search(this.value).draw()});
+    {% endif %}
+});
+function resetFilter(){
+    document.getElementById('searchOrder').value='';document.getElementById('filterStatus').value='';document.getElementById('filterDateFrom').value='';document.getElementById('filterDateTo').value='';selectAllColumns();
+    {% if order_list %}$('#orderTable').DataTable().search('').columns().search('').draw();{% endif %}
+}
+function applyFilter(){
+    {% if order_list %}var v=document.getElementById('searchOrder').value;$('#orderTable').DataTable().search(v).draw();{% endif %}
+}
+    // Standardized Export - Excel Format (.xls)
+    const EXCEL_INFO = {
+        name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
+        address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
+        phone: "{{ export_excel_template.header_telepon|escapejs|default:'No Telp' }}",
+        email: "Email: {{ export_excel_template.header_email|escapejs|default:'email@domain.com' }}",
+        website: "{{ export_excel_template.header_website|escapejs|default:'' }}",
+        copyright: "{{ export_excel_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
+    };
+
+    const PDF_INFO = {
+        name: "{{ export_pdf_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
+        address: "{{ export_pdf_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
+        phone: "{{ export_pdf_template.header_telepon|escapejs|default:'No Telp' }}",
+        email: "Email: {{ export_pdf_template.header_email|escapejs|default:'email@domain.com' }}",
+        website: "{{ export_pdf_template.header_website|escapejs|default:'' }}",
+        copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
+    };
+
+    function exportToExcel() {
+        const tableObj = new $.fn.dataTable.Api('#orderTable');
+        let colCount = 0;
+        let visibleColumns = [];
+
+        tableObj.columns().every(function (index) {
+            const headerText = this.header() ? this.header().textContent.trim() : '';
+            if (this.visible() && headerText.toLowerCase() !== 'aksi') {
+                visibleColumns.push({ index: index, text: headerText });
+                colCount++;
+            }
+        });
+
+        let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+        html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head><body>';
+
+        html += '<table border="0">';
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
+        html += `<tr><td colspan="${colCount}"></td></tr></table>`;
+
+        html += '<table border="1"><thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;">';
+        visibleColumns.forEach(col => { html += `<th>${col.text}</th>`; });
+        html += '</tr></thead><tbody>';
+
+        tableObj.rows({ search: 'applied' }).every(function (rowIdx) {
+            html += '<tr>';
+            visibleColumns.forEach(col => {
+                let cellNode = tableObj.cell(rowIdx, col.index).node();
+                let text = cellNode ? cellNode.textContent.trim().replace(/\s+/g, ' ') : '';
+                html += `<td>${text}</td>`;
+            });
+            html += '</tr>';
+        });
+
+        // Add tfoot summary
+        html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
+        html += `<td colspan="${colCount - 1}">RINGKASAN: {{ total_order }} Order | {{ order_aktif }} Aktif</td>`;
+        html += `<td>{{ total_pendapatan|rupiah|escapejs }}</td>`;
+        html += '</tr>';
+
+        html += '</tbody></table>';
+        html += '<table border="0">';
+        html += `<tr><td colspan="${colCount}"></td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">${EXCEL_INFO.copyright}</td></tr>`;
+        html += '</table></body></html>';
+
+        const BOM = '\uFEFF';
+        const blob = new Blob([BOM + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+        if (typeof _downloadBlob === 'function') {
+            _downloadBlob(blob, 'Daftar_Order_Service_' + new Date().toISOString().slice(0, 10) + '.xls');
+        } else {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'Daftar_Order_Service_' + new Date().toISOString().slice(0, 10) + '.xls';
+            link.click();
+        }
+    }
+
+    function exportToPDF() {
+        if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
+        const tableObj = new $.fn.dataTable.Api('#orderTable');
+        
+        const headers = [];
+        const visibleColumns = [];
+        tableObj.columns().every(function (index) {
+            const headerText = this.header() ? this.header().textContent.trim() : '';
+            if (this.visible() && headerText.toLowerCase() !== 'aksi') {
+                visibleColumns.push(index);
+                headers.push({ text: headerText, style: 'tableHeader', fillColor: '#696CFF', color: '#FFFFFF', bold: true });
+            }
+        });
+
+        const body = [headers];
+        tableObj.rows({ search: 'applied' }).every(function (rowIdx) {
+            const rowData = [];
+            visibleColumns.forEach(colIndex => {
+                let cellNode = tableObj.cell(rowIdx, colIndex).node();
+                let text = cellNode ? cellNode.textContent.trim().replace(/\s+/g, ' ') : '';
+                rowData.push(text);
+            });
+            body.push(rowData);
+        });
+
+        // Add tfoot summary
+        const summaryRow = [];
+        for (let i = 0; i < visibleColumns.length; i++) {
+            if (i === 0) {
+                summaryRow.push({ text: `RINGKASAN: {{ total_order }} Order | {{ order_aktif }} Aktif`, colSpan: visibleColumns.length - 1, bold: true, fillColor: '#E8E8FF', alignment: 'left' });
+            } else if (i === visibleColumns.length - 1) {
+                summaryRow.push({ text: `{{ total_pendapatan|rupiah|escapejs }}`, bold: true, fillColor: '#E8E8FF', alignment: 'right' });
+            } else {
+                summaryRow.push({});
+            }
+        }
+        body.push(summaryRow);
+
+        const docDefinition = {
+            pageOrientation: 'landscape',
+            pageSize: 'A4',
+            pageMargins: [40, 100, 40, 60],
+            header: function() {
+                return {
+                    margin: [40, 30, 40, 20],
+                    columns: [
+                        { width: '*', text: [ {text: PDF_INFO.name + '\n', fontSize: 16, bold: true, color: '#5F61E6'}, {text: PDF_INFO.address + '\n', fontSize: 10, color: '#697A8D'}, {text: PDF_INFO.phone + ' | ' + PDF_INFO.email, fontSize: 10, color: '#697A8D'} ] },
+                        { width: 'auto', text: 'DAFTAR ORDER SERVICE\n', fontSize: 14, bold: true, color: '#32475C', alignment: 'right' }
+                    ]
+                };
+            },
+            content: [
+                {
+                    table: {
+                        headerRows: 1,
+                        widths: Array(visibleColumns.length).fill('auto'),
+                        body: body
+                    },
+                    layout: {
+                        fillColor: function (rowIndex) { return (rowIndex === 0) ? '#696CFF' : ((rowIndex % 2 === 0) ? '#F5F5F9' : null); },
+                        hLineWidth: function () { return 0.5; },
+                        vLineWidth: function () { return 0.5; },
+                        hLineColor: function () { return '#DBDADE'; },
+                        vLineColor: function () { return '#DBDADE'; },
+                    }
+                }
+            ],
+            footer: function() {
+                return {
+                    margin: [40, 20, 40, 0],
+                    columns: [
+                        { text: PDF_INFO.copyright, style: 'footer' },
+                        { text: 'Dicetak: ' + new Date().toLocaleString('id-ID'), style: 'footer', alignment: 'right' }
+                    ]
+                };
+            },
+            styles: {
+                tableHeader: { bold: true, fontSize: 10, color: '#FFFFFF' },
+                footer: { fontSize: 8, italics: true, color: '#697A8D' }
+            },
+            defaultStyle: { fontSize: 9 }
+        };
+
+        const pdfDoc = pdfMake.createPdf(docDefinition);
+        if (typeof _downloadBlob === 'function' && typeof _isWebView === 'function' && _isWebView()) {
+            pdfDoc.getBlob(function (blob) { _downloadBlob(blob, 'Daftar_Order_Service_' + new Date().toISOString().slice(0, 10) + '.pdf'); });
+        } else {
+            pdfDoc.download('Daftar_Order_Service_' + new Date().toISOString().slice(0, 10) + '.pdf');
+        }
+    }
+
+</script>
+{% endblock page_js %}

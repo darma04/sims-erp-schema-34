@@ -336,6 +336,29 @@ class Produk(models.Model):
     # ===== STATUS =====
     aktif = models.BooleanField(default=True, verbose_name="Aktif")
 
+    # ===== TIPE PRODUK =====
+    TIPE_CHOICES = [
+        ('produk', 'Produk'),
+        ('sparepart', 'Sparepart'),
+    ]
+    tipe = models.CharField(
+        max_length=15,
+        choices=TIPE_CHOICES,
+        default='produk',
+        verbose_name="Tipe",
+        help_text="Produk untuk penjualan umum, Sparepart untuk service center"
+    )
+
+    # ===== METODE PEMBAYARAN =====
+    # FK ke MetodePembayaran — metode pembayaran saat menambahkan produk/sparepart
+    metode_pembayaran = models.ForeignKey(
+        'pos.MetodePembayaran',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='produk_set',
+        verbose_name="Metode Pembayaran"
+    )
+
     # ===== TRACKING =====
     dibuat_oleh = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='produk_dibuat')
     # dibuat_pada — Tanggal & waktu
@@ -394,12 +417,15 @@ class Produk(models.Model):
 
         Return: String SKU — contoh 'MAK-00001'
         """
-        # LANGKAH 1: Tentukan prefix berdasarkan kategori
-        prefix = "PRD"  # Default prefix jika produk belum punya kategori
-        if self.kategori:
+        # LANGKAH 1: Tentukan prefix berdasarkan tipe dan kategori
+        if self.tipe == 'sparepart':
+            prefix = "SPR"  # Prefix khusus sparepart
+        elif self.kategori:
             # Ambil 3 huruf pertama dari nama kategori, ubah ke uppercase
             # Contoh: 'Makanan' → 'Mak' → 'MAK'
             prefix = self.kategori.nama[:3].upper()
+        else:
+            prefix = "PRD"  # Default prefix jika produk belum punya kategori
 
         # LANGKAH 2: Cari produk terakhir dengan prefix yang sama
         # DIPERBAIKI: select_for_update() mencegah race condition saat concurrent create
