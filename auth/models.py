@@ -186,7 +186,7 @@ class Profile(models.Model):
         - DRY (Don't Repeat Yourself)
         """
         if created:
-            Profile.objects.create(user=instance, email=instance.email)
+            Profile.objects.get_or_create(user=instance, defaults={'email': instance.email})
 
     # ==================== META ====================
     class Meta:

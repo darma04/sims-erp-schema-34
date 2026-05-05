@@ -896,9 +896,24 @@ def restore_data(request):
         current_user_pk = current_user.pk
         current_username = current_user.username
 
+        # Filter backup data: skip admin yang sedang login (sudah di-preserve)
+        # Ini mencegah duplikat User & Profile yang di-preserve
+        safe_data = []
+        for item in filtered_data:
+            model = item.get('model', '')
+            pk = item.get('pk')
+            fields = item.get('fields', {})
+            # Skip user yang sama dengan admin saat ini
+            if model == 'auth.user' and pk == current_user_pk:
+                continue
+            # Skip Profile milik admin saat ini (akan di-recreate di langkah 4)
+            if model == 'auth.profile' and fields.get('user') == current_user_pk:
+                continue
+            safe_data.append(item)
+
         # Simpan data yang sudah difilter ke temporary file
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False, encoding='utf-8') as tmp:
-            json.dump(filtered_data, tmp, ensure_ascii=False, indent=2)
+            json.dump(safe_data, tmp, ensure_ascii=False, indent=2)
             tmp_path = tmp.name
 
         # === LANGKAH 1: FLUSH SEMUA DATA LAMA ===
@@ -1030,6 +1045,14 @@ def restore_data(request):
         load_success = False
         load_error_msg = ""
 
+        # PENTING: Disconnect signal post_save User → auto-create Profile
+        # Signal ini membuat Profile saat loaddata menyimpan User,
+        # yang kemudian bentrok saat loaddata juga menyimpan Profile dari backup
+        from django.db.models.signals import post_save
+        from auth.models import Profile as ProfileSignal
+        post_save.disconnect(ProfileSignal.create_profile, sender=User)
+        logger.info("[RESTORE] Signal create_profile di-disconnect sementara.")
+
         # Percobaan 1: loaddata langsung
         try:
             stderr_output = StringIO()
@@ -1089,6 +1112,10 @@ def restore_data(request):
         with connection.cursor() as cursor:
             cursor.execute("PRAGMA foreign_keys = ON")
         logger.info("[RESTORE] FK constraints diaktifkan kembali.")
+
+        # RECONNECT signal create_profile
+        post_save.connect(ProfileSignal.create_profile, sender=User)
+        logger.info("[RESTORE] Signal create_profile di-reconnect.")
 
         # === LANGKAH 3: RESTORE FILE MEDIA DARI ZIP ===
         if is_zip and tmp_extract_dir:
@@ -1208,6 +1235,13 @@ def restore_data(request):
         try:
             from apps.fraud_detection import signals as fraud_signals
             fraud_signals._BYPASS_FRAUD_SIGNALS = False
+        except Exception:
+            pass
+        # Selalu reconnect signal create_profile (safety net)
+        try:
+            from django.db.models.signals import post_save as _ps
+            from auth.models import Profile as _P
+            _ps.connect(_P.create_profile, sender=User)
         except Exception:
             pass
         # Selalu pastikan FK constraints aktif
