@@ -375,12 +375,11 @@ CSRF_COOKIE_NAME = "sims_csrftoken"
 # CSRF Failure Handler — Redirect ramah saat token kedaluwarsa (bukan error 403)
 CSRF_FAILURE_VIEW = "auth.csrf_failure.csrf_failure_view"
 
-# Cookie domain — untuk subdomain tenant (production)
-# Contoh: .sims.serpgroup.cloud → cookie berlaku untuk semua *.sims.serpgroup.cloud
-_cookie_domain = os.environ.get("SESSION_COOKIE_DOMAIN", "").strip()
-if _cookie_domain:
-    SESSION_COOKIE_DOMAIN = _cookie_domain
-    CSRF_COOKIE_DOMAIN = _cookie_domain
+# Cookie domain — JANGAN set SESSION_COOKIE_DOMAIN untuk multi-tenant!
+# Jika di-set ke ".sims.serpgroup.cloud", SEMUA tenant subdomain akan berbagi
+# cookie session yang sama → user login di tenant A akan bentrok dengan tenant B (401).
+# Dengan TIDAK men-set domain, browser secara default hanya mengirim cookie ke
+# exact subdomain yang men-set-nya → setiap tenant terisolasi sempurna.
 
 # ==========================================================================
 #  SECURITY HARDENING — Perlindungan dari Serangan Cyber
