@@ -1506,6 +1506,7 @@ class LaporanCabangView(ReadPermissionMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))
+        context['is_laporan_cabang'] = True
         from datetime import datetime
         from decimal import Decimal
 
@@ -1519,6 +1520,7 @@ class LaporanCabangView(ReadPermissionMixin, TemplateView):
         context['filter_cabang'] = cabang_id
         context['filter_start_date'] = start_date_str
         context['filter_end_date'] = end_date_str
+        context['has_date_filter'] = bool(start_date_str or end_date_str)
 
         filter_start = None
         filter_end = None
@@ -1561,11 +1563,11 @@ class LaporanCabangView(ReadPermissionMixin, TemplateView):
                 for si in stok_qs_all.select_related('produk'):
                     nilai_aset += si.produk.harga_beli * si.jumlah
 
-                # Jumlah karyawan — hitung user yang punya transaksi di gudang ini
+                # Jumlah karyawan di cabang ini
                 jml_karyawan = 0
                 try:
                     from apps.hr.models import Karyawan as KaryawanModel
-                    jml_karyawan = KaryawanModel.objects.filter(aktif=True).count()
+                    jml_karyawan = KaryawanModel.objects.filter(aktif=True, cabang_id=gid).count()
                 except Exception:
                     pass
 
@@ -1979,6 +1981,72 @@ class LaporanCabangView(ReadPermissionMixin, TemplateView):
             context['sp_service_qty'] = 0
             context['sp_service_cogs'] = Decimal('0')
             context['sp_service_top'] = []
+
+        # ════════════════════════════════════════════════════════
+        # 7. KARYAWAN & ABSENSI PER CABANG
+        # ════════════════════════════════════════════════════════
+        try:
+            from apps.hr.models import Karyawan as KaryawanModel, Absensi as AbsensiModel
+
+            # Karyawan yang terdaftar di cabang ini
+            karyawan_cabang_qs = KaryawanModel.objects.filter(
+                cabang_id=cabang_id, aktif=True
+            ).select_related('jabatan', 'departemen', 'cabang').order_by('nama')
+
+            total_karyawan_cabang = karyawan_cabang_qs.count()
+
+            # Absensi hari ini di cabang ini
+            from django.utils import timezone
+            today = timezone.now().date()
+
+            absensi_hari_ini = AbsensiModel.objects.filter(
+                cabang_id=cabang_id, tanggal=today
+            )
+            karyawan_hadir = absensi_hari_ini.filter(
+                status__in=['hadir', 'terlambat']
+            ).count()
+            karyawan_terlambat = absensi_hari_ini.filter(
+                status='terlambat'
+            ).count()
+
+            # Tingkat kehadiran (%) — berdasarkan periode filter
+            absensi_filter = {'cabang_id': cabang_id}
+            if filter_start:
+                absensi_filter['tanggal__gte'] = filter_start
+            if filter_end:
+                absensi_filter['tanggal__lte'] = filter_end
+
+            absensi_periode = AbsensiModel.objects.filter(**absensi_filter)
+            total_absensi_record = absensi_periode.count()
+            total_hadir_record = absensi_periode.filter(
+                status__in=['hadir', 'terlambat']
+            ).count()
+
+            tingkat_kehadiran = 0
+            if total_absensi_record > 0:
+                tingkat_kehadiran = round((total_hadir_record / total_absensi_record) * 100, 1)
+
+            # Absensi list untuk tabel (dengan filter tanggal)
+            absensi_list_cabang = absensi_periode.select_related(
+                'karyawan', 'karyawan__jabatan', 'karyawan__departemen'
+            ).order_by('-tanggal', '-jam_masuk')[:100]
+
+            context['karyawan_list_cabang'] = karyawan_cabang_qs
+            context['total_karyawan_cabang'] = total_karyawan_cabang
+            context['karyawan_hadir_hari_ini'] = karyawan_hadir
+            context['karyawan_terlambat_hari_ini'] = karyawan_terlambat
+            context['tingkat_kehadiran'] = tingkat_kehadiran
+            context['absensi_list_cabang'] = absensi_list_cabang
+            context['total_absensi_record'] = total_absensi_record
+
+        except Exception:
+            context['karyawan_list_cabang'] = []
+            context['total_karyawan_cabang'] = 0
+            context['karyawan_hadir_hari_ini'] = 0
+            context['karyawan_terlambat_hari_ini'] = 0
+            context['tingkat_kehadiran'] = 0
+            context['absensi_list_cabang'] = []
+            context['total_absensi_record'] = 0
 
         # Template cetak untuk export
         from apps.pengaturan.models import TemplateCetak

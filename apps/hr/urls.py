@@ -68,11 +68,17 @@ urlpatterns = [
     path('absensi/clock-in/', views.absensi_clock_in, name='absensi-clock-in'),
     # URL: /hr/absensi/clock-out/ — absensi-clock-out
     path('absensi/clock-out/', views.absensi_clock_out, name='absensi-clock-out'),
+    # URL: /hr/absensi/<int:pk>/lokasi-map/ — absensi-lokasi-map (Peta Folium)
+    path('absensi/<int:pk>/lokasi-map/', views.absensi_lokasi_map, name='absensi-lokasi-map'),
+    # URL: /hr/absensi/<int:pk>/detail/ — absensi-detail (Detail Absensi + Peta)
+    path('absensi/<int:pk>/detail/', views.AbsensiDetailView.as_view(), name='absensi-detail'),
     
     # Penggajian CRUD
     path('penggajian/', views.PenggajianListView.as_view(), name='penggajian'),
     # URL: /hr/penggajian/add/ — penggajian-add
     path('penggajian/add/', views.PenggajianCreateView.as_view(), name='penggajian-add'),
+    # URL: /hr/penggajian/import/ — penggajian-import
+    path('penggajian/import/', views.ImportPenggajianView.as_view(), name='penggajian-import'),
     # URL: /hr/penggajian/generate/ — penggajian-generate
     path('penggajian/generate/', views.GeneratePenggajianView.as_view(), name='penggajian-generate'),
     # URL: /hr/penggajian/<int:pk>/ — penggajian-detail

@@ -104,7 +104,7 @@
           </div>
           <!-- / Style Switcher-->
 
-          {% if is_dashboard %}
+          {% if is_dashboard or is_laporan_cabang %}
           <!-- Dashboard Date Filter Icon -->
           <div class="navbar-nav align-items-center">
             <div class="nav-item dropdown me-1 me-xl-0">
@@ -157,13 +157,18 @@
             function applyNavFilter() {
               var s = document.getElementById('navFilterStartDate').value;
               var e = document.getElementById('navFilterEndDate').value;
-              var params = [];
-              if (s) params.push('start_date=' + s);
-              if (e) params.push('end_date=' + e);
-              window.location.href = '/' + (params.length ? '?' + params.join('&') : '');
+              var params = new URLSearchParams(window.location.search);
+              if (s) params.set('start_date', s); else params.delete('start_date');
+              if (e) params.set('end_date', e); else params.delete('end_date');
+              var q = params.toString();
+              window.location.href = window.location.pathname + (q ? '?' + q : '');
             }
             function resetNavFilter() {
-              window.location.href = '/';
+              var params = new URLSearchParams(window.location.search);
+              params.delete('start_date');
+              params.delete('end_date');
+              var q = params.toString();
+              window.location.href = window.location.pathname + (q ? '?' + q : '');
             }
           </script>
           <!-- /Dashboard Date Filter Icon -->

@@ -45,7 +45,12 @@
                         <div class="form-check form-switch mb-3">
                             {{ form.aktif }}
                             <label class="form-check-label" for="id_aktif">Aktifkan Pengaturan Ini</label>
-                            <div class="form-text">Hanya satu pengaturan yang bisa aktif dalam satu waktu</div>
+                            <div class="form-text">Hanya satu pengaturan aktif per cabang</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Cabang</label>
+                            {{ form.cabang }}
+                            <div class="form-text">Kosongkan untuk pengaturan default (berlaku untuk karyawan tanpa cabang)</div>
                         </div>
                     </div>
                 </div>

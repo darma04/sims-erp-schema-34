@@ -242,30 +242,35 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if can_edit.hr or can_delete.hr %}
                             <div class="dropdown">
                                 <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
                                     <i class="ri-more-2-line"></i>
                                 </button>
                                 <div class="dropdown-menu">
+                                    {% if can_view.hr %}
+                                    <a class="dropdown-item" href="{% url 'hr:absensi-detail' absensi.pk %}">
+                                        <i class="ri-eye-line me-2 text-primary"></i>Lihat Detail
+                                    </a>
+                                    {% endif %}
+                                    {% if can_view.hr %}
+                                    <a class="dropdown-item" href="javascript:void(0);" onclick="showMapModal({{ absensi.pk }}, '{{ absensi.karyawan.nama }} - {{ absensi.tanggal|date:"d/m/Y" }}')">
+                                        <i class="ri-map-pin-line me-2 text-info"></i>Lihat Peta
+                                    </a>
+                                    {% endif %}
                                     {% if can_edit.hr %}
+                                    <div class="dropdown-divider"></div>
                                     <a class="dropdown-item" href="{% url 'hr:absensi-edit' absensi.pk %}">
                                         <i class="ri-edit-line me-2"></i>Edit
                                     </a>
                                     {% endif %}
                                     {% if can_delete.hr %}
-                                    {% if can_edit.hr %}<div class="dropdown-divider"></div>{% endif %}
+                                    <div class="dropdown-divider"></div>
                                     <a class="dropdown-item text-danger" href="javascript:void(0);" onclick="confirmDelete({{ absensi.pk }}, '{{ absensi.karyawan.nama }} - {{ absensi.tanggal|date:"d/m/Y" }}')">
                                         <i class="ri-delete-bin-line me-2"></i>Hapus
                                     </a>
                                     {% endif %}
                                 </div>
                             </div>
-                            {% else %}
-                            <span class="badge bg-label-secondary">
-                                <i class="ri-eye-line me-1"></i>View Only
-                            </span>
-                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}
@@ -319,6 +324,24 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Batal</button>
                     <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Ya, Hapus</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Map Modal (Folium) -->
+    <div class="modal fade" id="mapModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-info align-items-center py-3">
+                    <h5 class="modal-title text-white mb-0">
+                        <i class="ri-map-pin-line me-2"></i>Lokasi Absensi - <span id="mapTitle"></span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <iframe id="mapIframe" src="" style="width:100%; height:450px; border:none;"></iframe>
                 </div>
             </div>
         </div>
@@ -644,6 +667,18 @@ const FOOTER_LABEL = 'RINGKASAN';
 
         pdfMake.createPdf(docDefinition).download('Absensi_' + new Date().toISOString().slice(0, 10) + '.pdf');
     }
+
+// === MAP MODAL (FOLIUM) ===
+function showMapModal(absensiId, title) {
+    document.getElementById('mapTitle').textContent = title;
+    document.getElementById('mapIframe').src = '/hr/absensi/' + absensiId + '/lokasi-map/';
+    new bootstrap.Modal(document.getElementById('mapModal')).show();
+}
+
+// Cleanup iframe saat modal ditutup
+document.getElementById('mapModal').addEventListener('hidden.bs.modal', function() {
+    document.getElementById('mapIframe').src = '';
+});
 
 let deleteId = null;
 function confirmDelete(id, name) {

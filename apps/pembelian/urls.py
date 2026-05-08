@@ -38,6 +38,8 @@ urlpatterns = [
     
     # ===== PURCHASE ORDER CRUD =====
     path('purchase-order/', views.PurchaseOrderListView.as_view(), name='purchase-order'),
+    # URL: /pembelian/purchase-order/import/ — purchase-order-import
+    path('purchase-order/import/', views.PurchaseOrderImportView.as_view(), name='purchase-order-import'),
     # URL: /pembelian/purchase-order/add/ — purchase-order-add
     path('purchase-order/add/', views.PurchaseOrderCreateView.as_view(), name='purchase-order-add'),
     # URL: /pembelian/purchase-order/<int:pk>/ — purchase-order-detail

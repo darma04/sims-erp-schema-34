@@ -299,11 +299,48 @@ class AdjustmentStokView(ReadPermissionMixin, ListView):
     # Modul permission yang dicek: 'inventory'
     permission_module = 'inventory'
 
+    def get_queryset(self):
+        """Override queryset — support filter by date, jenis, gudang."""
+        qs = AdjustmentStok.objects.select_related(
+            'produk', 'produk__satuan', 'gudang', 'dibuat_oleh'
+        ).order_by('-tanggal')
+
+        # Filter tanggal
+        start = self.request.GET.get('start')
+        end = self.request.GET.get('end')
+        if start:
+            qs = qs.filter(tanggal__date__gte=start)
+        if end:
+            qs = qs.filter(tanggal__date__lte=end)
+
+        # Filter jenis (in/out)
+        jenis = self.request.GET.get('jenis')
+        if jenis in ('in', 'out'):
+            qs = qs.filter(tipe=jenis)
+
+        # Filter gudang
+        gudang_id = self.request.GET.get('gudang')
+        if gudang_id:
+            qs = qs.filter(gudang_id=gudang_id)
+
+        return qs
+
     def get_context_data(self, **kwargs):
         """Menambahkan data konteks tambahan ke template."""
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))
         # Data konteks: total_adjustment - untuk ditampilkan di template
         context['total_adjustment'] = self.get_queryset().count()
+        # Gudang list untuk filter dropdown
+        context['gudang_list'] = Gudang.objects.filter(aktif=True).order_by('nama')
+
+        # Export template context
+        try:
+            from apps.pengaturan.models import TemplateCetak
+            context['export_excel_template'] = TemplateCetak.objects.filter(tipe='excel').first()
+            context['export_pdf_template'] = TemplateCetak.objects.filter(tipe='pdf').first()
+        except Exception:
+            pass
+
         return context
 
 

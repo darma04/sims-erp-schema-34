@@ -1,14 +1,14 @@
 {% extends 'layout/layout_vertical.html' %}
 {% comment %}
 ==========================================================================
-   PRODUK IMPORT - Import Produk dari Excel
-   Halaman untuk mengimport data produk secara massal dari file Excel/CSV.
+   SPAREPART IMPORT - Import Sparepart dari Excel/CSV
+   Halaman untuk mengimport data sparepart secara massal dari file Excel/CSV.
    Menampilkan format template dan proses upload.
    ==========================================================================
 {% endcomment %}
 {% load static %}
 
-{% block title %}Import Produk - ERP{% endblock title %}
+{% block title %}Import Sparepart - ERP{% endblock title %}
 
 {% block vendor_css %}
 {{ block.super }}
@@ -23,7 +23,7 @@
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="py-3 mb-4">
-        <span class="text-muted fw-light">Produk /</span> Import Produk
+        <span class="text-muted fw-light">Sparepart /</span> Import Sparepart
     </h4>
 
     {% if messages %}
@@ -38,7 +38,7 @@
     <div class="row">
         <div class="col-md-8">
             <div class="card mb-4">
-                <h5 class="card-header">Upload File Produk</h5>
+                <h5 class="card-header">Upload File Sparepart</h5>
                 <div class="card-body">
                     <form method="POST" enctype="multipart/form-data">
                         {% csrf_token %}
@@ -52,7 +52,7 @@
                             <button type="submit" class="btn btn-primary me-2">
                                 <i class="ri-upload-2-line me-1"></i>Upload & Import
                             </button>
-                            <a href="{% url 'produk:list' %}" class="btn btn-outline-secondary">Batal</a>
+                            <a href="{% url 'produk:sparepart_list' %}" class="btn btn-outline-secondary">Batal</a>
                         </div>
                     </form>
                 </div>
@@ -71,7 +71,7 @@
                         <li><strong>sku</strong> (opsional, auto-generate)</li>
                         <li><strong>kategori</strong> (opsional)</li>
                         <li><strong>satuan</strong> (opsional, default: pcs)</li>
-                        <li><strong>harga_beli</strong> (opsional,default: 0)</li>
+                        <li><strong>harga_beli</strong> (opsional, default: 0)</li>
                         <li><strong>harga_jual</strong> (opsional, default: 0)</li>
                         <li><strong>stok</strong> (opsional, default: 0)</li>
                         <li><strong>gudang</strong> (opsional, nama/kode gudang)</li>
@@ -103,8 +103,8 @@ function downloadTemplate(format) {
     // Header order: nama (required) first, then optional fields INCLUDING stok
     const header = ['nama', 'sku', 'kategori', 'satuan', 'harga_beli', 'harga_jual', 'stok', 'gudang', 'deskripsi', 'barcode'];
     const sampleData = [
-        ['Contoh Produk 1', 'PRD-00001', 'Elektronik', 'pcs', '100000', '150000', '50', 'Gudang Utama', 'Deskripsi produk 1', '1234567890'],
-        ['Contoh Produk 2', 'PRD-00002', 'Makanan', 'box', '50000', '75000', '25', 'Gudang Cabang', 'Deskripsi produk 2', '0987654321']
+        ['Contoh Sparepart 1', 'SPR-00001', 'LCD Screen', 'pcs', '150000', '250000', '30', 'Gudang Utama', 'LCD Screen 6.5 inch', '1234567890'],
+        ['Contoh Sparepart 2', 'SPR-00002', 'Baterai', 'pcs', '80000', '120000', '50', 'Gudang Cabang', 'Baterai 4000mAh', '0987654321']
     ];
     
     let blob, filename;
@@ -121,7 +121,7 @@ function downloadTemplate(format) {
         // Buat blob CSV dengan UTF-8 BOM
         const BOM = '\uFEFF';
         blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8' });
-        filename = 'template_import_produk.csv';
+        filename = 'template_import_sparepart.csv';
     } else {
         // Generate Excel HTML table - setiap data di kolom terpisah!
         let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
@@ -129,7 +129,7 @@ function downloadTemplate(format) {
         html += '<meta charset="utf-8">';
         html += '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">';
         html += '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>';
-        html += '<x:Name>Template Import</x:Name>';
+        html += '<x:Name>Template Import Sparepart</x:Name>';
         html += '<x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet>';
         html += '</x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->';
         html += '</head><body>';
@@ -153,7 +153,7 @@ function downloadTemplate(format) {
         // Buat blob Excel dengan UTF-8 BOM
         const BOM = '\uFEFF';
         blob = new Blob([BOM + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
-        filename = 'template_import_produk.xls';
+        filename = 'template_import_sparepart.xls';
     }
     
     // Download file — universal (browser + WebView compatible)
@@ -196,7 +196,7 @@ $(document).ready(function() {
         submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Uploading...');
         
         $.ajax({
-            url: '{% url "produk:import" %}',
+            url: '{% url "produk:sparepart_import" %}',
             type: 'POST',
             data: formData,
             processData: false,

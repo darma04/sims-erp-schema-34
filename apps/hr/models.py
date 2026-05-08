@@ -274,6 +274,18 @@ class Karyawan(models.Model):
         verbose_name="Departemen"
     )
 
+    # ===== CABANG =====
+    # FK ke Gudang (cabang) — menentukan di cabang mana karyawan bekerja
+    # Digunakan untuk menentukan pengaturan absensi yang berlaku (lokasi, jam kerja, radius)
+    cabang = models.ForeignKey(
+        'produk.Gudang',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='hr_karyawan_set',
+        verbose_name="Cabang"
+    )
+
     # ===== KEPEGAWAIAN =====
     tanggal_masuk = models.DateField(verbose_name="Tanggal Masuk")
     tanggal_keluar = models.DateField(blank=True, null=True, verbose_name="Tanggal Keluar")
@@ -445,6 +457,19 @@ class PengaturanAbsensi(models.Model):
     nama = models.CharField(max_length=100, default='Pengaturan Default', verbose_name="Nama Pengaturan")
     aktif = models.BooleanField(default=True, verbose_name="Aktif (Gunakan Pengaturan Ini)")
 
+    # ===== CABANG =====
+    # FK ke Gudang (cabang) — pengaturan absensi per cabang
+    # Jika null → pengaturan default (berlaku untuk karyawan tanpa cabang)
+    cabang = models.ForeignKey(
+        'produk.Gudang',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='pengaturan_absensi_set',
+        verbose_name="Cabang",
+        help_text="Kosongkan untuk pengaturan default (berlaku untuk karyawan tanpa cabang)"
+    )
+
     # ===== JAM KERJA =====
     jam_masuk = models.TimeField(default='08:00:00', verbose_name="Jam Masuk")
     jam_pulang = models.TimeField(default='17:00:00', verbose_name="Jam Pulang")
@@ -500,22 +525,24 @@ class PengaturanAbsensi(models.Model):
 
     def save(self, *args, **kwargs):
         """
-        Override save() — implementasi singleton-like behavior.
+        Override save() — implementasi singleton-per-cabang behavior.
 
         Logika:
         - Jika record ini diaktifkan (self.aktif = True)
-        - Maka NONAKTIFKAN semua record lain (exclude record ini)
-        - Ini memastikan hanya 1 pengaturan yang aktif di satu waktu
+        - Maka NONAKTIFKAN pengaturan lain UNTUK CABANG YANG SAMA
+        - Ini memastikan hanya 1 pengaturan aktif per cabang
 
-        Kenapa singleton-like?
-        - Perusahaan hanya butuh 1 set pengaturan absensi yang berlaku
-        - Tapi record lama TIDAK dihapus (disimpan sebagai history)
+        Multi-cabang:
+        - Cabang A bisa punya pengaturan aktif sendiri
+        - Cabang B bisa punya pengaturan aktif sendiri
+        - Pengaturan default (cabang=None) berlaku untuk karyawan tanpa cabang
         """
         if self.aktif:
-            # Nonaktifkan SEMUA pengaturan lain kecuali yang sedang disimpan
-            # exclude(pk=self.pk) → kecualikan record ini dari update
-            # .update(aktif=False) → SQL UPDATE langsung tanpa trigger save()
-            PengaturanAbsensi.objects.exclude(pk=self.pk).update(aktif=False)
+            # Nonaktifkan pengaturan lain UNTUK CABANG YANG SAMA saja
+            # Jika cabang=None → nonaktifkan yang cabang=None juga
+            PengaturanAbsensi.objects.filter(
+                cabang=self.cabang
+            ).exclude(pk=self.pk).update(aktif=False)
         super().save(*args, **kwargs)  # Simpan record ini ke database
 
     @property
@@ -554,19 +581,27 @@ class PengaturanAbsensi(models.Model):
         return [hari_names[i] for i in self.hari_kerja_list if i < 7]
 
     @classmethod
-    def get_active(cls):
+    def get_active(cls, cabang=None):
         """
         Class method untuk mendapatkan pengaturan absensi yang sedang AKTIF.
 
+        Multi-cabang:
+        1. Jika cabang diberikan → cari pengaturan khusus cabang tersebut
+        2. Jika tidak ditemukan → fallback ke pengaturan default (cabang=None)
+        3. Jika cabang=None → langsung ambil pengaturan default
+
         Dipanggil dari views saat karyawan melakukan absensi:
-            pengaturan = PengaturanAbsensi.get_active()
-            if pengaturan:
-                jam_masuk = pengaturan.jam_masuk
+            pengaturan = PengaturanAbsensi.get_active(cabang=karyawan.cabang)
 
         Return: Instance PengaturanAbsensi yang aktif, atau None jika tidak ada
         """
-        # .first() mengembalikan 1 record atau None jika tidak ditemukan
-        return cls.objects.filter(aktif=True).first()
+        if cabang:
+            # Cari pengaturan khusus untuk cabang ini
+            pengaturan = cls.objects.filter(aktif=True, cabang=cabang).first()
+            if pengaturan:
+                return pengaturan
+        # Fallback: pengaturan default (tanpa cabang / global)
+        return cls.objects.filter(aktif=True, cabang__isnull=True).first()
 
 
 # ╔══════════════════════════════════════════════════════════════╗
@@ -621,6 +656,26 @@ class Absensi(models.Model):
     # Jarak dari kantor saat absen (dalam meter)
     jarak_masuk = models.DecimalField(max_digits=10, decimal_places=1, blank=True, null=True, verbose_name="Jarak Masuk (m)")
     jarak_keluar = models.DecimalField(max_digits=10, decimal_places=1, blank=True, null=True, verbose_name="Jarak Keluar (m)")
+
+    # ===== CABANG & PENGATURAN =====
+    # Mencatat cabang dan pengaturan yang digunakan saat absensi dilakukan
+    # Ini penting untuk audit trail dan laporan per cabang
+    cabang = models.ForeignKey(
+        'produk.Gudang',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='absensi_set',
+        verbose_name="Cabang"
+    )
+    pengaturan_snapshot = models.ForeignKey(
+        PengaturanAbsensi,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='absensi_set',
+        verbose_name="Pengaturan yang Digunakan"
+    )
 
     catatan = models.TextField(blank=True, null=True, verbose_name="Catatan")
     dibuat_pada = models.DateTimeField(auto_now_add=True)
@@ -818,3 +873,22 @@ class Penggajian(models.Model):
         bulan_names = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
                        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
         return f"{bulan_names[self.periode_bulan]} {self.periode_tahun}"
+
+    @property
+    def total_tunjangan(self):
+        """
+        Property untuk menghitung total tunjangan karyawan.
+
+        Total = Tunjangan Jabatan + Tunjangan Makan + Tunjangan Transport
+                + Tunjangan Lainnya + Lembur + Bonus
+
+        Return: Decimal — total tunjangan
+        """
+        return (
+            self.tunjangan_jabatan +
+            self.tunjangan_makan +
+            self.tunjangan_transport +
+            self.tunjangan_lainnya +
+            self.lembur +
+            self.bonus
+        )

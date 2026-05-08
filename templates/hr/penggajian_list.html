@@ -35,6 +35,9 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
         </div>
         {% if can_create.hr %}
         <div class="d-flex gap-2">
+            <a href="{% url 'hr:penggajian-import' %}" class="btn btn-warning">
+                <i class="ri-upload-2-line me-1"></i>Import Penggajian
+            </a>
             <a href="{% url 'hr:penggajian-generate' %}" class="btn btn-success">
                 <i class="ri-file-add-line me-1"></i>Generate Slip Gaji
             </a>
@@ -157,8 +160,70 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
                         <option value="dibayar">Dibayar</option>
                     </select>
                 </div>
+            </div>
+            <!-- Baris kedua: Pilih Kolom (kiri) dan Tombol Filter (kanan) -->
+            <div class="row g-3 mt-2 align-items-end">
                 <div class="col-md-3">
-                    <label class="form-label">&nbsp;</label>
+                    <label class="form-label">Pilih Kolom</label>
+                    <div class="dropdown">
+                        <button class="btn btn-label-secondary dropdown-toggle waves-effect w-100" type="button"
+                            id="columnFilterDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                            aria-expanded="false">
+                            <i class="ri-layout-column-line me-1"></i>
+                            Pilih Kolom Yang Ditampilkan
+                        </button>
+                        <div class="dropdown-menu p-3" aria-labelledby="columnFilterDropdown" style="min-width: 280px;">
+                            <h6 class="dropdown-header px-0 mb-2">Kolom Tabel</h6>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="0"
+                                    id="col-periode" checked onchange="toggleColumns()">
+                                <label class="form-check-label" for="col-periode">Periode</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="1"
+                                    id="col-karyawan" checked onchange="toggleColumns()">
+                                <label class="form-check-label" for="col-karyawan">Karyawan</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="2"
+                                    id="col-gajipokok" checked onchange="toggleColumns()">
+                                <label class="form-check-label" for="col-gajipokok">Gaji Pokok</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="3"
+                                    id="col-tunjangan" checked onchange="toggleColumns()">
+                                <label class="form-check-label" for="col-tunjangan">Tunjangan</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="4"
+                                    id="col-potongan" checked onchange="toggleColumns()">
+                                <label class="form-check-label" for="col-potongan">Potongan</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="5"
+                                    id="col-gajibersih" checked onchange="toggleColumns()">
+                                <label class="form-check-label" for="col-gajibersih">Gaji Bersih</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="6"
+                                    id="col-status" checked onchange="toggleColumns()">
+                                <label class="form-check-label" for="col-status">Status</label>
+                            </div>
+                            <div class="dropdown-divider my-2"></div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-primary flex-fill" onclick="selectAllColumns()">
+                                    <i class="ri-checkbox-multiple-line ri-16px"></i> Semua
+                                </button>
+                                <button class="btn btn-sm btn-label-secondary flex-fill" onclick="deselectAllColumns()">
+                                    <i class="ri-checkbox-blank-line ri-16px"></i> Kosongkan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <small class="text-muted d-block mt-1">Klik untuk memilih kolom</small>
+                </div>
+                <div class="col-md-6"></div>
+                <div class="col-md-3">
                     <div class="d-grid gap-2">
                         <button class="btn btn-primary" onclick="applyFilter()">
                             <i class="ri-filter-3-line me-1"></i>Terapkan Filter
@@ -169,68 +234,6 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Pilih Kolom Card -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <label class="form-label">Pilih Kolom Yang Ditampilkan</label>
-            <div class="dropdown" id="columnFilterDropdown">
-                <button class="btn btn-label-secondary dropdown-toggle w-100 text-start" type="button"
-                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                    <i class="ri-layout-column-line me-1"></i>Pilih Kolom <span class="caret"></span>
-                </button>
-                <div class="dropdown-menu p-3" style="min-width: 200px;">
-                    <div class="mb-2"><strong>Kolom Tabel</strong></div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input column-checkbox" type="checkbox" value="0" id="col-periode"
-                            checked onchange="toggleColumns()">
-                        <label class="form-check-label" for="col-periode">Periode</label>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input column-checkbox" type="checkbox" value="1" id="col-karyawan"
-                            checked onchange="toggleColumns()">
-                        <label class="form-check-label" for="col-karyawan">Karyawan</label>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input column-checkbox" type="checkbox" value="2" id="col-gajipokok"
-                            checked onchange="toggleColumns()">
-                        <label class="form-check-label" for="col-gajipokok">Gaji Pokok</label>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input column-checkbox" type="checkbox" value="3" id="col-tunjangan"
-                            checked onchange="toggleColumns()">
-                        <label class="form-check-label" for="col-tunjangan">Tunjangan</label>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input column-checkbox" type="checkbox" value="4" id="col-potongan"
-                            checked onchange="toggleColumns()">
-                        <label class="form-check-label" for="col-potongan">Potongan</label>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input column-checkbox" type="checkbox" value="5" id="col-gajibersih"
-                            checked onchange="toggleColumns()">
-                        <label class="form-check-label" for="col-gajibersih">Gaji Bersih</label>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input column-checkbox" type="checkbox" value="6" id="col-status"
-                            checked onchange="toggleColumns()">
-                        <label class="form-check-label" for="col-status">Status</label>
-                    </div>
-                    <hr class="my-2">
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-sm btn-primary flex-grow-1" onclick="selectAllColumns()">
-                            <i class="ri-checkbox-multiple-line me-1"></i>Semua
-                        </button>
-                        <button type="button" class="btn btn-sm btn-label-secondary flex-grow-1"
-                            onclick="deselectAllColumns()">
-                            <i class="ri-checkbox-blank-line me-1"></i>Kosongkan
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <small class="text-muted">Klik untuk memilih kolom</small>
         </div>
     </div>
 

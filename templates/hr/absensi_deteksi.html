@@ -114,6 +114,34 @@
                             <p class="text-muted">Sistem akan mendeteksi dan mengenali wajah karyawan secara otomatis</p>
                         </div>
                     </div>
+
+                    <!-- GPS Location Panel -->
+                    <div class="card bg-label-info mt-3" id="gpsPanel">
+                        <div class="card-body py-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="ri-map-pin-line ri-xl me-2 text-info"></i>
+                                <strong>Lokasi GPS</strong>
+                                <span class="badge bg-label-warning ms-auto" id="gpsStatus">
+                                    <i class="ri-loader-4-line ri-spin me-1"></i>Mencari...
+                                </span>
+                            </div>
+                            <div id="gpsInfo" style="display:none;">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small class="text-muted">Koordinat</small>
+                                    <small id="gpsCoords" class="fw-medium">-</small>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small class="text-muted">Akurasi</small>
+                                    <small id="gpsAccuracy" class="fw-medium">-</small>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">Jarak dari Kantor</small>
+                                    <small id="gpsDistance" class="fw-medium badge bg-label-success">-</small>
+                                </div>
+                            </div>
+                            <div id="gpsError" class="text-danger small mt-1" style="display:none;"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -132,6 +160,9 @@ let canvas = document.getElementById('canvas');
 let stream = null;
 let detectedKaryawanId = null;
 let capturedBase64 = null;
+let currentLatitude = null;
+let currentLongitude = null;
+let gpsWatchId = null;
 
 // Update time
 setInterval(function() {
@@ -139,6 +170,93 @@ setInterval(function() {
     document.getElementById('currentTime').textContent = 
         now.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', second: '2-digit'});
 }, 1000);
+
+// === GPS LOCATION TRACKING ===
+// Koordinat kantor dari pengaturan (jika ada, dari backend)
+const OFFICE_LAT = {{ pengaturan.latitude|default:"null" }};
+const OFFICE_LNG = {{ pengaturan.longitude|default:"null" }};
+const OFFICE_RADIUS = {{ pengaturan.radius_lokasi|default:"100" }};
+
+// Haversine formula — hitung jarak 2 koordinat (meter)
+function haversineDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function updateDistanceUI() {
+    if (currentLatitude && currentLongitude && OFFICE_LAT && OFFICE_LNG) {
+        const dist = haversineDistance(currentLatitude, currentLongitude, OFFICE_LAT, OFFICE_LNG);
+        const distEl = document.getElementById('gpsDistance');
+        distEl.textContent = dist.toFixed(0) + 'm';
+        if (dist <= OFFICE_RADIUS) {
+            distEl.className = 'fw-medium badge bg-label-success';
+        } else {
+            distEl.className = 'fw-medium badge bg-label-danger';
+        }
+    }
+}
+
+function initGPS() {
+    if (!navigator.geolocation) {
+        document.getElementById('gpsStatus').innerHTML = '<i class="ri-error-warning-line me-1"></i>Tidak Didukung';
+        document.getElementById('gpsStatus').className = 'badge bg-label-danger ms-auto';
+        document.getElementById('gpsError').textContent = 'Browser tidak mendukung GPS';
+        document.getElementById('gpsError').style.display = 'block';
+        return;
+    }
+
+    // Watch position untuk update real-time
+    gpsWatchId = navigator.geolocation.watchPosition(
+        function(position) {
+            currentLatitude = position.coords.latitude;
+            currentLongitude = position.coords.longitude;
+            const accuracy = position.coords.accuracy;
+
+            // Update UI
+            document.getElementById('gpsInfo').style.display = 'block';
+            document.getElementById('gpsError').style.display = 'none';
+            document.getElementById('gpsCoords').textContent =
+                currentLatitude.toFixed(6) + ', ' + currentLongitude.toFixed(6);
+            document.getElementById('gpsAccuracy').textContent = accuracy.toFixed(0) + ' meter';
+            document.getElementById('gpsStatus').innerHTML = '<i class="ri-map-pin-line me-1"></i>Aktif';
+            document.getElementById('gpsStatus').className = 'badge bg-label-success ms-auto';
+
+            // Hitung dan tampilkan jarak dari kantor secara real-time
+            updateDistanceUI();
+        },
+        function(error) {
+            let errorMsg = 'Tidak dapat mengakses GPS. ';
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMsg += 'Izin lokasi ditolak. Aktifkan izin lokasi di browser.';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMsg += 'Posisi tidak tersedia.';
+                    break;
+                case error.TIMEOUT:
+                    errorMsg += 'Waktu permintaan habis. Coba refresh halaman.';
+                    break;
+            }
+            document.getElementById('gpsStatus').innerHTML = '<i class="ri-error-warning-line me-1"></i>Error';
+            document.getElementById('gpsStatus').className = 'badge bg-label-danger ms-auto';
+            document.getElementById('gpsError').textContent = errorMsg;
+            document.getElementById('gpsError').style.display = 'block';
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 30000,
+            maximumAge: 10000
+        }
+    );
+}
+
+// Auto-start GPS saat halaman dimuat
+initGPS();
 
 function startCamera() {
     // Tampilkan loading saat memulai kamera
@@ -299,33 +417,73 @@ function clockIn() {
     
     document.getElementById('clockInBtn').disabled = true;
     document.getElementById('clockInBtn').innerHTML = '<i class="ri-loader-4-line ri-spin me-2"></i>Proses...';
-    
-    const formData = new FormData();
-    formData.append('karyawan_id', detectedKaryawanId);
-    formData.append('foto_base64', capturedBase64);
-    
-    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    
-    fetch('{% url "hr:absensi-face-clock-in" %}', {
-        method: 'POST',
-        headers: {'X-CSRFToken': csrftoken},
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById('clockInBtn').disabled = false;
-        document.getElementById('clockInBtn').innerHTML = '<i class="ri-login-box-line me-2"></i>Clock In';
-        showResult(data.success, data.message);
-        
-        if (data.success) {
-            resetDetection();
+
+    // Re-fetch GPS sebelum kirim (fallback jika watchPosition belum update)
+    function doClockIn(lat, lng) {
+        const formData = new FormData();
+        formData.append('karyawan_id', detectedKaryawanId);
+        formData.append('foto_base64', capturedBase64);
+        if (lat && lng) {
+            formData.append('latitude', lat);
+            formData.append('longitude', lng);
         }
-    })
-    .catch(error => {
-        document.getElementById('clockInBtn').disabled = false;
-        document.getElementById('clockInBtn').innerHTML = '<i class="ri-login-box-line me-2"></i>Clock In';
-        showResult(false, 'Error: ' + error.message);
-    });
+        
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        fetch('{% url "hr:absensi-face-clock-in" %}', {
+            method: 'POST',
+            headers: {'X-CSRFToken': csrftoken},
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('clockInBtn').disabled = false;
+            document.getElementById('clockInBtn').innerHTML = '<i class="ri-login-box-line me-2"></i>Clock In';
+            showResult(data.success, data.message);
+            
+            if (data.jarak !== undefined) {
+                const distEl = document.getElementById('gpsDistance');
+                distEl.textContent = data.jarak.toFixed(0) + 'm';
+                distEl.className = data.lokasi_valid
+                    ? 'fw-medium badge bg-label-success'
+                    : 'fw-medium badge bg-label-danger';
+            }
+            
+            if (data.success) {
+                resetDetection();
+            }
+        })
+        .catch(error => {
+            document.getElementById('clockInBtn').disabled = false;
+            document.getElementById('clockInBtn').innerHTML = '<i class="ri-login-box-line me-2"></i>Clock In';
+            showResult(false, 'Error: ' + error.message);
+        });
+    }
+
+    // Jika GPS sudah tersedia dari watchPosition, langsung kirim
+    if (currentLatitude && currentLongitude) {
+        doClockIn(currentLatitude, currentLongitude);
+    } else if (navigator.geolocation) {
+        // Coba ambil sekali lagi
+        navigator.geolocation.getCurrentPosition(
+            function(pos) {
+                currentLatitude = pos.coords.latitude;
+                currentLongitude = pos.coords.longitude;
+                // Update UI
+                document.getElementById('gpsCoords').textContent = currentLatitude.toFixed(6) + ', ' + currentLongitude.toFixed(6);
+                document.getElementById('gpsInfo').style.display = 'block';
+                updateDistanceUI();
+                doClockIn(currentLatitude, currentLongitude);
+            },
+            function() {
+                // GPS gagal, kirim tanpa lokasi
+                doClockIn(null, null);
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+        );
+    } else {
+        doClockIn(null, null);
+    }
 }
 
 function clockOut() {
@@ -336,33 +494,65 @@ function clockOut() {
     
     document.getElementById('clockOutBtn').disabled = true;
     document.getElementById('clockOutBtn').innerHTML = '<i class="ri-loader-4-line ri-spin me-2"></i>Proses...';
-    
-    const formData = new FormData();
-    formData.append('karyawan_id', detectedKaryawanId);
-    formData.append('foto_base64', capturedBase64);
-    
-    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    
-    fetch('{% url "hr:absensi-face-clock-out" %}', {
-        method: 'POST',
-        headers: {'X-CSRFToken': csrftoken},
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById('clockOutBtn').disabled = false;
-        document.getElementById('clockOutBtn').innerHTML = '<i class="ri-logout-box-line me-2"></i>Clock Out';
-        showResult(data.success, data.message);
-        
-        if (data.success) {
-            resetDetection();
+
+    function doClockOut(lat, lng) {
+        const formData = new FormData();
+        formData.append('karyawan_id', detectedKaryawanId);
+        formData.append('foto_base64', capturedBase64);
+        if (lat && lng) {
+            formData.append('latitude', lat);
+            formData.append('longitude', lng);
         }
-    })
-    .catch(error => {
-        document.getElementById('clockOutBtn').disabled = false;
-        document.getElementById('clockOutBtn').innerHTML = '<i class="ri-logout-box-line me-2"></i>Clock Out';
-        showResult(false, 'Error: ' + error.message);
-    });
+        
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        fetch('{% url "hr:absensi-face-clock-out" %}', {
+            method: 'POST',
+            headers: {'X-CSRFToken': csrftoken},
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('clockOutBtn').disabled = false;
+            document.getElementById('clockOutBtn').innerHTML = '<i class="ri-logout-box-line me-2"></i>Clock Out';
+            showResult(data.success, data.message);
+            
+            if (data.jarak !== undefined) {
+                const distEl = document.getElementById('gpsDistance');
+                distEl.textContent = data.jarak.toFixed(0) + 'm';
+            }
+            
+            if (data.success) {
+                resetDetection();
+            }
+        })
+        .catch(error => {
+            document.getElementById('clockOutBtn').disabled = false;
+            document.getElementById('clockOutBtn').innerHTML = '<i class="ri-logout-box-line me-2"></i>Clock Out';
+            showResult(false, 'Error: ' + error.message);
+        });
+    }
+
+    if (currentLatitude && currentLongitude) {
+        doClockOut(currentLatitude, currentLongitude);
+    } else if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(pos) {
+                currentLatitude = pos.coords.latitude;
+                currentLongitude = pos.coords.longitude;
+                document.getElementById('gpsCoords').textContent = currentLatitude.toFixed(6) + ', ' + currentLongitude.toFixed(6);
+                document.getElementById('gpsInfo').style.display = 'block';
+                updateDistanceUI();
+                doClockOut(currentLatitude, currentLongitude);
+            },
+            function() {
+                doClockOut(null, null);
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+        );
+    } else {
+        doClockOut(null, null);
+    }
 }
 
 function showResult(success, message) {
@@ -383,6 +573,10 @@ document.addEventListener('DOMContentLoaded', function() {
 window.addEventListener('beforeunload', function() {
     if (stream) {
         stream.getTracks().forEach(track => track.stop());
+    }
+    // Stop GPS tracking saat meninggalkan halaman
+    if (gpsWatchId) {
+        navigator.geolocation.clearWatch(gpsWatchId);
     }
 });
 </script>

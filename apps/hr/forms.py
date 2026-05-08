@@ -67,7 +67,7 @@ class KaryawanForm(forms.ModelForm):
         fields = [
             'nik', 'nama', 'email', 'telepon', 'alamat',
             'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin',
-            'foto', 'jabatan', 'departemen', 'tanggal_masuk',
+            'foto', 'jabatan', 'departemen', 'cabang', 'tanggal_masuk',
             'gaji_pokok', 'status', 'aktif'
         ]
         # Widget HTML untuk setiap field form (class CSS, placeholder, dll)
@@ -83,6 +83,7 @@ class KaryawanForm(forms.ModelForm):
             'foto': forms.FileInput(attrs={'class': 'form-control'}),
             'jabatan': forms.Select(attrs={'class': 'form-select'}),
             'departemen': forms.Select(attrs={'class': 'form-select'}),
+            'cabang': forms.Select(attrs={'class': 'form-select'}),
             'tanggal_masuk': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'gaji_pokok': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
@@ -204,7 +205,7 @@ class PengaturanAbsensiForm(forms.ModelForm):
         """Konfigurasi form pengaturan absensi — jam kerja, lokasi GPS, dan fitur wajib."""
         model = PengaturanAbsensi
         fields = [
-            'nama', 'aktif',
+            'nama', 'aktif', 'cabang',
             'jam_masuk', 'jam_pulang', 'toleransi_terlambat',
             'zona_waktu', 'nama_lokasi', 'alamat_lokasi',
             'latitude', 'longitude', 'radius_lokasi',
@@ -215,6 +216,7 @@ class PengaturanAbsensiForm(forms.ModelForm):
         widgets = {
             'nama': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nama Pengaturan'}),
             'aktif': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'cabang': forms.Select(attrs={'class': 'form-select'}),
             'jam_masuk': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
             'jam_pulang': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
             'toleransi_terlambat': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '15'}),

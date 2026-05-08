@@ -1,14 +1,13 @@
 {% extends 'layout/layout_vertical.html' %}
 {% comment %}
 ==========================================================================
-   PRODUK IMPORT - Import Produk dari Excel
-   Halaman untuk mengimport data produk secara massal dari file Excel/CSV.
-   Menampilkan format template dan proses upload.
-   ==========================================================================
+PENGGAJIAN IMPORT - Import Penggajian Massal via Excel/CSV
+Halaman untuk mengupload file Excel/CSV berisi data penggajian.
+==========================================================================
 {% endcomment %}
 {% load static %}
 
-{% block title %}Import Produk - ERP{% endblock title %}
+{% block title %}Import Penggajian - HR{% endblock title %}
 
 {% block vendor_css %}
 {{ block.super }}
@@ -23,7 +22,7 @@
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="py-3 mb-4">
-        <span class="text-muted fw-light">Produk /</span> Import Produk
+        <span class="text-muted fw-light">Penggajian /</span> Import Penggajian
     </h4>
 
     {% if messages %}
@@ -38,7 +37,7 @@
     <div class="row">
         <div class="col-md-8">
             <div class="card mb-4">
-                <h5 class="card-header">Upload File Produk</h5>
+                <h5 class="card-header">Upload File Penggajian</h5>
                 <div class="card-body">
                     <form method="POST" enctype="multipart/form-data">
                         {% csrf_token %}
@@ -46,13 +45,13 @@
                             <label for="file" class="form-label">Pilih File Excel atau CSV</label>
                             <input class="form-control" type="file" id="file" name="file" 
                                    accept=".csv,.xlsx,.xls" required>
-                            <small class="text-muted">Format: CSV, XLSX, atau XLS. Maks 10MB</small>
+                            <small class="text-muted">Format: CSV, XLSX, atau XLS. Maks 5MB</small>
                         </div>
                         <div class="mt-3">
                             <button type="submit" class="btn btn-primary me-2">
                                 <i class="ri-upload-2-line me-1"></i>Upload & Import
                             </button>
-                            <a href="{% url 'produk:list' %}" class="btn btn-outline-secondary">Batal</a>
+                            <a href="{% url 'hr:penggajian' %}" class="btn btn-outline-secondary">Batal</a>
                         </div>
                     </form>
                 </div>
@@ -67,16 +66,22 @@
                     </h5>
                     <p class="card-text">File harus memiliki header/kolom berikut:</p>
                     <ul class="small">
-                        <li><strong>nama</strong> * (wajib)</li>
-                        <li><strong>sku</strong> (opsional, auto-generate)</li>
-                        <li><strong>kategori</strong> (opsional)</li>
-                        <li><strong>satuan</strong> (opsional, default: pcs)</li>
-                        <li><strong>harga_beli</strong> (opsional,default: 0)</li>
-                        <li><strong>harga_jual</strong> (opsional, default: 0)</li>
-                        <li><strong>stok</strong> (opsional, default: 0)</li>
-                        <li><strong>gudang</strong> (opsional, nama/kode gudang)</li>
-                        <li><strong>deskripsi</strong> (opsional)</li>
-                        <li><strong>barcode</strong> (opsional)</li>
+                        <li><strong>nik_karyawan</strong> * (wajib)</li>
+                        <li><strong>periode_bulan</strong> * (wajib, 1-12)</li>
+                        <li><strong>periode_tahun</strong> * (wajib, contoh: 2026)</li>
+                        <li><strong>gaji_pokok</strong> (opsional, default: dari jabatan)</li>
+                        <li><strong>tunjangan_jabatan</strong> (opsional, default: dari jabatan)</li>
+                        <li><strong>tunjangan_makan</strong> (opsional, default: 0)</li>
+                        <li><strong>tunjangan_transport</strong> (opsional, default: 0)</li>
+                        <li><strong>tunjangan_lainnya</strong> (opsional, default: 0)</li>
+                        <li><strong>lembur</strong> (opsional, default: 0)</li>
+                        <li><strong>bonus</strong> (opsional, default: 0)</li>
+                        <li><strong>bpjs_kesehatan</strong> (opsional, default: 0)</li>
+                        <li><strong>bpjs_ketenagakerjaan</strong> (opsional, default: 0)</li>
+                        <li><strong>pph21</strong> (opsional, default: 0)</li>
+                        <li><strong>potongan_lainnya</strong> (opsional, default: 0)</li>
+                        <li><strong>status</strong> (opsional, default: draft)</li>
+                        <li><strong>catatan</strong> (opsional)</li>
                     </ul>
                     
                     <hr class="my-3">
@@ -88,6 +93,20 @@
                     <a href="#" onclick="downloadTemplate('xlsx')" class="btn btn-sm btn-success w-100">
                         <i class="ri-file-excel-2-line me-1"></i>Download Template Excel
                     </a>
+                    
+                    <hr class="my-3">
+                    
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-sm me-2 flex-shrink-0">
+                            <span class="avatar-initial rounded bg-label-primary">
+                                <i class="ri-group-line"></i>
+                            </span>
+                        </div>
+                        <div>
+                            <small class="fw-semibold">{{ karyawan_count|default:0 }} Karyawan Aktif</small>
+                            <br><small class="text-muted">Tersedia untuk import</small>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -100,47 +119,40 @@
 {{ block.super }}
 <script>
 function downloadTemplate(format) {
-    // Header order: nama (required) first, then optional fields INCLUDING stok
-    const header = ['nama', 'sku', 'kategori', 'satuan', 'harga_beli', 'harga_jual', 'stok', 'gudang', 'deskripsi', 'barcode'];
+    const header = ['nik_karyawan', 'periode_bulan', 'periode_tahun', 'gaji_pokok', 'tunjangan_jabatan', 'tunjangan_makan', 'tunjangan_transport', 'tunjangan_lainnya', 'lembur', 'bonus', 'bpjs_kesehatan', 'bpjs_ketenagakerjaan', 'pph21', 'potongan_lainnya', 'status', 'catatan'];
     const sampleData = [
-        ['Contoh Produk 1', 'PRD-00001', 'Elektronik', 'pcs', '100000', '150000', '50', 'Gudang Utama', 'Deskripsi produk 1', '1234567890'],
-        ['Contoh Produk 2', 'PRD-00002', 'Makanan', 'box', '50000', '75000', '25', 'Gudang Cabang', 'Deskripsi produk 2', '0987654321']
+        ['EMP20260001', '5', '2026', '5000000', '500000', '300000', '200000', '0', '100000', '0', '100000', '50000', '150000', '0', 'draft', 'Import Mei 2026'],
+        ['EMP20260002', '5', '2026', '4500000', '400000', '300000', '200000', '0', '0', '0', '90000', '45000', '120000', '0', 'draft', 'Import Mei 2026']
     ];
     
     let blob, filename;
     
     if (format === 'csv') {
-        // Generate CSV dengan Excel directive untuk auto-split kolom!
-        // 'sep=,' memberitahu Excel untuk otomatis pisahkan by comma
-        let csvContent = 'sep=,\n';  // Excel directive - PENTING!
+        let csvContent = 'sep=,\n';
         csvContent += header.join(',') + '\n';
         sampleData.forEach(row => {
             csvContent += row.join(',') + '\n';
         });
         
-        // Buat blob CSV dengan UTF-8 BOM
         const BOM = '\uFEFF';
         blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8' });
-        filename = 'template_import_produk.csv';
+        filename = 'template_import_penggajian.csv';
     } else {
-        // Generate Excel HTML table - setiap data di kolom terpisah!
         let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
         html += '<head>';
         html += '<meta charset="utf-8">';
         html += '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">';
         html += '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>';
-        html += '<x:Name>Template Import</x:Name>';
+        html += '<x:Name>Template Import Penggajian</x:Name>';
         html += '<x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet>';
         html += '</x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->';
         html += '</head><body>';
         html += '<table border="1">';
         
-        // Header row dengan styling
         html += '<thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;">';
         header.forEach(h => html += `<th>${h}</th>`);
         html += '</tr></thead>';
         
-        // Data rows
         html += '<tbody>';
         sampleData.forEach(row => {
             html += '<tr>';
@@ -150,18 +162,14 @@ function downloadTemplate(format) {
         html += '</tbody></table>';
         html += '</body></html>';
         
-        // Buat blob Excel dengan UTF-8 BOM
         const BOM = '\uFEFF';
         blob = new Blob([BOM + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
-        filename = 'template_import_produk.xls';
+        filename = 'template_import_penggajian.xls';
     }
     
-    // Download file — universal (browser + WebView compatible)
-    // Memanfaatkan fungsi _downloadBlob dari export_utils.js
     if (typeof _downloadBlob === 'function') {
         _downloadBlob(blob, filename);
     } else {
-        // Fallback jika export_utils.js belum dimuat
         try {
             var url = URL.createObjectURL(blob);
             var link = document.createElement('a');
@@ -172,7 +180,6 @@ function downloadTemplate(format) {
             link.click();
             setTimeout(function() { document.body.removeChild(link); URL.revokeObjectURL(url); }, 200);
         } catch(e) {
-            // Fallback: FileReader + Data URI
             var reader = new FileReader();
             reader.onloadend = function() {
                 var downloadUri = reader.result.replace(/^data:[^;]+;/, 'data:application/octet-stream;');
@@ -192,11 +199,10 @@ $(document).ready(function() {
         const submitBtn = $(this).find('button[type="submit"]');
         const originalText = submitBtn.html();
        
-        // Nonaktifkan tombol dan tampilkan loading
         submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Uploading...');
         
         $.ajax({
-            url: '{% url "produk:import" %}',
+            url: '{% url "hr:penggajian-import" %}',
             type: 'POST',
             data: formData,
             processData: false,
@@ -204,7 +210,6 @@ $(document).ready(function() {
             dataType: 'json',
             headers: {'X-Requested-With': 'XMLHttpRequest'},
             success: function(response) {
-                // Re-enable button
                 submitBtn.prop('disabled', false).html(originalText);
                 
                 if (response.success) {
@@ -215,7 +220,6 @@ $(document).ready(function() {
                         confirmButtonText: 'OK',
                         confirmButtonColor: '#696cff'
                     }).then(() => {
-                        // Reset form
                         $('form[enctype="multipart/form-data"]')[0].reset();
                     });
                 } else {
@@ -229,7 +233,6 @@ $(document).ready(function() {
                 }
             },
             error: function(xhr, status, error) {
-                // Re-enable button
                 submitBtn.prop('disabled', false).html(originalText);
                 
                 Swal.fire({
