@@ -363,7 +363,6 @@ LOGIN_REDIRECT_URL = "/"
 
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_AGE = 86400  # 24 hours
 SESSION_SAVE_EVERY_REQUEST = True  # Refresh session expiry setiap request (cegah logout mendadak)
 
@@ -371,6 +370,9 @@ SESSION_SAVE_EVERY_REQUEST = True  # Refresh session expiry setiap request (cega
 # saat multiple Django app berjalan di localhost (port berbeda)
 SESSION_COOKIE_NAME = "sims_sessionid"
 CSRF_COOKIE_NAME = "sims_csrftoken"
+# CSRF_COOKIE_HTTPONLY=False agar JavaScript di WebView bisa membaca token dari cookie
+# untuk dikirim via header X-CSRFToken (diperlukan oleh beberapa form/AJAX).
+CSRF_COOKIE_HTTPONLY = False
 
 # CSRF Failure Handler — Redirect ramah saat token kedaluwarsa (bukan error 403)
 CSRF_FAILURE_VIEW = "auth.csrf_failure.csrf_failure_view"
@@ -415,6 +417,14 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
 
+    # SameSite=None agar cookie session & CSRF dikirim oleh Capacitor Android WebView.
+    # WebView Capacitor memuat halaman dari origin native yang berbeda dengan domain server,
+    # sehingga SameSite=Lax menyebabkan browser TIDAK mengirim cookie pada POST login
+    # → user tidak bisa login dari aplikasi Android meskipun kredensial benar.
+    # WAJIB dipasangkan dengan Secure=True (sudah diset di atas).
+    SESSION_COOKIE_SAMESITE = "None"
+    CSRF_COOKIE_SAMESITE = "None"
+
     # Proxy header: PythonAnywhere menggunakan reverse proxy
     # Header ini memberitahu Django bahwa request aslinya HTTPS
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -422,8 +432,12 @@ if not DEBUG:
     # Referrer Policy: jangan kirim URL lengkap ke situs eksternal
     SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 else:
-    # Development: cookie bisa dikirim tanpa HTTPS
+    # Development: SameSite=Lax (standar untuk HTTP localhost)
+    # SameSite=None TIDAK bisa dipakai tanpa Secure=True → browser akan menolak cookie
+    SESSION_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
 
 # Your stuff...
 # ------------------------------------------------------------------------------
