@@ -417,13 +417,12 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
 
-    # SameSite=None agar cookie session & CSRF dikirim oleh Capacitor Android WebView.
-    # WebView Capacitor memuat halaman dari origin native yang berbeda dengan domain server,
-    # sehingga SameSite=Lax menyebabkan browser TIDAK mengirim cookie pada POST login
-    # → user tidak bisa login dari aplikasi Android meskipun kredensial benar.
-    # WAJIB dipasangkan dengan Secure=True (sudah diset di atas).
-    SESSION_COOKIE_SAMESITE = "None"
-    CSRF_COOKIE_SAMESITE = "None"
+    # Kembalikan ke SameSite=Lax.
+    # Karena Capacitor menggunakan 'server.url', konteksnya adalah First-Party (bukan cross-origin).
+    # Penggunaan SameSite=None di Android WebView seringkali ditolak oleh WebView itu sendiri,
+    # sehingga menyebabkan gagal login. SameSite=Lax adalah pengaturan paling stabil.
+    SESSION_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_SAMESITE = "Lax"
 
     # Proxy header: PythonAnywhere menggunakan reverse proxy
     # Header ini memberitahu Django bahwa request aslinya HTTPS
