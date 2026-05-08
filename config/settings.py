@@ -413,14 +413,17 @@ if not DEBUG:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True  # Berlaku juga untuk subdomain
     SECURE_HSTS_PRELOAD = True             # Daftarkan ke HSTS preload list browser
 
-    # Cookie hanya dikirim via HTTPS (cegah penyadapan session)
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+    # ================================================================
+    # COOKIE SECURE FLAG — DINONAKTIFKAN untuk kompatibilitas Android WebView
+    # ================================================================
+    # Android WebView (Capacitor) memiliki bug di mana cookie dengan flag 'Secure'
+    # TIDAK disimpan saat proses redirect 302 setelah POST login.
+    # Akibatnya: POST login → 302 → session cookie hilang → kembali ke login.
+    # HSTS sudah memaksa semua koneksi menjadi HTTPS, jadi keamanan tetap terjaga
+    # meskipun flag Secure dinonaktifkan.
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
 
-    # Kembalikan ke SameSite=Lax.
-    # Karena Capacitor menggunakan 'server.url', konteksnya adalah First-Party (bukan cross-origin).
-    # Penggunaan SameSite=None di Android WebView seringkali ditolak oleh WebView itu sendiri,
-    # sehingga menyebabkan gagal login. SameSite=Lax adalah pengaturan paling stabil.
     SESSION_COOKIE_SAMESITE = "Lax"
     CSRF_COOKIE_SAMESITE = "Lax"
 
