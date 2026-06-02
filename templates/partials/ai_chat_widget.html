@@ -28,7 +28,33 @@
 #ai-chat-fab.ai-fab-hidden {
   display: none !important;
 }
+#ai-chat-fab.ai-fab-rbac-hidden { display: none !important; }
 #ai-chat-fab:hover { transform: scale(1.08); }
+
+#refresh-cache-fab {
+  position: fixed;
+  bottom: 140px;
+  right: 24px;
+  z-index: 1090;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  transition: all 0.2s ease;
+}
+#refresh-cache-fab:hover { transform: scale(1.06); }
+#refresh-cache-fab.cache-refresh-hidden { display: none !important; }
+#refresh-cache-fab.cache-refresh-rbac-hidden { display: none !important; }
+#refresh-cache-fab.is-loading i { animation: cacheRefreshSpin 0.8s linear infinite; }
+@keyframes cacheRefreshSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 
 #ai-chat-panel {
   position: fixed;
@@ -297,14 +323,20 @@
   }
   .ai-chat-header { border-radius: 0; }
   #ai-chat-fab { bottom: 60px; right: 16px; }
+  #refresh-cache-fab { bottom: 120px; right: 16px; }
   .ai-chat-input-wrap {
     padding: 8px 14px calc(8px + env(safe-area-inset-bottom, 0px)) 14px !important;
   }
 }
 </style>
 
+<!-- Refresh Cache Button -->
+<button id="refresh-cache-fab" class="btn btn-primary shadow{% if not can_show_refresh_cache_button %} cache-refresh-rbac-hidden{% endif %}" title="Refresh Cache" aria-label="Refresh Cache">
+  <i class="ri-rocket-line"></i>
+</button>
+
 <!-- FAB Button -->
-<button id="ai-chat-fab" class="btn btn-primary shadow" title="AI Chat Assistant" aria-label="Buka AI Chat">
+<button id="ai-chat-fab" class="btn btn-primary shadow{% if not can_show_ai_assistant_widget %} ai-fab-rbac-hidden{% endif %}" title="AI Chat Assistant" aria-label="Buka AI Chat">
   <i class="ri-robot-2-line"></i>
 </button>
 
@@ -353,6 +385,7 @@
 <script>
 (function() {
   var fab = document.getElementById('ai-chat-fab');
+  var refreshCacheFab = document.getElementById('refresh-cache-fab');
   var panel = document.getElementById('ai-chat-panel');
   var msgArea = document.getElementById('aiChatMessages');
   var input = document.getElementById('aiChatInput');
@@ -368,6 +401,7 @@
   fab.addEventListener('click', function() {
     panel.classList.add('visible');
     fab.classList.add('ai-fab-hidden');
+    if (refreshCacheFab) refreshCacheFab.classList.add('cache-refresh-hidden');
     setTimeout(function(){ input.focus(); }, 200);
 
     // Saat pertama kali buka: load history + insight
@@ -381,7 +415,43 @@
   document.getElementById('aiCloseChat').addEventListener('click', function() {
     panel.classList.remove('visible');
     fab.classList.remove('ai-fab-hidden');
+    if (refreshCacheFab) refreshCacheFab.classList.remove('cache-refresh-hidden');
   });
+
+  if (refreshCacheFab) {
+    refreshCacheFab.addEventListener('click', function() {
+      if (refreshCacheFab.disabled) return;
+      refreshCacheFab.disabled = true;
+      refreshCacheFab.classList.add('is-loading');
+
+      fetch('/core/cache/refresh/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCsrfToken(),
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: '{}',
+      })
+      .then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }); })
+      .then(function(result) {
+        if (!result.ok || !result.data.ok) {
+          showToast(result.data.message || 'Gagal refresh cache');
+          return;
+        }
+        showToast(result.data.message || 'Cache berhasil di bersihkan');
+        setTimeout(function() { window.location.reload(); }, 500);
+      })
+      .catch(function(err) {
+        console.error('[Refresh Cache]', err);
+        showToast('Gagal refresh cache');
+      })
+      .finally(function() {
+        refreshCacheFab.disabled = false;
+        refreshCacheFab.classList.remove('is-loading');
+      });
+    });
+  }
 
   // ═══════ LOAD HISTORY DARI DATABASE ═══════
   function loadHistory() {

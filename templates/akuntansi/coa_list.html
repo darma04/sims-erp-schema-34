@@ -1,0 +1,653 @@
+{% extends 'layout/layout_vertical.html' %}
+{% comment %}
+==========================================================================
+CHART OF ACCOUNTS LIST - Daftar Akun Keuangan (CoA)
+Halaman daftar akun keuangan dengan DataTables.
+Fitur: filter tipe akun, export Excel & PDF, cards ringkasan, seed CoA.
+==========================================================================
+{% endcomment %}
+{% load static %}
+{% load currency_filters %}
+
+{% block title %}Chart of Accounts - Akuntansi ERP{% endblock title %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+{% endblock vendor_js %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1">
+                <i class="ri-book-2-line me-2"></i>Chart of Accounts (CoA)
+            </h4>
+            <p class="text-muted mb-0">Master daftar akun keuangan perusahaan</p>
+        </div>
+        <div class="d-flex gap-2">
+            {% if rbac_can_create %}
+            <form method="post" action="{% url 'akuntansi:coa_seed' %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-success" onclick="return confirm('Seed CoA default? Akun yang sudah ada tidak akan ditimpa.')">
+                    <i class="ri-database-2-line me-1"></i>Seed CoA Default
+                </button>
+            </form>
+            <a href="{% url 'akuntansi:coa_add' %}" class="btn btn-primary">
+                <i class="ri-add-line me-1"></i>Tambah Akun
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-md-4 col-xl-2">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-primary"><i class="ri-book-2-line ri-24px"></i></span></div>
+                        <div><h5 class="mb-0">{{ total_akun }}</h5><small class="text-muted">Total Akun</small></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-4 col-xl-2">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-success"><i class="ri-safe-2-line ri-24px"></i></span></div>
+                        <div><h5 class="mb-0">{{ total_aset }}</h5><small class="text-muted">Aset</small></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-4 col-xl-2">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-danger"><i class="ri-bank-card-line ri-24px"></i></span></div>
+                        <div><h5 class="mb-0">{{ total_kewajiban }}</h5><small class="text-muted">Kewajiban</small></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-4 col-xl-2">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-info"><i class="ri-funds-line ri-24px"></i></span></div>
+                        <div><h5 class="mb-0">{{ total_modal }}</h5><small class="text-muted">Modal</small></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-4 col-xl-2">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-warning"><i class="ri-money-dollar-circle-line ri-24px"></i></span></div>
+                        <div><h5 class="mb-0">{{ total_pendapatan }}</h5><small class="text-muted">Pendapatan</small></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-4 col-xl-2">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-secondary"><i class="ri-wallet-line ri-24px"></i></span></div>
+                        <div><h5 class="mb-0">{{ total_beban|add:total_hpp }}</h5><small class="text-muted">HPP & Beban</small></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Filter Tipe Akun</label>
+                    <select class="form-select" id="tipeFilter">
+                        <option value="">Semua Tipe</option>
+                        {% for val, label in tipe_choices %}
+                        <option value="{{ val }}" {% if selected_tipe == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="searchInput">Cari Akun</label>
+                    <div class="input-group input-group-merge">
+                        <span class="input-group-text"><i class="ri-search-line"></i></span>
+                        <input type="text" class="form-control" id="searchInput" placeholder="Kode atau nama akun..." value="{{ search_query }}">
+                    </div>
+                </div>
+            </div>
+            <!-- Baris kedua: Pilih Kolom (kiri) dan Tombol Filter (kanan) -->
+            <div class="row g-3 mt-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Pilih Kolom</label>
+                    <div class="dropdown">
+                        <button class="btn btn-label-secondary dropdown-toggle waves-effect w-100" type="button"
+                            id="columnFilterDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                            aria-expanded="false">
+                            <i class="ri-layout-column-line me-1"></i>
+                            Pilih Kolom yang Ditampilkan
+                        </button>
+                        <div class="dropdown-menu p-3" aria-labelledby="columnFilterDropdown" style="min-width: 280px;">
+                            <h6 class="dropdown-header px-0 mb-2">Kolom Tabel</h6>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="0" id="col-kode" checked onchange="toggleColumns()">
+                                <label class="form-check-label" for="col-kode">Kode</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="1" id="col-nama" checked onchange="toggleColumns()">
+                                <label class="form-check-label" for="col-nama">Nama Akun</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="2" id="col-tipe" checked onchange="toggleColumns()">
+                                <label class="form-check-label" for="col-tipe">Tipe</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="3" id="col-subtipe" checked onchange="toggleColumns()">
+                                <label class="form-check-label" for="col-subtipe">Sub Tipe</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="4" id="col-saldo" checked onchange="toggleColumns()">
+                                <label class="form-check-label" for="col-saldo">Saldo Normal</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="5" id="col-status" checked onchange="toggleColumns()">
+                                <label class="form-check-label" for="col-status">Status</label>
+                            </div>
+                            <div class="dropdown-divider my-2"></div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-primary flex-fill" onclick="selectAllColumns()">
+                                    <i class="ri-checkbox-multiple-line ri-16px"></i> Semua
+                                </button>
+                                <button class="btn btn-sm btn-label-secondary flex-fill" onclick="deselectAllColumns()">
+                                    <i class="ri-checkbox-blank-line ri-16px"></i> Kosongkan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <small class="text-muted d-block mt-1">Klik untuk memilih kolom</small>
+                </div>
+                <div class="col-md-6"></div>
+                <div class="col-md-3">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" onclick="applyFilter()">
+                            <i class="ri-filter-3-line me-1"></i>Terapkan Filter
+                        </button>
+                        <button class="btn btn-label-secondary" onclick="resetFilter()">
+                            <i class="ri-refresh-line me-1"></i>Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Table Card -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Daftar Akun</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcel()">
+                    <i class="ri-file-excel-2-line me-1"></i>Export Excel
+                </button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDF()">
+                    <i class="ri-file-pdf-line me-1"></i>Export PDF
+                </button>
+            </div>
+        </div>
+        <div class="card-datatable table-responsive">
+            <table class="datatables-coa accounting-data-table table table-hover" id="coaTable" data-accounting-primary="true" data-export-title="Chart of Accounts" data-export-filename="Chart_of_Accounts" data-search-placeholder="Cari akun...">
+                <thead>
+                    <tr>
+                        <th>Kode</th>
+                        <th>Nama Akun</th>
+                        <th>Tipe</th>
+                        <th>Sub Tipe</th>
+                        <th>Saldo Normal</th>
+                        <th>Status</th>
+                        <th data-export-ignore="true" data-action-icon="ri-more-2-line">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if akun_list %}
+                    {% for akun in akun_list %}
+                    <tr>
+                        <td>
+                            <span class="fw-semibold text-primary">{{ akun.kode }}</span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if akun.level > 0 %}
+                                <span style="padding-left: {{ akun.level|add:akun.level }}0px" class="text-muted">└─</span>
+                                {% endif %}
+                                <span class="fw-medium">{{ akun.nama }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            {% if akun.tipe == 'aset' %}
+                            <span class="badge bg-label-success">Aset</span>
+                            {% elif akun.tipe == 'kewajiban' %}
+                            <span class="badge bg-label-danger">Kewajiban</span>
+                            {% elif akun.tipe == 'modal' %}
+                            <span class="badge bg-label-info">Modal</span>
+                            {% elif akun.tipe == 'pendapatan' %}
+                            <span class="badge bg-label-warning">Pendapatan</span>
+                            {% elif akun.tipe == 'hpp' %}
+                            <span class="badge bg-label-secondary">HPP</span>
+                            {% elif akun.tipe == 'beban' %}
+                            <span class="badge bg-label-dark">Beban</span>
+                            {% endif %}
+                        </td>
+                        <td><small class="text-muted">{{ akun.get_sub_tipe_display|default:"-" }}</small></td>
+                        <td>
+                            {% if akun.saldo_normal == 'debit' %}
+                            <span class="badge bg-label-primary">Debit</span>
+                            {% else %}
+                            <span class="badge bg-label-info">Kredit</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if akun.is_active %}
+                            <span class="badge bg-label-success">Aktif</span>
+                            {% else %}
+                            <span class="badge bg-label-secondary">Nonaktif</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if rbac_can_edit or rbac_can_delete %}
+                            <div class="dropdown">
+                                <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                                    <i class="ri-more-2-line"></i>
+                                </button>
+                                <div class="dropdown-menu">
+                                    {% if rbac_can_edit %}
+                                    <a class="dropdown-item" href="{% url 'akuntansi:coa_edit' akun.pk %}">
+                                        <i class="ri-edit-line me-2"></i>Edit
+                                    </a>
+                                    {% endif %}
+                                    {% if rbac_can_delete and not akun.is_system %}
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item text-danger" href="javascript:void(0);"
+                                        onclick="confirmDelete({{ akun.pk }}, '{{ akun.kode }} - {{ akun.nama }}')">
+                                        <i class="ri-delete-bin-line me-2"></i>Hapus
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% else %}
+                            <span class="badge bg-label-secondary"><i class="ri-eye-line me-1"></i>View Only</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <i class="ri-book-2-line ri-3x text-muted mb-3 d-block"></i>
+                            <p class="text-muted mb-2">Belum ada akun keuangan</p>
+                            {% if rbac_can_create %}
+                            <p class="text-muted small">Klik "Seed CoA Default" untuk menambahkan akun standar PSAK</p>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="2" class="text-start ps-4 py-3">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 0.875rem;">RINGKASAN</strong>
+                                    <small class="text-muted">{{ total_akun }} akun terdaftar</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="text-center">
+                                <span class="badge bg-label-success">{{ total_aset }}</span>
+                                <small class="d-block text-muted mt-1">Aset</small>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="text-center">
+                                <span class="badge bg-label-danger">{{ total_kewajiban }}</span>
+                                <small class="d-block text-muted mt-1">Kewajiban</small>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="text-center">
+                                <span class="badge bg-label-info">{{ total_modal }}</span>
+                                <small class="d-block text-muted mt-1">Modal</small>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="text-center">
+                                <span class="badge bg-label-warning">{{ total_pendapatan }}</span>
+                                <small class="d-block text-muted mt-1">Pendapatan</small>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="text-center">
+                                <span class="badge bg-label-secondary">{{ total_beban }}</span>
+                                <small class="d-block text-muted mt-1">Beban</small>
+                            </div>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- Delete Modal -->
+    <div class="modal fade" id="deleteAkunModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger align-items-center py-3">
+                    <h5 class="modal-title text-white mb-0">
+                        <i class="ri-delete-bin-line me-2"></i>Konfirmasi Hapus
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center py-3">
+                        <i class="ri-error-warning-line text-danger" style="font-size: 4rem;"></i>
+                        <h4 class="mt-3 mb-2">Hapus akun ini?</h4>
+                        <p class="text-muted mb-0">Akun: <strong id="deleteAkunName"></strong></p>
+                        <p class="text-danger small mt-2">Akun yang sudah digunakan di jurnal tidak dapat dihapus!</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                        <i class="ri-delete-bin-line me-1"></i>Ya, Hapus
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% csrf_token %}
+{% endblock content %}
+
+{% block page_js %}
+<style>
+    .dataTables_wrapper .dataTables_info { padding: 1rem 1.5rem; font-size: 0.875rem; color: #697a8d; }
+    .dataTables_wrapper .dataTables_paginate { padding: 1rem 1.5rem; }
+    .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter { padding: 0 1.5rem 1rem 1.5rem; }
+    .dataTables_wrapper .dataTables_filter input { border: 1px solid #d9dee3; border-radius: 0.375rem; padding: 0.4375rem 0.875rem; }
+    .dataTables_wrapper .dataTables_length select { border: 1px solid #d9dee3; border-radius: 0.375rem; padding: 0.4375rem 2rem 0.4375rem 0.875rem; }
+    .dataTables_wrapper .dataTables_paginate .paginate_button { padding: 0.438rem 0.875rem; border-radius: 0.375rem; margin: 0 0.125rem; border: none; background: transparent; color: #697a8d; }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current { background: #696cff !important; color: white !important; border: none; }
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.disabled) { background: rgba(105, 108, 255, 0.08) !important; border: none; color: #696cff !important; }
+    .card-datatable { padding-bottom: 0; }
+    .datatables-coa thead th { font-weight: 600; font-size: 0.8125rem; }
+    @media (max-width: 768px) {
+        .card-datatable { overflow-x: hidden !important; -webkit-overflow-scrolling: touch; max-width: 100%; }
+        .datatables-coa { min-width: 800px !important; }
+        .dataTables_wrapper { overflow-x: hidden !important; max-width: 100% !important; }
+    }
+</style>
+
+<script>
+$(document).ready(function() {
+    {% if akun_list %}
+    if (!$.fn.dataTable.isDataTable('#coaTable')) {
+    $('#coaTable').DataTable({
+        language: {
+            "sEmptyTable": "Tidak ada data", "sProcessing": "Memproses...",
+            "sLengthMenu": "Tampilkan _MENU_ data", "sZeroRecords": "Tidak ditemukan",
+            "sInfo": "Menampilkan _START_ - _END_ dari _TOTAL_", "sInfoEmpty": "0 data",
+            "sInfoFiltered": "(dari _MAX_ total)", "sSearch": "Cari:",
+            "oPaginate": {"sFirst":"Pertama","sPrevious":"Sebelumnya","sNext":"Selanjutnya","sLast":"Terakhir"}
+        },
+        order: [[0, 'asc']],
+        pageLength: 25,
+        lengthMenu: [[10, 25, 50, 75, 100, -1], ['10', '25', '50', '75', '100', 'Semua']],
+        responsive: false,
+        columnDefs: [{ orderable: false, targets: [6] }],
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+        initComplete: function() { $('.dataTables_filter input').attr('placeholder', 'Cari kode/nama akun...'); }
+    });
+    }
+    {% endif %}
+});
+
+function applyFilter() {
+    const params = new URLSearchParams();
+    if ($('#tipeFilter').val()) params.append('tipe', $('#tipeFilter').val());
+    if ($('#searchInput').val()) params.append('q', $('#searchInput').val());
+    window.location.href = '{% url "akuntansi:coa" %}?' + params.toString();
+}
+function resetFilter() { window.location.href = '{% url "akuntansi:coa" %}'; }
+
+function toggleColumns() {
+    const checkboxes = document.querySelectorAll('.column-checkbox');
+    const table = new $.fn.dataTable.Api('#coaTable');
+    const columnMap = {'0': 0, '1': 1, '2': 2, '3': 3, '4': 4, '5': 5};
+    checkboxes.forEach(cb => {
+        const columnIndex = columnMap[cb.value];
+        if (columnIndex !== undefined) {
+            table.column(columnIndex).visible(cb.checked);
+        }
+    });
+}
+
+function selectAllColumns() {
+    document.querySelectorAll('.column-checkbox').forEach(cb => { cb.checked = true; });
+    toggleColumns();
+}
+
+function deselectAllColumns() {
+    document.querySelectorAll('.column-checkbox').forEach(cb => { cb.checked = false; });
+    toggleColumns();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXPORT EXCEL & PDF - STANDARD TEMPLATE (Support Android)
+// Konsisten dengan: Produk, POS, Sales Order, Purchase Order
+// ═══════════════════════════════════════════════════════════════
+
+const EXCEL_INFO = {
+    name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
+    address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
+    phone: "{{ export_excel_template.header_telepon|escapejs|default:'No Telp' }}",
+    email: "{{ export_excel_template.header_email|escapejs|default:'email@domain.com' }}",
+    copyright: "{{ export_excel_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
+};
+
+const PDF_INFO = {
+    name: "{{ export_pdf_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
+    address: "{{ export_pdf_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
+    phone: "{{ export_pdf_template.header_telepon|escapejs|default:'No Telp' }}",
+    email: "{{ export_pdf_template.header_email|escapejs|default:'email@domain.com' }}",
+    copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
+};
+
+function exportToExcel() {
+    const tableObj = new $.fn.dataTable.Api('#coaTable');
+    let visibleColumns = [];
+    tableObj.columns().every(function(index) {
+        const h = this.header(); const t = h ? h.textContent.trim() : '';
+        if (this.visible() && t.toLowerCase() !== 'aksi') visibleColumns.push({index, text: t});
+    });
+    let colCount = visibleColumns.length;
+    let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+    html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
+    html += '<body>';
+    
+    // --- ADD EXCEL HEADER (Company Info) ---
+    html += '<table border="0">';
+    if (typeof EXCEL_INFO !== 'undefined') {
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
+        html += `<tr><td colspan="${colCount}"></td></tr>`; // empty row for spacing
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:14px; font-weight:bold;">CHART OF ACCOUNTS</td></tr>`;
+        html += `<tr><td colspan="${colCount}"></td></tr>`;
+    }
+    html += '</table>';
+    
+    html += '<table border="1"><thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;">';
+    visibleColumns.forEach(c => { html += `<th>${c.text}</th>`; });
+    html += '</tr></thead><tbody>';
+    tableObj.rows({search:'applied'}).every(function(rowIdx) {
+        html += '<tr>';
+        visibleColumns.forEach(c => {
+            let cell = tableObj.cell(rowIdx, c.index).node();
+            html += `<td>${cell ? cell.textContent.trim().replace(/\s+/g,' ') : ''}</td>`;
+        });
+        html += '</tr>';
+    });
+    html += '</tbody></table>';
+    
+    // --- ADD EXCEL FOOTER ---
+    html += '<table border="0">';
+    html += `<tr><td colspan="${colCount}"></td></tr>`; // empty spacer
+    if (typeof EXCEL_INFO !== 'undefined') {
+        html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">${EXCEL_INFO.copyright}</td></tr>`;
+    }
+    html += '</table></body></html>';
+    
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + html], {type:'application/vnd.ms-excel;charset=utf-8'});
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'Chart_of_Accounts_' + new Date().toISOString().slice(0,10) + '.xls';
+    link.click();
+}
+
+function exportToPDF() {
+    if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
+    
+    const tableObj = new $.fn.dataTable.Api('#coaTable');
+    const headers = []; let visibleColumns = [];
+    
+    tableObj.columns().every(function(index) {
+        const h = this.header(); const t = h ? h.textContent.trim() : '';
+        if (this.visible() && t.toLowerCase() !== 'aksi') {
+            headers.push({
+                text: t,
+                style: 'tableHeader',
+                fillColor: '#696CFF',
+                color: '#FFFFFF',
+                bold: true
+            });
+            visibleColumns.push({index});
+        }
+    });
+    
+    const body = [headers];
+    tableObj.rows({search:'applied'}).every(function(rowIdx) {
+        const row = [];
+        visibleColumns.forEach(c => {
+            let cell = tableObj.cell(rowIdx, c.index).node();
+            row.push(cell ? cell.textContent.trim().replace(/\s+/g,' ') : '');
+        });
+        if (row.length > 0) body.push(row);
+    });
+    
+    let companyInfoExists = typeof PDF_INFO !== 'undefined';
+    
+    const docDefinition = {
+        pageOrientation: 'landscape',
+        pageMargins: [40, 100, 40, 60],
+        header: function (currentPage) {
+            if (companyInfoExists) {
+                return {
+                    margin: [40, 20, 40, 10],
+                    columns: [
+                        {
+                            width: '*',
+                            stack: [
+                                { text: PDF_INFO.name, style: 'companyName' },
+                                { text: PDF_INFO.address, style: 'companyInfo' },
+                                { text: PDF_INFO.phone + ' | ' + PDF_INFO.email, style: 'companyInfo' }
+                            ]
+                        },
+                        { width: 'auto', stack: [{ text: 'Halaman ' + currentPage, style: 'pageNumber', alignment: 'right' }] }
+                    ]
+                };
+            }
+            return { text: 'Halaman ' + currentPage, margin: [40, 20, 40, 10], alignment: 'right', style: 'pageNumber' };
+        },
+        content: [
+            { text: 'CHART OF ACCOUNTS', style: 'documentTitle', margin: [0, 0, 0, 5] },
+            { text: 'Tanggal: ' + new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }), style: 'dateText', margin: [0, 0, 0, 20] },
+            {
+                table: { headerRows: 1, widths: Array(headers.length).fill('auto'), body: body },
+                layout: {
+                    fillColor: (rowIndex) => (rowIndex === 0) ? '#696CFF' : ((rowIndex % 2 === 0) ? '#F5F5F9' : null),
+                    hLineWidth: () => 0.5,
+                    vLineWidth: () => 0.5,
+                    hLineColor: () => '#DBDADE',
+                    vLineColor: () => '#DBDADE'
+                }
+            }
+        ],
+        footer: function (currentPage, pageCount) {
+            if (companyInfoExists) {
+                return {
+                    margin: [40, 10, 40, 10],
+                    columns: [
+                        { text: 'Dicetak pada: ' + new Date().toLocaleString('id-ID'), style: 'footerText' },
+                        { text: PDF_INFO.copyright, style: 'footerText', alignment: 'right' }
+                    ]
+                };
+            }
+            return { text: 'Dicetak pada: ' + new Date().toLocaleString('id-ID'), margin: [40, 10, 40, 10], style: 'footerText' };
+        },
+        styles: {
+            companyName: { fontSize: 14, bold: true, color: '#5F61E6' },
+            companyInfo: { fontSize: 9, color: '#697A8D' },
+            pageNumber: { fontSize: 9, color: '#697A8D' },
+            documentTitle: { fontSize: 18, bold: true, color: '#5F61E6' },
+            dateText: { fontSize: 10, color: '#697A8D' },
+            tableHeader: { bold: true, fontSize: 10, color: '#FFFFFF' },
+            footerText: { fontSize: 8, color: '#697A8D' }
+        },
+        defaultStyle: { fontSize: 9 }
+    };
+    
+    pdfMake.createPdf(docDefinition).download('Chart_of_Accounts_' + new Date().toISOString().slice(0,10) + '.pdf');
+}
+
+let deleteId = null;
+function confirmDelete(id, name) {
+    deleteId = id;
+    $('#deleteAkunName').text(name);
+    new bootstrap.Modal(document.getElementById('deleteAkunModal')).show();
+}
+$('#confirmDeleteBtn').on('click', function() {
+    if (!deleteId) return;
+    var btn = $(this), orig = btn.html();
+    btn.prop('disabled',true).html('<span class="spinner-border spinner-border-sm me-1"></span>Menghapus...');
+    $.ajax({
+        url: `/akuntansi/coa/${deleteId}/delete/`, type: 'POST',
+        headers: {'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value},
+        success: function(r) { if(r.success) { $('#deleteAkunModal').modal('hide'); location.reload(); } else { alert(r.message); btn.prop('disabled',false).html(orig); }},
+        error: function(xhr) { var msg='Gagal.'; try{msg=JSON.parse(xhr.responseText).message||msg}catch(e){} alert(msg); btn.prop('disabled',false).html(orig); }
+    });
+});
+</script>
+{% include 'accounting/partials/table_tools.html' %}
+{% endblock page_js %}

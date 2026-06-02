@@ -75,6 +75,9 @@ class Supplier(models.Model):
         verbose_name = "Supplier"          # Nama singular
         verbose_name_plural = "Supplier"   # Nama plural
         ordering = ['nama']                # Urutan default A-Z
+        indexes = [
+            models.Index(fields=['aktif', 'nama'], name='purch_sup_aktif_idx'),
+        ]
 
     def __str__(self):
         """Representasi: 'SUP-01 - PT Maju Jaya'"""
@@ -132,7 +135,9 @@ class PurchaseOrder(models.Model):
     subtotal = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name="Subtotal")
     # pajak = PPN atau pajak lainnya (bisa diisi manual)
     pajak = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name="Pajak")
-    # total = subtotal + pajak (dihitung otomatis)
+    # biaya_pengiriman = ongkir/biaya kirim dari supplier/ekspedisi
+    biaya_pengiriman = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name="Biaya Pengiriman/Ongkir")
+    # total = subtotal + biaya_pengiriman + pajak (dihitung otomatis)
     total_harga = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name="Total Harga")
 
     # Catatan opsional — info tambahan untuk supplier atau internal
@@ -164,6 +169,38 @@ class PurchaseOrder(models.Model):
         verbose_name = "Purchase Order"            # Nama singular
         verbose_name_plural = "Purchase Orders"    # Nama plural
         ordering = ['-dibuat_pada']                # Terbaru di atas
+        indexes = [
+            models.Index(fields=['tanggal', 'status'], name='purch_po_tgl_status_idx'),
+            models.Index(fields=['supplier', 'status'], name='purch_po_sup_status_idx'),
+            models.Index(fields=['gudang', 'tanggal'], name='purch_po_gdg_tgl_idx'),
+            models.Index(fields=['metode_pembayaran', 'status'], name='purch_po_pay_status_idx'),
+        ]
+
+    # ===== STATE MACHINE =====
+    # Transisi status yang valid — digunakan oleh transition_status()
+    VALID_TRANSITIONS = {
+        'draft': ['submitted', 'cancelled'],
+        'submitted': ['approved', 'cancelled'],
+        'approved': ['received', 'cancelled'],
+        'received': ['cancelled'],
+        'cancelled': [],
+    }
+
+    def transition_status(self, new_status, user=None):
+        """
+        Validasi dan set transisi status.
+        TIDAK memanggil save() — caller harus save dalam transaction.atomic().
+        Raises ValidationError jika transisi tidak valid.
+        """
+        from django.core.exceptions import ValidationError
+        valid_targets = self.VALID_TRANSITIONS.get(self.status, [])
+        if new_status not in valid_targets:
+            raise ValidationError(
+                f"Transisi status tidak valid: '{self.get_status_display()}' → '{new_status}'. "
+                f"Transisi yang diizinkan dari status '{self.status}': {valid_targets}"
+            )
+        self.status = new_status
+        return self
 
     def __str__(self):
         """Representasi: 'PO/2024/01/0001 - PT Maju Jaya'"""
@@ -240,7 +277,7 @@ class PurchaseOrder(models.Model):
             new_number = 1  # PO pertama bulan ini
 
         # Format dengan zero-padding 4 digit: 1 → '0001'
-        # Tambahan: loop untuk memastikan nomor unik
+        # Loop untuk memastikan nomor yang dihasilkan benar-benar unik
         nomor = f"{prefix}/{new_number:04d}"
         while PurchaseOrder.objects.filter(nomor_po=nomor).exists():
             new_number += 1
@@ -251,15 +288,15 @@ class PurchaseOrder(models.Model):
         """
         Hitung total harga PO dari semua items.
 
-        Formula: total_harga = subtotal + pajak
+        Formula: total_harga = subtotal + biaya_pengiriman + pajak
         (Berbeda dengan SO/POS yang punya diskon, PO tidak ada diskon)
 
-        ⚠ Method ini TIDAK memanggil save() — hanya mengubah field di memory.
+        Catatan: Method ini TIDAK memanggil save() — hanya mengubah field di memory.
         """
         # Hitung subtotal dari semua item PO
         self.subtotal = sum(item.subtotal for item in self.items.all())
-        # Total = subtotal + pajak (PO tidak ada diskon keseluruhan)
-        self.total_harga = self.subtotal + self.pajak
+        # Total = subtotal + ongkir + pajak (PO tidak ada diskon keseluruhan)
+        self.total_harga = self.subtotal + self.biaya_pengiriman + self.pajak
 
     @property
     def grand_total(self):
@@ -279,7 +316,14 @@ class PurchaseOrder(models.Model):
 
         Return: Decimal — nilai pajak (contoh: Rp 1.100.000)
         """
-        return self.total_harga - self.subtotal
+        from decimal import Decimal
+        return self.pajak or Decimal('0')
+
+    @property
+    def dpp_pajak(self):
+        """Dasar pengenaan pajak PO: subtotal plus ongkir."""
+        from decimal import Decimal
+        return (self.subtotal or Decimal('0')) + (self.biaya_pengiriman or Decimal('0'))
 
     def receive_goods(self, user):
         """
@@ -325,14 +369,14 @@ class PurchaseOrder(models.Model):
                 stok.save()
 
                 # Update cabang produk ke gudang dengan stok terbanyak
+                produk = item.produk
                 stok_terbanyak = Stok.objects.filter(
-                    produk=item.produk, jumlah__gt=0
+                    produk=produk, jumlah__gt=0
                 ).order_by('-jumlah').first()
 
-                if stok_terbanyak:
-                    if item.produk.cabang != stok_terbanyak.gudang:
-                        item.produk.cabang = stok_terbanyak.gudang
-                        item.produk.save(update_fields=['cabang'])
+                if stok_terbanyak and produk.cabang != stok_terbanyak.gudang:
+                    produk.cabang = stok_terbanyak.gudang
+                    produk.save(update_fields=['cabang'])
 
             # LANGKAH 3: Update status PO menjadi 'received'
             self.status = 'received'
@@ -403,6 +447,9 @@ class PurchaseOrderItem(models.Model):
         """Konfigurasi metadata model PurchaseOrderItem."""
         verbose_name = "Item PO"
         verbose_name_plural = "Item PO"
+        indexes = [
+            models.Index(fields=['produk', 'purchase_order'], name='purch_item_prod_po_idx'),
+        ]
 
     def __str__(self):
         """Representasi: 'Indomie Goreng - 100'"""

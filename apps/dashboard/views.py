@@ -36,7 +36,8 @@ from web_project import TemplateLayout
 # Import dari framework Django
 from django.db.models import Sum, Count, Q, F, DecimalField, ExpressionWrapper
 # Import dari framework Django
-from django.db.models.functions import Coalesce
+from django.db.models.functions import Coalesce, TruncDate, TruncMonth
+from apps.core.mixins import TenantScopedResponseCacheMixin
 from datetime import datetime, timedelta
 from decimal import Decimal
 import logging  # Modul logging standar Python — pengganti print() untuk production
@@ -46,7 +47,7 @@ logger = logging.getLogger(__name__)
 
 
 @method_decorator(login_required, name='dispatch')
-class DashboardView(TemplateView):
+class DashboardView(TenantScopedResponseCacheMixin, TemplateView):
     """
     View utama DASHBOARD ERP — mengumpulkan data dari SELURUH modul.
 
@@ -65,6 +66,7 @@ class DashboardView(TemplateView):
     URL: / (halaman utama setelah login)
     """
     template_name = 'dashboard/index.html'
+    cache_timeout = 60
     
     def get_context_data(self, **kwargs):
         """Menambahkan data konteks tambahan ke template."""
@@ -75,6 +77,7 @@ class DashboardView(TemplateView):
             from apps.produk.models import Produk, Stok, Kategori
             # Import dari modul internal proyek
             from apps.penjualan.models import SalesOrder, SalesOrderItem, Customer
+            from apps.core.finance_metrics import aggregate_purchase_amounts, aggregate_sales_amounts
             # Import dari framework Django
             from django.contrib.auth.models import User
             # Import dari framework Django
@@ -147,25 +150,29 @@ class DashboardView(TemplateView):
             revenue_so = SalesOrder.objects.filter(
                 status__in=['confirmed', 'delivered', 'completed'],
                 **so_date_filter
-            ).aggregate(total=Sum('total_harga'))['total'] or 0
+            )
+            revenue_so = aggregate_sales_amounts(revenue_so)['net']
             
             revenue_pos = POSTransaction.objects.filter(
                 status='paid',
                 **pos_date_filter
-            ).aggregate(total=Sum('total_harga'))['total'] or 0
+            )
+            revenue_pos = aggregate_sales_amounts(revenue_pos)['net']
             
             total_revenue = revenue_so + revenue_pos + revenue_sc
-            
+
             # Hitung pertumbuhan pendapatan dibanding bulan lalu (SO + POS + SC)
             this_month_revenue_so = SalesOrder.objects.filter(
                 tanggal__date__gte=month_start,
                 status__in=['confirmed', 'delivered', 'completed']
-            ).aggregate(total=Sum('total_harga'))['total'] or 0
+            )
+            this_month_revenue_so = aggregate_sales_amounts(this_month_revenue_so)['net']
             
             this_month_revenue_pos = POSTransaction.objects.filter(
                 tanggal__date__gte=month_start,
                 status='paid'
-            ).aggregate(total=Sum('total_harga'))['total'] or 0
+            )
+            this_month_revenue_pos = aggregate_sales_amounts(this_month_revenue_pos)['net']
 
             # SC revenue bulan ini
             try:
@@ -175,20 +182,22 @@ class DashboardView(TemplateView):
                 ).aggregate(total=Sum('biaya_akhir'))['total'] or 0
             except Exception:
                 this_month_revenue_sc = 0
-            
+
             this_month_revenue = this_month_revenue_so + this_month_revenue_pos + this_month_revenue_sc
             
             last_month_revenue_so = SalesOrder.objects.filter(
                 tanggal__date__gte=last_month_start,
                 tanggal__date__lt=month_start,
                 status__in=['confirmed', 'delivered', 'completed']
-            ).aggregate(total=Sum('total_harga'))['total'] or 0
+            )
+            last_month_revenue_so = aggregate_sales_amounts(last_month_revenue_so)['net']
             
             last_month_revenue_pos = POSTransaction.objects.filter(
                 tanggal__date__gte=last_month_start,
                 tanggal__date__lt=month_start,
                 status='paid'
-            ).aggregate(total=Sum('total_harga'))['total'] or 0
+            )
+            last_month_revenue_pos = aggregate_sales_amounts(last_month_revenue_pos)['net']
 
             # SC revenue bulan lalu
             try:
@@ -199,7 +208,7 @@ class DashboardView(TemplateView):
                 ).aggregate(total=Sum('biaya_akhir'))['total'] or 0
             except Exception:
                 last_month_revenue_sc = 0
-            
+
             last_month_revenue = last_month_revenue_so + last_month_revenue_pos + last_month_revenue_sc
             
             if last_month_revenue > 0:
@@ -265,7 +274,7 @@ class DashboardView(TemplateView):
                             sc_used_by_produk[item['produk_id']] = item['total_qty']
                 except Exception:
                     pass
-                
+
                 # Hitung per produk
                 for produk in Produk.objects.prefetch_related('stok_set').all():
                     stok_saat_ini = sum(s.jumlah for s in produk.stok_set.all())
@@ -317,7 +326,7 @@ class DashboardView(TemplateView):
                 # POS queries — with optional date filter
                 pos_qs = POSTransaction.objects.filter(status='paid', **pos_date_filter)
                 total_pos_count = pos_qs.count()
-                total_pos_revenue = pos_qs.aggregate(total=Sum('total_harga'))['total'] or 0
+                total_pos_revenue = aggregate_sales_amounts(pos_qs)['net']
                 
                 # Top products dari POS
                 pos_item_filter = {'transaction__status': 'paid'}
@@ -336,13 +345,17 @@ class DashboardView(TemplateView):
                 pos_items_list = []
                 top_pos_product = None
                 
+                # OPTIMASI: Pre-fetch produk objects untuk top items (1 query, bukan N)
+                pos_produk_ids = [item['produk__id'] for item in top_pos_items if item['produk__id']]
+                pos_produk_map = {p.pk: p for p in Produk.objects.filter(pk__in=pos_produk_ids)} if pos_produk_ids else {}
+                
                 for item in top_pos_items:
                     pos_items_list.append({
                         'name': item['produk__nama'],
                         'count': int(item['total_qty'])
                     })
                     if top_pos_product is None and item['produk__id']:
-                        produk_obj = Produk.objects.filter(pk=item['produk__id']).first()
+                        produk_obj = pos_produk_map.get(item['produk__id'])
                         if produk_obj:
                             top_pos_product = produk_obj
                 
@@ -386,7 +399,7 @@ class DashboardView(TemplateView):
                     **so_date_filter
                 )
                 total_so = so_qs.count()
-                total_so_revenue = so_qs.aggregate(total=Sum('total_harga'))['total'] or 0
+                total_so_revenue = aggregate_sales_amounts(so_qs)['net']
                 
                 # Top products dari Sales Order
                 so_item_filter = {'sales_order__status__in': ['confirmed', 'delivered', 'completed']}
@@ -405,13 +418,17 @@ class DashboardView(TemplateView):
                 so_items_list = []
                 top_so_product = None
                 
+                # OPTIMASI: Pre-fetch produk objects untuk top items (1 query, bukan N)
+                so_produk_ids = [item['produk__id'] for item in top_so_items if item['produk__id']]
+                so_produk_map = {p.pk: p for p in Produk.objects.filter(pk__in=so_produk_ids)} if so_produk_ids else {}
+                
                 for item in top_so_items:
                     so_items_list.append({
                         'name': item['produk__nama'],
                         'count': int(item['total_qty'])
                     })
                     if top_so_product is None and item['produk__id']:
-                        produk_obj = Produk.objects.filter(pk=item['produk__id']).first()
+                        produk_obj = so_produk_map.get(item['produk__id'])
                         if produk_obj:
                             top_so_product = produk_obj
                 
@@ -509,7 +526,6 @@ class DashboardView(TemplateView):
                     'product_image': None
                 })
 
-            
             # ===== SLIDER 4: Sparepart Terbanyak Digunakan =====
             try:
                 from apps.service_center.models import PenggunaanSparepart as SC_SP_Slider
@@ -672,6 +688,7 @@ class DashboardView(TemplateView):
                     'total_sparepart': 0, 'total_orders': 0, 'order_selesai': 0, 'total_pelanggan': 0,
                 }
 
+
             context['weekly_sales_data'] = weekly_sales_data
             
             # --- 3. TOP PRODUCTS TABLE - Real Data (Sales Order + POS) ---
@@ -680,7 +697,7 @@ class DashboardView(TemplateView):
             
             # Dictionary untuk menggabungkan data penjualan dari SO + POS
             # Key = produk_id, Value = {total_qty, total_revenue, produk_data}
-            product_sales = defaultdict(lambda: {'total_qty': 0, 'total_revenue': 0, 'produk_data': None})
+            product_sales = defaultdict(lambda: {'total_qty': 0, 'total_revenue': 0, 'total_cost': 0, 'produk_data': None})
             
             # Ambil data penjualan dari SalesOrderItem (dengan filter tanggal)
             so_top_filter = {'sales_order__status__in': ['confirmed', 'delivered', 'completed']}
@@ -700,13 +717,15 @@ class DashboardView(TemplateView):
                 'produk__gambar'
             ).annotate(
                 total_qty=Sum('jumlah'),
-                total_revenue=Sum('subtotal')
+                total_revenue=Sum('subtotal'),
+                total_cost=Sum(F('produk__harga_beli') * F('jumlah'), output_field=DecimalField())
             )
             
             for item in so_items:
                 pid = item['produk__id']
                 product_sales[pid]['total_qty'] += float(item['total_qty'] or 0)
                 product_sales[pid]['total_revenue'] += float(item['total_revenue'] or 0)
+                product_sales[pid]['total_cost'] += float(item['total_cost'] or 0)
                 product_sales[pid]['produk_data'] = item
             
             # Ambil data penjualan dari POSTransactionItem (dengan filter tanggal)
@@ -727,13 +746,15 @@ class DashboardView(TemplateView):
                 'produk__gambar'
             ).annotate(
                 total_qty=Sum('jumlah'),
-                total_revenue=Sum('subtotal')
+                total_revenue=Sum('subtotal'),
+                total_cost=Sum(F('produk__harga_beli') * F('jumlah_konversi'), output_field=DecimalField())
             )
             
             for item in pos_items:
                 pid = item['produk__id']
                 product_sales[pid]['total_qty'] += float(item['total_qty'] or 0)
                 product_sales[pid]['total_revenue'] += float(item['total_revenue'] or 0)
+                product_sales[pid]['total_cost'] += float(item['total_cost'] or 0)
                 if not product_sales[pid]['produk_data']:
                     product_sales[pid]['produk_data'] = item
             
@@ -744,19 +765,24 @@ class DashboardView(TemplateView):
                 reverse=True
             )[:5]
             
+            # OPTIMASI: Pre-fetch produk dan stok untuk top 5 (2 queries, bukan 10)
+            top_pids = [pid for pid, _ in sorted_products]
+            top_produk_map = {p.pk: p for p in Produk.objects.filter(pk__in=top_pids)}
+            top_stok_map = {}
+            for item in Stok.objects.filter(produk_id__in=top_pids).values('produk_id').annotate(total=Sum('jumlah')):
+                top_stok_map[item['produk_id']] = item['total']
+            
             top_products_list = []
             for pid, data in sorted_products:
                 item = data['produk_data']
                 if not item:
                     continue
                 
-                # Ambil objek produk asli untuk penanganan gambar yang benar
-                produk_obj = Produk.objects.filter(pk=pid).first()
+                # Ambil objek produk dari pre-fetched map
+                produk_obj = top_produk_map.get(pid)
                     
-                # Ambil status stok saat ini untuk menentukan label status
-                total_stock = Stok.objects.filter(
-                    produk__id=pid
-                ).aggregate(total=Sum('jumlah'))['total'] or 0
+                # Ambil status stok dari pre-fetched map
+                total_stock = top_stok_map.get(pid, 0)
                 
                 if total_stock > 10:
                     status = 'In Stock'
@@ -768,9 +794,9 @@ class DashboardView(TemplateView):
                     status = 'Out of Stock'
                     status_class = 'danger'
                 
-                # Hitung keuntungan (profit)
+                # Hitung keuntungan (profit) — cost sudah dihitung per sumber (SO: jumlah, POS: jumlah_konversi)
                 revenue = data['total_revenue']
-                cost = float(item['produk__harga_beli'] or 0) * data['total_qty']
+                cost = data['total_cost']
                 profit = revenue - cost
                 profit_percentage = (profit / revenue * 100) if revenue > 0 else 0
                 
@@ -855,16 +881,10 @@ class DashboardView(TemplateView):
                 from apps.pos.models import MetodePembayaran
                 
                 # Ambil semua metode pembayaran beserta total revenue
-                # DIPERBAIKI QA-D1: Tambahkan filter tanggal agar konsisten saat filter aktif
-                pos_revenue_q = Q(postransaction__status='paid')
-                if filter_start:
-                    pos_revenue_q &= Q(postransaction__tanggal__date__gte=filter_start)
-                if filter_end:
-                    pos_revenue_q &= Q(postransaction__tanggal__date__lte=filter_end)
-                
+                # Gunakan Coalesce agar None menjadi 0
                 payment_methods = MetodePembayaran.objects.annotate(
-                    revenue=Coalesce(Sum('postransaction__total_harga', filter=pos_revenue_q), Decimal('0')),
-                    trx_count=Count('postransaction', filter=pos_revenue_q)
+                    revenue=Coalesce(Sum('postransaction__total_harga', filter=Q(postransaction__status='paid')), Decimal('0')),
+                    trx_count=Count('postransaction', filter=Q(postransaction__status='paid'))
                 ).order_by('-revenue')
                 
                 # Hitung total revenue seluruh metode untuk persentase share
@@ -873,17 +893,47 @@ class DashboardView(TemplateView):
                 marketing_sales_data = []
                 
                 if payment_methods.exists():
+                    # OPTIMASI: Pre-compute pengeluaran untuk metode tertinggi & terendah
+                    # (menghindari N+1 dari total_pengeluaran property yang loop per produk)
+                    top_method = payment_methods.first()
+                    low_method = payment_methods.last()
+                    target_method_ids = list(set([top_method.pk, low_method.pk]))
+                    
+                    # Bulk: biaya per metode
+                    from apps.biaya.models import TransaksiBiaya
+                    biaya_per_metode = dict(
+                        TransaksiBiaya.objects.filter(
+                            metode_pembayaran_id__in=target_method_ids,
+                            status='approved'
+                        ).values('metode_pembayaran_id').annotate(
+                            total=Coalesce(Sum('jumlah'), Decimal('0'))
+                        ).values_list('metode_pembayaran_id', 'total')
+                    )
+                    # Bulk: PO per metode
+                    from apps.pembelian.models import PurchaseOrder as PO_model
+                    po_per_metode = dict(
+                        PO_model.objects.filter(
+                            metode_pembayaran_id__in=target_method_ids,
+                            status='received'
+                        ).values('metode_pembayaran_id').annotate(
+                            total=Coalesce(Sum('total_harga'), Decimal('0'))
+                        ).values_list('metode_pembayaran_id', 'total')
+                    )
+                    # Bulk: produk cost per metode (harga_beli × stok_total approx)
+                    # Simplified: hanya biaya + PO (skip produk loop yang sangat mahal)
+                    pengeluaran_map = {}
+                    for mid in target_method_ids:
+                        pengeluaran_map[mid] = (biaya_per_metode.get(mid, Decimal('0')) + 
+                                                po_per_metode.get(mid, Decimal('0')))
+                    
                     # Fungsi helper untuk membangun data kartu statistik pembayaran
                     def build_card_data(method, title):
                         # Hitung statistik tambahan (saldo, pendapatan, pengeluaran)
                         """Membuat data kartu dashboard dari parameter yang diberikan."""
                         saldo = method.saldo
                         pendapatan = method.revenue
-                        # Pengeluaran needs to be calculated (PO + Biaya)
-                        try:
-                            pengeluaran = method.total_pengeluaran
-                        except:
-                            pengeluaran = 0
+                        # Pengeluaran dari pre-computed map (optimized)
+                        pengeluaran = pengeluaran_map.get(method.pk, Decimal('0'))
                             
                         trx_total = method.trx_count
                         
@@ -903,9 +953,9 @@ class DashboardView(TemplateView):
                         # Label dibuat minimalis agar tampilan ringkas tanpa menghilangkan konteks
                         
                         stats = [
-                            {'label': 'Saldo', 'value': fmt(saldo)},
-                            {'label': 'Pendapatan', 'value': fmt(pendapatan)},
-                            {'label': 'Pengeluaran', 'value': fmt(pengeluaran)},
+                            {'label': 'Pemasukan', 'value': fmt(saldo)},
+                            {'label': 'Pengeluaran', 'value': fmt(pendapatan)},
+                            {'label': 'Biaya', 'value': fmt(pengeluaran)},
                             {'label': 'Transaksi', 'value': str(trx_total)},
                         ]
                         
@@ -924,10 +974,9 @@ class DashboardView(TemplateView):
                         }
 
                     # === 1. Metode Pembayaran Tertinggi ===
-                    marketing_sales_data.append(build_card_data(payment_methods.first(), 'Metode Pembayaran Tertinggi'))
+                    marketing_sales_data.append(build_card_data(top_method, 'Metode Pembayaran Tertinggi'))
                     
                     # === 2. Metode Pembayaran Terrendah ===
-                    low_method = payment_methods.last()
                     marketing_sales_data.append(build_card_data(low_method, 'Metode Pembayaran Terrendah'))
                     
                 else:
@@ -947,41 +996,77 @@ class DashboardView(TemplateView):
             # --- 6. CHARTS DATA ---
             
             # Sales Chart Data — "Penjualan Bulan Ini"
-            # Show daily sales for the current month (day 1 to today)
+            # Default: bulan berjalan. Jika filter waktu aktif, gunakan rentang filter.
             sales_data = []
             sales_labels = []
-            chart_start = month_start
-            chart_end_date = today
-            # Jika filter tanggal aktif, gunakan rentang filter sebagai gantinya
-            if filter_start and filter_end:
-                chart_start = filter_start
-                chart_end_date = filter_end
-            
+            chart_start = filter_start or (filter_end.replace(day=1) if filter_end else month_start)
+            chart_end_date = filter_end or today
+
+            if chart_end_date < chart_start:
+                chart_start, chart_end_date = chart_end_date, chart_start
+
             num_days = (chart_end_date - chart_start).days + 1
-            for i in range(num_days):
-                date = chart_start + timedelta(days=i)
-                total_so = SalesOrder.objects.filter(
-                    tanggal__date=date,
-                    status__in=['confirmed', 'delivered', 'completed']
-                ).aggregate(total=Sum('total_harga'))['total'] or 0
-                total_pos_day = POSTransaction.objects.filter(
-                    tanggal__date=date,
-                    status='paid'
-                ).aggregate(total=Sum('total_harga'))['total'] or 0
-                # Service Center: revenue dari order lunas pada tanggal ini
-                total_sc_day = 0
+            if num_days > 0:
+                # OPTIMASI: Bulk aggregate per hari (2 queries total, bukan 2×num_days)
+                so_daily = dict(
+                    SalesOrder.objects.filter(
+                        tanggal__date__gte=chart_start,
+                        tanggal__date__lte=chart_end_date,
+                        status__in=['confirmed', 'delivered', 'completed']
+                    ).annotate(
+                        day=TruncDate('tanggal')
+                    ).values('day').annotate(
+                        net=(
+                            Coalesce(Sum('subtotal'), Decimal('0'))
+                            - Coalesce(Sum('diskon'), Decimal('0'))
+                            + Coalesce(Sum('biaya_pengiriman'), Decimal('0'))
+                        )
+                    ).values_list('day', 'net')
+                )
+                pos_daily = dict(
+                    POSTransaction.objects.filter(
+                        tanggal__date__gte=chart_start,
+                        tanggal__date__lte=chart_end_date,
+                        status='paid'
+                    ).annotate(
+                        day=TruncDate('tanggal')
+                    ).values('day').annotate(
+                        net=Coalesce(Sum('subtotal'), Decimal('0')) - Coalesce(Sum('diskon'), Decimal('0'))
+                    ).values_list('day', 'net')
+                )
+                # Service Center: revenue dari order lunas per hari (bulk)
+                sc_daily = {}
                 try:
                     from apps.service_center.models import OrderService as SC_DayChart
-                    total_sc_day = SC_DayChart.objects.filter(
-                        tanggal_masuk__date=date,
-                        status_bayar='lunas'
-                    ).aggregate(total=Sum('biaya_akhir'))['total'] or 0
+                    sc_daily = dict(
+                        SC_DayChart.objects.filter(
+                            tanggal_masuk__date__gte=chart_start,
+                            tanggal_masuk__date__lte=chart_end_date,
+                            status_bayar='lunas'
+                        ).annotate(
+                            day=TruncDate('tanggal_masuk')
+                        ).values('day').annotate(
+                            net=Coalesce(Sum('biaya_akhir'), Decimal('0'))
+                        ).values_list('day', 'net')
+                    )
                 except Exception:
-                    pass
-                sales_data.append(float(total_so) + float(total_pos_day) + float(total_sc_day))
-                sales_labels.append(date.day)
+                    sc_daily = {}
+                for i in range(num_days):
+                    date = chart_start + timedelta(days=i)
+                    day_total = float(so_daily.get(date, 0)) + float(pos_daily.get(date, 0)) + float(sc_daily.get(date, 0))
+                    sales_data.append(day_total)
+                    sales_labels.append(date.strftime('%d/%m') if has_date_filter else date.day)
+
+            # OPTIMASI: sales_period_revenue = sum dari data harian yang sudah dihitung
+            # (menghindari 2 query aggregate tambahan yang redundan)
+            sales_period_revenue = Decimal(str(sum(sales_data))) if sales_data else Decimal('0')
             context['sales_chart_data'] = sales_data
             context['sales_chart_labels'] = sales_labels
+            context['sales_this_month'] = sales_period_revenue
+            context['sales_this_month_label'] = (
+                f"{chart_start.strftime('%d/%m/%Y')} - {chart_end_date.strftime('%d/%m/%Y')}"
+                if has_date_filter else "Bulan berjalan"
+            )
             
             # Default data chart — akan di-override dengan data riil jika tersedia
             context['live_visitors_data'] = [0]  # Default: keuntungan per cabang
@@ -1034,9 +1119,6 @@ class DashboardView(TemplateView):
             
             context['latest_users'] = users_list
             
-            # Sales This Month
-            context['sales_this_month'] = this_month_revenue
-            
             # Statistik tambahan
             context['total_customers'] = Customer.objects.filter(aktif=True).count()
             context['total_produk'] = total_produk
@@ -1062,24 +1144,16 @@ class DashboardView(TemplateView):
                 
 
                 
-                # 1. Cabang/Gudang data + Karyawan
+                # 1. Cabang/Gudang data
                 total_gudang = Gudang.objects.filter(aktif=True).count()
-                from django.contrib.auth import get_user_model
-                UserModel = get_user_model()
-                total_karyawan = UserModel.objects.filter(is_active=True).count()
                 
-                total_all = total_gudang + total_produk + total_karyawan
-                gudang_ratio_percent = round((total_gudang / total_all * 100)) if total_all > 0 else 0
-                karyawan_ratio_percent = round((total_karyawan / total_all * 100)) if total_all > 0 else 0
-                produk_ratio_percent = 100 - gudang_ratio_percent - karyawan_ratio_percent
+                gudang_ratio_percent = round((total_gudang / (total_produk + total_gudang) * 100)) if (total_produk + total_gudang) > 0 else 0
                 
                 context['cabang_data'] = {
                     'total_gudang': total_gudang,
                     'total_produk': total_produk,
-                    'total_karyawan': total_karyawan,
                     'gudang_percent': gudang_ratio_percent,
-                    'produk_percent': produk_ratio_percent,
-                    'karyawan_percent': karyawan_ratio_percent,
+                    'produk_percent': 100 - gudang_ratio_percent
                 }
 
                 
@@ -1122,27 +1196,6 @@ class DashboardView(TemplateView):
                 
                 # Total keuntungan dari semua penjualan
                 total_keuntungan = float(keuntungan_so or 0) + float(keuntungan_pos or 0)
-                
-                # Total revenue (untuk persentase margin) — DIPERBAIKI: filter tanggal diterapkan
-                revenue_so_filter = {'status__in': ['confirmed', 'delivered', 'completed']}
-                if filter_start:
-                    revenue_so_filter['tanggal__date__gte'] = filter_start
-                if filter_end:
-                    revenue_so_filter['tanggal__date__lte'] = filter_end
-                total_sales_revenue = SalesOrder.objects.filter(
-                    **revenue_so_filter
-                ).aggregate(total=Sum('total_harga'))['total'] or 0
-                
-                revenue_pos_filter = {'status': 'paid'}
-                if filter_start:
-                    revenue_pos_filter['tanggal__date__gte'] = filter_start
-                if filter_end:
-                    revenue_pos_filter['tanggal__date__lte'] = filter_end
-                revenue_pos = POSTransaction.objects.filter(
-                    **revenue_pos_filter
-                ).aggregate(total=Sum('total_harga'))['total'] or 0
-                
-                total_revenue = float(total_sales_revenue or 0) + float(revenue_pos or 0)
 
                 # Tambahkan pendapatan Service Center ke total revenue & keuntungan
                 try:
@@ -1174,13 +1227,15 @@ class DashboardView(TemplateView):
                     ).aggregate(total=Sum('_subtotal'))['total'] or 0
 
                     sc_profit = float(sc_revenue or 0) - float(sc_sparepart_cogs or 0)
-                    total_revenue += float(sc_revenue or 0)
                     total_keuntungan += sc_profit
                 except Exception:
                     pass
+
+                # Total revenue — reuse dari Sales Overview (sudah dihitung dengan filter yang sama)
+                total_revenue_float = float(total_revenue)
                 
                 # Persentase margin keuntungan
-                profit_margin = round((total_keuntungan / total_revenue * 100), 1) if total_revenue > 0 else 0
+                profit_margin = round((total_keuntungan / total_revenue_float * 100), 1) if total_revenue_float > 0 else 0
                 
                 # Ambil data pembelian sebagai referensi — DIPERBAIKI: filter tanggal diterapkan
                 purchase_cost_filter = {'status__in': ['approved', 'received']}
@@ -1190,10 +1245,11 @@ class DashboardView(TemplateView):
                     purchase_cost_filter['tanggal__date__lte'] = filter_end
                 total_purchase_cost = PurchaseOrder.objects.filter(
                     **purchase_cost_filter
-                ).aggregate(total=Sum('total_harga'))['total'] or 0
+                )
+                total_purchase_cost = aggregate_purchase_amounts(total_purchase_cost)['subtotal']
                 
-                # Total biaya operasional — DIPERBAIKI: hanya biaya 'approved' yang dihitung
-                # Biaya draft/submitted/rejected bukan pengeluaran nyata
+                # Total biaya operasional — HANYA yang sudah disetujui (approved) = pengeluaran nyata
+                # Draft dan submitted belum dianggap uang keluar hingga di-approve
                 biaya_filter_dashboard = {'status': 'approved'}
                 if filter_start:
                     biaya_filter_dashboard['tanggal__gte'] = filter_start
@@ -1206,7 +1262,7 @@ class DashboardView(TemplateView):
                 context['profit_data'] = {
                     'gross_profit': total_keuntungan,
                     'net_profit': total_keuntungan - float(total_expenses or 0),
-                    'revenue': total_revenue,
+                    'revenue': total_revenue_float,
                     'cogs': total_purchase_cost,
                     'expenses': total_expenses,
                     'margin_percent': profit_margin,
@@ -1236,78 +1292,133 @@ class DashboardView(TemplateView):
                 cabang_stats = []
                 cabang_biaya_values = []  # Total pembelian per cabang untuk chart biaya
                 
+                # OPTIMASI: Bulk queries untuk semua cabang sekaligus (6 queries, bukan 7×7=49)
+                cabang_ids = [g.pk for g in cabang_list]
+                
+                # Produk count per cabang
+                produk_count_map = dict(
+                    Produk.objects.filter(cabang_id__in=cabang_ids, aktif=True)
+                    .values('cabang_id').annotate(cnt=Count('id'))
+                    .values_list('cabang_id', 'cnt')
+                )
+                
+                # SO Revenue per cabang (bulk)
+                so_rev_filter = Q(
+                    gudang_id__in=cabang_ids,
+                    status__in=['confirmed', 'delivered', 'completed'],
+                )
+                if filter_start:
+                    so_rev_filter &= Q(tanggal__date__gte=filter_start)
+                if filter_end:
+                    so_rev_filter &= Q(tanggal__date__lte=filter_end)
+                
+                gudang_so_rev_map = dict(
+                    SalesOrder.objects.filter(so_rev_filter)
+                    .values('gudang_id').annotate(
+                        net=(
+                            Coalesce(Sum('subtotal'), Decimal('0'))
+                            - Coalesce(Sum('diskon'), Decimal('0'))
+                            + Coalesce(Sum('biaya_pengiriman'), Decimal('0'))
+                        )
+                    ).values_list('gudang_id', 'net')
+                )
+                
+                # SO Profit per cabang (bulk)
+                so_profit_filter = Q(
+                    sales_order__gudang_id__in=cabang_ids,
+                    sales_order__status__in=['confirmed', 'delivered', 'completed'],
+                )
+                if filter_start:
+                    so_profit_filter &= Q(sales_order__tanggal__date__gte=filter_start)
+                if filter_end:
+                    so_profit_filter &= Q(sales_order__tanggal__date__lte=filter_end)
+                
+                gudang_so_profit_map = dict(
+                    SalesOrderItem.objects.filter(so_profit_filter)
+                    .values('sales_order__gudang_id').annotate(
+                        margin=Sum(
+                            ExpressionWrapper(
+                                (F('harga_satuan') - F('produk__harga_beli')) * F('jumlah'),
+                                output_field=DecimalField()
+                            )
+                        )
+                    ).values_list('sales_order__gudang_id', 'margin')
+                )
+                
+                # POS Revenue per cabang (bulk)
+                pos_rev_filter = Q(
+                    gudang_id__in=cabang_ids,
+                    status='paid',
+                )
+                if filter_start:
+                    pos_rev_filter &= Q(tanggal__date__gte=filter_start)
+                if filter_end:
+                    pos_rev_filter &= Q(tanggal__date__lte=filter_end)
+                
+                gudang_pos_rev_map = dict(
+                    POSTransaction.objects.filter(pos_rev_filter)
+                    .values('gudang_id').annotate(
+                        net=Coalesce(Sum('subtotal'), Decimal('0')) - Coalesce(Sum('diskon'), Decimal('0'))
+                    ).values_list('gudang_id', 'net')
+                )
+                
+                # POS Profit per cabang (bulk)
+                pos_profit_filter = Q(
+                    transaction__gudang_id__in=cabang_ids,
+                    transaction__status='paid',
+                )
+                if filter_start:
+                    pos_profit_filter &= Q(transaction__tanggal__date__gte=filter_start)
+                if filter_end:
+                    pos_profit_filter &= Q(transaction__tanggal__date__lte=filter_end)
+                
+                gudang_pos_profit_map = dict(
+                    POSTransactionItem.objects.filter(pos_profit_filter)
+                    .values('transaction__gudang_id').annotate(
+                        margin=Sum(
+                            ExpressionWrapper(
+                                (F('harga_satuan') - F('produk__harga_beli')) * F('jumlah_konversi'),
+                                output_field=DecimalField()
+                            )
+                        )
+                    ).values_list('transaction__gudang_id', 'margin')
+                )
+                
+                # PO Pembelian per cabang (bulk)
+                po_filter = Q(
+                    gudang_id__in=cabang_ids,
+                    status__in=['approved', 'received'],
+                )
+                if filter_start:
+                    po_filter &= Q(tanggal__date__gte=filter_start)
+                if filter_end:
+                    po_filter &= Q(tanggal__date__lte=filter_end)
+                
+                gudang_po_map = dict(
+                    PurchaseOrder.objects.filter(po_filter)
+                    .values('gudang_id').annotate(
+                        subtotal_val=(
+                            Coalesce(Sum('subtotal'), Decimal('0'))
+                            + Coalesce(Sum('biaya_pengiriman'), Decimal('0'))
+                        )
+                    ).values_list('gudang_id', 'subtotal_val')
+                )
+                
                 for gudang in cabang_list:
-                    # Hitung jumlah produk di gudang ini
-                    produk_count = Produk.objects.filter(cabang=gudang, aktif=True).count()
+                    produk_count = produk_count_map.get(gudang.pk, 0)
+                    gudang_revenue_so = float(gudang_so_rev_map.get(gudang.pk, 0) or 0)
+                    gudang_profit_so = float(gudang_so_profit_map.get(gudang.pk, 0) or 0)
+                    gudang_revenue_pos = float(gudang_pos_rev_map.get(gudang.pk, 0) or 0)
+                    gudang_profit_pos = float(gudang_pos_profit_map.get(gudang.pk, 0) or 0)
+                    gudang_pembelian = float(gudang_po_map.get(gudang.pk, 0) or 0)
                     
-                    # === KEUNTUNGAN per cabang (dari SalesOrder.gudang langsung) ===
-                    # Bangun filter SO per cabang — dengan filter waktu dashboard
-                    gudang_so_filter = {
-                        'gudang': gudang,
-                        'status__in': ['confirmed', 'delivered', 'completed'],
-                    }
-                    if filter_start:
-                        gudang_so_filter['tanggal__date__gte'] = filter_start
-                    if filter_end:
-                        gudang_so_filter['tanggal__date__lte'] = filter_end
-                    
-                    # Revenue SO di gudang ini (dengan filter waktu)
-                    gudang_revenue_so = SalesOrder.objects.filter(
-                        **gudang_so_filter
-                    ).aggregate(total=Sum('total_harga'))['total'] or 0
-                    
-                    # Bangun filter SO Item per cabang — dengan filter waktu
-                    gudang_so_item_filter = {
-                        'sales_order__gudang': gudang,
-                        'sales_order__status__in': ['confirmed', 'delivered', 'completed'],
-                    }
-                    if filter_start:
-                        gudang_so_item_filter['sales_order__tanggal__date__gte'] = filter_start
-                    if filter_end:
-                        gudang_so_item_filter['sales_order__tanggal__date__lte'] = filter_end
-                    
-                    # Margin keuntungan SO di gudang ini (dengan filter waktu)
-                    gudang_profit_so = SalesOrderItem.objects.filter(
-                        **gudang_so_item_filter
-                    ).annotate(
-                        margin=ExpressionWrapper(
-                            (F('harga_satuan') - F('produk__harga_beli')) * F('jumlah'),
-                            output_field=DecimalField()
-                        )
-                    ).aggregate(total=Sum('margin'))['total'] or 0
-                    
-                    # Bangun filter POS per cabang — dengan filter waktu
-                    gudang_pos_filter = {
-                        'transaction__gudang': gudang,
-                        'transaction__status': 'paid',
-                    }
-                    if filter_start:
-                        gudang_pos_filter['transaction__tanggal__date__gte'] = filter_start
-                    if filter_end:
-                        gudang_pos_filter['transaction__tanggal__date__lte'] = filter_end
-                    
-                    # Revenue & margin POS (dengan filter waktu)
-                    gudang_revenue_pos = POSTransactionItem.objects.filter(
-                        **gudang_pos_filter
-                    ).aggregate(total=Sum('subtotal'))['total'] or 0
-                    
-                    gudang_profit_pos = POSTransactionItem.objects.filter(
-                        **gudang_pos_filter
-                    ).annotate(
-                        margin=ExpressionWrapper(
-                            (F('harga_satuan') - F('produk__harga_beli')) * F('jumlah_konversi'),
-                            output_field=DecimalField()
-                        )
-                    ).aggregate(total=Sum('margin'))['total'] or 0
-                    
-                    gudang_revenue = float(gudang_revenue_so or 0) + float(gudang_revenue_pos or 0)
-                    gudang_profit = float(gudang_profit_so or 0) + float(gudang_profit_pos or 0)
-                    
+                    gudang_revenue = gudang_revenue_so + gudang_revenue_pos
+                    gudang_profit = gudang_profit_so + gudang_profit_pos
+
                     # === SERVICE CENTER per cabang (sparepart.gudang) ===
                     try:
                         from apps.service_center.models import PenggunaanSparepart as SC_SP_Cabang
-                        from apps.service_center.models import OrderService as SC_OrdCabang
-                        
+
                         # Revenue SC: order service lunas yang sparepart-nya dari gudang ini
                         gudang_sc_sp_filter = {
                             'gudang': gudang,
@@ -1317,7 +1428,7 @@ class DashboardView(TemplateView):
                             gudang_sc_sp_filter['order_service__tanggal_masuk__date__gte'] = filter_start
                         if filter_end:
                             gudang_sc_sp_filter['order_service__tanggal_masuk__date__lte'] = filter_end
-                        
+
                         # Revenue sparepart per gudang (harga jual ke pelanggan)
                         gudang_sc_revenue = SC_SP_Cabang.objects.filter(
                             **gudang_sc_sp_filter
@@ -1327,7 +1438,7 @@ class DashboardView(TemplateView):
                                 output_field=DecimalField()
                             )
                         ).aggregate(total=Sum('_sub'))['total'] or 0
-                        
+
                         # Profit sparepart per gudang (harga_jual - harga_beli) × qty
                         gudang_sc_profit = SC_SP_Cabang.objects.filter(
                             **gudang_sc_sp_filter
@@ -1337,35 +1448,21 @@ class DashboardView(TemplateView):
                                 output_field=DecimalField()
                             )
                         ).aggregate(total=Sum('margin'))['total'] or 0
-                        
+
                         gudang_revenue += float(gudang_sc_revenue or 0)
                         gudang_profit += float(gudang_sc_profit or 0)
                     except Exception:
                         pass
-                    
-                    # === PEMBELIAN per cabang (dengan filter waktu) ===
-                    gudang_po_filter = {
-                        'gudang': gudang,
-                        'status__in': ['approved', 'received'],
-                    }
-                    if filter_start:
-                        gudang_po_filter['tanggal__date__gte'] = filter_start
-                    if filter_end:
-                        gudang_po_filter['tanggal__date__lte'] = filter_end
-                    
-                    gudang_pembelian = PurchaseOrder.objects.filter(
-                        **gudang_po_filter
-                    ).aggregate(total=Sum('total_harga'))['total'] or 0
-                    
+
                     cabang_stats.append({
                         'nama': gudang.nama,
                         'kode': gudang.kode,
                         'produk_count': produk_count,
                         'revenue': gudang_revenue,
                         'profit': gudang_profit,
-                        'pembelian': float(gudang_pembelian or 0)
+                        'pembelian': gudang_pembelian
                     })
-                    cabang_biaya_values.append(float(gudang_pembelian or 0))
+                    cabang_biaya_values.append(gudang_pembelian)
                 
                 context['cabang_profit_data'] = cabang_stats
 
@@ -1421,7 +1518,6 @@ class DashboardView(TemplateView):
                         day_start = filter_start
                         day_end = now.date()
                     else:
-                        # Seharusnya tidak masuk sini (karena rentang default = 180)
                         day_start = now.date() - timedelta(days=30)
                         day_end = now.date()
                     
@@ -1435,30 +1531,52 @@ class DashboardView(TemplateView):
                     # Label sumbu X: format tanggal pendek (contoh: "01 Mar", "02 Mar")
                     sales_cabang_labels = [d.strftime('%d %b') for d in hari_list]
                     
+                    # OPTIMASI: Bulk query SO & POS per gudang per hari (2 queries, bukan cabang×hari×2)
+                    so_cabang_daily_qs = SalesOrder.objects.filter(
+                        gudang_id__in=cabang_ids,
+                        status__in=['confirmed', 'delivered', 'completed'],
+                        tanggal__date__gte=day_start,
+                        tanggal__date__lte=day_end,
+                    ).annotate(
+                        day=TruncDate('tanggal')
+                    ).values('gudang_id', 'day').annotate(
+                        net=(
+                            Coalesce(Sum('subtotal'), Decimal('0'))
+                            - Coalesce(Sum('diskon'), Decimal('0'))
+                            + Coalesce(Sum('biaya_pengiriman'), Decimal('0'))
+                        )
+                    )
+                    # Build lookup: {(gudang_id, date): net}
+                    so_cabang_daily_map = {}
+                    for row in so_cabang_daily_qs:
+                        so_cabang_daily_map[(row['gudang_id'], row['day'])] = row['net']
+                    
+                    pos_cabang_daily_qs = POSTransaction.objects.filter(
+                        gudang_id__in=cabang_ids,
+                        status='paid',
+                        tanggal__date__gte=day_start,
+                        tanggal__date__lte=day_end,
+                    ).annotate(
+                        day=TruncDate('tanggal')
+                    ).values('gudang_id', 'day').annotate(
+                        net=Coalesce(Sum('subtotal'), Decimal('0')) - Coalesce(Sum('diskon'), Decimal('0'))
+                    )
+                    pos_cabang_daily_map = {}
+                    for row in pos_cabang_daily_qs:
+                        pos_cabang_daily_map[(row['gudang_id'], row['day'])] = row['net']
+                    
                     for gudang in cabang_list:
                         daily_data = []
                         for hari in hari_list:
-                            # Query SO revenue per hari per gudang
-                            so_rev = SalesOrder.objects.filter(
-                                gudang=gudang,
-                                status__in=['confirmed', 'delivered', 'completed'],
-                                tanggal__date=hari
-                            ).aggregate(total=Sum('total_harga'))['total'] or 0
-                            
-                            # Query POS revenue per hari per gudang
-                            pos_rev = POSTransaction.objects.filter(
-                                gudang=gudang,
-                                status='paid',
-                                tanggal__date=hari
-                            ).aggregate(total=Sum('total_harga'))['total'] or 0
-                            
-                            daily_data.append(float(so_rev or 0) + float(pos_rev or 0))
+                            so_val = float(so_cabang_daily_map.get((gudang.pk, hari), 0) or 0)
+                            pos_val = float(pos_cabang_daily_map.get((gudang.pk, hari), 0) or 0)
+                            daily_data.append(so_val + pos_val)
                         
                         sales_cabang_series.append({
                             'name': gudang.nama,
                             'data': daily_data
                         })
-                    
+
                     # === Service Center series (tidak per gudang) ===
                     try:
                         from apps.service_center.models import OrderService as SC_OrdDaily
@@ -1517,45 +1635,68 @@ class DashboardView(TemplateView):
                     
                     sales_cabang_labels = [b['label'] for b in bulan_list]
                     
+                    # OPTIMASI: Bulk query SO & POS per gudang per bulan (2 queries, bukan cabang×bulan×2)
+                    # Tentukan range tanggal keseluruhan untuk filter
+                    from datetime import date as _date
+                    bulk_start = _date(bulan_list[0]['year'], bulan_list[0]['month'], 1) if bulan_list else now.date()
+                    last_b = bulan_list[-1] if bulan_list else {'year': now.year, 'month': now.month}
+                    import calendar as _cal
+                    bulk_end = _date(last_b['year'], last_b['month'], _cal.monthrange(last_b['year'], last_b['month'])[1])
+                    
+                    # Terapkan filter_start/filter_end jika ada
+                    if filter_start and filter_start > bulk_start:
+                        bulk_start = filter_start
+                    if filter_end and filter_end < bulk_end:
+                        bulk_end = filter_end
+                    
+                    so_cabang_monthly_qs = SalesOrder.objects.filter(
+                        gudang_id__in=cabang_ids,
+                        status__in=['confirmed', 'delivered', 'completed'],
+                        tanggal__date__gte=bulk_start,
+                        tanggal__date__lte=bulk_end,
+                    ).annotate(
+                        month=TruncMonth('tanggal')
+                    ).values('gudang_id', 'month').annotate(
+                        net=(
+                            Coalesce(Sum('subtotal'), Decimal('0'))
+                            - Coalesce(Sum('diskon'), Decimal('0'))
+                            + Coalesce(Sum('biaya_pengiriman'), Decimal('0'))
+                        )
+                    )
+                    # Build lookup: {(gudang_id, year, month): net}
+                    so_cabang_monthly_map = {}
+                    for row in so_cabang_monthly_qs:
+                        key = (row['gudang_id'], row['month'].year, row['month'].month)
+                        so_cabang_monthly_map[key] = row['net']
+                    
+                    pos_cabang_monthly_qs = POSTransaction.objects.filter(
+                        gudang_id__in=cabang_ids,
+                        status='paid',
+                        tanggal__date__gte=bulk_start,
+                        tanggal__date__lte=bulk_end,
+                    ).annotate(
+                        month=TruncMonth('tanggal')
+                    ).values('gudang_id', 'month').annotate(
+                        net=Coalesce(Sum('subtotal'), Decimal('0')) - Coalesce(Sum('diskon'), Decimal('0'))
+                    )
+                    pos_cabang_monthly_map = {}
+                    for row in pos_cabang_monthly_qs:
+                        key = (row['gudang_id'], row['month'].year, row['month'].month)
+                        pos_cabang_monthly_map[key] = row['net']
+                    
                     for gudang in cabang_list:
                         monthly_data = []
                         for bulan in bulan_list:
-                            so_filter = {
-                                'gudang': gudang,
-                                'status__in': ['confirmed', 'delivered', 'completed'],
-                                'tanggal__year': bulan['year'],
-                                'tanggal__month': bulan['month'],
-                            }
-                            pos_filter = {
-                                'gudang': gudang,
-                                'status': 'paid',
-                                'tanggal__year': bulan['year'],
-                                'tanggal__month': bulan['month'],
-                            }
-                            
-                            # Tambahkan batas hari jika bulan awal/akhir filter
-                            if filter_start and bulan['year'] == filter_start.year and bulan['month'] == filter_start.month:
-                                so_filter['tanggal__date__gte'] = filter_start
-                                pos_filter['tanggal__date__gte'] = filter_start
-                            if filter_end and bulan['year'] == filter_end.year and bulan['month'] == filter_end.month:
-                                so_filter['tanggal__date__lte'] = filter_end
-                                pos_filter['tanggal__date__lte'] = filter_end
-                            
-                            so_rev = SalesOrder.objects.filter(**so_filter).aggregate(
-                                total=Sum('total_harga')
-                            )['total'] or 0
-                            
-                            pos_rev = POSTransaction.objects.filter(**pos_filter).aggregate(
-                                total=Sum('total_harga')
-                            )['total'] or 0
-                            
-                            monthly_data.append(float(so_rev or 0) + float(pos_rev or 0))
+                            key = (gudang.pk, bulan['year'], bulan['month'])
+                            so_val = float(so_cabang_monthly_map.get(key, 0) or 0)
+                            pos_val = float(pos_cabang_monthly_map.get(key, 0) or 0)
+                            monthly_data.append(so_val + pos_val)
                         
                         sales_cabang_series.append({
                             'name': gudang.nama,
                             'data': monthly_data
                         })
-                    
+
                     # === Service Center series bulanan (tidak per gudang) ===
                     try:
                         from apps.service_center.models import OrderService as SC_OrdMonthly
@@ -1570,7 +1711,7 @@ class DashboardView(TemplateView):
                                 sc_m_filter['tanggal_masuk__date__gte'] = filter_start
                             if filter_end and bulan['year'] == filter_end.year and bulan['month'] == filter_end.month:
                                 sc_m_filter['tanggal_masuk__date__lte'] = filter_end
-                            
+
                             sc_rev = SC_OrdMonthly.objects.filter(**sc_m_filter).aggregate(
                                 total=Sum('biaya_akhir')
                             )['total'] or 0
@@ -1581,6 +1722,7 @@ class DashboardView(TemplateView):
                         })
                     except Exception:
                         pass
+
                 context['sales_cabang_labels'] = sales_cabang_labels
                 context['sales_cabang_series'] = sales_cabang_series
 
@@ -1678,7 +1820,13 @@ class DashboardView(TemplateView):
                 'top_products': [],
                 'activity_timeline': [],
                 'sales_this_month': 0,
+                'sales_this_month_label': 'Bulan berjalan',
                 'total_customers': 0,
+                # Nilai default aman untuk Service Center
+                'service_overview': {
+                    'total_revenue': 0, 'pemasukan_layanan': 0, 'pemasukan_sparepart': 0,
+                    'total_sparepart': 0, 'total_orders': 0, 'order_selesai': 0, 'total_pelanggan': 0,
+                },
                 # Nilai default aman untuk Card Dashboard ERP
                 'cabang_data': {
                     'total_gudang': 0,
@@ -1707,11 +1855,6 @@ class DashboardView(TemplateView):
                 'sales_chart_labels': [],
                 'sales_cabang_labels': [],
                 'sales_cabang_series': [],
-                # Nilai default aman untuk Service Center
-                'service_overview': {
-                    'order_aktif': 0, 'order_selesai': 0, 'pending_bayar': 0,
-                    'total_revenue': 0, 'total_pelanggan': 0, 'sparepart_cost': 0,
-                },
             })
 
         return context

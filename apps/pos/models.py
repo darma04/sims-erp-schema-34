@@ -31,8 +31,11 @@
 ==========================================================================
 """
 
+from decimal import Decimal
+
 from django.db import models, transaction    # Django ORM + atomic transaction
 from django.contrib.auth.models import User  # Model User bawaan Django (akun login)
+from apps.core.validators import validate_image_file
 from apps.produk.models import Produk, Gudang, Stok  # Import model dari modul Produk untuk relasi FK
 
 
@@ -62,17 +65,49 @@ class MetodePembayaran(models.Model):
     # unique=True memastikan tidak ada duplikat — contoh: 'CASH', 'TRF', 'QRIS'
     kode = models.CharField(max_length=20, unique=True, verbose_name="Kode")
 
+    # Tipe pembayaran — untuk mengkategorikan metode di halaman POS
+    # Tunai = pembayaran langsung/cash, Non-Tunai = transfer bank, QRIS, e-wallet, dll
+    # Digunakan oleh POS untuk memisahkan dropdown Tunai dan Non-Tunai
+    TIPE_CHOICES = [
+        ('tunai', 'Tunai'),
+        ('non_tunai', 'Non-Tunai'),
+    ]
+    tipe = models.CharField(
+        max_length=20, choices=TIPE_CHOICES, default='tunai',
+        verbose_name="Tipe Pembayaran",
+        help_text="Tunai = pembayaran langsung/cash, Non-Tunai = transfer bank, QRIS, dll"
+    )
+
     # Deskripsi opsional — info tambahan tentang metode pembayaran
     deskripsi = models.TextField(blank=True, null=True, verbose_name="Deskripsi")
 
     # Gambar/logo metode pembayaran — ditampilkan di halaman kasir POS
     # Disimpan di MEDIA_ROOT/metode_pembayaran/ (contoh: qris_logo.png)
-    gambar = models.ImageField(upload_to='metode_pembayaran/', blank=True, null=True, verbose_name="Gambar")
+    gambar = models.ImageField(upload_to='metode_pembayaran/', blank=True, null=True, verbose_name="Gambar", validators=[validate_image_file])
 
     # Saldo metode pembayaran — untuk tracking saldo kas/rekening
     # Contoh: Cash = 5jt, Bank BCA = 10jt
     # Diupdate otomatis saat ada transaksi POS masuk atau biaya keluar
     saldo = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name="Saldo")
+
+    # Mapping treasury/accounting. Metode pembayaran adalah cara bayar operasional,
+    # sedangkan Kas/Bank dan CoA menentukan akun akuntansi yang menerima/keluar uang.
+    kas_bank_account = models.ForeignKey(
+        'kas_bank.KasBankAccount',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='metode_pembayaran',
+        verbose_name="Akun Kas/Bank"
+    )
+    akun_kas_bank = models.ForeignKey(
+        'akuntansi.Akun',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='metode_pembayaran',
+        verbose_name="Akun CoA Kas/Bank"
+    )
 
     # Flag aktif — metode nonaktif tidak muncul di pilihan pembayaran kasir
     aktif = models.BooleanField(default=True, verbose_name="Aktif")
@@ -86,6 +121,10 @@ class MetodePembayaran(models.Model):
         verbose_name = "Metode Pembayaran"         # Nama singular di admin
         verbose_name_plural = "Metode Pembayaran"  # Nama plural di admin
         ordering = ['nama']                        # Urutan default A-Z berdasarkan nama
+        indexes = [
+            models.Index(fields=['aktif', 'nama'], name='pos_pay_aktif_nama_idx'),
+            models.Index(fields=['aktif', 'kode'], name='pos_pay_aktif_kode_idx'),
+        ]
 
     def __str__(self):
         """Representasi string — nama metode (contoh: 'Tunai')."""
@@ -99,10 +138,12 @@ class MetodePembayaran(models.Model):
         Sumber pendapatan:
         1. POSTransaction (status='paid') → penjualan retail kasir
         2. SalesOrder (status in confirmed/delivered/completed) → penjualan B2B
-        3. OrderService (status_bayar='lunas') → service center
 
         Return: Decimal — total pendapatan
         """
+        if hasattr(self, '_total_pendapatan_cached'):
+            return self._total_pendapatan_cached
+
         from django.db.models import Sum
 
         # Sumber 1: POS Transaction yang sudah lunas
@@ -115,12 +156,7 @@ class MetodePembayaran(models.Model):
             status__in=['confirmed', 'delivered', 'completed']
         ).aggregate(total=Sum('total_harga'))['total'] or 0
 
-        # Sumber 3: Order Service yang sudah lunas
-        sc_total = self.order_services.filter(
-            status_bayar='lunas'
-        ).aggregate(total=Sum('biaya_akhir'))['total'] or 0
-
-        return pos_total + so_total + sc_total
+        return pos_total + so_total
 
     @property
     def total_pengeluaran(self):
@@ -128,20 +164,21 @@ class MetodePembayaran(models.Model):
         Hitung total PENGELUARAN dari metode pembayaran ini.
 
         Pengeluaran berasal dari 3 sumber:
-        1. TransaksiBiaya (biaya operasional) — yang statusnya 'approved'
+        1. TransaksiBiaya (biaya operasional) — semua status kecuali 'rejected'
         2. PurchaseOrder (pembelian ke supplier) — yang statusnya 'received'
-        3. Produk (pembelian stok awal/import) — harga_beli × qty_historis
-
-        DIPERBAIKI: Sumber 3 menggunakan qty_historis (stok + terjual + adj_out)
-        bukan hanya stok_total, agar pengeluaran produk yang sudah terjual tetap terhitung.
+        3. Produk (pembelian stok awal/import) — harga_beli × stok_total
 
         Return: Decimal — total pengeluaran
         """
+        if hasattr(self, '_total_pengeluaran_cached'):
+            return self._total_pengeluaran_cached
+
         from django.db.models import Sum
         from decimal import Decimal
         from apps.penjualan.models import SalesOrderItem
         from apps.inventory.models import AdjustmentStok
-        # Note: POSTransactionItem didefinisikan setelah MetodePembayaran, import dari modul pos
+        # Note: POSTransactionItem sudah ada di file ini, tapi kita butuh mereferensikan class di bawah.
+        # Karena POSTransactionItem didefinisikan setelah MetodePembayaran, kita import dari modul pos
         import apps.pos.models as pos_models
 
         # Sumber 1: Total dari transaksi biaya (HANYA status 'approved')
@@ -179,18 +216,7 @@ class MetodePembayaran(models.Model):
                     tipe='out'
                 ).aggregate(total=Sum('jumlah'))['total'] or Decimal('0')
                 
-                # Hitung qty terpakai di Service Center (yang sudah mengurangi stok)
-                qty_sc_used = Decimal('0')
-                try:
-                    from apps.service_center.models import PenggunaanSparepart
-                    qty_sc_used = PenggunaanSparepart.objects.filter(
-                        produk=produk,
-                        stok_dikurangi=True
-                    ).aggregate(total=Sum('jumlah'))['total'] or Decimal('0')
-                except Exception:
-                    pass
-                
-                qty_historis = stok_saat_ini + qty_sold_so + qty_sold_pos + qty_adj_out + qty_sc_used
+                qty_historis = stok_saat_ini + qty_sold_so + qty_sold_pos + qty_adj_out
                 produk_total += produk.harga_beli * qty_historis
         except Exception:
             pass
@@ -207,6 +233,9 @@ class MetodePembayaran(models.Model):
 
         Return: Decimal — saldo terhitung (bisa negatif)
         """
+        if hasattr(self, '_saldo_terhitung_cached'):
+            return self._saldo_terhitung_cached
+
         return self.saldo + self.total_pendapatan - self.total_pengeluaran
 
     @property
@@ -219,17 +248,19 @@ class MetodePembayaran(models.Model):
         2. SalesOrder (semua status)
         3. PurchaseOrder (semua status)
         4. TransaksiBiaya (semua status)
-        5. OrderService (semua status)
+        5. Produk (pembelian stok via metode ini)
 
         Return: int — jumlah total transaksi
         """
+        if hasattr(self, '_total_transaksi_count_cached'):
+            return self._total_transaksi_count_cached
+
         pos_count = self.postransaction_set.count()
         so_count = self.sales_orders.count()
         po_count = self.purchase_orders.count()
         biaya_count = self.transaksi_biaya.count()
-        sc_count = self.order_services.count()
         produk_count = self.produk_set.count()
-        return pos_count + so_count + po_count + biaya_count + sc_count + produk_count
+        return pos_count + so_count + po_count + biaya_count + produk_count
 
 
 class POSTransaction(models.Model):
@@ -306,6 +337,13 @@ class POSTransaction(models.Model):
         verbose_name = "Transaksi POS"             # Nama singular
         verbose_name_plural = "Transaksi POS"      # Nama plural
         ordering = ['-dibuat_pada']                # Terbaru di atas
+        indexes = [
+            models.Index(fields=['tanggal', 'status'], name='pos_trx_tgl_status_idx'),
+            models.Index(fields=['gudang', 'tanggal'], name='pos_trx_gdg_tgl_idx'),
+            models.Index(fields=['kasir', 'tanggal'], name='pos_trx_kasir_tgl_idx'),
+            models.Index(fields=['metode_pembayaran', 'status'], name='pos_trx_pay_status_idx'),
+            models.Index(fields=['customer', 'status'], name='pos_trx_cust_status_idx'),
+        ]
 
     def __str__(self):
         """Representasi: 'POS/2024/01/15/0001 - 15/01/2024 14:30'"""
@@ -345,7 +383,7 @@ class POSTransaction(models.Model):
         Format: POS/{TAHUN}/{BULAN}/{HARI}/{NOMOR_URUT_4_DIGIT}
         Contoh: POS/2024/01/15/0001, POS/2024/01/15/0002
 
-        ⚠ Berbeda dengan PO/SO yang per BULAN, POS menggunakan per HARI
+        Catatan: Berbeda dengan PO/SO yang per BULAN, POS menggunakan per HARI
         karena volume transaksi POS jauh lebih banyak (bisa puluhan per hari).
 
         Algoritma:
@@ -382,7 +420,7 @@ class POSTransaction(models.Model):
             new_number = 1  # Transaksi pertama hari ini
 
         # Format dengan zero-padding 4 digit: 1 → '0001'
-        # Tambahan: loop untuk memastikan nomor unik
+        # Loop untuk memastikan nomor yang dihasilkan benar-benar unik
         nomor = f"{prefix}/{new_number:04d}"
         while POSTransaction.objects.filter(nomor_transaksi=nomor).exists():
             new_number += 1
@@ -405,7 +443,7 @@ class POSTransaction(models.Model):
         - Total: 80.000 - 5.000 + 8.800 = Rp 83.800
         - Bayar: Rp 100.000 → Kembalian: Rp 16.200
 
-        ⚠ Method ini TIDAK memanggil save() — hanya mengubah field di memory.
+        Catatan: Method ini TIDAK memanggil save() — hanya mengubah field di memory.
         Pemanggil harus memanggil .save() sendiri setelah calculate_total().
         """
         # Hitung subtotal dari semua item: sum(jumlah × harga) per item
@@ -432,7 +470,7 @@ class POSTransaction(models.Model):
         DIPERBAIKI: Menggunakan select_for_update() + transaction.atomic()
         agar aman saat multiple kasir memproses transaksi bersamaan.
 
-        ⚠ Jika produk belum ada stok di gudang ini, skip (tidak error).
+        Catatan: Jika produk belum ada stok di gudang ini, skip (tidak error).
         Ini bisa terjadi jika produk baru ditambahkan tapi stok belum diinput.
         """
         with transaction.atomic():
@@ -508,10 +546,23 @@ class POSTransactionItem(models.Model):
         help_text="Jumlah dalam satuan dasar produk, dihitung otomatis"
     )
 
+    # Snapshot HPP saat transaksi dibuat agar laporan lama tidak berubah
+    hpp_satuan = models.DecimalField(
+        max_digits=15, decimal_places=2, default=0,
+        verbose_name="HPP Satuan"
+    )
+    hpp_subtotal = models.DecimalField(
+        max_digits=15, decimal_places=2, default=0,
+        verbose_name="Subtotal HPP"
+    )
+
     class Meta:
         """Konfigurasi metadata model POSTransactionItem."""
         verbose_name = "Item Transaksi POS"
         verbose_name_plural = "Item Transaksi POS"
+        indexes = [
+            models.Index(fields=['produk', 'transaction'], name='pos_item_prod_trx_idx'),
+        ]
 
     def __str__(self):
         """Representasi: 'Indomie - 5'"""
@@ -535,6 +586,39 @@ class POSTransactionItem(models.Model):
         # Contoh: 5 × Rp 3.500 - Rp 0 = Rp 17.500
         self.subtotal = (self.jumlah * self.harga_satuan) - self.diskon
 
+        if self.jumlah_konversi and self.jumlah_konversi > 0:
+            pass
+        elif self.satuan_transaksi and self.produk and self.satuan_transaksi != self.produk.satuan:
+            from apps.produk.models import KonversiSatuan
+            satuan_produk = self.produk.satuan
+            satuan_trx = self.satuan_transaksi
+
+            konversi = KonversiSatuan.objects.filter(
+                dari_satuan=satuan_produk, ke_satuan=satuan_trx, produk=self.produk
+            ).first() or KonversiSatuan.objects.filter(
+                dari_satuan=satuan_produk, ke_satuan=satuan_trx, produk__isnull=True
+            ).first()
+
+            if konversi:
+                self.jumlah_konversi = self.jumlah / konversi.faktor_konversi
+            else:
+                konversi_balik = KonversiSatuan.objects.filter(
+                    dari_satuan=satuan_trx, ke_satuan=satuan_produk, produk=self.produk
+                ).first() or KonversiSatuan.objects.filter(
+                    dari_satuan=satuan_trx, ke_satuan=satuan_produk, produk__isnull=True
+                ).first()
+                if konversi_balik:
+                    self.jumlah_konversi = self.jumlah * konversi_balik.faktor_konversi
+                else:
+                    self.jumlah_konversi = self.jumlah
+        else:
+            self.jumlah_konversi = self.jumlah
+
+        qty_stok = self.jumlah_konversi or self.jumlah
+        if self.produk_id and self.hpp_satuan == Decimal('0'):
+            self.hpp_satuan = self.produk.harga_beli or Decimal('0')
+        self.hpp_subtotal = qty_stok * (self.hpp_satuan or Decimal('0'))
+
         # LANGKAH 2: Simpan item ke database
         super().save(*args, **kwargs)
 
@@ -545,3 +629,154 @@ class POSTransactionItem(models.Model):
             self.transaction.calculate_total()
             # Simpan transaksi induk dengan total yang sudah diupdate
             self.transaction.save()
+
+
+def attach_metode_pembayaran_financials(metode_list, po_expense_statuses=None):
+    """
+    Isi cache finansial MetodePembayaran secara bulk untuk halaman list.
+
+    Tanpa helper ini, template memanggil beberapa property per baris dan setiap
+    property melakukan aggregate query sendiri. Helper ini menjaga hasil tetap
+    sama, tetapi menghitung semua metode dalam batch.
+    """
+    metode_list = list(metode_list or [])
+    if not metode_list:
+        return metode_list
+
+    from collections import defaultdict
+    from decimal import Decimal
+    from django.db.models import Count, Sum
+    from apps.biaya.models import TransaksiBiaya
+    from apps.inventory.models import AdjustmentStok
+    from apps.pembelian.models import PurchaseOrder
+    from apps.penjualan.models import SalesOrder, SalesOrderItem
+
+    def as_decimal(value):
+        if isinstance(value, Decimal):
+            return value
+        return Decimal(str(value or 0))
+
+    def sum_by_method(queryset, field):
+        return defaultdict(
+            Decimal,
+            {
+                row['metode_pembayaran_id']: as_decimal(row['total'])
+                for row in queryset.values('metode_pembayaran_id').annotate(total=Sum(field))
+            },
+        )
+
+    def count_by_method(queryset):
+        return defaultdict(
+            int,
+            {
+                row['metode_pembayaran_id']: row['total']
+                for row in queryset.values('metode_pembayaran_id').annotate(total=Count('id'))
+            },
+        )
+
+    ids = [metode.pk for metode in metode_list if metode.pk]
+    if not ids:
+        for metode in metode_list:
+            metode._total_pendapatan_cached = Decimal('0')
+            metode._total_pengeluaran_cached = Decimal('0')
+            metode._saldo_terhitung_cached = as_decimal(metode.saldo)
+            metode._total_transaksi_count_cached = 0
+        return metode_list
+
+    po_expense_statuses = tuple(po_expense_statuses or ('received',))
+
+    pos_qs = POSTransaction.objects.filter(metode_pembayaran_id__in=ids)
+    so_qs = SalesOrder.objects.filter(metode_pembayaran_id__in=ids)
+    po_qs = PurchaseOrder.objects.filter(metode_pembayaran_id__in=ids)
+    biaya_qs = TransaksiBiaya.objects.filter(metode_pembayaran_id__in=ids)
+    produk_qs = Produk.objects.filter(metode_pembayaran_id__in=ids)
+
+    pos_pendapatan = sum_by_method(pos_qs.filter(status='paid'), 'total_harga')
+    so_pendapatan = sum_by_method(
+        so_qs.filter(status__in=['confirmed', 'delivered', 'completed']),
+        'total_harga',
+    )
+    biaya_pengeluaran = sum_by_method(biaya_qs.filter(status='approved'), 'jumlah')
+    po_pengeluaran = sum_by_method(po_qs.filter(status__in=po_expense_statuses), 'total_harga')
+
+    pos_count = count_by_method(pos_qs)
+    so_count = count_by_method(so_qs)
+    po_count = count_by_method(po_qs)
+    biaya_count = count_by_method(biaya_qs)
+    produk_count = count_by_method(produk_qs)
+
+    produk_rows = list(produk_qs.values('id', 'metode_pembayaran_id', 'harga_beli'))
+    produk_ids = [row['id'] for row in produk_rows]
+    produk_pengeluaran = defaultdict(Decimal)
+    if produk_ids:
+        stok_map = defaultdict(
+            Decimal,
+            {
+                row['produk_id']: as_decimal(row['total'])
+                for row in Stok.objects.filter(produk_id__in=produk_ids)
+                .values('produk_id')
+                .annotate(total=Sum('jumlah'))
+            },
+        )
+        sold_so_map = defaultdict(
+            Decimal,
+            {
+                row['produk_id']: as_decimal(row['total'])
+                for row in SalesOrderItem.objects.filter(
+                    produk_id__in=produk_ids,
+                    sales_order__status__in=['confirmed', 'delivered', 'completed'],
+                )
+                .values('produk_id')
+                .annotate(total=Sum('jumlah'))
+            },
+        )
+        sold_pos_map = defaultdict(
+            Decimal,
+            {
+                row['produk_id']: as_decimal(row['total'])
+                for row in POSTransactionItem.objects.filter(
+                    produk_id__in=produk_ids,
+                    transaction__status='paid',
+                )
+                .values('produk_id')
+                .annotate(total=Sum('jumlah_konversi'))
+            },
+        )
+        adj_out_map = defaultdict(
+            Decimal,
+            {
+                row['produk_id']: as_decimal(row['total'])
+                for row in AdjustmentStok.objects.filter(
+                    produk_id__in=produk_ids,
+                    tipe='out',
+                )
+                .values('produk_id')
+                .annotate(total=Sum('jumlah'))
+            },
+        )
+        for row in produk_rows:
+            produk_id = row['id']
+            qty_historis = (
+                stok_map[produk_id]
+                + sold_so_map[produk_id]
+                + sold_pos_map[produk_id]
+                + adj_out_map[produk_id]
+            )
+            produk_pengeluaran[row['metode_pembayaran_id']] += as_decimal(row['harga_beli']) * qty_historis
+
+    for metode in metode_list:
+        metode_id = metode.pk
+        pendapatan = pos_pendapatan[metode_id] + so_pendapatan[metode_id]
+        pengeluaran = biaya_pengeluaran[metode_id] + po_pengeluaran[metode_id] + produk_pengeluaran[metode_id]
+        metode._total_pendapatan_cached = pendapatan
+        metode._total_pengeluaran_cached = pengeluaran
+        metode._saldo_terhitung_cached = as_decimal(metode.saldo) + pendapatan - pengeluaran
+        metode._total_transaksi_count_cached = (
+            pos_count[metode_id]
+            + so_count[metode_id]
+            + po_count[metode_id]
+            + biaya_count[metode_id]
+            + produk_count[metode_id]
+        )
+
+    return metode_list

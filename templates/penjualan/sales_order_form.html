@@ -81,6 +81,7 @@
                                 <div class="mb-3">
                                     <label class="form-label">{{ form.metode_pembayaran.label }}</label>
                                     {{ form.metode_pembayaran }}
+                                    <div class="form-text">Kosong/TEMPO akan membentuk piutang dengan jatuh tempo</div>
                                 </div>
                             </div>
 
@@ -103,6 +104,14 @@
                                     <div class="input-group">
                                         <span class="input-group-text">Rp</span>
                                         {{ form.pajak }}
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">{{ form.biaya_pengiriman.label }}</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">Rp</span>
+                                        {{ form.biaya_pengiriman }}
                                     </div>
                                 </div>
 
@@ -182,6 +191,10 @@
                                             <span class="text-muted">Diskon:</span>
                                             <span class="fw-medium text-danger" id="disc-amount">Rp 0</span>
                                         </div>
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="text-muted">Ongkir:</span>
+                                            <span class="fw-medium" id="shipping-amount">Rp 0</span>
+                                        </div>
                                         <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
                                             <span class="text-muted">Pajak:</span>
                                             <span class="fw-medium" id="tax-amount">Rp 0</span>
@@ -221,8 +234,25 @@
         $('.select2').select2({ placeholder: 'Pilih...', allowClear: true });
         $('.select2-item').select2({ placeholder: 'Pilih Produk', allowClear: true });
 
+        // ===== GUDANG → PPN MAPPING (dari backend) =====
+        const gudangPajakMap = {};
+        {% for g in gudang_pajak_list %}
+        gudangPajakMap[{{ g.id }}] = {{ g.pajak_persen }};
+        {% endfor %}
+
+        let pajakManualOverride = false; // Track jika user manual override pajak
+
         function formatRupiah(amount) {
             return 'Rp ' + new Intl.NumberFormat('id-ID').format(amount);
+        }
+
+        function getGudangPajakPersen() {
+            const gudangSelect = $('[name="gudang"]');
+            const gudangId = gudangSelect.val();
+            if (gudangId && gudangPajakMap[gudangId] !== undefined) {
+                return gudangPajakMap[gudangId];
+            }
+            return 0;
         }
 
         function calculateTotals() {
@@ -236,18 +266,67 @@
             });
 
             const diskonInput = $('[name="diskon"]').val() || 0;
-            const pajakInput = $('[name="pajak"]').val() || 0;
             const diskon = parseFloat(diskonInput);
-            const pajak = parseFloat(pajakInput);
-            const total = subtotal - diskon + pajak;
+            const ongkir = parseFloat($('[name="biaya_pengiriman"]').val()) || 0;
+
+            // Auto-hitung pajak dari gudang jika user belum manual override
+            if (!pajakManualOverride) {
+                const pajakPersen = getGudangPajakPersen();
+                const subtotalAfterDiskon = subtotal - diskon + ongkir;
+                const pajakAuto = subtotalAfterDiskon > 0 ? Math.round(subtotalAfterDiskon * pajakPersen / 100) : 0;
+                $('[name="pajak"]').val(pajakAuto);
+            }
+
+            const pajak = parseFloat($('[name="pajak"]').val()) || 0;
+            const total = subtotal - diskon + ongkir + pajak;
 
             $('#subtotal').text(formatRupiah(subtotal));
             $('#disc-amount').text(formatRupiah(diskon));
+            $('#shipping-amount').text(formatRupiah(ongkir));
             $('#tax-amount').text(formatRupiah(pajak));
             $('#total').text(formatRupiah(total));
+
+            // Update label pajak persen
+            const currentPersen = getGudangPajakPersen();
+            if (currentPersen > 0) {
+                $('#pajak-persen-label').text('(' + currentPersen + '%)').show();
+            } else {
+                $('#pajak-persen-label').hide();
+            }
         }
 
-        $(document).on('input', '[name$="-jumlah"], [name$="-harga_satuan"], [name$="-diskon"], [name="diskon"], [name="pajak"]', calculateTotals);
+        // Saat gudang berubah → recalculate pajak otomatis
+        $(document).on('change', '[name="gudang"]', function() {
+            pajakManualOverride = false; // Reset override saat gudang berubah
+            calculateTotals();
+        });
+
+        // Saat user manual edit field pajak → set override flag
+        $(document).on('focus', '[name="pajak"]', function() {
+            $(this).data('before', $(this).val());
+        });
+        $(document).on('input', '[name="pajak"]', function() {
+            if ($(this).data('before') !== $(this).val()) {
+                pajakManualOverride = true;
+            }
+            // Recalculate display only
+            const diskon = parseFloat($('[name="diskon"]').val()) || 0;
+            const ongkir = parseFloat($('[name="biaya_pengiriman"]').val()) || 0;
+            const pajak = parseFloat($(this).val()) || 0;
+            let subtotal = 0;
+            $('.formset-row:visible').each(function () {
+                const qty = parseFloat($(this).find('[name$="-jumlah"]').val()) || 0;
+                const price = parseFloat($(this).find('[name$="-harga_satuan"]').val()) || 0;
+                const disc = parseFloat($(this).find('[name$="-diskon"]').val()) || 0;
+                subtotal += (qty * price) - disc;
+            });
+            const total = subtotal - diskon + ongkir + pajak;
+            $('#shipping-amount').text(formatRupiah(ongkir));
+            $('#tax-amount').text(formatRupiah(pajak));
+            $('#total').text(formatRupiah(total));
+        });
+
+        $(document).on('input', '[name$="-jumlah"], [name$="-harga_satuan"], [name$="-diskon"], [name="diskon"], [name="biaya_pengiriman"]', calculateTotals);
 
         $('#add-item').click(function () {
             const formsetContainer = $('#formset-container');

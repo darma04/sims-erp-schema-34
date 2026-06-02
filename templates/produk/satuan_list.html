@@ -31,9 +31,17 @@ Fitur: tambah, edit, hapus satuan.
             <p class="text-muted mb-0">Kelola satuan untuk unit pengukuran produk</p>
         </div>
         {% if can_create.produk %}
-        <a href="{% url 'produk:satuan_add' %}" class="btn btn-primary">
-            <i class="ri-add-line me-1"></i>Tambah Satuan
-        </a>
+        <div class="d-flex gap-2 flex-wrap justify-content-end">
+            <form method="post" action="{% url 'produk:satuan_seed_default' %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-success" onclick="return confirm('Seed satuan default? Data yang sudah ada akan dilengkapi dan dinormalisasi tanpa dihapus.')">
+                    <i class="ri-database-2-line me-1"></i>Seed Satuan Default
+                </button>
+            </form>
+            <a href="{% url 'produk:satuan_add' %}" class="btn btn-primary">
+                <i class="ri-add-line me-1"></i>Tambah Satuan
+            </a>
+        </div>
         {% endif %}
     </div>
 
@@ -41,8 +49,8 @@ Fitur: tambah, edit, hapus satuan.
     <div class="card mb-4">
         <div class="card-body">
             <!-- Baris 1: Filter Inputs -->
-            <div class="row g-3">
-                <div class="col-md-6">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-md">
                     <label class="form-label" for="searchSatuan">Cari Satuan</label>
                     <div class="input-group input-group-merge">
                         <span class="input-group-text"><i class="ri-search-line"></i></span>

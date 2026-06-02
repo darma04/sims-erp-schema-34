@@ -1,0 +1,459 @@
+{% extends 'layout/layout_vertical.html' %}
+{% load static %}
+{% load currency_filters %}
+
+{% block title %}Dashboard Penyusutan - Aset Tetap{% endblock title %}
+
+
+{% block vendor_css %}{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/apex-charts/apex-charts.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div><h4 class="mb-1"><i class="ri-line-chart-line me-2"></i>Dashboard Penyusutan Aset</h4><p class="text-muted mb-0">Ringkasan penyusutan seluruh aset aktif</p></div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-success" id="btnSusutkanMassal" onclick="prosesPenyusutanMassal()">
+                <i class="ri-time-line me-1"></i>Susutkan Semua Bulan Ini
+            </button>
+            <a href="{% url 'aset:list' %}" class="btn btn-outline-secondary"><i class="ri-arrow-left-line me-1"></i>Kembali</a>
+        </div>
+    </div>
+    <!-- Filter Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get">
+                <!-- Baris 1: field filter -->
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Tahun</label>
+                        <select name="tahun" class="form-select">
+                            {% for y in tahun_list %}
+                            <option value="{{ y }}" {% if y == selected_tahun %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Kategori Aset</label>
+                        <select name="kategori" class="form-select">
+                            <option value="">Semua Kategori</option>
+                            <option value="tanah" {% if request.GET.kategori == 'tanah' %}selected{% endif %}>Tanah</option>
+                            <option value="bangunan" {% if request.GET.kategori == 'bangunan' %}selected{% endif %}>Bangunan</option>
+                            <option value="kendaraan" {% if request.GET.kategori == 'kendaraan' %}selected{% endif %}>Kendaraan</option>
+                            <option value="peralatan" {% if request.GET.kategori == 'peralatan' %}selected{% endif %}>Peralatan</option>
+                            <option value="mesin" {% if request.GET.kategori == 'mesin' %}selected{% endif %}>Mesin</option>
+                            <option value="lainnya" {% if request.GET.kategori == 'lainnya' %}selected{% endif %}>Lainnya</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- Baris 2: Filter Kolom (kiri) + spacer + Tombol Filter (kanan) — standar 3+6+3 -->
+                <div class="row g-3 mt-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Pilih Kolom yang Ditampilkan</label>
+                        <div class="dropdown">
+                            <button class="btn btn-label-secondary dropdown-toggle waves-effect w-100" type="button"
+                                id="columnFilterDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                                aria-expanded="false">
+                                <i class="ri-layout-column-line me-1"></i>
+                                Pilih Kolom yang Ditampilkan
+                            </button>
+                            <div class="dropdown-menu p-3" aria-labelledby="columnFilterDropdown" style="min-width: 280px;">
+                                <h6 class="dropdown-header px-0 mb-2">Kolom Tabel</h6>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="0" id="col-kode" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-kode">Kode</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="1" id="col-nama" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-nama">Nama Aset</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="2" id="col-kategori" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-kategori">Kategori</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="3" id="col-perolehan" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-perolehan">Perolehan</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="4" id="col-penyusutan" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-penyusutan">Penyusutan</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="5" id="col-akumulasi" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-akumulasi">Akumulasi</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="6" id="col-nilai-buku" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-nilai-buku">Nilai Buku</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="7" id="col-sisa-umur" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-sisa-umur">Sisa Umur</label>
+                                </div>
+                                <div class="dropdown-divider my-2"></div>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-primary flex-fill" onclick="selectAllColumns()">
+                                        <i class="ri-checkbox-multiple-line ri-16px"></i> Semua
+                                    </button>
+                                    <button class="btn btn-sm btn-label-secondary flex-fill" onclick="deselectAllColumns()">
+                                        <i class="ri-checkbox-blank-line ri-16px"></i> Kosongkan
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <small class="text-muted d-block mt-1">Klik untuk memilih kolom</small>
+                    </div>
+                    <div class="col-md-6"></div>
+                    <div class="col-md-3">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="ri-filter-3-line me-1"></i>Terapkan Filter
+                            </button>
+                            <a href="{% url 'aset:penyusutan' %}" class="btn btn-label-secondary">
+                                <i class="ri-refresh-line me-1"></i>Reset
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><div class="d-flex align-items-center"><div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-primary"><i class="ri-money-dollar-box-line ri-24px"></i></span></div><div><h5 class="mb-0">{{ total_perolehan|rupiah }}</h5><small class="text-muted">Total Perolehan</small></div></div></div></div></div>
+        <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><div class="d-flex align-items-center"><div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-warning"><i class="ri-arrow-down-circle-line ri-24px"></i></span></div><div><h5 class="mb-0">{{ total_penyusutan_tahun|rupiah }}</h5><small class="text-muted">Penyusutan {{ selected_tahun }}</small></div></div></div></div></div>
+        <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><div class="d-flex align-items-center"><div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-danger"><i class="ri-bar-chart-box-line ri-24px"></i></span></div><div><h5 class="mb-0">{{ total_akumulasi|rupiah }}</h5><small class="text-muted">Total Akumulasi</small></div></div></div></div></div>
+        <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><div class="d-flex align-items-center"><div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-info"><i class="ri-price-tag-3-line ri-24px"></i></span></div><div><h5 class="mb-0 text-info">{{ total_nilai_buku|rupiah }}</h5><small class="text-muted">Total Nilai Buku</small></div></div></div></div></div>
+    </div>
+
+    <div class="card mb-4" id="sec-grafik"><div class="card-header"><h5 class="mb-0"><i class="ri-bar-chart-2-line me-2"></i>Penyusutan Bulanan {{ selected_tahun }}</h5></div><div class="card-body"><div id="monthlyChart" style="min-height:300px;"></div></div></div>
+
+    <div class="card" id="sec-tabel">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="ri-list-check me-2"></i>Detail per Aset — {{ selected_tahun }}</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+            </div>
+        </div>
+        <div class="card-datatable table-responsive"><table class="accounting-data-table table table-hover" id="penyusutanTable" data-accounting-primary="true" data-export-title="Dashboard Penyusutan Aset" data-search-placeholder="Cari aset penyusutan..."><thead class="table-light"><tr><th>Kode</th><th>Nama Aset</th><th>Kategori</th><th class="text-end">Perolehan</th><th class="text-end">Peny. {{ selected_tahun }}</th><th class="text-end">Akumulasi</th><th class="text-end">Nilai Buku</th><th>Sisa Umur</th></tr></thead><tbody>
+            {% for s in aset_summary %}<tr>
+                <td><a href="{% url 'aset:detail' s.aset.pk %}" class="text-primary fw-medium">{{ s.aset.kode }}</a></td>
+                <td>{{ s.aset.nama }}</td><td><span class="badge bg-label-info">{{ s.aset.get_kategori_display }}</span></td>
+                <td class="text-end">{{ s.aset.harga_perolehan|rupiah }}</td><td class="text-end">{{ s.penyusutan_tahun|rupiah }}</td>
+                <td class="text-end text-warning">{{ s.akumulasi|rupiah }}</td><td class="text-end fw-bold text-info">{{ s.nilai_buku|rupiah }}</td>
+                <td>{{ s.sisa_umur }} bln</td>
+            </tr>{% endfor %}
+        </tbody><tfoot class="table-footer-summary"><tr><td colspan="3" class="text-start ps-4 py-3"><div class="d-flex align-items-center justify-content-start"><i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i><div class="text-start"><strong class="d-block" style="font-size: 0.875rem;">RINGKASAN</strong><small class="text-muted">{{ aset_summary|length }} aset aktif</small></div></div></td><td class="text-end py-3"><span class="badge bg-label-primary">{{ total_perolehan|rupiah }}</span></td><td class="text-end py-3"><span class="badge bg-label-warning">{{ total_penyusutan_tahun|rupiah }}</span></td><td class="text-end py-3"><span class="badge bg-label-danger">{{ total_akumulasi|rupiah }}</span></td><td class="text-end py-3"><span class="badge bg-label-info">{{ total_nilai_buku|rupiah }}</span></td><td></td></tr></tfoot></table></div>
+    </div>
+</div>
+{% endblock content %}
+{% block vendor_js %}{{ block.super }}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="{% static 'vendor/libs/apex-charts/apexcharts.js' %}"></script>
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+{% endblock vendor_js %}
+{% block page_js %}
+<script>
+function prosesPenyusutanMassal() {
+    var btn = document.getElementById('btnSusutkanMassal');
+    if (!btn) return;
+    var hari_ini = new Date();
+    var bulan = hari_ini.getMonth() + 1;
+    var tahun = hari_ini.getFullYear();
+    var konfirmasi = 'Proses penyusutan untuk SEMUA aset aktif untuk bulan ' + bulan + '/' + tahun + '?\n\n' +
+        'Aset yang sudah disusutkan pada periode ini akan dilewati. Setiap penyusutan akan otomatis membuat jurnal akuntansi (D 6-4000 K 1-4100).';
+    if (!confirm(konfirmasi)) return;
+
+    btn.disabled = true;
+    var labelLama = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Memproses...';
+
+    var fd = new FormData();
+    fd.append('bulan', bulan);
+    fd.append('tahun', tahun);
+    fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+    fetch('{% url "aset:penyusutan_massal" %}', {
+        method: 'POST',
+        body: fd,
+        credentials: 'same-origin',
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert(data.message || 'Gagal memproses penyusutan massal.');
+        }
+    })
+    .catch(function (err) {
+        alert('Gagal memproses: ' + err);
+    })
+    .finally(function () {
+        btn.disabled = false;
+        btn.innerHTML = labelLama;
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    var el = document.getElementById('monthlyChart');
+    if (!el) return;
+    var seriesData = [{name:'Penyusutan (Rp)', data: {{ chart_monthly|safe }}}];
+    var hasData = seriesData.some(function(s){ return s.data && s.data.some(function(v){return v>0;}); });
+    if (!hasData) {
+        el.innerHTML = '<div class="text-center text-muted py-5"><i class="ri-bar-chart-2-line ri-3x d-block mb-2" style="opacity:0.3"></i><small>Belum ada data untuk ditampilkan</small></div>';
+        return;
+    }
+    var isDark = typeof isDarkStyle !== 'undefined' ? isDarkStyle : document.documentElement.classList.contains('dark-style');
+    var gridColor  = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+    var labelColor = isDark ? '#b4b5ba' : '#a5a3ae';
+    var chartColors = ['#ff9f43'];
+    new ApexCharts(el, {
+        chart: {
+            type: 'area', height: 300,
+            fontFamily: 'Inter, -apple-system, sans-serif', background: 'transparent',
+            toolbar: { show: true, tools: { download: '<i class="ri-download-2-line" style="font-size:16px"></i>', selection:false,zoom:false,zoomin:false,zoomout:false,pan:false,reset:false } },
+            animations: { enabled:true, easing:'easeinout', speed:800, dynamicAnimation:{enabled:true,speed:350} },
+            dropShadow: { enabled:true, top:6, left:0, blur:6, opacity:isDark?0.15:0.08, color:chartColors }
+        },
+        colors: chartColors,
+        dataLabels: { enabled:false },
+        stroke: { curve:'smooth', width:3, lineCap:'round' },
+        fill: { type:'gradient', gradient:{ shade:isDark?'dark':'light', type:'vertical', shadeIntensity:0.3, opacityFrom:isDark?0.25:0.4, opacityTo:0.02, stops:[0,95,100] } },
+        series: seriesData,
+        xaxis: {
+            categories: {{ chart_months|safe }},
+            labels: { style:{ colors:labelColor, fontSize:'13px', fontWeight:400 } },
+            axisBorder:{show:false}, axisTicks:{show:false},
+            crosshairs:{ stroke:{ color:isDark?'#555':'#ddd', dashArray:4 } }
+        },
+        yaxis: { labels: { style:{colors:labelColor,fontSize:'13px'}, formatter:function(val){ return 'Rp '+val.toLocaleString('id-ID'); } } },
+        tooltip: {
+            theme:isDark?'dark':'light', shared:true, intersect:false,
+            style:{fontSize:'13px'}, x:{show:true},
+            y:{ formatter:function(val){ return 'Rp '+val.toLocaleString('id-ID'); } },
+            marker:{show:true}
+        },
+        legend: { position:'top', horizontalAlign:'left', fontSize:'13px', fontWeight:500, labels:{colors:isDark?'#ccc':'#555'}, markers:{size:5,strokeWidth:0,offsetX:-3}, itemMargin:{horizontal:12,vertical:4} },
+        markers: { size:0, hover:{size:6,sizeOffset:3}, strokeWidth:2, strokeColors:isDark?'#2b2c40':'#fff' },
+        grid: { borderColor:gridColor, strokeDashArray:4, padding:{top:-10,left:10,right:10,bottom:0}, xaxis:{lines:{show:false}}, yaxis:{lines:{show:true}} },
+        responsive: [{ breakpoint:768, options:{ chart:{height:240}, legend:{fontSize:'11px'}, stroke:{width:2} } }]
+    }).render();
+});
+
+
+// Template Data for Independent Headers/Footers
+const EXCEL_INFO = {
+    name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
+    address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
+    phone: "{{ export_excel_template.header_telepon|escapejs|default:'No Telp' }}",
+    email: "{{ export_excel_template.header_email|escapejs|default:'email@domain.com' }}",
+    copyright: "{{ export_excel_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
+};
+
+const PDF_INFO = {
+    name: "{{ export_pdf_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
+    address: "{{ export_pdf_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
+    phone: "{{ export_pdf_template.header_telepon|escapejs|default:'No Telp' }}",
+    email: "{{ export_pdf_template.header_email|escapejs|default:'email@domain.com' }}",
+    copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
+};
+
+function exportExcel() {
+    const tbl = document.querySelector('#sec-tabel table');
+    if (!tbl) { alert('Tabel tidak ditemukan!'); return; }
+    
+    let visibleColumns = [];
+    const firstRow = tbl.querySelector('thead tr');
+    if (firstRow) {
+        firstRow.querySelectorAll('th').forEach((th, index) => {
+            if (th.style.display !== 'none') {
+                visibleColumns.push({ index: index, text: th.textContent.trim() });
+            }
+        });
+    }
+    
+    let colCount = visibleColumns.length || 2;
+    let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+    html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
+    html += '<body>';
+    
+    // --- ADD EXCEL HEADER (Company Info) ---
+    html += '<table border="0">';
+    if (typeof EXCEL_INFO !== 'undefined') {
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
+        html += `<tr><td colspan="${colCount}"></td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:14px; font-weight:bold;">DASHBOARD PENYUSUTAN ASET</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">Tahun {{ selected_tahun }}</td></tr>`;
+        html += `<tr><td colspan="${colCount}"></td></tr>`;
+    }
+    html += '</table>';
+    
+    html += '<table border="1"><thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;">';
+    visibleColumns.forEach(col => { html += `<th>${col.text}</th>`; });
+    html += '</tr></thead><tbody>';
+    
+    tbl.querySelectorAll('tbody tr').forEach(function(tr) {
+        if (tr.style.display === 'none') return;
+        html += '<tr>';
+        visibleColumns.forEach(col => {
+            const cells = tr.querySelectorAll('th, td');
+            const cell = cells[col.index];
+            html += `<td>${cell ? cell.textContent.trim() : ''}</td>`;
+        });
+        html += '</tr>';
+    });
+    html += '</tbody></table>';
+    
+    // --- ADD EXCEL FOOTER ---
+    html += '<table border="0">';
+    html += `<tr><td colspan="${colCount}"></td></tr>`;
+    if (typeof EXCEL_INFO !== 'undefined') {
+        html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">${EXCEL_INFO.copyright}</td></tr>`;
+    }
+    html += '</table></body></html>';
+    
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'Penyusutan_{{ selected_tahun }}.xls';
+    link.click();
+}
+
+function exportPDF() {
+    if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
+    
+    const tbl = document.querySelector('#sec-tabel table');
+    if (!tbl) { alert('Tabel tidak ditemukan!'); return; }
+    
+    const headers = [];
+    let visibleColumns = [];
+    const firstRow = tbl.querySelector('thead tr');
+    if (firstRow) {
+        firstRow.querySelectorAll('th').forEach((th, index) => {
+            if (th.style.display !== 'none') {
+                headers.push({
+                    text: th.textContent.trim(),
+                    style: 'tableHeader',
+                    fillColor: '#696CFF',
+                    color: '#FFFFFF',
+                    bold: true
+                });
+                visibleColumns.push({ index: index });
+            }
+        });
+    }
+    
+    const body = [headers];
+    tbl.querySelectorAll('tbody tr').forEach(function(tr) {
+        if (tr.style.display === 'none') return;
+        const row = [];
+        visibleColumns.forEach(col => {
+            const cells = tr.querySelectorAll('th, td');
+            const cell = cells[col.index];
+            row.push(cell ? cell.textContent.trim() : '');
+        });
+        if (row.length > 0) body.push(row);
+    });
+    
+    let companyInfoExists = typeof PDF_INFO !== 'undefined';
+    
+    const docDefinition = {
+        pageOrientation: 'landscape',
+        pageMargins: [40, 100, 40, 60],
+        header: function (currentPage) {
+            if (companyInfoExists) {
+                return {
+                    margin: [40, 20, 40, 10],
+                    columns: [
+                        {
+                            width: '*',
+                            stack: [
+                                { text: PDF_INFO.name, style: 'companyName' },
+                                { text: PDF_INFO.address, style: 'companyInfo' },
+                                { text: PDF_INFO.phone + ' | ' + PDF_INFO.email, style: 'companyInfo' }
+                            ]
+                        },
+                        { width: 'auto', stack: [{ text: 'Halaman ' + currentPage, style: 'pageNumber', alignment: 'right' }] }
+                    ]
+                };
+            }
+            return { text: 'Halaman ' + currentPage, margin: [40, 20, 40, 10], alignment: 'right', style: 'pageNumber' };
+        },
+        content: [
+            { text: 'DASHBOARD PENYUSUTAN ASET', style: 'documentTitle', margin: [0, 0, 0, 5] },
+            { text: 'Tahun {{ selected_tahun }}', style: 'dateText', margin: [0, 0, 0, 20] },
+            {
+                table: { headerRows: 1, widths: Array(headers.length).fill('auto'), body: body },
+                layout: {
+                    fillColor: (rowIndex) => (rowIndex === 0) ? '#696CFF' : ((rowIndex % 2 === 0) ? '#F5F5F9' : null),
+                    hLineWidth: () => 0.5,
+                    vLineWidth: () => 0.5,
+                    hLineColor: () => '#DBDADE',
+                    vLineColor: () => '#DBDADE'
+                }
+            }
+        ],
+        footer: function (currentPage, pageCount) {
+            if (companyInfoExists) {
+                return {
+                    margin: [40, 10, 40, 10],
+                    columns: [
+                        { text: 'Dicetak pada: ' + new Date().toLocaleString('id-ID'), style: 'footerText' },
+                        { text: PDF_INFO.copyright, style: 'footerText', alignment: 'right' }
+                    ]
+                };
+            }
+            return { text: 'Dicetak pada: ' + new Date().toLocaleString('id-ID'), margin: [40, 10, 40, 10], style: 'footerText' };
+        },
+        styles: {
+            companyName: { fontSize: 14, bold: true, color: '#5F61E6' },
+            companyInfo: { fontSize: 9, color: '#697A8D' },
+            pageNumber: { fontSize: 9, color: '#697A8D' },
+            documentTitle: { fontSize: 18, bold: true, color: '#5F61E6' },
+            dateText: { fontSize: 10, color: '#697A8D' },
+            tableHeader: { bold: true, fontSize: 10, color: '#FFFFFF' },
+            footerText: { fontSize: 8, color: '#697A8D' }
+        },
+        defaultStyle: { fontSize: 9 }
+    };
+    
+    pdfMake.createPdf(docDefinition).download('Penyusutan_{{ selected_tahun }}.pdf');
+}
+
+function toggleColumns() {
+    var checkboxes = document.querySelectorAll('.column-checkbox');
+    var table = document.getElementById('penyusutanTable');
+    if (!table) return;
+    checkboxes.forEach(function(cb) {
+        var colIdx = parseInt(cb.value);
+        var rows = table.querySelectorAll('tr');
+        rows.forEach(function(row) {
+            var cells = row.querySelectorAll('th, td');
+            if (cells[colIdx]) cells[colIdx].style.display = cb.checked ? '' : 'none';
+        });
+    });
+}
+function selectAllColumns() {
+    document.querySelectorAll('.column-checkbox').forEach(function(cb) { cb.checked = true; });
+    toggleColumns();
+}
+function deselectAllColumns() {
+    document.querySelectorAll('.column-checkbox').forEach(function(cb) { cb.checked = false; });
+    toggleColumns();
+}
+</script>
+{% include 'accounting/partials/table_tools.html' %}
+{% endblock page_js %}

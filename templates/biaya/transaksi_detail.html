@@ -40,18 +40,10 @@
                 <i class="ri-wallet-3-line me-2"></i>Detail Transaksi Biaya
             </h4>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap">
             <a href="{% url 'biaya:transaksi' %}" class="btn btn-label-secondary">
                 <i class="ri-arrow-left-line me-1"></i>Kembali
             </a>
-            {% if can_edit.biaya and transaksi.status == 'draft' or transaksi.status == 'submitted' %}
-            <button type="button" class="btn btn-success" onclick="confirmApprove()">
-                <i class="ri-check-double-line me-1"></i>Setujui
-            </button>
-            <button type="button" class="btn btn-warning" onclick="confirmReject()">
-                <i class="ri-close-circle-line me-1"></i>Tolak
-            </button>
-            {% endif %}
             {% if can_edit.biaya %}
             <a href="{% url 'biaya:transaksi_edit' transaksi.pk %}" class="btn btn-label-primary">
                 <i class="ri-edit-line me-1"></i>Edit
@@ -60,6 +52,19 @@
             <a href="{% url 'biaya:transaksi_print' transaksi.pk %}" target="_blank" class="btn btn-primary">
                 <i class="ri-printer-line me-1"></i>Cetak
             </a>
+            {% if can_edit.biaya and transaksi.status == 'draft' or transaksi.status == 'submitted' %}
+            <button type="button" class="btn btn-success" onclick="confirmApprove()">
+                <i class="ri-check-double-line me-1"></i>Setujui
+            </button>
+            <button type="button" class="btn btn-danger" onclick="confirmReject()">
+                <i class="ri-close-circle-line me-1"></i>Tolak
+            </button>
+            {% endif %}
+            {% if can_edit.biaya and transaksi.status == 'approved' %}
+            <button type="button" class="btn btn-danger" onclick="cancelTransaksi({{ transaksi.pk }})">
+                <i class="ri-close-circle-line me-1"></i>Batalkan
+            </button>
+            {% endif %}
         </div>
     </div>
 
@@ -107,6 +112,8 @@
                                         <span class="badge bg-label-success">Disetujui</span>
                                         {% elif transaksi.status == 'rejected' %}
                                         <span class="badge bg-label-danger">Ditolak</span>
+                                        {% elif transaksi.status == 'cancelled' %}
+                                        <span class="badge bg-label-dark">Dibatalkan</span>
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -200,17 +207,18 @@
 
 <!-- Modal Konfirmasi Approve -->
 <div class="modal fade" id="approveModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header bg-success py-3">
-                <h5 class="modal-title text-white"><i class="ri-check-double-line me-2"></i>Setujui Transaksi</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="ri-check-double-line me-2 text-success"></i>Setujui Transaksi Biaya</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body text-center py-4">
-                <i class="ri-checkbox-circle-line text-success" style="font-size: 4rem;"></i>
-                <h4 class="mt-3">Setujui transaksi ini?</h4>
-                <p class="text-muted">{{ transaksi.nomor_transaksi }}</p>
-                <p class="text-success small">Setelah disetujui, nominal akan dihitung sebagai pengeluaran nyata.</p>
+            <div class="modal-body">
+                <p>Apakah Anda yakin ingin <strong class="text-success">menyetujui</strong> transaksi biaya <strong>{{ transaksi.nomor_transaksi }}</strong> sebesar <strong class="text-danger">{{ transaksi.jumlah|rupiah }}</strong>?</p>
+                <div class="alert alert-info d-flex align-items-start mb-0">
+                    <i class="ri-information-line me-2 fs-5"></i>
+                    <div>Setelah disetujui, nominal biaya ini akan dihitung sebagai pengeluaran nyata di Laporan Keuangan dan Dashboard.</div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Batal</button>
@@ -224,21 +232,22 @@
 
 <!-- Modal Konfirmasi Reject -->
 <div class="modal fade" id="rejectModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header bg-warning py-3">
-                <h5 class="modal-title text-white"><i class="ri-close-circle-line me-2"></i>Tolak Transaksi</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="ri-close-circle-line me-2 text-danger"></i>Tolak Transaksi Biaya</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body text-center py-4">
-                <i class="ri-close-circle-line text-warning" style="font-size: 4rem;"></i>
-                <h4 class="mt-3">Tolak transaksi ini?</h4>
-                <p class="text-muted">{{ transaksi.nomor_transaksi }}</p>
-                <p class="text-warning small">Transaksi yang ditolak tidak akan dihitung sebagai pengeluaran.</p>
+            <div class="modal-body">
+                <p>Apakah Anda yakin ingin <strong class="text-danger">menolak</strong> transaksi biaya <strong>{{ transaksi.nomor_transaksi }}</strong>?</p>
+                <div class="alert alert-warning d-flex align-items-start mb-0">
+                    <i class="ri-error-warning-line me-2 fs-5"></i>
+                    <div>Transaksi yang ditolak tidak akan dihitung sebagai pengeluaran di laporan keuangan.</div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Batal</button>
-                <button type="button" class="btn btn-warning" id="btnRejectConfirm">
+                <button type="button" class="btn btn-danger" id="btnRejectConfirm">
                     <i class="ri-close-circle-line me-1"></i>Ya, Tolak
                 </button>
             </div>
@@ -251,7 +260,9 @@
 
 {% block page_js %}
 <script>
-// APPROVE / REJECT TRANSAKSI BIAYA — AJAX
+// ═══════════════════════════════════════════════════════════════
+// APPROVE / REJECT / CANCEL TRANSAKSI BIAYA — AJAX
+// ═══════════════════════════════════════════════════════════════
 
 function confirmApprove() {
     var modal = new bootstrap.Modal(document.getElementById('approveModal'));
@@ -263,64 +274,114 @@ function confirmReject() {
     modal.show();
 }
 
-// Approve handler
-var btnApprove = document.getElementById('btnApproveConfirm');
-if (btnApprove) {
-    btnApprove.addEventListener('click', function () {
-        var originalText = btnApprove.innerHTML;
-        btnApprove.disabled = true;
-        btnApprove.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Memproses...';
-
-        fetch("{% url 'biaya:transaksi_approve' transaksi.pk %}", {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                'Content-Type': 'application/json'
+function cancelTransaksi(pk) {
+    Swal.fire({
+        title: 'Batalkan Transaksi?',
+        text: 'Jurnal pembalik akan dibuat otomatis. Aksi ini tidak dapat dibatalkan.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Ya, Batalkan',
+        cancelButtonText: 'Tidak'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (!csrfToken) {
+                Swal.fire('Error', 'CSRF token tidak ditemukan. Refresh halaman.', 'error');
+                return;
             }
-        }).then(r => r.json()).then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert(data.message || 'Gagal menyetujui.');
+            fetch(`/biaya/transaksi/${pk}/cancel/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken.value,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('Dibatalkan!', data.message, 'success').then(() => location.reload());
+                } else {
+                    Swal.fire('Gagal', data.message, 'error');
+                }
+            })
+            .catch(err => Swal.fire('Error', 'Terjadi kesalahan jaringan', 'error'));
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (!csrfToken) return;
+    var token = csrfToken.value;
+
+    // Approve handler
+    var btnApprove = document.getElementById('btnApproveConfirm');
+    if (btnApprove) {
+        btnApprove.addEventListener('click', function () {
+            var originalText = btnApprove.innerHTML;
+            btnApprove.disabled = true;
+            btnApprove.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Memproses...';
+
+            fetch("{% url 'biaya:transaksi_approve' transaksi.pk %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': token,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.message || 'Gagal menyetujui transaksi.');
+                    btnApprove.disabled = false;
+                    btnApprove.innerHTML = originalText;
+                }
+            })
+            .catch(function () {
+                alert('Terjadi kesalahan pada server.');
                 btnApprove.disabled = false;
                 btnApprove.innerHTML = originalText;
-            }
-        }).catch(() => {
-            alert('Terjadi kesalahan.');
-            btnApprove.disabled = false;
-            btnApprove.innerHTML = originalText;
+            });
         });
-    });
-}
+    }
 
-// Reject handler
-var btnReject = document.getElementById('btnRejectConfirm');
-if (btnReject) {
-    btnReject.addEventListener('click', function () {
-        var originalText = btnReject.innerHTML;
-        btnReject.disabled = true;
-        btnReject.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Memproses...';
+    // Reject handler
+    var btnReject = document.getElementById('btnRejectConfirm');
+    if (btnReject) {
+        btnReject.addEventListener('click', function () {
+            var originalText = btnReject.innerHTML;
+            btnReject.disabled = true;
+            btnReject.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Memproses...';
 
-        fetch("{% url 'biaya:transaksi_reject' transaksi.pk %}", {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                'Content-Type': 'application/json'
-            }
-        }).then(r => r.json()).then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert(data.message || 'Gagal menolak.');
+            fetch("{% url 'biaya:transaksi_reject' transaksi.pk %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': token,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.message || 'Gagal menolak transaksi.');
+                    btnReject.disabled = false;
+                    btnReject.innerHTML = originalText;
+                }
+            })
+            .catch(function () {
+                alert('Terjadi kesalahan pada server.');
                 btnReject.disabled = false;
                 btnReject.innerHTML = originalText;
-            }
-        }).catch(() => {
-            alert('Terjadi kesalahan.');
-            btnReject.disabled = false;
-            btnReject.innerHTML = originalText;
+            });
         });
-    });
-}
+    }
+});
 </script>
 {% endblock page_js %}
+

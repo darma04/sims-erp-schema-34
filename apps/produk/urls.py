@@ -43,6 +43,7 @@ urlpatterns = [
     
     # Satuan URLs
     path('satuan/', views.SatuanListView.as_view(), name='satuan'),
+    path('satuan/seed-default/', views.SatuanSeedDefaultView.as_view(), name='satuan_seed_default'),
     # URL: /produk/satuan/add/ — satuan_add
     path('satuan/add/', views.SatuanCreateView.as_view(), name='satuan_add'),
     # URL: /produk/satuan/<int:pk>/edit/ — satuan_edit

@@ -134,8 +134,18 @@
                     </div>
                     <div class="info-row">
                         <span class="info-label">Pajak:</span>
-                        <span>{{ sales_order.pajak }}%</span>
+                        <span>{{ sales_order.pajak|rupiah }}</span>
                     </div>
+                    <div class="info-row">
+                        <span class="info-label">Pembayaran:</span>
+                        <span>{% if sales_order.metode_pembayaran %}{{ sales_order.metode_pembayaran.nama }}{% else %}Tempo/Kredit{% endif %}</span>
+                    </div>
+                    {% if is_credit_tempo and piutang_so %}
+                    <div class="info-row">
+                        <span class="info-label">Jatuh Tempo:</span>
+                        <span>{{ piutang_so.jatuh_tempo|date:"d F Y" }}</span>
+                    </div>
+                    {% endif %}
                 </td>
                 <td style="vertical-align: top; width: 50%;" class="info-section">
                     <h3>Informasi Customer</h3>
@@ -191,9 +201,25 @@
         <!-- Totals -->
         {% if sales_order.items.all %}
         <table class="totals-table">
+            <tr>
+                <td>Subtotal:</td>
+                <td style="text-align: right;">{{ sales_order.subtotal|rupiah }}</td>
+            </tr>
+            {% if sales_order.diskon > 0 %}
+            <tr>
+                <td>Diskon:</td>
+                <td style="text-align: right;">-{{ sales_order.diskon|rupiah }}</td>
+            </tr>
+            {% endif %}
+            {% if sales_order.biaya_pengiriman > 0 %}
+            <tr>
+                <td>Ongkir:</td>
+                <td style="text-align: right;">{{ sales_order.biaya_pengiriman|rupiah }}</td>
+            </tr>
+            {% endif %}
             {% if sales_order.pajak > 0 %}
             <tr>
-                <td>Pajak ({{ sales_order.pajak }}%):</td>
+                <td>Pajak:</td>
                 <td style="text-align: right;">{{ sales_order.nilai_pajak|rupiah }}</td>
             </tr>
             {% endif %}

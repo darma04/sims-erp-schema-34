@@ -218,7 +218,12 @@ Fitur: export Excel & PDF, filter.
                             {% endif %}
                         </td>
                         <td><span class="badge bg-label-info">{{ po.gudang.nama }}</span></td>
-                        <td class="fw-bold">{{ po.total_harga|rupiah }}</td>
+                        <td class="fw-bold">
+                            {{ po.total_harga|rupiah }}
+                            {% if po.biaya_pengiriman > 0 %}
+                            <br><small class="text-muted">Ongkir: {{ po.biaya_pengiriman|rupiah }}</small>
+                            {% endif %}
+                        </td>
                         <td>
                             {% if po.status == 'draft' %}
                             <span class="badge bg-label-secondary">Draft</span>

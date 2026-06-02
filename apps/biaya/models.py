@@ -25,6 +25,7 @@
 
 from django.db import models                # Django ORM untuk mendefinisikan model/tabel database
 from django.contrib.auth.models import User  # Model User bawaan Django (akun login)
+from apps.core.validators import validate_expense_proof
 
 
 class KategoriBiaya(models.Model):
@@ -39,6 +40,17 @@ class KategoriBiaya(models.Model):
     # Deskripsi opsional — penjelasan detail tentang kategori ini
     deskripsi = models.TextField(blank=True, null=True, verbose_name="Deskripsi")
 
+    # FK ke Akun CoA — akun beban spesifik untuk kategori ini
+    # Jika kosong, fallback ke akun 6-9000 (Beban Operasional Lainnya)
+    akun_beban = models.ForeignKey(
+        'akuntansi.Akun',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='kategori_biaya',
+        verbose_name="Akun Beban (CoA)",
+        help_text="Akun CoA spesifik untuk kategori ini. Kosong = fallback ke 6-9000"
+    )
+
     # Flag aktif — kategori nonaktif tidak muncul di dropdown saat buat transaksi biaya
     aktif = models.BooleanField(default=True, verbose_name="Aktif")
 
@@ -50,6 +62,9 @@ class KategoriBiaya(models.Model):
         verbose_name = "Kategori Biaya"            # Nama singular di Django Admin
         verbose_name_plural = "Kategori Biaya"     # Nama plural di Django Admin
         ordering = ['nama']                        # Urutan default A-Z berdasarkan nama
+        indexes = [
+            models.Index(fields=['aktif', 'nama'], name='biaya_kat_aktif_idx'),
+        ]
 
     def __str__(self):
         """Representasi string — nama kategori (contoh: 'Listrik')."""
@@ -77,6 +92,7 @@ class TransaksiBiaya(models.Model):
         ('submitted', 'Diajukan'),       # Sudah diajukan, menunggu persetujuan
         ('approved', 'Disetujui'),       # Disetujui manager → uang keluar dari kas
         ('rejected', 'Ditolak'),         # Ditolak manager → tidak ada pengeluaran
+        ('cancelled', 'Dibatalkan'),     # Dibatalkan setelah approved → reversal jurnal
     ]
 
     # ===== IDENTITAS TRANSAKSI =====
@@ -98,9 +114,7 @@ class TransaksiBiaya(models.Model):
     # Tidak ada blank=True, artinya deskripsi WAJIB diisi (required field)
     deskripsi = models.TextField(verbose_name="Deskripsi")
 
-    # Bukti pengeluaran — file foto/PDF bon, kwitansi, atau nota
-    # upload_to='biaya/' → disimpan di MEDIA_ROOT/biaya/
-    bukti = models.FileField(upload_to='biaya/', blank=True, null=True, verbose_name="Bukti (Foto/PDF)")
+    bukti = models.FileField(upload_to='biaya/', blank=True, null=True, verbose_name="Bukti (Foto/PDF)", validators=[validate_expense_proof])
 
     # Status workflow — mengikuti alur persetujuan (lihat STATUS_CHOICES di atas)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft', verbose_name="Status")
@@ -113,6 +127,20 @@ class TransaksiBiaya(models.Model):
     # Siapa yang menyetujui biaya ini (diisi saat status berubah ke 'approved')
     # Opsional — hanya diisi saat ada approval
     disetujui_oleh = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='biaya_disetujui')
+
+    # Siapa yang membatalkan biaya ini (diisi saat status berubah ke 'cancelled')
+    cancelled_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='biaya_dibatalkan',
+        verbose_name="Dibatalkan Oleh"
+    )
+
+    # Tanggal pembatalan (diisi saat status berubah ke 'cancelled')
+    cancelled_at = models.DateTimeField(
+        null=True, blank=True,
+        verbose_name="Tanggal Pembatalan"
+    )
 
     # ===== METODE PEMBAYARAN =====
     # FK ke MetodePembayaran di modul POS — cross-module relation
@@ -147,6 +175,38 @@ class TransaksiBiaya(models.Model):
         verbose_name_plural = "Transaksi Biaya"    # Nama plural
         # Urutan: tanggal terbaru → kemudian dibuat terbaru
         ordering = ['-tanggal', '-dibuat_pada']
+        indexes = [
+            models.Index(fields=['tanggal', 'status'], name='biaya_trx_tgl_status_idx'),
+            models.Index(fields=['kategori', 'status'], name='biaya_trx_kat_status_idx'),
+            models.Index(fields=['cabang', 'tanggal'], name='biaya_trx_cbg_tgl_idx'),
+            models.Index(fields=['metode_pembayaran', 'status'], name='biaya_trx_pay_status_idx'),
+        ]
+
+    # ===== STATE MACHINE =====
+    # Transisi status yang valid — digunakan oleh transition_status()
+    VALID_TRANSITIONS = {
+        'draft': ['submitted'],
+        'submitted': ['approved', 'rejected'],
+        'approved': ['cancelled'],
+        'rejected': ['draft'],
+        'cancelled': [],  # terminal state
+    }
+
+    def transition_status(self, new_status, user=None):
+        """
+        Validasi dan set transisi status.
+        TIDAK memanggil save() — caller harus save dalam transaction.atomic().
+        Raises ValidationError jika transisi tidak valid.
+        """
+        from django.core.exceptions import ValidationError
+        valid_targets = self.VALID_TRANSITIONS.get(self.status, [])
+        if new_status not in valid_targets:
+            raise ValidationError(
+                f"Transisi status tidak valid: '{self.get_status_display()}' → '{new_status}'. "
+                f"Transisi yang diizinkan dari status '{self.status}': {valid_targets}"
+            )
+        self.status = new_status
+        return self
 
     def __str__(self):
         """

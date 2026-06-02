@@ -1,0 +1,261 @@
+{% extends 'layout/layout_vertical.html' %}
+{% load static %}
+{% load currency_filters %}
+
+{% block title %}Aset Tetap - Akuntansi ERP{% endblock title %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+{% endblock vendor_js %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="ri-building-2-line me-2"></i>Aset Tetap (Fixed Assets)</h4>
+            <p class="text-muted mb-0">Manajemen aset tetap perusahaan — PSAK 16</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'aset:penyusutan' %}" class="btn btn-outline-info"><i class="ri-line-chart-line me-1"></i>Dashboard Penyusutan</a>
+            {% if rbac_can_create %}
+            <a href="{% url 'aset:add' %}" class="btn btn-primary"><i class="ri-add-line me-1"></i>Tambah Aset</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card"><div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-primary"><i class="ri-building-2-line ri-24px"></i></span></div>
+                    <div><h5 class="mb-0">{{ count_aktif }}</h5><small class="text-muted">Aset Aktif</small></div>
+                </div>
+            </div></div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card"><div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-success"><i class="ri-money-dollar-box-line ri-24px"></i></span></div>
+                    <div><h5 class="mb-0">{{ total_perolehan|rupiah }}</h5><small class="text-muted">Total Perolehan</small></div>
+                </div>
+            </div></div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card"><div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-warning"><i class="ri-arrow-down-circle-line ri-24px"></i></span></div>
+                    <div><h5 class="mb-0">{{ total_akumulasi|rupiah }}</h5><small class="text-muted">Akumulasi Penyusutan</small></div>
+                </div>
+            </div></div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card"><div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-info"><i class="ri-price-tag-3-line ri-24px"></i></span></div>
+                    <div><h5 class="mb-0 text-info">{{ total_nilai_buku|rupiah }}</h5><small class="text-muted">Total Nilai Buku</small></div>
+                </div>
+            </div></div>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Kategori</label>
+                    <select class="form-select" id="kategoriFilter">
+                        <option value="">Semua</option>
+                        {% for val, label in kategori_choices %}
+                        <option value="{{ val }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" id="statusFilter">
+                        <option value="">Semua</option>
+                        {% for val, label in status_choices %}
+                        <option value="{{ val }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Cabang</label>
+                    <select class="form-select" id="cabangFilter">
+                        <option value="">Semua</option>
+                        {% for c in cabang_list %}
+                        <option value="{{ c.pk }}">{{ c.nama }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="row g-3 mt-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Pilih Kolom yang Ditampilkan</label>
+                    <div class="dropdown">
+                        <button class="btn btn-label-secondary dropdown-toggle waves-effect w-100" type="button" id="columnFilterDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                            <i class="ri-layout-column-line me-1"></i>Pilih Kolom yang Ditampilkan
+                        </button>
+                        <div class="dropdown-menu p-3" style="min-width: 280px;">
+                            <h6 class="dropdown-header px-0 mb-2">Kolom Tabel</h6>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="0" checked onchange="toggleColumns()"><label class="form-check-label">Kode</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="1" checked onchange="toggleColumns()"><label class="form-check-label">Nama Aset</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="2" checked onchange="toggleColumns()"><label class="form-check-label">Kategori</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="3" checked onchange="toggleColumns()"><label class="form-check-label">Harga Perolehan</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="4" checked onchange="toggleColumns()"><label class="form-check-label">Akum. Penyusutan</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="5" checked onchange="toggleColumns()"><label class="form-check-label">Nilai Buku</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="6" checked onchange="toggleColumns()"><label class="form-check-label">Status</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="7" checked onchange="toggleColumns()"><label class="form-check-label">Cabang</label></div>
+                            <div class="dropdown-divider my-2"></div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-primary flex-fill" onclick="selectAllColumns()"><i class="ri-checkbox-multiple-line"></i> Semua</button>
+                                <button class="btn btn-sm btn-label-secondary flex-fill" onclick="deselectAllColumns()"><i class="ri-checkbox-blank-line"></i> Kosongkan</button>
+                            </div>
+                        </div>
+                    </div>
+                    <small class="text-muted d-block mt-1">Klik untuk memilih kolom</small>
+                </div>
+                <div class="col-md-6"></div>
+                <div class="col-md-3">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" onclick="applyFilter()"><i class="ri-filter-3-line me-1"></i>Terapkan Filter</button>
+                        <button class="btn btn-label-secondary" onclick="resetFilter()"><i class="ri-refresh-line me-1"></i>Reset</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Daftar Aset</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+            </div>
+        </div>
+        <div class="card-datatable table-responsive">
+            <table class="accounting-data-table table table-hover" id="asetTable" data-accounting-primary="true" data-export-title="Daftar Aset Tetap" data-export-filename="Daftar_Aset_Tetap" data-search-placeholder="Cari aset..." data-default-order='[[0,"asc"]]'>
+                <thead>
+                    <tr>
+                        <th>Kode</th>
+                        <th>Nama Aset</th>
+                        <th>Kategori</th>
+                        <th class="text-end">Harga Perolehan</th>
+                        <th class="text-end">Akum. Penyusutan</th>
+                        <th class="text-end">Nilai Buku</th>
+                        <th>Status</th>
+                        <th>Cabang</th>
+                        <th data-export-ignore="true" data-action-icon="ri-more-2-line">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in aset_list %}
+                    <tr>
+                        <td><a href="{% url 'aset:detail' a.pk %}" class="fw-semibold text-primary">{{ a.kode }}</a></td>
+                        <td>{{ a.nama }}</td>
+                        <td><span class="badge bg-label-info">{{ a.get_kategori_display }}</span></td>
+                        <td class="text-end">{{ a.harga_perolehan|rupiah }}</td>
+                        <td class="text-end text-warning">{{ a.akumulasi_penyusutan|rupiah }}</td>
+                        <td class="text-end fw-bold text-info">{{ a.nilai_buku|rupiah }}</td>
+                        <td>
+                            {% if a.status == 'aktif' %}<span class="badge bg-success">Aktif</span>
+                            {% elif a.status == 'dijual' %}<span class="badge bg-info">Dijual</span>
+                            {% elif a.status == 'dihapuskan' %}<span class="badge bg-dark">Dihapuskan</span>
+                            {% else %}<span class="badge bg-danger">Rusak</span>{% endif %}
+                        </td>
+                        <td>{{ a.cabang.nama|default:"-" }}</td>
+                        <td>
+                            <div class="dropdown">
+                                <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                                    <i class="ri-more-2-line"></i>
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="{% url 'aset:detail' a.pk %}">
+                                        <i class="ri-eye-line me-2"></i>Detail
+                                    </a>
+                                    {% if rbac_can_edit %}
+                                    <a class="dropdown-item" href="{% url 'aset:edit' a.pk %}">
+                                        <i class="ri-pencil-line me-2"></i>Edit
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {# Tidak ada baris empty colspan — DataTables handle via language.sEmptyTable #}
+                </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="3" class="text-start ps-4 py-3">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 0.875rem;">RINGKASAN</strong>
+                                    <small class="text-muted">{{ count_total }} aset</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="text-center">
+                                <span class="badge bg-label-primary">{{ total_perolehan|rupiah }}</span>
+                                <small class="d-block text-muted mt-1">Perolehan</small>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="text-center">
+                                <span class="badge bg-label-warning">{{ total_akumulasi|rupiah }}</span>
+                                <small class="d-block text-muted mt-1">Akumulasi</small>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="text-center">
+                                <span class="badge bg-label-info">{{ total_nilai_buku|rupiah }}</span>
+                                <small class="d-block text-muted mt-1">Nilai Buku</small>
+                            </div>
+                        </td>
+                        <td colspan="3"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block page_js %}
+<style>
+    .card-datatable{padding-bottom:0} .dataTables_wrapper .dataTables_info{padding:1rem 1.5rem;font-size:.875rem;color:#697a8d}
+    .dataTables_wrapper .dataTables_paginate{padding:1rem 1.5rem} .dataTables_wrapper .dataTables_length,.dataTables_wrapper .dataTables_filter{padding:0 1.5rem 1rem 1.5rem}
+    .dataTables_wrapper .dataTables_filter input{border:1px solid #d9dee3;border-radius:.375rem;padding:.4375rem .875rem}
+    .dataTables_wrapper .dataTables_length select{border:1px solid #d9dee3;border-radius:.375rem;padding:.4375rem 2rem .4375rem .875rem}
+    .dataTables_wrapper .dataTables_paginate .paginate_button{padding:.438rem .875rem;border-radius:.375rem;margin:0 .125rem;border:none;background:transparent;color:#697a8d}
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current{background:#696cff!important;color:#fff!important;border:none}
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.disabled){background:rgba(105,108,255,.08)!important;border:none;color:#696cff!important}
+    @media(max-width:768px){.card-datatable{overflow-x:hidden!important;max-width:100%}table{min-width:1000px!important}}
+</style>
+<script>
+$(document).ready(function(){
+});
+function applyFilter(){const p=new URLSearchParams();if($('#kategoriFilter').val())p.append('kategori',$('#kategoriFilter').val());if($('#statusFilter').val())p.append('status',$('#statusFilter').val());if($('#cabangFilter').val())p.append('cabang',$('#cabangFilter').val());window.location.href='{% url "aset:list" %}?'+p.toString();}
+function resetFilter(){window.location.href='{% url "aset:list" %}';}
+function toggleColumns() { const checkboxes = document.querySelectorAll('.column-checkbox'); const table = new $.fn.dataTable.Api('#asetTable'); checkboxes.forEach(cb => { table.column(parseInt(cb.value)).visible(cb.checked); }); }
+function selectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(cb => { cb.checked = true; }); toggleColumns(); }
+function deselectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(cb => { cb.checked = false; }); toggleColumns(); }
+</script>
+{% include 'accounting/partials/table_tools.html' %}
+{% endblock page_js %}

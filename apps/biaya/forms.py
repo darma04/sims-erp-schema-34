@@ -29,13 +29,24 @@ class KategoriBiayaForm(forms.ModelForm):
     class Meta:
         """Konfigurasi metadata model untuk Django."""
         model = KategoriBiaya
-        fields = ['nama', 'deskripsi', 'aktif']
+        fields = ['nama', 'deskripsi', 'akun_beban', 'aktif']
         # Widget HTML untuk setiap field form (class CSS, placeholder, dll)
         widgets = {
             'nama': forms.TextInput(attrs={'class': 'form-control'}),
             'deskripsi': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'akun_beban': forms.Select(attrs={'class': 'form-select'}),
             'aktif': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Filter akun_beban: hanya akun bertipe Beban (kode 6-xxxx atau 7-xxxx)
+        from apps.akuntansi.models import Akun
+        self.fields['akun_beban'].queryset = Akun.objects.filter(
+            is_active=True, tipe__in=['beban', 'hpp']
+        ).order_by('kode')
+        self.fields['akun_beban'].empty_label = 'Pilih Akun Beban (Opsional — default: 6-9000)'
+        self.fields['akun_beban'].required = False
 
 
 class TransaksiBiayaForm(forms.ModelForm):

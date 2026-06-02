@@ -191,18 +191,11 @@ def _polling_loop():
 
     try:
         from .models import PengaturanTelegram
-        try:
-            pengaturan = PengaturanTelegram.load()
-        except Exception:
-            # Tabel belum ada di schema ini (multi-tenant public schema)
-            logger.debug("[TelegramBot] Polling dilewati (tabel belum tersedia di schema ini)")
-            print("[TelegramBot] Polling dilewati (tabel belum tersedia di schema ini)")
-            _polling_active = False
-            return
+        pengaturan = PengaturanTelegram.load()
 
         if not pengaturan.bot_token:
             logger.warning("[TelegramBot] Bot Token belum dikonfigurasi, polling tidak dimulai")
-            print("[TelegramBot] Bot Token belum dikonfigurasi, polling tidak dimulai")
+            print("[TelegramBot] Bot Token belum dikonfigurasi")
             _polling_active = False
             return
 
@@ -219,7 +212,7 @@ def _polling_loop():
         # Skip pesan lama yang menumpuk — mulai dari update terbaru saja
         offset = _get_latest_offset(bot_token, ssl_ctx)
 
-        print(f"[TelegramBot] Polling aktif -- Token: {_mask_token(bot_token)}")
+        print(f"[TelegramBot] Polling aktif - Token: {_mask_token(bot_token)}")
         logger.info(f"[TelegramBot] Polling aktif — Token: {_mask_token(bot_token)}")
 
         conflict_count = 0
@@ -413,9 +406,9 @@ def _send_reply(chat_id, text):
                 text
             )
             if success:
-                logger.info(f"[TelegramBot] ✅ Balasan terkirim ke [{chat_id}]")
+                logger.info(f"[TelegramBot] Balasan terkirim ke [{chat_id}]")
             else:
-                logger.error(f"[TelegramBot] ❌ Gagal kirim ke [{chat_id}]")
+                logger.error(f"[TelegramBot] Gagal kirim ke [{chat_id}]")
     except Exception as e:
         logger.error(f"[TelegramBot] Error kirim reply: {e}")
 

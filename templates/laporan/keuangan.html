@@ -25,7 +25,16 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    <h4 class="mb-4"><i class="ri-bar-chart-box-line me-2"></i>Laporan Keuangan</h4>
+    <h4 class="mb-1"><i class="ri-bar-chart-box-line me-2"></i>Laporan Keuangan</h4>
+    <!-- Label Sumber Data -->
+    <div class="mb-4">
+        <span class="badge bg-label-warning rounded-pill px-3 py-2">
+            <i class="ri-database-2-line me-1"></i>Laporan Operasional Real-time
+        </span>
+        <small class="text-muted ms-2 d-inline-block mt-1" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="right" title="Data bersumber langsung dari transaksi operasional (POS, Sales Order, Purchase Order, Biaya). Nilai penjualan memakai pendapatan bersih setelah diskon termasuk ongkir dan tidak memasukkan PPN. Nilai pembelian memakai DPP/subtotal termasuk ongkir dan memisahkan PPN Masukan. Untuk laporan akuntansi resmi, gunakan Modul Akuntansi.">
+            <i class="ri-information-line"></i> Apa artinya?
+        </small>
+    </div>
 
     <!-- 4 Summary Cards -->
     <div class="row g-2 g-md-3 mb-4">
@@ -34,12 +43,12 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div class="card-info">
-                            <p class="card-text text-muted">Total Pemasukan</p>
+                            <p class="card-text text-muted">Pendapatan Bersih</p>
                             <h4 class="mb-0 text-success summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
-                                title="<b>Alur Data:</b><br>Σ total_harga SO (confirmed/delivered/completed) + Σ total_harga POS (paid) + Σ biaya_akhir Service (lunas).<br><br><b>Sumber:</b> Tabel SalesOrder + POSTransaction + OrderService.<br>Mendukung filter tanggal.">
+                                title="<b>Alur Data:</b><br>SO dihitung sebagai subtotal setelah diskon + ongkir, POS dari subtotal setelah diskon, tanpa PPN Keluaran.<br><br><b>Sumber:</b> SalesOrder + POSTransaction.<br><b>Catatan:</b> PPN Keluaran masuk akun pajak/kas, bukan pendapatan.">
                                 {{ total_pemasukan|rupiah }}</h4>
-                            <small class="text-muted">Dari penjualan + service</small>
+                            <small class="text-muted">Tanpa PPN</small>
                         </div>
                         <div class="card-icon">
                             <span class="badge bg-label-success rounded p-2">
@@ -55,12 +64,12 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div class="card-info">
-                            <p class="card-text text-muted">Total Pengeluaran</p>
+                            <p class="card-text text-muted">Beban/DPP Operasional</p>
                             <h4 class="mb-0 text-danger summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
-                                title="<b>Alur Data:</b><br>Σ total_harga PO (approved/received) + Σ nominal Biaya (approved) + Σ (harga_beli x stok) Produk &amp; Sparepart yang memiliki metode pembayaran.<br><br><b>Sumber:</b> Tabel PurchaseOrder + TransaksiBiaya + Produk.<br>Mendukung filter tanggal.">
+                                title="<b>Alur Data:</b><br>Biaya approved + DPP/subtotal PO termasuk ongkir + modal produk. PPN Masukan dipisahkan dari beban.<br><br><b>Sumber:</b> Biaya + PurchaseOrder + Produk.<br>Qty historis = stok saat ini + terjual + adj_out.">
                                 {{ total_pengeluaran|rupiah }}</h4>
-                            <small class="text-muted">Pembelian + Biaya Operasional</small>
+                            <small class="text-muted">Tanpa PPN Masukan</small>
                         </div>
                         <div class="card-icon">
                             <span class="badge bg-label-danger rounded p-2">
@@ -80,7 +89,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                             <h4 class="mb-0 {% if laba_rugi >= 0 %}text-success{% else %}text-danger{% endif %} summary-nominal"
                                 style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom"
                                 data-bs-html="true"
-                                title="<b>Alur Data:</b><br>Total Pemasukan − Total Pengeluaran.<br><br><b>Sumber:</b> Selisih pemasukan dan pengeluaran.<br>Mendukung filter tanggal.">
+                                title="<b>Alur Data:</b><br>Pendapatan bersih - beban/DPP operasional. Diskon sudah mengurangi pendapatan. PPN tidak dihitung sebagai laba/rugi.">
                                 {{ laba_rugi|rupiah }}
                             </h4>
                             <small class="text-muted">{% if laba_rugi >= 0 %}Laba{% else %}Rugi{% endif %}</small>
@@ -103,7 +112,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                             <p class="card-text text-muted">Total Aset</p>
                             <h4 class="mb-0 text-primary summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
-                                title="<b>Alur Data:</b><br>Σ harga_beli x (stok saat ini + qty terjual SO + qty terjual POS + qty adjustment keluar + qty sparepart terpakai di Service Center).<br><br><b>Sumber:</b> Semua Produk &amp; Sparepart yang pernah masuk ke sistem.<br>Bersifat kumulatif historis, tidak dipengaruhi filter tanggal.">
+                                title="<b>Alur Data:</b><br>Σ (harga_beli × qty_total_pernah_masuk)<br><br><b>Sumber:</b> Semua produk yang pernah masuk (stok + terjual + adjustment).<br>Bersifat kumulatif historis, tidak dipengaruhi filter tanggal.">
                                 {{ total_aset|rupiah }}</h4>
                             <small class="text-muted">Nilai inventori historis</small>
                         </div>
@@ -129,7 +138,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                             <h4 class="mb-0 {% if keuntungan_kotor >= 0 %}text-success{% else %}text-danger{% endif %} summary-nominal"
                                 style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom"
                                 data-bs-html="true"
-                                title="<b>Alur Data:</b><br>Σ (harga_jual - harga_beli) x qty terjual dari SO + POS + Revenue Service Center (biaya layanan + sparepart lunas) - Modal Sparepart terpakai.<br><br><b>Sumber:</b> SalesOrderItem + POSTransactionItem + OrderService.<br>Mendukung filter tanggal dan cabang.">
+                                title="<b>Alur Data:</b><br>Σ (harga_jual − harga_beli) × qty per item terjual.<br>SO: qty transaksi, POS: qty konversi (satuan dasar).<br><br><b>Sumber:</b> SalesOrderItem + POSTransactionItem.<br>Mendukung filter tanggal dan cabang.">
                                 {{ keuntungan_kotor|rupiah }}</h4>
                             <small class="text-muted">Margin penjualan</small>
                         </div>
@@ -150,7 +159,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                             <p class="card-text text-muted">Total Harga Beli (Ready)</p>
                             <h4 class="mb-0 text-info summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
-                                title="<b>Alur Data:</b><br>Σ (harga_beli x stok_saat_ini) untuk semua item (Produk &amp; Sparepart).<br><br><b>Sumber:</b> Hanya item yang stoknya &gt; 0 di seluruh gudang/cabang.<br>Dari tabel Produk x Stok.">
+                                title="<b>Alur Data:</b><br>Σ (harga_beli × stok_saat_ini)<br><br><b>Sumber:</b> Hanya produk yang stoknya > 0.<br>Dari tabel Produk × Stok.">
                                 {{ total_harga_beli_ready|rupiah }}</h4>
                             <small class="text-muted">Produk stok > 0</small>
                         </div>
@@ -171,7 +180,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                             <p class="card-text text-muted">Total Harga Jual (Ready)</p>
                             <h4 class="mb-0 text-info summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
-                                title="<b>Alur Data:</b><br>Σ (harga_jual x stok_saat_ini) untuk semua item (Produk &amp; Sparepart).<br><br><b>Sumber:</b> Hanya item yang stoknya &gt; 0 di seluruh gudang/cabang.<br>Dari tabel Produk x Stok.">
+                                title="<b>Alur Data:</b><br>Σ (harga_jual × stok_saat_ini)<br><br><b>Sumber:</b> Hanya produk yang stoknya > 0.<br>Dari tabel Produk × Stok.">
                                 {{ total_harga_jual_ready|rupiah }}</h4>
                             <small class="text-muted">Produk stok > 0</small>
                         </div>
@@ -375,7 +384,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
     <!-- Tabel Pemasukan -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between">
-            <h5 class="mb-0"><i class="ri-arrow-down-line me-2 text-success"></i>Pemasukan (Penjualan)</h5>
+            <h5 class="mb-0"><i class="ri-arrow-down-line me-2 text-success"></i>Pendapatan Bersih (Penjualan)</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i
                         class="ri-file-excel-2-line me-1"></i>Export Excel</button>
@@ -392,7 +401,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         <th>Customer</th>
                         <th>Cabang</th>
                         <th>Metode Pembayaran</th>
-                        <th>Total</th>
+                        <th>Pendapatan Bersih</th>
                         <th>Status</th>
                         <th>Aksi</th>
                     </tr>
@@ -405,7 +414,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         <td>{{ so.customer.nama }}</td>
                         <td>{{ so.gudang.nama|default:"-" }}</td>
                         <td>{{ so.metode_pembayaran.nama|default:"-" }}</td>
-                        <td class="text-success fw-semibold">+{{ so.total_harga|rupiah }}</td>
+                        <td class="text-success fw-semibold">+{{ so.nilai_laporan|rupiah }}</td>
                         <td>
                             {% if so.status == 'completed' %}
                             <span class="badge bg-label-success">Selesai</span>
@@ -436,7 +445,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         </td>
                         <td>{{ pos.gudang.nama|default:"-" }}</td>
                         <td>{{ pos.metode_pembayaran.nama|default:"-" }}</td>
-                        <td class="text-success fw-semibold">+{{ pos.total_harga|rupiah }}</td>
+                        <td class="text-success fw-semibold">+{{ pos.nilai_laporan|rupiah }}</td>
                         <td>
                             {% if pos.status == 'paid' %}
                             <span class="badge bg-label-success">Lunas</span>
@@ -459,34 +468,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         </td>
                     </tr>
                     {% endfor %}
-                    {% for sc in service_order_list %}
-                    <tr>
-                        <td><code>{{ sc.nomor_service }}</code></td>
-                        <td>{{ sc.tanggal_masuk|date:"d M Y" }}</td>
-                        <td>{{ sc.pelanggan.nama }} <span class="badge bg-label-primary ms-1">Service</span>
-                        </td>
-                        <td>-</td>
-                        <td>{{ sc.metode_pembayaran.nama|default:"-" }}</td>
-                        <td class="text-success fw-semibold">+{{ sc.biaya_akhir|rupiah }}</td>
-                        <td>
-                            <span class="badge bg-label-success">Lunas</span>
-                        </td>
-                        <td>
-                            <div class="dropdown">
-                                <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow"
-                                    data-bs-toggle="dropdown">
-                                    <i class="ri-more-2-line"></i>
-                                </button>
-                                <div class="dropdown-menu">
-                                    <a class="dropdown-item" href="{% url 'service_center:order_detail' sc.pk %}">
-                                        <i class="ri-eye-line me-2"></i>Lihat Detail
-                                    </a>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                    {% if not sales_order_list and not pos_transaction_list and not service_order_list %}
+                    {% if not sales_order_list and not pos_transaction_list %}
                     <tr>
                         <td colspan="8" class="text-center py-3">
                             <p class="text-muted mb-0">Belum ada pemasukan</p>
@@ -500,8 +482,8 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                             <div class="d-flex align-items-center justify-content-start">
                                 <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
                                 <div class="text-start">
-                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN PEMASUKAN</strong>
-                                    <small class="text-muted" style="font-size: 0.75rem;">SO: {{ total_sales_order|rupiah }} | POS: {{ total_pos|rupiah }} | Service: {{ total_service|rupiah }}</small>
+                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN PENDAPATAN BERSIH</strong>
+                                    <small class="text-muted" style="font-size: 0.75rem;">SO: {{ total_sales_order|rupiah }} | POS: {{ total_pos|rupiah }}</small>
                                 </div>
                             </div>
                         </td>
@@ -512,7 +494,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                                     <i class="ri-arrow-down-circle-line"></i>
                                     <span>{{ total_pemasukan|rupiah }}</span>
                                 </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Pemasukan</small>
+                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Pendapatan Bersih</small>
                             </div>
                         </td>
                         <td class="py-3"></td>
@@ -526,7 +508,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
     <!-- Tabel Pengeluaran -->
     <div class="card">
         <div class="card-header d-flex justify-content-between">
-            <h5 class="mb-0"><i class="ri-arrow-up-line me-2 text-danger"></i>Pengeluaran (Pembelian & Biaya)</h5>
+            <h5 class="mb-0"><i class="ri-arrow-up-line me-2 text-danger"></i>Beban/DPP Operasional (PO + Biaya + Produk)</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i
                         class="ri-file-excel-2-line me-1"></i>Export Excel</button>
@@ -543,7 +525,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         <th>Keterangan</th>
                         <th>Cabang</th>
                         <th>Metode Pembayaran</th>
-                        <th>Total</th>
+                        <th>Nilai Beban/DPP</th>
                         <th>Aksi</th>
                     </tr>
                 </thead>
@@ -555,7 +537,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         <td>{{ po.nomor_po }} - {{ po.supplier.nama }}</td>
                         <td>{{ po.gudang.nama|default:"-" }}</td>
                         <td>{{ po.metode_pembayaran.nama|default:"-" }}</td>
-                        <td class="text-danger fw-semibold">-{{ po.total_harga|rupiah }}</td>
+                        <td class="text-danger fw-semibold">-{{ po.nilai_laporan|rupiah }}</td>
                         <td>
                             <div class="dropdown">
                                 <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow"
@@ -594,12 +576,12 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         </td>
                     </tr>
                     {% endfor %}
-                    {% for produk in pembelian_produk_list %}
+                    {% for produk in produk_pengeluaran_list %}
                     <tr>
                         <td>{{ produk.dibuat_pada|date:"d M Y" }}</td>
-                        <td><span class="badge bg-label-info">Pembelian Produk</span></td>
-                        <td>{{ produk.sku }} - {{ produk.nama }} ({{ produk.stok_total }} {{ produk.satuan.singkatan }})</td>
-                        <td>-</td>
+                        <td><span class="badge bg-label-info">Produk</span></td>
+                        <td>{{ produk.sku }} - {{ produk.nama }} <small class="text-muted">(Harga beli: {{ produk.harga_beli|rupiah }} × {{ produk.stok_total|floatformat:0 }})</small></td>
+                        <td>{{ produk.cabang.nama|default:"-" }}</td>
                         <td>{{ produk.metode_pembayaran.nama|default:"-" }}</td>
                         <td class="text-danger fw-semibold">-{{ produk.total_pengeluaran_produk|rupiah }}</td>
                         <td>
@@ -617,7 +599,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         </td>
                     </tr>
                     {% endfor %}
-                    {% if not purchase_order_list and not transaksi_biaya_list and not pembelian_produk_list %}
+                    {% if not purchase_order_list and not transaksi_biaya_list and not produk_pengeluaran_list %}
                     <tr>
                         <td colspan="7" class="text-center py-3">
                             <p class="text-muted mb-0">Belum ada pengeluaran</p>
@@ -632,7 +614,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                                 <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
                                 <div class="text-start">
                                     <strong class="d-block" style="font-size: 1rem;">RINGKASAN PENGELUARAN</strong>
-                                    <small class="text-muted" style="font-size: 0.75rem;">PO: {{ total_pembelian|rupiah }} | Biaya: {{ total_biaya|rupiah }}</small>
+                                    <small class="text-muted" style="font-size: 0.75rem;">PO: {{ total_pembelian|rupiah }} | Biaya: {{ total_biaya|rupiah }} | Produk: {{ total_produk_pengeluaran|rupiah }}</small>
                                 </div>
                             </div>
                         </td>

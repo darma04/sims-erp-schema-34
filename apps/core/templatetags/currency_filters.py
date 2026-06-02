@@ -48,7 +48,7 @@ def json_load_safe(value):
         if isinstance(value, str):
             return json.loads(value)
         return value
-    except:
+    except Exception:
         return {}
 
 

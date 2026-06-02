@@ -31,7 +31,141 @@
 
 # Import dari framework Django
 from django.core.cache import cache  # Framework cache bawaan Django
+from django.db import connection
 from functools import wraps          # Untuk decorator yang mempertahankan metadata
+import hashlib
+
+
+DEFAULT_TENANT_CACHE_NAMESPACES = ('view_response', 'context_processor')
+
+
+def normalize_role_code(role_code):
+    """Normalisasi kode role agar cache key konsisten lintas UI, mixin, dan gating."""
+    return str(role_code or '').strip().upper()
+
+
+def get_user_permissions_cache_version(user_id):
+    """Ambil versi cache permission user untuk membuat cache key yang bisa di-invalidasi."""
+    return cache.get(f'user_perms_version_{user_id}', 1)
+
+
+def bump_user_permissions_cache_version(user_id):
+    """Naikkan versi cache permission user tanpa perlu delete by pattern."""
+    cache_version_key = f'user_perms_version_{user_id}'
+    current_version = cache.get(cache_version_key, 1)
+    cache.set(cache_version_key, current_version + 1, None)
+
+
+def get_role_permissions_cache_version(role_code):
+    """Ambil versi cache permission role."""
+    role = normalize_role_code(role_code)
+    return cache.get(f'role_perms_version_{role}', 1)
+
+
+def bump_role_permissions_cache_version(role_code):
+    """Naikkan versi cache permission role agar permission/menu gating langsung refresh."""
+    role = normalize_role_code(role_code)
+    cache_version_key = f'role_perms_version_{role}'
+    current_version = cache.get(cache_version_key, 1)
+    cache.set(cache_version_key, current_version + 1, None)
+
+
+def get_role_permissions_cache_key(role_code):
+    """Cache key utama RolePermission yang dipakai has_permission dan sidebar gating."""
+    role = normalize_role_code(role_code)
+    version = get_role_permissions_cache_version(role)
+    return f'role_perms_{role}_v{version}'
+
+
+def get_tenant_cache_scope(request=None):
+    """Scope cache per tenant/schema agar Isolated Schema tidak saling berbagi data."""
+    tenant = getattr(request, 'tenant', None) if request is not None else None
+    schema_name = (
+        getattr(tenant, 'schema_name', None)
+        or getattr(connection, 'schema_name', None)
+        or 'default'
+    )
+    host = request.get_host() if request is not None else ''
+    return f'{schema_name}:{host}'
+
+
+def get_tenant_cache_version_scope(request=None):
+    """Scope versi cache berbasis schema agar invalidasi signal tetap tenant-safe."""
+    tenant = getattr(request, 'tenant', None) if request is not None else None
+    schema_name = (
+        getattr(tenant, 'schema_name', None)
+        or getattr(connection, 'schema_name', None)
+        or 'default'
+    )
+    return str(schema_name)
+
+
+def get_tenant_namespace_cache_version(namespace, request=None):
+    """Ambil versi cache namespace untuk tenant/schema aktif."""
+    scope = get_tenant_cache_version_scope(request)
+    return cache.get(f'tenant_cache_version:{scope}:{namespace}', 1)
+
+
+def bump_tenant_namespace_cache_version(namespace, request=None):
+    """Naikkan versi cache namespace untuk tenant/schema aktif."""
+    scope = get_tenant_cache_version_scope(request)
+    cache_key = f'tenant_cache_version:{scope}:{namespace}'
+    current_version = cache.get(cache_key, 1)
+    next_version = current_version + 1
+    cache.set(cache_key, next_version, None)
+    return next_version
+
+
+def invalidate_tenant_response_cache(request=None, namespaces=None):
+    """
+    Invalidate cache tampilan tenant aktif dengan menaikkan versi namespace.
+
+    Pendekatan versioning dipakai karena backend cache Django tidak selalu
+    mendukung delete by pattern. Pada Isolated Schema, scope versi memakai
+    schema aktif sehingga tenant lain tidak terdampak.
+    """
+    target_namespaces = namespaces or DEFAULT_TENANT_CACHE_NAMESPACES
+    versions = {}
+    for namespace in target_namespaces:
+        versions[namespace] = bump_tenant_namespace_cache_version(namespace, request=request)
+    return {
+        'scope': get_tenant_cache_version_scope(request),
+        'versions': versions,
+    }
+
+
+def build_scoped_cache_key(namespace, *parts, request=None):
+    """
+    Buat cache key pendek yang aman untuk tenant, user, query string, dan permission.
+
+    Response cache tidak boleh hanya memakai path karena pada Isolated Schema path
+    bisa sama, sementara tenant/schema berbeda.
+    """
+    scope_parts = [
+        namespace,
+        get_tenant_cache_scope(request),
+        f'cache_ver:{get_tenant_namespace_cache_version(namespace, request=request)}',
+    ]
+    if request is not None:
+        user = getattr(request, 'user', None)
+        scope_parts.extend([request.method, request.get_full_path()])
+        if user and getattr(user, 'is_authenticated', False):
+            role = ''
+            try:
+                role = normalize_role_code(getattr(user.profile, 'role', ''))
+            except Exception:
+                role = ''
+            scope_parts.extend([
+                f'user:{user.pk}',
+                f'user_ver:{get_user_permissions_cache_version(user.pk)}',
+                f'role:{role}',
+                f'role_ver:{get_role_permissions_cache_version(role)}',
+            ])
+        else:
+            scope_parts.append('anonymous')
+    scope_parts.extend(str(part) for part in parts)
+    digest = hashlib.sha256('|'.join(scope_parts).encode('utf-8')).hexdigest()
+    return f'{namespace}:{digest}'
 
 
 def cache_user_permissions(timeout=300):  # 300 detik = 5 menit
@@ -67,7 +201,8 @@ def cache_user_permissions(timeout=300):  # 300 detik = 5 menit
             # Buat cache key unik
             # Format: 'user_perms_{user_id}_{nama_fungsi}_{arg1-arg2-...}'
             # Contoh: 'user_perms_1_has_permission_read-produk-kategori'
-            cache_key = f'user_perms_{user.id}_{func.__name__}_{"-".join(map(str, args))}'
+            version = get_user_permissions_cache_version(user.id)
+            cache_key = f'user_perms_{user.id}_v{version}_{func.__name__}_{"-".join(map(str, args))}'
 
             # Cek cache
             result = cache.get(cache_key)
@@ -101,9 +236,8 @@ def invalidate_user_permissions_cache(user_id):
     - Contoh: tidak bisa hapus semua key yang dimulai dengan 'user_perms_1_*'
     - Jadi kita gunakan version number sebagai workaround
     """
-    cache_version_key = f'user_perms_version_{user_id}'
-    current_version = cache.get(cache_version_key, 0)
-    cache.set(cache_version_key, current_version + 1)
+    if user_id:
+        bump_user_permissions_cache_version(user_id)
 
 
 def invalidate_role_permissions_cache(role_code):
@@ -120,12 +254,18 @@ def invalidate_role_permissions_cache(role_code):
     - role_code: Kode role (contoh: 'ADMIN', 'KASIR')
     """
     from auth.models import Profile
-    # Import dari framework Django
-    from django.contrib.auth.models import User
 
-    # Cari semua user_id yang punya role ini
-    user_ids = Profile.objects.filter(role=role_code).values_list('user_id', flat=True)
+    role = normalize_role_code(role_code)
+
+    # Putus cache role-level lama dan baru. Delete key lama menjaga kompatibilitas
+    # dengan cache yang dibuat sebelum versi cache diperkenalkan.
+    bump_role_permissions_cache_version(role)
+    for candidate in {role, role.lower(), str(role_code or '').strip()}:
+        if candidate:
+            cache.delete(f'role_perms_{candidate}')
 
     # Invalidate cache untuk setiap user
+    # Cari semua user_id yang punya role ini
+    user_ids = Profile.objects.filter(role__iexact=role).values_list('user_id', flat=True)
     for user_id in user_ids:
         invalidate_user_permissions_cache(user_id)

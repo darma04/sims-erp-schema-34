@@ -1,0 +1,112 @@
+{% extends 'layout/layout_vertical.html' %}
+{% load currency_filters %}
+
+{% block title %}{{ account.kode }} - Detail Akun Kas & Bank{% endblock title %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <h4 class="py-3 mb-4">
+        <span class="text-muted fw-light">Kas & Bank / <a href="{% url 'kas_bank:account_list' %}">Akun</a> /</span> {{ account.kode }}
+    </h4>
+
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="ri-bank-card-line me-2"></i>{{ account.kode }} - {{ account.nama }}</h5>
+            <div class="d-flex gap-2">
+                <a href="{% url 'kas_bank:account_edit' account.pk %}" class="btn btn-primary">
+                    <i class="ri-edit-line me-1"></i>Edit
+                </a>
+                <a href="{% url 'kas_bank:account_list' %}" class="btn btn-outline-secondary">
+                    <i class="ri-arrow-left-line me-1"></i>Kembali
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-4">
+                <div class="col-md-3">
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted d-block mb-1">Saldo Terhitung</small>
+                        <h5 class="mb-0">{{ account.saldo_terhitung|rupiah }}</h5>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted d-block mb-1">Total Masuk</small>
+                        <h5 class="mb-0 text-success">{{ account.total_masuk|rupiah }}</h5>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted d-block mb-1">Total Keluar</small>
+                        <h5 class="mb-0 text-danger">{{ account.total_keluar|rupiah }}</h5>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted d-block mb-1">Status</small>
+                        {% if account.aktif %}
+                        <span class="badge bg-label-success">Aktif</span>
+                        {% else %}
+                        <span class="badge bg-label-secondary">Nonaktif</span>
+                        {% endif %}
+                        {% if account.is_default %}<span class="badge bg-label-warning ms-1">Default</span>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr><td class="text-muted" style="width:160px;">Kode</td><td class="fw-semibold">{{ account.kode }}</td></tr>
+                        <tr><td class="text-muted">Nama</td><td>{{ account.nama }}</td></tr>
+                        <tr><td class="text-muted">Tipe</td><td><span class="badge bg-label-info">{{ account.get_tipe_display }}</span></td></tr>
+                        <tr><td class="text-muted">Akun CoA</td><td>{{ account.akun.kode }} - {{ account.akun.nama }}</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr><td class="text-muted" style="width:160px;">Bank/Penyedia</td><td>{{ account.nama_bank|default:"-" }}</td></tr>
+                        <tr><td class="text-muted">No. Rekening</td><td>{{ account.nomor_rekening|default:"-" }}</td></tr>
+                        <tr><td class="text-muted">Nama Pemilik</td><td>{{ account.nama_pemilik|default:"-" }}</td></tr>
+                        <tr><td class="text-muted">Dibuat Oleh</td><td>{{ account.dibuat_oleh.username|default:"-" }} <small class="text-muted">{{ account.dibuat_pada|date:"d/m/Y H:i" }}</small></td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="ri-file-list-3-line me-2"></i>Mutasi Terakhir</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nomor</th>
+                        <th>Tanggal</th>
+                        <th>Tipe</th>
+                        <th class="text-end">Jumlah</th>
+                        <th>Status</th>
+                        <th>Jurnal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in recent_transactions %}
+                    <tr>
+                        <td><a href="{% url 'kas_bank:transaction_detail' item.pk %}" class="fw-semibold">{{ item.nomor }}</a></td>
+                        <td>{{ item.tanggal|date:"d/m/Y H:i" }}</td>
+                        <td><span class="badge bg-label-info">{{ item.get_tipe_display }}</span></td>
+                        <td class="text-end {% if item.is_debit_kas %}text-success{% else %}text-danger{% endif %} fw-semibold">{{ item.jumlah|rupiah }}</td>
+                        <td><span class="badge bg-label-{% if item.status == 'posted' %}success{% elif item.status == 'cancelled' %}danger{% else %}secondary{% endif %}">{{ item.get_status_display }}</span></td>
+                        <td>{% if item.jurnal_entry %}<a href="{% url 'akuntansi:jurnal_detail' item.jurnal_entry.pk %}">{{ item.jurnal_entry.nomor }}</a>{% else %}-{% endif %}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center text-muted py-4">Belum ada mutasi.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock content %}

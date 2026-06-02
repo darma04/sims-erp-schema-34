@@ -1,0 +1,106 @@
+{% extends 'layout/layout_vertical.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Aset Tetap{% endblock title %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <h4 class="py-3 mb-4">
+        <span class="text-muted fw-light">Akuntansi / <a href="{% url 'aset:list' %}">Aset Tetap</a> /</span> {{ title }}
+    </h4>
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <h5 class="card-header"><i class="ri-building-2-line me-2"></i>{{ title }}</h5>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="card-body">
+                        {% if form.errors %}<div class="alert alert-danger"><i class="ri-error-warning-line me-2"></i>{{ form.errors }}</div>{% endif %}
+                        <div class="row gx-4">
+                            <div class="col-md-6 mb-4">
+                                <div class="form-floating form-floating-outline">
+                                    {{ form.nama }}
+                                    <label for="{{ form.nama.id_for_label }}">Nama Aset <span class="text-danger">*</span></label>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-4">
+                                <div class="form-floating form-floating-outline">
+                                    {{ form.kategori }}
+                                    <label for="{{ form.kategori.id_for_label }}">Kategori <span class="text-danger">*</span></label>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-4">
+                                <div class="form-floating form-floating-outline">
+                                    {{ form.akun_aset }}
+                                    <label for="{{ form.akun_aset.id_for_label }}">Akun</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row gx-4">
+                            <div class="col-md-4 mb-4">
+                                <div class="form-floating form-floating-outline">
+                                    {{ form.harga_perolehan }}
+                                    <label for="{{ form.harga_perolehan.id_for_label }}">Harga Perolehan <span class="text-danger">*</span></label>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-4">
+                                <div class="form-floating form-floating-outline">
+                                    {{ form.nilai_residu }}
+                                    <label for="{{ form.nilai_residu.id_for_label }}">Nilai Residu</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-4">
+                                <div class="form-floating form-floating-outline">
+                                    {{ form.umur_ekonomis }}
+                                    <label for="{{ form.umur_ekonomis.id_for_label }}">Umur (bln) <span class="text-danger">*</span></label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row gx-4">
+                            <div class="col-md-4 mb-4">
+                                <div class="form-floating form-floating-outline">
+                                    {{ form.tanggal_perolehan }}
+                                    <label for="{{ form.tanggal_perolehan.id_for_label }}">Tanggal Perolehan <span class="text-danger">*</span></label>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-4">
+                                <div class="form-floating form-floating-outline">
+                                    {{ form.metode_penyusutan }}
+                                    <label for="{{ form.metode_penyusutan.id_for_label }}">Metode</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-4">
+                                <div class="form-floating form-floating-outline">
+                                    {{ form.supplier }}
+                                    <label for="{{ form.supplier.id_for_label }}">Supplier</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row gx-4">
+                            <div class="col-md-4 mb-4">
+                                <div class="form-floating form-floating-outline">
+                                    {{ form.cabang }}
+                                    <label for="{{ form.cabang.id_for_label }}">Cabang</label>
+                                </div>
+                            </div>
+                            <div class="col-md-8 mb-4">
+                                <div class="form-floating form-floating-outline">
+                                    {{ form.deskripsi }}
+                                    <label for="{{ form.deskripsi.id_for_label }}">Deskripsi</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary me-2"><i class="ri-save-line me-1"></i>Simpan</button>
+                            <a href="{% url 'aset:list' %}" class="btn btn-outline-secondary">Batal</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

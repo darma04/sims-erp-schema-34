@@ -34,8 +34,8 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div class="card-info">
-                            <p class="card-text text-muted">Total Pembelian</p>
-                            <h4 class="mb-0 text-danger summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Σ total_harga Purchase Order (approved/received).<br><br><b>Sumber:</b> Tabel PurchaseOrder.<br>Mendukung filter tanggal.">{{ total_pembelian|rupiah }}</h4>
+                            <p class="card-text text-muted">DPP Pembelian</p>
+                            <h4 class="mb-0 text-danger summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Purchase Order dihitung dari DPP/subtotal pembelian + ongkir, tanpa PPN Masukan.<br><br><b>Sumber:</b> PurchaseOrder.<br><b>Catatan:</b> PPN Masukan dicatat sebagai pajak masukan/aset pajak, bukan beban pembelian.">{{ total_pembelian|rupiah }}</h4>
                         </div>
                         <div class="card-icon">
                             <span class="badge bg-label-danger rounded p-2">
@@ -86,7 +86,7 @@
                     <div class="d-flex justify-content-between">
                         <div class="card-info">
                             <p class="card-text text-muted">Rata-rata PO</p>
-                            <h4 class="mb-0 text-warning summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Total Pembelian / Jumlah PO.<br><br><b>Sumber:</b> Rata-rata nilai per Purchase Order.">{{ rata_rata_po|rupiah }}</h4>
+                            <h4 class="mb-0 text-warning summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>DPP pembelian termasuk ongkir / jumlah PO.<br><br><b>Sumber:</b> Rata-rata nilai DPP Purchase Order termasuk ongkir, tanpa PPN Masukan.">{{ rata_rata_po|rupiah }}</h4>
                         </div>
                         <div class="card-icon">
                             <span class="badge bg-label-warning rounded p-2">
@@ -212,8 +212,8 @@
                         <th>Supplier</th>
                         <th>Produk</th>
                         <th>Stok</th>
-                        <th>Total</th>
-                        <th>Pajak</th>
+                        <th>DPP Pembelian</th>
+                        <th>PPN Masukan</th>
                         <th>Status</th>
                         <th>Aksi</th>
                     </tr>
@@ -226,7 +226,7 @@
                         <td>{{ po.supplier.nama }}</td>
                         <td><small>{{ po.produk_list|truncatechars:40 }}</small></td>
                         <td class="text-center">{{ po.stok_total|floatformat:0 }}</td>
-                        <td>{{ po.total_harga|rupiah }}</td>
+                        <td>{{ po.nilai_laporan|rupiah }}</td>
                         <td>{{ po.pajak_display|rupiah }}</td>
                         <td>
                             {% if po.status == 'draft' %}
@@ -270,8 +270,7 @@
                                 <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
                                 <div class="text-start">
                                     <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
-                                    <small class="text-muted" style="font-size: 0.75rem;">{{ total_po }} Purchase
-                                        Order</small>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ total_po }} Purchase Order</small>
                                 </div>
                             </div>
                         </td>
@@ -295,7 +294,7 @@
                                     <i class="ri-money-dollar-circle-line"></i>
                                     <span>{{ total_pembelian|rupiah }}</span>
                                 </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Total Pembelian</small>
+                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">DPP Pembelian</small>
                             </div>
                         </td>
                         <td class="py-3" style="vertical-align: middle;">
@@ -305,7 +304,7 @@
                                     <i class="ri-percent-line"></i>
                                     <span>{{ total_pajak|rupiah }}</span>
                                 </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Total Pajak</small>
+                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">PPN Masukan</small>
                             </div>
                         </td>
                         <td class="py-3"></td>

@@ -1,0 +1,100 @@
+{% extends 'layout/layout_vertical.html' %}
+{% comment %}
+==========================================================================
+PERIODE FORM - Form Tambah/Edit Periode Akuntansi
+Lebar form konsisten dengan form lain (col-xxl-9 centered)
+==========================================================================
+{% endcomment %}
+{% load static %}
+
+{% block title %}{{ title }} - Akuntansi ERP{% endblock title %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <h4 class="py-3 mb-4">
+        <span class="text-muted fw-light">
+            Akuntansi / <a href="{% url 'akuntansi:periode' %}">Periode</a> /
+        </span> {{ title }}
+    </h4>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header d-flex align-items-center">
+                    <h5 class="mb-0"><i class="ri-calendar-check-line me-2"></i>{{ title }}</h5>
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="card-body">
+                        {% if form.errors %}
+                        <div class="alert alert-danger alert-dismissible" role="alert">
+                            <i class="ri-error-warning-line me-2"></i>
+                            Harap perbaiki kesalahan berikut:
+                            <ul class="mb-0 mt-1">
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                    <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                                {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        {% endif %}
+
+                        <div class="row mb-3">
+                            <label class="col-sm-3 col-form-label">
+                                Nama Periode <span class="text-danger">*</span>
+                            </label>
+                            <div class="col-sm-9">
+                                {{ form.nama }}
+                                {% if form.nama.help_text %}
+                                <small class="text-muted">{{ form.nama.help_text }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <label class="col-sm-3 col-form-label">
+                                Tanggal Mulai <span class="text-danger">*</span>
+                            </label>
+                            <div class="col-sm-9">
+                                {{ form.tanggal_mulai }}
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <label class="col-sm-3 col-form-label">
+                                Tanggal Akhir <span class="text-danger">*</span>
+                            </label>
+                            <div class="col-sm-9">
+                                {{ form.tanggal_akhir }}
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <label class="col-sm-3 col-form-label">Status</label>
+                            <div class="col-sm-9 d-flex align-items-center">
+                                {{ form.is_aktif }}
+                                <label class="form-check-label ms-2">Periode Aktif</label>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="row justify-content-end">
+                            <div class="col-sm-9">
+                                <button type="submit" class="btn btn-primary me-2">
+                                    <i class="ri-save-line me-1"></i>Simpan
+                                </button>
+                                <a href="{% url 'akuntansi:periode' %}" class="btn btn-outline-secondary">
+                                    <i class="ri-arrow-left-line me-1"></i>Batal
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

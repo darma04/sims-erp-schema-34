@@ -1,0 +1,436 @@
+{% extends 'layout/layout_vertical.html' %}
+{% load static %}
+{% load currency_filters %}
+
+{% block title %}Aging Report Hutang - Akuntansi ERP{% endblock title %}
+
+
+
+{% block vendor_css %}{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/apex-charts/apex-charts.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="ri-bar-chart-box-line me-2"></i>Aging Report — Hutang</h4>
+            <p class="text-muted mb-0">Analisis umur hutang berdasarkan jatuh tempo</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'hutang:list' %}" class="btn btn-outline-secondary"><i class="ri-arrow-left-line me-1"></i>Kembali</a>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get">
+                <!-- Baris 1: field filter -->
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Cari Supplier</label>
+                        <div class="input-group input-group-merge">
+                            <span class="input-group-text"><i class="ri-search-line"></i></span>
+                            <input type="text" name="search" class="form-control" placeholder="Nama supplier..." value="{{ request.GET.search }}">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Filter Cabang</label>
+                        <select name="cabang" class="form-select">
+                            <option value="">Semua Cabang</option>
+                            {% for c in cabang_list %}
+                            <option value="{{ c.pk }}" {% if selected_cabang == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.nama }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Per Tanggal</label>
+                        <input type="date" name="per_tanggal" class="form-control" value="{{ request.GET.per_tanggal }}">
+                    </div>
+                </div>
+                <!-- Baris 2: Filter Kolom (kiri) + spacer + Tombol Filter (kanan) — standar 3+6+3 -->
+                <div class="row g-3 mt-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Pilih Kolom yang Ditampilkan</label>
+                        <div class="dropdown">
+                            <button class="btn btn-label-secondary dropdown-toggle waves-effect w-100" type="button"
+                                id="columnFilterDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                                aria-expanded="false">
+                                <i class="ri-layout-column-line me-1"></i>
+                                Pilih Kolom yang Ditampilkan
+                            </button>
+                            <div class="dropdown-menu p-3" aria-labelledby="columnFilterDropdown" style="min-width: 280px;">
+                                <h6 class="dropdown-header px-0 mb-2">Kolom Tabel</h6>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="0" id="col-nomor" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-nomor">Nomor</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="1" id="col-supplier" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-supplier">Supplier</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="2" id="col-tanggal" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-tanggal">Tanggal</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="3" id="col-jatuh-tempo" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-jatuh-tempo">Jatuh Tempo</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="4" id="col-total" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-total">Total</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="5" id="col-sisa" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-sisa">Sisa</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="6" id="col-hari-telat" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-hari-telat">Hari Telat</label>
+                                </div>
+                                <div class="dropdown-divider my-2"></div>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-primary flex-fill" onclick="selectAllColumns()">
+                                        <i class="ri-checkbox-multiple-line ri-16px"></i> Semua
+                                    </button>
+                                    <button class="btn btn-sm btn-label-secondary flex-fill" onclick="deselectAllColumns()">
+                                        <i class="ri-checkbox-blank-line ri-16px"></i> Kosongkan
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <small class="text-muted d-block mt-1">Klik untuk memilih kolom</small>
+                    </div>
+                    <div class="col-md-6"></div>
+                    <div class="col-md-3">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="ri-filter-3-line me-1"></i>Terapkan Filter
+                            </button>
+                            <a href="{% url 'hutang:aging' %}" class="btn btn-label-secondary">
+                                <i class="ri-refresh-line me-1"></i>Reset
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards — Aging Buckets -->
+    <div class="row g-3 mb-4">
+        {% for key, bucket in buckets.items %}
+        <div class="col-sm-6 col-md">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3">
+                            <span class="avatar-initial rounded {% if key == 'current' %}bg-label-success{% elif key == '1-30' %}bg-label-info{% elif key == '31-60' %}bg-label-warning{% elif key == '61-90' %}bg-label-danger{% else %}bg-label-secondary{% endif %}">
+                                <i class="{% if key == 'current' %}ri-checkbox-circle-line{% elif key == '1-30' %}ri-time-line{% elif key == '31-60' %}ri-alarm-warning-line{% elif key == '61-90' %}ri-error-warning-line{% else %}ri-skull-line{% endif %} ri-24px"></i>
+                            </span>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 {% if key == 'current' %}text-success{% elif key == '1-30' %}text-info{% elif key == '31-60' %}text-warning{% elif key == '61-90' %}text-danger{% else %}text-secondary{% endif %}">
+                                {{ bucket.total|rupiah }}
+                            </h5>
+                            <small class="text-muted">{{ bucket.label }}</small>
+                            <br><small class="text-muted">{{ bucket.items|length }} hutang</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Chart -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="ri-bar-chart-2-line me-2"></i>Grafik Aging Hutang</h5>
+        </div>
+        <div class="card-body">
+            <div id="agingChart" style="min-height:300px;"></div>
+        </div>
+    </div>
+
+    <!-- Detail Tables per Bucket -->
+    {% for key, bucket in buckets.items %}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                {% if key == 'current' %}<i class="ri-circle-fill me-2 text-success"></i>
+                {% elif key == '1-30' %}<i class="ri-circle-fill me-2 text-info"></i>
+                {% elif key == '31-60' %}<i class="ri-circle-fill me-2 text-warning"></i>
+                {% elif key == '61-90' %}<i class="ri-circle-fill me-2 text-danger"></i>
+                {% else %}<i class="ri-circle-fill me-2 text-dark"></i>{% endif %}
+                {{ bucket.label }}
+            </h5>
+            <div class="d-flex gap-2 align-items-center">
+                <span class="fw-bold">{{ bucket.total|rupiah }}</span>
+                <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcelFromButton(this)"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDFFromButton(this)"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+            </div>
+        </div>
+        <div class="card-datatable table-responsive">
+            <table class="accounting-data-table table table-hover" id="agingHutangTable{{ forloop.counter }}" data-export-title="Aging Report Hutang - {{ bucket.label }}" data-search-placeholder="Cari hutang aging...">
+                <thead class="table-light">
+                    <tr><th>Nomor</th><th>Supplier</th><th>Tanggal</th><th>Jatuh Tempo</th><th class="text-end">Total</th><th class="text-end">Sisa</th><th>Hari Telat</th></tr>
+                </thead>
+                <tbody>
+                    {% for h in bucket.items %}
+                    <tr>
+                        <td><a href="{% url 'hutang:detail' h.pk %}" class="text-primary fw-medium">{{ h.nomor }}</a></td>
+                        <td>{{ h.supplier.nama }}</td>
+                        <td>{{ h.tanggal|date:"d/m/Y" }}</td>
+                        <td>{% if h.jatuh_tempo %}{{ h.jatuh_tempo|date:"d/m/Y" }}{% else %}-{% endif %}</td>
+                        <td class="text-end">{{ h.jumlah_total|rupiah }}</td>
+                        <td class="text-end fw-bold text-danger">{{ h.sisa|rupiah }}</td>
+                        <td>{% if h.hari_overdue > 0 %}<span class="text-danger fw-bold">{{ h.hari_overdue }} hari</span>{% else %}<span class="text-success">-</span>{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="4" class="text-start ps-4 py-3">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 0.875rem;">RINGKASAN</strong>
+                                    <small class="text-muted">{{ bucket.items|length }} hutang</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td colspan="2" class="text-end py-3">
+                            <span class="badge bg-label-danger">{{ bucket.total|rupiah }}</span>
+                        </td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Grand Total -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Grand Total Hutang Outstanding</h5>
+        </div>
+        <div class="card-body text-center">
+            <h3 class="fw-bold text-danger">{{ grand_total|rupiah }}</h3>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+
+{% block vendor_js %}{{ block.super }}
+<script src="{% static 'vendor/libs/apex-charts/apexcharts.js' %}"></script>
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+{% endblock vendor_js %}
+{% block page_js %}
+<script>
+$(document).ready(function() {
+    var labels = {{ chart_labels|safe }};
+    var data = {{ chart_data|safe }};
+
+    var el = document.getElementById('agingChart');
+    if (el) {
+        var isDark = typeof isDarkStyle !== 'undefined' ? isDarkStyle : document.documentElement.classList.contains('dark-style');
+        var gridColor  = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+        var labelColor = isDark ? '#b4b5ba' : '#a5a3ae';
+        var chartColor = ['#ea5455'];
+        new ApexCharts(el, {
+            chart: {
+                type: 'area', height: 300,
+                fontFamily: 'Inter, -apple-system, sans-serif', background: 'transparent',
+                toolbar: { show: true, tools: { download: '<i class="ri-download-2-line" style="font-size:16px"></i>', selection:false,zoom:false,zoomin:false,zoomout:false,pan:false,reset:false } },
+                animations: { enabled:true, easing:'easeinout', speed:800, dynamicAnimation:{enabled:true,speed:350} },
+                dropShadow: { enabled:true, top:6, left:0, blur:6, opacity:isDark?0.15:0.08, color:chartColor }
+            },
+            colors: chartColor,
+            dataLabels: { enabled:false },
+            stroke: { curve:'smooth', width:3, lineCap:'round' },
+            fill: { type:'gradient', gradient:{ shade:isDark?'dark':'light', type:'vertical', shadeIntensity:0.3, opacityFrom:isDark?0.25:0.4, opacityTo:0.02, stops:[0,95,100] } },
+            series: [{name:'Sisa Hutang (Rp)',data:data}],
+            xaxis: {
+                categories: labels,
+                labels: { style:{ colors:labelColor, fontSize:'13px', fontWeight:400 } },
+                axisBorder:{show:false}, axisTicks:{show:false},
+                crosshairs: { stroke:{ color:isDark?'#555':'#ddd', dashArray:4 } }
+            },
+            yaxis: { labels: { style:{colors:labelColor,fontSize:'13px'}, formatter:function(v){ return 'Rp '+v.toLocaleString('id-ID'); } } },
+            tooltip: {
+                theme:isDark?'dark':'light', shared:true, intersect:false,
+                style:{fontSize:'13px'}, x:{show:true},
+                y:{formatter:function(v){return 'Rp '+v.toLocaleString('id-ID');}},
+                marker:{show:true}
+            },
+            legend: { position:'top', horizontalAlign:'left', fontSize:'13px', fontWeight:500, labels:{colors:isDark?'#ccc':'#555'}, markers:{size:5,strokeWidth:0,offsetX:-3}, itemMargin:{horizontal:12,vertical:4} },
+            markers: { size:0, hover:{size:6,sizeOffset:3}, strokeWidth:2, strokeColors:isDark?'#2b2c40':'#fff' },
+            grid: { borderColor:gridColor, strokeDashArray:4, padding:{top:-10,left:10,right:10,bottom:0}, xaxis:{lines:{show:false}}, yaxis:{lines:{show:true}} },
+            responsive: [{ breakpoint:768, options:{ chart:{height:240}, legend:{fontSize:'11px'}, stroke:{width:2} } }]
+        }).render();
+    }
+});
+
+
+// Template Data for Independent Headers/Footers
+const EXCEL_INFO = {
+    name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
+    address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
+    phone: "{{ export_excel_template.header_telepon|escapejs|default:'No Telp' }}",
+    email: "{{ export_excel_template.header_email|escapejs|default:'email@domain.com' }}",
+    copyright: "{{ export_excel_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
+};
+
+const PDF_INFO = {
+    name: "{{ export_pdf_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
+    address: "{{ export_pdf_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
+    phone: "{{ export_pdf_template.header_telepon|escapejs|default:'No Telp' }}",
+    email: "{{ export_pdf_template.header_email|escapejs|default:'email@domain.com' }}",
+    copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
+};
+
+function exportAgingExcel(){
+    let colCount = 3;
+    let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+    html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
+    html += '<body>';
+    
+    // --- ADD EXCEL HEADER (Company Info) ---
+    html += '<table border="0">';
+    if (typeof EXCEL_INFO !== 'undefined') {
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
+        html += `<tr><td colspan="${colCount}"></td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:14px; font-weight:bold;">AGING REPORT HUTANG</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">Tanggal: ${new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})}</td></tr>`;
+        html += `<tr><td colspan="${colCount}"></td></tr>`;
+    }
+    html += '</table>';
+    
+    html += '<table border="1"><thead><tr style="background:#696CFF;color:#FFF;font-weight:bold;"><th>Kategori</th><th>Jumlah Hutang</th><th>Count</th></tr></thead><tbody>';
+    {% for key, bucket in buckets.items %}html += '<tr><td>{{ bucket.label }}</td><td>{{ bucket.total }}</td><td>{{ bucket.items|length }}</td></tr>';{% endfor %}
+    html += '<tr style="font-weight:bold;"><td>TOTAL</td><td>{{ grand_total }}</td><td></td></tr></tbody></table>';
+    
+    // --- ADD EXCEL FOOTER ---
+    html += '<table border="0">';
+    html += `<tr><td colspan="${colCount}"></td></tr>`;
+    if (typeof EXCEL_INFO !== 'undefined') {
+        html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">${EXCEL_INFO.copyright}</td></tr>`;
+    }
+    html += '</table></body></html>';
+    
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + html], {type:'application/vnd.ms-excel;charset=utf-8'});
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'Aging_Hutang_' + new Date().toISOString().slice(0,10) + '.xls';
+    link.click();
+}
+function exportAgingPDF(){
+    if(typeof pdfMake==='undefined'){alert('pdfMake belum tersedia');return;}
+    const body=[
+        [{text:'Kategori',bold:true,fillColor:'#696CFF',color:'#FFF'},{text:'Jumlah Hutang',bold:true,fillColor:'#696CFF',color:'#FFF'},{text:'Count',bold:true,fillColor:'#696CFF',color:'#FFF'}],
+        {% for key, bucket in buckets.items %}['{{ bucket.label }}','{{ bucket.total }}','{{ bucket.items|length }}'],{% endfor %}
+        [{text:'TOTAL',bold:true},'{{ grand_total }}','']
+    ];
+    
+    let companyInfoExists = typeof PDF_INFO !== 'undefined';
+    
+    pdfMake.createPdf({
+        pageOrientation: 'portrait',
+        pageMargins: [40, 100, 40, 60],
+        header: function (currentPage) {
+            if (companyInfoExists) {
+                return {
+                    margin: [40, 20, 40, 10],
+                    columns: [
+                        {
+                            width: '*',
+                            stack: [
+                                { text: PDF_INFO.name, style: 'companyName' },
+                                { text: PDF_INFO.address, style: 'companyInfo' },
+                                { text: PDF_INFO.phone + ' | ' + PDF_INFO.email, style: 'companyInfo' }
+                            ]
+                        },
+                        { width: 'auto', stack: [{ text: 'Halaman ' + currentPage, style: 'pageNumber', alignment: 'right' }] }
+                    ]
+                };
+            }
+            return { text: 'Halaman ' + currentPage, margin: [40, 20, 40, 10], alignment: 'right', style: 'pageNumber' };
+        },
+        content: [
+            { text: 'AGING REPORT HUTANG', style: 'documentTitle', margin: [0, 0, 0, 5] },
+            { text: 'Tanggal: ' + new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }), style: 'dateText', margin: [0, 0, 0, 20] },
+            {
+                table: { headerRows: 1, widths: ['*','auto','auto'], body: body },
+                layout: {
+                    fillColor: (rowIndex) => (rowIndex === 0) ? '#696CFF' : ((rowIndex % 2 === 0) ? '#F5F5F9' : null),
+                    hLineWidth: () => 0.5,
+                    vLineWidth: () => 0.5,
+                    hLineColor: () => '#DBDADE',
+                    vLineColor: () => '#DBDADE'
+                }
+            }
+        ],
+        footer: function (currentPage, pageCount) {
+            if (companyInfoExists) {
+                return {
+                    margin: [40, 10, 40, 10],
+                    columns: [
+                        { text: 'Dicetak pada: ' + new Date().toLocaleString('id-ID'), style: 'footerText' },
+                        { text: PDF_INFO.copyright, style: 'footerText', alignment: 'right' }
+                    ]
+                };
+            }
+            return { text: 'Dicetak pada: ' + new Date().toLocaleString('id-ID'), margin: [40, 10, 40, 10], style: 'footerText' };
+        },
+        styles: {
+            companyName: { fontSize: 14, bold: true, color: '#5F61E6' },
+            companyInfo: { fontSize: 9, color: '#697A8D' },
+            pageNumber: { fontSize: 9, color: '#697A8D' },
+            documentTitle: { fontSize: 18, bold: true, color: '#5F61E6' },
+            dateText: { fontSize: 10, color: '#697A8D' },
+            tableHeader: { bold: true, fontSize: 10, color: '#FFFFFF' },
+            footerText: { fontSize: 8, color: '#697A8D' }
+        },
+        defaultStyle: { fontSize: 9 }
+    }).download('Aging_Hutang_' + new Date().toISOString().slice(0,10) + '.pdf');
+}
+
+function toggleColumns() {
+    var checkboxes = document.querySelectorAll('.column-checkbox');
+    var tables = document.querySelectorAll('.table.table-hover');
+    tables.forEach(function(table) {
+        checkboxes.forEach(function(cb) {
+            var colIdx = parseInt(cb.value);
+            var rows = table.querySelectorAll('tr');
+            rows.forEach(function(row) {
+                var cells = row.querySelectorAll('th, td');
+                if (cells[colIdx]) cells[colIdx].style.display = cb.checked ? '' : 'none';
+            });
+        });
+    });
+}
+function selectAllColumns() {
+    document.querySelectorAll('.column-checkbox').forEach(function(cb) { cb.checked = true; });
+    toggleColumns();
+}
+function deselectAllColumns() {
+    document.querySelectorAll('.column-checkbox').forEach(function(cb) { cb.checked = false; });
+    toggleColumns();
+}
+</script>
+{% include 'accounting/partials/table_tools.html' %}
+{% endblock page_js %}

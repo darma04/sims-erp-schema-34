@@ -32,7 +32,7 @@ Koneksi:
 """
 
 # Import dari framework Django
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.db.models import ProtectedError                                    # Fungsi render template
 # Import dari framework Django
 from django.contrib.auth.decorators import login_required              # Decorator login wajib
@@ -57,9 +57,10 @@ from apps.core.mixins import (                                         # Permiss
     UpdatePermissionMixin, DeletePermissionMixin,
     SubModulePermissionMixin
 )
+from apps.core.permissions import permission_required
+from django import forms  # Django forms — untuk widget override (HiddenInput)
 import logging  # Modul logging standar Python - pengganti print() untuk production
 from django.db import transaction
-from django import forms  # Django forms — untuk widget override (HiddenInput)
 
 # Inisialisasi logger untuk modul Produk
 logger = logging.getLogger(__name__)
@@ -265,6 +266,33 @@ class SatuanCreateView(SubModulePermissionMixin, CreateView):
         """Dipanggil saat form valid - proses penyimpanan data."""
         messages.success(self.request, 'Satuan berhasil ditambahkan')
         return super().form_valid(form)
+
+
+class SatuanSeedDefaultView(SubModulePermissionMixin, TemplateView):
+    """Seed satuan dan konversi default. URL: /produk/satuan/seed-default/"""
+    template_name = 'produk/satuan_list.html'
+    permission_module = 'produk'
+    permission_sub_module = 'satuan'
+    permission_action = 'create'
+
+    def get(self, request, *args, **kwargs):
+        return redirect('produk:satuan')
+
+    def post(self, request, *args, **kwargs):
+        try:
+            from io import StringIO
+            from django.core.management import call_command
+
+            output = StringIO()
+            call_command('seed_konversi_satuan', stdout=output)
+            messages.success(
+                request,
+                'Seed satuan default berhasil dijalankan. Satuan dan konversi default sudah dilengkapi.'
+            )
+        except Exception as exc:
+            logger.exception('Gagal menjalankan seed satuan default')
+            messages.error(request, f'Gagal menjalankan seed satuan default: {exc}')
+        return redirect('produk:satuan')
 
 
 class SatuanUpdateView(SubModulePermissionMixin, UpdateView):
@@ -706,8 +734,9 @@ class SparepartCreateView(SubModulePermissionMixin, CreateView):
     def get_form(self, form_class=None):
         """Override form — set default tipe='sparepart' dan hide field tipe."""
         form = super().get_form(form_class)
-        form.fields['tipe'].initial = 'sparepart'
-        form.fields['tipe'].widget = forms.HiddenInput()
+        if 'tipe' in form.fields:
+            form.fields['tipe'].initial = 'sparepart'
+            form.fields['tipe'].widget = forms.HiddenInput()
         return form
 
     def form_valid(self, form):
@@ -790,7 +819,8 @@ class SparepartUpdateView(SubModulePermissionMixin, UpdateView):
     def get_form(self, form_class=None):
         """Override form — hide field tipe karena sudah pasti sparepart."""
         form = super().get_form(form_class)
-        form.fields['tipe'].widget = forms.HiddenInput()
+        if 'tipe' in form.fields:
+            form.fields['tipe'].widget = forms.HiddenInput()
         return form
 
     def form_valid(self, form):
@@ -1441,7 +1471,7 @@ class ProdukImportView(SubModulePermissionMixin, TemplateView):
                         error_count += 1
                         continue
 
-                    # Tentukan metode pembayaran dari file atau default
+                    # Tentukan metode pembayaran dari file import atau default
                     metode_pembayaran = None
                     metode_nama = str(row.get('metode_pembayaran', '')).strip() if row.get('metode_pembayaran') else ''
                     if metode_nama:
@@ -1450,6 +1480,7 @@ class ProdukImportView(SubModulePermissionMixin, TemplateView):
                             nama__iexact=metode_nama, aktif=True
                         ).first()
                     if not metode_pembayaran:
+                        # Fallback: gunakan metode pembayaran default pertama yang aktif
                         from apps.pos.models import MetodePembayaran
                         metode_pembayaran = MetodePembayaran.objects.filter(aktif=True).first()
 
@@ -1467,6 +1498,10 @@ class ProdukImportView(SubModulePermissionMixin, TemplateView):
                             kode='GD-DEFAULT', nama='Gudang Utama', aktif=True
                         )
 
+                    # Tentukan status kena_ppn dari file import
+                    kena_ppn_raw = str(row.get('kena_ppn', '')).strip().lower()
+                    kena_ppn = kena_ppn_raw not in ('0', 'false', 'tidak', 'no')
+
                     # Buat produk baru
                     produk = Produk.objects.create(
                         sku=sku or '',
@@ -1478,6 +1513,7 @@ class ProdukImportView(SubModulePermissionMixin, TemplateView):
                         harga_jual=float(row.get('harga_jual', 0) or 0),
                         barcode=str(row.get('barcode', '')).strip() if row.get('barcode') else '',
                         aktif=True,
+                        kena_ppn=kena_ppn,
                         cabang=gudang_target,
                         dibuat_oleh=request.user,
                         metode_pembayaran=metode_pembayaran
@@ -1563,6 +1599,7 @@ class ProdukImportView(SubModulePermissionMixin, TemplateView):
 
 # Wajib login - redirect ke login page jika belum login
 @login_required
+@permission_required('read', 'produk')
 def api_konversi_satuan(request, produk_id):
     """
     API: Ambil daftar satuan yang tersedia untuk produk tertentu.
@@ -1605,6 +1642,7 @@ def api_konversi_satuan(request, produk_id):
 
 
 @login_required
+@permission_required('update', 'produk')
 def update_barcode(request, pk):
     """
     API: Update field barcode produk via AJAX POST.

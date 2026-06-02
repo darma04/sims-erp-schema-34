@@ -16,6 +16,7 @@ import logging
 import ssl
 import urllib.request
 import urllib.error
+from decimal import Decimal
 
 # Import dari framework Django
 from django.http import JsonResponse
@@ -41,9 +42,18 @@ from .models import AIAssistantConfig, ChatHistory, ChatFeedback
 # Import dari modul internal proyek
 from .intents import detect_intent, gather_data
 from web_project import TemplateLayout
+from apps.core.permissions import has_exact_submodule_permission
 from django.db import transaction
 
 logger = logging.getLogger(__name__)
+
+
+def _can_use_ai_chat_widget(user):
+    return has_exact_submodule_permission(user, 'read', 'ai_assistant', 'chat_widget')
+
+
+def _ai_widget_forbidden_response():
+    return JsonResponse({'error': 'Anda tidak memiliki izin untuk menggunakan AI Assistant.'}, status=403)
 
 
 def _get_ssl_context():
@@ -114,6 +124,28 @@ PETA URL HALAMAN ERP:
 - Daftar Anomali: /fraud/alerts/
 - Rekonsiliasi Kas: /fraud/cash/
 - Pengaturan Fraud: /fraud/settings/
+- Kas & Bank Dashboard: /kas-bank/
+- Akun Kas & Bank: /kas-bank/akun/
+- Mutasi Kas & Bank: /kas-bank/mutasi/
+- Transfer Kas & Bank: /kas-bank/transfer/
+- Rekonsiliasi Bank: /kas-bank/rekonsiliasi/
+- Chart of Accounts: /akuntansi/coa/
+- Jurnal Umum: /akuntansi/jurnal/
+- Buku Besar: /akuntansi/buku-besar/
+- Periode Akuntansi: /akuntansi/periode/
+- Neraca: /akuntansi/neraca/
+- Laba Rugi: /akuntansi/laba-rugi/
+- Arus Kas: /akuntansi/arus-kas/
+- Trial Balance: /akuntansi/trial-balance/
+- Rekonsiliasi Keuangan: /akuntansi/rekonsiliasi-keuangan/
+- Daftar Piutang: /piutang/
+- Aging Piutang: /piutang/aging/
+- Daftar Hutang: /hutang/
+- Aging Hutang: /hutang/aging/
+- Daftar Aset Tetap: /aset/
+- Dashboard Penyusutan: /aset/penyusutan/
+- Faktur Pajak: /pajak/
+- Rekap PPN: /pajak/rekap/
 
 SELALU sertakan 1-3 link relevan di akhir setiap jawaban dalam format:
 📌 **Quick Actions:**
@@ -131,8 +163,11 @@ KAPABILITAS:
 - Analisa pelanggan: top customer, customer tidak aktif, frekuensi beli
 
 KONTEKS ERP:
-- Modul: Produk, Inventory, Pembelian (PO), Penjualan (SO), POS/Kasir, Biaya, Laporan, HR, Automasi, Fraud Detection
+- Modul Operasional: Produk, Inventory, Pembelian (PO), Penjualan (SO), POS/Kasir, Biaya, Laporan, HR, Automasi, Fraud Detection
+- Modul Keuangan: Kas & Bank (Treasury), Akuntansi (CoA, Jurnal, Buku Besar, Neraca, Laba Rugi, Arus Kas, Trial Balance), Piutang (AR), Hutang (AP), Aset Tetap (Penyusutan), Pajak (PPN), Rekonsiliasi Keuangan
+- Standar Akuntansi: Double-entry bookkeeping (PSAK/IFRS), jurnal otomatis dari semua transaksi operasional
 - Mata uang: Rupiah (IDR), Multi-gudang, Multi-metode pembayaran
+- Integrasi: Setiap transaksi operasional otomatis membuat jurnal akuntansi + mutasi kas/bank
 """
 
 
@@ -380,6 +415,8 @@ def ai_chat_api(request):
     """
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
+    if not _can_use_ai_chat_widget(request.user):
+        return _ai_widget_forbidden_response()
 
     # Blok penanganan error — coba jalankan kode di bawah
     try:
@@ -500,6 +537,8 @@ def auto_insight(request):
     """
     if request.method != 'GET':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
+    if not _can_use_ai_chat_widget(request.user):
+        return _ai_widget_forbidden_response()
 
     # Blok penanganan error — coba jalankan kode di bawah
     try:
@@ -579,6 +618,8 @@ def chat_feedback(request):
     """Simpan feedback 👍/👎 dari user."""
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
+    if not _can_use_ai_chat_widget(request.user):
+        return _ai_widget_forbidden_response()
 
     # Blok penanganan error — coba jalankan kode di bawah
     try:
@@ -623,6 +664,8 @@ def chat_history_api(request):
     """Load riwayat chat user dari database."""
     if request.method != 'GET':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
+    if not _can_use_ai_chat_widget(request.user):
+        return _ai_widget_forbidden_response()
 
     # Query database — ambil data messages_qs yang sesuai filter
     messages_qs = ChatHistory.objects.filter(
@@ -653,6 +696,8 @@ def clear_history(request):
     """Hapus riwayat chat user."""
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
+    if not _can_use_ai_chat_widget(request.user):
+        return _ai_widget_forbidden_response()
 
     # Query database — ambil data deleted_count yang sesuai filter
     deleted_count = ChatHistory.objects.filter(user=request.user).delete()[0]
@@ -885,6 +930,55 @@ class AIDashboardView(LoginRequiredMixin, TemplateView):
                 user=self.request.user, feedback='down'
             ).count()
 
+            # ═══ DATA KEUANGAN (Kas & Bank, Piutang, Hutang) ═══
+            total_saldo_kas = Decimal('0')
+            total_piutang_outstanding = Decimal('0')
+            total_hutang_outstanding = Decimal('0')
+            piutang_overdue_count = 0
+            hutang_overdue_count = 0
+            try:
+                from apps.kas_bank.models import KasBankAccount
+                for acc in KasBankAccount.objects.filter(aktif=True):
+                    total_saldo_kas += acc.saldo_terhitung
+            except Exception:
+                pass
+            try:
+                from apps.piutang.models import Piutang
+                piutang_qs = Piutang.objects.exclude(status='lunas')
+                total_piutang_outstanding = piutang_qs.aggregate(
+                    t=Sum('jumlah_total'))['t'] or Decimal('0')
+                total_piutang_outstanding -= piutang_qs.aggregate(
+                    t=Sum('jumlah_dibayar'))['t'] or Decimal('0')
+                piutang_overdue_count = piutang_qs.filter(
+                    jatuh_tempo__lt=today, status='belum_bayar').count()
+            except Exception:
+                pass
+            try:
+                from apps.hutang.models import Hutang
+                hutang_qs = Hutang.objects.exclude(status='lunas')
+                total_hutang_outstanding = hutang_qs.aggregate(
+                    t=Sum('jumlah_total'))['t'] or Decimal('0')
+                total_hutang_outstanding -= hutang_qs.aggregate(
+                    t=Sum('jumlah_dibayar'))['t'] or Decimal('0')
+                hutang_overdue_count = hutang_qs.filter(
+                    jatuh_tempo__lt=today, status='belum_bayar').count()
+            except Exception:
+                pass
+
+            # Tambah anomali keuangan
+            if piutang_overdue_count > 0:
+                anomalies.append({
+                    'level': 'warning', 'icon': 'ri-money-dollar-circle-line',
+                    'title': f'{piutang_overdue_count} Piutang Overdue',
+                    'desc': 'Ada piutang yang sudah melewati jatuh tempo. Segera tagih.',
+                })
+            if hutang_overdue_count > 0:
+                anomalies.append({
+                    'level': 'danger', 'icon': 'ri-hand-coin-line',
+                    'title': f'{hutang_overdue_count} Hutang Overdue',
+                    'desc': 'Ada hutang yang sudah melewati jatuh tempo. Segera bayar.',
+                })
+
             context.update({
                 'rev_now': rev_now,
                 'rev_prev': rev_prev,
@@ -909,6 +1003,12 @@ class AIDashboardView(LoginRequiredMixin, TemplateView):
                 'total_chats': total_chats,
                 'total_feedback_up': total_feedback_up,
                 'total_feedback_down': total_feedback_down,
+                # Data Keuangan
+                'total_saldo_kas': float(total_saldo_kas),
+                'total_piutang_outstanding': float(total_piutang_outstanding),
+                'total_hutang_outstanding': float(total_hutang_outstanding),
+                'piutang_overdue_count': piutang_overdue_count,
+                'hutang_overdue_count': hutang_overdue_count,
             })
 
         # Tangkap error Exception — lanjutkan tanpa crash

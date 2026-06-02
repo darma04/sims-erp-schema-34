@@ -14,13 +14,13 @@
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="py-3 mb-4">
-        <span class="text-muted fw-light">{% if is_sparepart %}Sparepart{% else %}Produk{% endif %} /</span> {{ title }}
+        <span class="text-muted fw-light">Produk /</span> {{ title }}
     </h4>
 
     <div class="row">
         <div class="col-md-12">
             <div class="card mb-4">
-                <h5 class="card-header">{% if is_sparepart %}Formulir Sparepart{% else %}Formulir Produk{% endif %}</h5>
+                <h5 class="card-header">Formulir Produk</h5>
                 <div class="card-body">
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
@@ -40,23 +40,6 @@
                             </ul>
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
-                        {% endif %}
-
-                        {% if not is_sparepart %}
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <div class="form-floating form-floating-outline">
-                                    {{ form.tipe }}
-                                    <label for="{{ form.tipe.id_for_label }}">{{ form.tipe.label }}</label>
-                                    {% if form.tipe.help_text %}
-                                    <small class="text-muted">{{ form.tipe.help_text }}</small>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        {% else %}
-                        {# Sparepart: tipe field tetap dirender sebagai hidden input #}
-                        {{ form.tipe }}
                         {% endif %}
 
                         <div class="row">
@@ -213,10 +196,17 @@
                         </div>
 
                         <div class="mb-3">
-                            <div class="form-check">
+                            <div class="form-check form-check-inline">
                                 {{ form.aktif }}
                                 <label class="form-check-label" for="{{ form.aktif.id_for_label }}">
                                     {{ form.aktif.label }}
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                {{ form.kena_ppn }}
+                                <label class="form-check-label" for="{{ form.kena_ppn.id_for_label }}">
+                                    {{ form.kena_ppn.label }}
+                                    <i class="ri-question-line text-muted" data-bs-toggle="tooltip" title="Jika dicentang, produk ini akan dikenakan PPN saat transaksi SO dan POS"></i>
                                 </label>
                             </div>
                         </div>

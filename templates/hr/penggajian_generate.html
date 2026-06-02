@@ -35,13 +35,17 @@
                     <form method="post">
                         {% csrf_token %}
                         <div class="row mb-4">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label class="form-label">Bulan <span class="text-danger">*</span></label>
                                 {{ form.periode_bulan }}
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label class="form-label">Tahun <span class="text-danger">*</span></label>
                                 {{ form.periode_tahun }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Metode Pembayaran</label>
+                                {{ form.metode_pembayaran }}
                             </div>
                         </div>
 

@@ -10,3 +10,7 @@ class BiayaConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'apps.biaya'
     verbose_name = 'Biaya'
+
+    def ready(self):
+        """Import signals saat aplikasi ready."""
+        import apps.biaya.signals  # noqa: F401

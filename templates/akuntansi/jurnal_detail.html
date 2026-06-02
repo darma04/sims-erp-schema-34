@@ -1,0 +1,203 @@
+{% extends 'layout/layout_vertical.html' %}
+{% comment %}
+==========================================================================
+JURNAL DETAIL - Detail Jurnal Entry + Lines + Audit Trail
+==========================================================================
+{% endcomment %}
+{% load static %}
+{% load currency_filters %}
+
+{% block title %}{{ jurnal.nomor }} - Detail Jurnal{% endblock title %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <h4 class="py-3 mb-4">
+        <span class="text-muted fw-light">Akuntansi / <a href="{% url 'akuntansi:jurnal' %}">Jurnal</a> /</span> {{ jurnal.nomor }}
+    </h4>
+
+    <!-- Header Info Card -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="ri-file-text-line me-2"></i>{{ jurnal.nomor }}</h5>
+            <div class="d-flex gap-2">
+                {% if not jurnal.is_posted and rbac_can_edit %}
+                <button class="btn btn-success" onclick="postJurnal({{ jurnal.pk }})">
+                    <i class="ri-checkbox-circle-line me-1"></i>Posting
+                </button>
+                {% endif %}
+                {% if jurnal.is_posted and rbac_can_edit %}
+                <button class="btn btn-info" onclick="reverseJurnal({{ jurnal.pk }})">
+                    <i class="ri-arrow-go-back-line me-1"></i>Jurnal Pembalik
+                </button>
+                {% endif %}
+                <a href="{% url 'akuntansi:jurnal' %}" class="btn btn-outline-secondary">
+                    <i class="ri-arrow-left-line me-1"></i>Kembali
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr><td class="text-muted" style="width:150px;">Nomor</td><td class="fw-semibold">{{ jurnal.nomor }}</td></tr>
+                        <tr><td class="text-muted">Tanggal</td><td>{{ jurnal.tanggal|date:"d F Y" }}</td></tr>
+                        <tr><td class="text-muted">Sumber</td><td>
+                            {% if jurnal.sumber == 'manual' %}<span class="badge bg-label-primary">Manual</span>
+                            {% elif jurnal.sumber == 'pembalik' %}<span class="badge bg-label-dark">Pembalik</span>
+                            {% else %}<span class="badge bg-label-info">{{ jurnal.get_sumber_display }}</span>{% endif %}
+                            {% if jurnal.sumber_ref %}<small class="text-muted ms-2">Ref: {{ jurnal.sumber_ref }}</small>{% endif %}
+                        </td></tr>
+                        <tr><td class="text-muted">Deskripsi</td><td>{{ jurnal.deskripsi }}</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr><td class="text-muted" style="width:150px;">Status</td><td>
+                            {% if jurnal.is_posted %}<span class="badge bg-success">Posted</span>{% else %}<span class="badge bg-warning">Draft</span>{% endif %}
+                        </td></tr>
+                        <tr><td class="text-muted">Cabang</td><td>{% if jurnal.cabang %}<span class="badge bg-label-info">{{ jurnal.cabang.nama }}</span>{% else %}Pusat{% endif %}</td></tr>
+                        <tr><td class="text-muted">Periode</td><td>{{ jurnal.periode|default:"Tidak ditentukan" }}</td></tr>
+                        <tr><td class="text-muted">Dibuat Oleh</td><td>{{ jurnal.created_by.username|default:"-" }} <small class="text-muted">{{ jurnal.dibuat_pada|date:"d/m/Y H:i" }}</small></td></tr>
+                    </table>
+                </div>
+            </div>
+
+            {% if jurnal.jurnal_asal %}
+            <div class="alert alert-info mt-3">
+                <i class="ri-arrow-go-back-line me-2"></i>
+                Jurnal ini adalah <strong>pembalik</strong> dari:
+                <a href="{% url 'akuntansi:jurnal_detail' jurnal.jurnal_asal.pk %}" class="alert-link">{{ jurnal.jurnal_asal.nomor }}</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Lines Table Card -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="ri-list-check-2 me-2"></i>Detail Jurnal Lines</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Kode Akun</th>
+                        <th>Nama Akun</th>
+                        <th class="text-end">Debit (Rp)</th>
+                        <th class="text-end">Kredit (Rp)</th>
+                        <th>Keterangan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for line in lines %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td><span class="fw-semibold text-primary">{{ line.akun.kode }}</span></td>
+                        <td>{{ line.akun.nama }}</td>
+                        <td class="text-end {% if line.debit > 0 %}fw-bold text-success{% endif %}">
+                            {% if line.debit > 0 %}{{ line.debit|rupiah }}{% else %}-{% endif %}
+                        </td>
+                        <td class="text-end {% if line.kredit > 0 %}fw-bold text-danger{% endif %}">
+                            {% if line.kredit > 0 %}{{ line.kredit|rupiah }}{% else %}-{% endif %}
+                        </td>
+                        <td><small>{{ line.keterangan|default:"-" }}</small></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-light">
+                    <tr class="fw-bold">
+                        <td colspan="3" class="text-end">TOTAL:</td>
+                        <td class="text-end text-success">{{ total_debit|rupiah }}</td>
+                        <td class="text-end text-danger">{{ total_kredit|rupiah }}</td>
+                        <td>
+                            {% if total_debit == total_kredit %}
+                            <span class="badge bg-success"><i class="ri-check-line me-1"></i>Balance</span>
+                            {% else %}
+                            <span class="badge bg-danger"><i class="ri-close-line me-1"></i>TIDAK BALANCE!</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- Jurnal Pembalik (jika ada) -->
+    {% if jurnal_pembalik_list %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="ri-arrow-go-back-line me-2"></i>Jurnal Pembalik</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr><th>Nomor</th><th>Tanggal</th><th>Deskripsi</th><th>Aksi</th></tr>
+                </thead>
+                <tbody>
+                    {% for p in jurnal_pembalik_list %}
+                    <tr>
+                        <td><a href="{% url 'akuntansi:jurnal_detail' p.pk %}" class="fw-semibold">{{ p.nomor }}</a></td>
+                        <td>{{ p.tanggal|date:"d M Y" }}</td>
+                        <td>{{ p.deskripsi|truncatewords:10 }}</td>
+                        <td><a href="{% url 'akuntansi:jurnal_detail' p.pk %}" class="btn btn-sm btn-outline-primary"><i class="ri-eye-line"></i></a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Audit Trail -->
+    {% if activity_logs %}
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="ri-history-line me-2"></i>Riwayat Aktivitas</h5>
+        </div>
+        <div class="card-body">
+            <div class="timeline">
+                {% for log in activity_logs %}
+                <div class="d-flex mb-3">
+                    <div class="me-3">
+                        <span class="avatar avatar-sm">
+                            <span class="avatar-initial rounded-circle bg-label-{% if log.action == 'create' %}success{% elif log.action == 'update' %}info{% elif log.action == 'delete' %}danger{% else %}secondary{% endif %}">
+                                {% if log.action == 'create' %}<i class="ri-add-line"></i>{% elif log.action == 'update' %}<i class="ri-edit-line"></i>{% elif log.action == 'delete' %}<i class="ri-delete-bin-line"></i>{% else %}<i class="ri-file-line"></i>{% endif %}
+                            </span>
+                        </span>
+                    </div>
+                    <div>
+                        <p class="mb-0 fw-medium">{{ log.description }}</p>
+                        <small class="text-muted">{{ log.user.username }} — {{ log.timestamp|date:"d/m/Y H:i:s" }}</small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% csrf_token %}
+{% endblock content %}
+
+{% block page_js %}
+<script>
+const csrfToken = () => document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+function postJurnal(id) {
+    if(!confirm('Posting jurnal ini? Setelah diposting tidak dapat dihapus.')) return;
+    $.ajax({url:`/akuntansi/jurnal/${id}/post/`,type:'POST',headers:{'X-CSRFToken':csrfToken()},
+        success:function(r){if(r.success){alert(r.message);location.reload();}else{alert(r.message);}},
+        error:function(xhr){var m='Error';try{m=JSON.parse(xhr.responseText).message||m;}catch(e){}alert(m);}
+    });
+}
+
+function reverseJurnal(id) {
+    if(!confirm('Buat jurnal pembalik untuk jurnal ini?')) return;
+    $.ajax({url:`/akuntansi/jurnal/${id}/reverse/`,type:'POST',headers:{'X-CSRFToken':csrfToken()},
+        success:function(r){if(r.success){alert(r.message);location.reload();}else{alert(r.message);}},
+        error:function(xhr){var m='Error';try{m=JSON.parse(xhr.responseText).message||m;}catch(e){}alert(m);}
+    });
+}
+</script>
+{% endblock page_js %}

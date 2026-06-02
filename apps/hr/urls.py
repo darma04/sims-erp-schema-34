@@ -89,6 +89,10 @@ urlpatterns = [
     path('penggajian/<int:pk>/delete/', views.PenggajianDeleteView.as_view(), name='penggajian-delete'),
     # URL: /hr/penggajian/<int:pk>/status/ — penggajian-status
     path('penggajian/<int:pk>/status/', views.PenggajianUpdateStatusView.as_view(), name='penggajian-status'),
+    # URL: /hr/penggajian/<int:pk>/update-status-ajax/ — penggajian-status-ajax (AJAX JSON endpoint)
+    path('penggajian/<int:pk>/update-status-ajax/', views.penggajian_update_status_ajax, name='penggajian-status-ajax'),
+    # URL: /hr/penggajian/<int:pk>/cancel/ — penggajian-cancel (POST AJAX)
+    path('penggajian/<int:pk>/cancel/', views.cancel_penggajian, name='penggajian-cancel'),
     # URL: /hr/penggajian/<int:pk>/print/ — penggajian-print
     path('penggajian/<int:pk>/print/', views.PenggajianPrintView.as_view(), name='penggajian-print'),
     

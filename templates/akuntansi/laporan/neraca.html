@@ -1,0 +1,613 @@
+{% extends 'layout/layout_vertical.html' %}
+{% load static %}
+{% load currency_filters %}
+
+{% block title %}Neraca (Balance Sheet) - Akuntansi ERP{% endblock title %}
+
+
+
+{% block vendor_css %}{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/apex-charts/apex-charts.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}{{ block.super }}
+<script src="{% static 'vendor/libs/apex-charts/apexcharts.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+{% endblock vendor_js %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <div>
+            <h4 class="mb-1"><i class="ri-bar-chart-horizontal-line me-2"></i>Neraca (Balance Sheet)</h4>
+            <p class="text-muted mb-0">{{ selected_start|date:"d F Y" }} — {{ selected_end|date:"d F Y" }}</p>
+        </div>
+    </div>
+    <!-- Label Sumber Data -->
+    <div class="mb-4">
+        <span class="badge bg-label-primary rounded-pill px-3 py-2">
+            <i class="ri-book-2-line me-1"></i>Laporan Akuntansi Resmi
+        </span>
+        <small class="text-muted ms-2" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="right" title="Data bersumber dari Jurnal Akuntansi (JurnalLine posted). PPN Masukan tampil sebagai aset pajak, PPN Keluaran tampil sebagai kewajiban pajak. Diskon Penjualan memengaruhi laba berjalan melalui Laba Rugi, bukan menjadi kas/bank tersendiri.">
+            <i class="ri-information-line"></i> Apa artinya?
+        </small>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get">
+                <!-- Baris 1: field filter -->
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Tanggal Mulai</label>
+                        <input type="date" name="start" class="form-control" value="{{ selected_start }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Tanggal Akhir</label>
+                        <input type="date" name="end" class="form-control" value="{{ selected_end }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Cabang</label>
+                        <select name="cabang" class="form-select">
+                            <option value="">Semua Cabang</option>
+                            {% for c in cabang_list %}
+                            <option value="{{ c.pk }}" {% if selected_cabang == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.nama }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Tampilkan</label>
+                        <select name="tampilkan" class="form-select" id="tampilkanSelect" onchange="applyTampilkan()">
+                            <option value="keduanya" {% if selected_tampilkan == 'keduanya' or not selected_tampilkan %}selected{% endif %}>Aktiva & Pasiva</option>
+                            <option value="aktiva" {% if selected_tampilkan == 'aktiva' %}selected{% endif %}>Aktiva Saja</option>
+                            <option value="pasiva" {% if selected_tampilkan == 'pasiva' %}selected{% endif %}>Pasiva Saja</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- Baris 2: Cari (kiri) + spacer + Tombol Filter (kanan) — standar 3+6+3 -->
+                <div class="row g-3 mt-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Cari di Neraca</label>
+                        <div class="input-group input-group-merge">
+                            <span class="input-group-text"><i class="ri-search-line"></i></span>
+                            <input type="text" id="searchNeraca" class="form-control" placeholder="Cari akun, nominal..." oninput="searchPage(this.value)">
+                        </div>
+                        <small class="text-muted d-block mt-1">Ketik untuk menyaring data</small>
+                    </div>
+                    <div class="col-md-6"></div>
+                    <div class="col-md-3">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="ri-filter-3-line me-1"></i>Terapkan Filter
+                            </button>
+                            <a href="{% url 'akuntansi:neraca' %}" class="btn btn-label-secondary">
+                                <i class="ri-refresh-line me-1"></i>Reset
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-primary"><i class="ri-building-2-line ri-24px"></i></span></div>
+                        <div>
+                            <h5 class="mb-0 text-primary">{{ total_aktiva|rupiah }}</h5>
+                            <small class="text-muted">Total Aktiva</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-info"><i class="ri-swap-line ri-24px"></i></span></div>
+                        <div>
+                            <h5 class="mb-0 text-info">{{ total_pasiva|rupiah }}</h5>
+                            <small class="text-muted">Total Pasiva</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3">
+                            <span class="avatar-initial rounded {% if laba_bersih >= 0 %}bg-label-success{% else %}bg-label-danger{% endif %}">
+                                <i class="{% if laba_bersih >= 0 %}ri-trophy-line{% else %}ri-error-warning-line{% endif %} ri-24px"></i>
+                            </span>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 {% if laba_bersih >= 0 %}text-success{% else %}text-danger{% endif %}">{{ laba_bersih|rupiah }}</h5>
+                            <small class="text-muted">Laba Bersih</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3">
+                            <span class="avatar-initial rounded {% if is_balanced %}bg-label-success{% else %}bg-label-danger{% endif %}">
+                                <i class="{% if is_balanced %}ri-checkbox-circle-line{% else %}ri-error-warning-line{% endif %} ri-24px"></i>
+                            </span>
+                        </div>
+                        <div>
+                            {% if is_balanced %}
+                            <h5 class="mb-0 text-success">BALANCE</h5>
+                            <small class="text-success">Aktiva = Pasiva</small>
+                            {% else %}
+                            <h5 class="mb-0 text-danger">TIDAK BALANCE</h5>
+                            <small class="text-danger">Periksa jurnal!</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="card mb-4">
+        <div class="card-header"><h5 class="mb-0"><i class="ri-pie-chart-line me-2"></i>Komposisi Neraca</h5></div>
+        <div class="card-body"><div id="neracaChart" style="min-height:320px;"></div></div>
+    </div>
+
+    <!-- Report Card — Aktiva & Pasiva Side by Side -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="ri-file-list-3-line me-2"></i>Laporan Neraca per {{ tanggal|date:"d F Y" }}</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-label-success" onclick="exportExcel()">
+                    <i class="ri-file-excel-2-line me-1"></i>Export Excel
+                </button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportPDF()">
+                    <i class="ri-file-pdf-line me-1"></i>Export PDF
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-3" id="neracaContent">
+                <!-- AKTIVA -->
+                <div class="col-md-6" id="sec-aktiva">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th colspan="2" class="fw-bold text-primary">Aset Lancar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in aset_lancar %}
+                                <tr>
+                                    <td>{{ item.akun.kode }} — {{ item.akun.nama }}</td>
+                                    <td class="text-end">{{ item.saldo|rupiah }}</td>
+                                </tr>
+                                {% endfor %}
+                                <tr class="fw-bold">
+                                    <td>Sub Total Aset Lancar</td>
+                                    <td class="text-end">{{ total_aset_lancar|rupiah }}</td>
+                                </tr>
+                            </tbody>
+                            <thead>
+                                <tr>
+                                    <th colspan="2" class="fw-bold text-info">Aset Tetap</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in aset_tetap %}
+                                <tr>
+                                    <td>{{ item.akun.kode }} — {{ item.akun.nama }}</td>
+                                    <td class="text-end {% if item.saldo < 0 %}text-danger{% endif %}">{{ item.saldo|rupiah }}</td>
+                                </tr>
+                                {% endfor %}
+                                <tr class="fw-bold">
+                                    <td>Sub Total Aset Tetap</td>
+                                    <td class="text-end">{{ total_aset_tetap|rupiah }}</td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr class="fw-bold border-top-2">
+                                    <td>TOTAL AKTIVA</td>
+                                    <td class="text-end">{{ total_aktiva|rupiah }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+                <!-- PASIVA -->
+                <div class="col-md-6" id="sec-pasiva">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th colspan="2" class="fw-bold text-warning">Kewajiban</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in kewajiban %}
+                                <tr>
+                                    <td>{{ item.akun.kode }} — {{ item.akun.nama }}</td>
+                                    <td class="text-end">{{ item.saldo|rupiah }}</td>
+                                </tr>
+                                {% endfor %}
+                                <tr class="fw-bold">
+                                    <td>Sub Total Kewajiban</td>
+                                    <td class="text-end">{{ total_kewajiban|rupiah }}</td>
+                                </tr>
+                            </tbody>
+                            <thead>
+                                <tr>
+                                    <th colspan="2" class="fw-bold text-success">Modal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in modal %}
+                                <tr>
+                                    <td>{{ item.akun.kode }} — {{ item.akun.nama }}</td>
+                                    <td class="text-end">{{ item.saldo|rupiah }}</td>
+                                </tr>
+                                {% endfor %}
+                                <tr>
+                                    <td class="fw-bold">Laba Bersih Tahun Berjalan</td>
+                                    <td class="text-end fw-bold {% if laba_bersih >= 0 %}text-success{% else %}text-danger{% endif %}">{{ laba_bersih|rupiah }}</td>
+                                </tr>
+                                <tr class="fw-bold">
+                                    <td>Sub Total Modal + Laba</td>
+                                    <td class="text-end">{{ total_modal|rupiah }}</td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr class="fw-bold border-top-2">
+                                    <td>TOTAL PASIVA</td>
+                                    <td class="text-end">{{ total_pasiva|rupiah }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block page_js %}
+<style>
+    #neracaContent .table {
+        margin-bottom: 0;
+        font-size: 0.9rem;
+    }
+
+    #neracaContent .table thead th {
+        padding: 0.5rem 0.75rem;
+        font-weight: 600;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    #neracaContent .table tbody td {
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    #neracaContent .table tfoot tr {
+        border-top: 2px solid #dee2e6;
+    }
+
+    #neracaContent .table tfoot td {
+        padding: 0.5rem 0.75rem;
+        font-weight: 600;
+    }
+
+    #neracaContent .table td:last-child {
+        text-align: right;
+    }
+
+    @media (max-width: 768px) {
+        #neracaContent .col-md-6 {
+            margin-bottom: 1rem;
+        }
+
+        #neracaContent .table {
+            font-size: 0.85rem;
+        }
+    }
+</style>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// EXPORT EXCEL & PDF - STANDARD TEMPLATE (Support Android)
+// Konsisten dengan: Produk, POS, Sales Order, Purchase Order
+// ═══════════════════════════════════════════════════════════════
+
+const EXCEL_INFO = {
+    name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
+    address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
+    phone: "{{ export_excel_template.header_telepon|escapejs|default:'No Telp' }}",
+    email: "{{ export_excel_template.header_email|escapejs|default:'email@domain.com' }}",
+    copyright: "{{ export_excel_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
+};
+
+const PDF_INFO = {
+    name: "{{ export_pdf_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
+    address: "{{ export_pdf_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
+    phone: "{{ export_pdf_template.header_telepon|escapejs|default:'No Telp' }}",
+    email: "{{ export_pdf_template.header_email|escapejs|default:'email@domain.com' }}",
+    copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
+};
+
+// GLOBAL FUNCTIONS - Defined outside DOMContentLoaded so onclick can access them
+function applyTampilkan() {
+    var val = document.getElementById('tampilkanSelect').value;
+    var secAktiva = document.getElementById('sec-aktiva');
+    var secPasiva = document.getElementById('sec-pasiva');
+    if (val === 'aktiva') {
+        secAktiva.style.display = '';
+        secPasiva.style.display = 'none';
+        secAktiva.className = 'col-md-12';
+    } else if (val === 'pasiva') {
+        secAktiva.style.display = 'none';
+        secPasiva.style.display = '';
+        secPasiva.className = 'col-md-12';
+    } else {
+        secAktiva.style.display = '';
+        secPasiva.style.display = '';
+        secAktiva.className = 'col-md-6';
+        secPasiva.className = 'col-md-6';
+    }
+}
+
+function exportExcel() {
+    let colCount = 2;
+    let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+    html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
+    html += '<body>';
+
+    // --- ADD EXCEL HEADER (Company Info) ---
+    html += '<table border="0">';
+    if (typeof EXCEL_INFO !== 'undefined') {
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
+        html += `<tr><td colspan="${colCount}"></td></tr>`; // empty row for spacing
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:14px; font-weight:bold;">NERACA (BALANCE SHEET)</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">Per {{ tanggal|date:"d F Y" }}</td></tr>`;
+        html += `<tr><td colspan="${colCount}"></td></tr>`;
+    }
+    html += '</table>';
+
+    // --- TABLE: Data Neraca ---
+    html += '<table border="1">';
+    html += '<thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;"><th>Akun</th><th>Nominal</th></tr></thead>';
+    html += '<tbody>';
+    
+    document.querySelectorAll('#neracaContent table').forEach(function(tbl) {
+        tbl.querySelectorAll('thead tr, tbody tr, tfoot tr').forEach(function(tr) {
+            if (tr.style.display === 'none') return;
+            html += '<tr>';
+            tr.querySelectorAll('th, td').forEach(function(cell) {
+                var tag = cell.tagName.toLowerCase();
+                var text = cell.textContent.trim().replace(/\s+/g, ' ');
+                var style = '';
+                var cs = parseInt(cell.getAttribute('colspan')) || 1;
+                if (tag === 'th' || cell.classList.contains('fw-bold')) {
+                    style = ' style="font-weight: bold; background-color: #f8f9fa;"';
+                }
+                if (cs > 1) {
+                    html += `<td colspan="${cs}"${style}>${text}</td>`;
+                } else {
+                    html += `<td${style}>${text}</td>`;
+                }
+            });
+            html += '</tr>';
+        });
+    });
+    
+    html += '</tbody></table>';
+
+    // --- ADD EXCEL FOOTER ---
+    html += '<table border="0">';
+    html += `<tr><td colspan="${colCount}"></td></tr>`; // empty spacer
+    if (typeof EXCEL_INFO !== 'undefined') {
+        html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">${EXCEL_INFO.copyright}</td></tr>`;
+    }
+    html += '</table></body></html>';
+
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'Neraca_' + new Date().toISOString().slice(0, 10) + '.xls';
+    link.click();
+}
+
+function exportPDF() {
+    if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
+
+    const headers = [
+        {
+            text: 'Akun',
+            style: 'tableHeader',
+            fillColor: '#696CFF',
+            color: '#FFFFFF',
+            bold: true
+        },
+        {
+            text: 'Nominal',
+            style: 'tableHeader',
+            fillColor: '#696CFF',
+            color: '#FFFFFF',
+            bold: true
+        }
+    ];
+
+    const body = [headers];
+
+    document.querySelectorAll('#neracaContent table').forEach(function(tbl) {
+        tbl.querySelectorAll('thead tr, tbody tr, tfoot tr').forEach(function(tr) {
+            if (tr.style.display === 'none') return;
+            var cells = tr.querySelectorAll('th, td');
+            var row = [];
+            var isBold = false;
+            cells.forEach(function(cell) {
+                var text = cell.textContent.trim().replace(/\s+/g, ' ');
+                var cs = parseInt(cell.getAttribute('colspan')) || 1;
+                if (cell.tagName === 'TH' || cell.classList.contains('fw-bold')) isBold = true;
+                if (cs > 1) {
+                    row.push({ text: text, colSpan: cs, bold: true, fillColor: '#f8f9fa' });
+                    for (var p = 1; p < cs; p++) row.push({});
+                } else {
+                    row.push(text);
+                }
+            });
+            // Pad row if total cells < colCount
+            while (row.length < 2) row.push('');
+            if (row.length > 0) {
+                if (isBold && !row[0].colSpan) {
+                    body.push(row.map(function(c) {
+                        if (typeof c === 'object' && c.colSpan) return c;
+                        return { text: String(c || ''), bold: true, fillColor: '#f8f9fa' };
+                    }));
+                } else {
+                    body.push(row);
+                }
+            }
+        });
+    });
+
+    let companyInfoExists = typeof PDF_INFO !== 'undefined';
+
+    const docDefinition = {
+        pageOrientation: 'portrait',
+        pageMargins: [40, 100, 40, 60],
+        header: function (currentPage) {
+            if (companyInfoExists) {
+                return {
+                    margin: [40, 20, 40, 10],
+                    columns: [
+                        {
+                            width: '*',
+                            stack: [
+                                { text: PDF_INFO.name, style: 'companyName' },
+                                { text: PDF_INFO.address, style: 'companyInfo' },
+                                { text: PDF_INFO.phone + ' | ' + PDF_INFO.email, style: 'companyInfo' }
+                            ]
+                        },
+                        { width: 'auto', stack: [{ text: 'Halaman ' + currentPage, style: 'pageNumber', alignment: 'right' }] }
+                    ]
+                };
+            }
+            return { text: 'Halaman ' + currentPage, margin: [40, 20, 40, 10], alignment: 'right', style: 'pageNumber' };
+        },
+        content: [
+            { text: 'NERACA (BALANCE SHEET)', style: 'documentTitle', margin: [0, 0, 0, 5] },
+            { text: 'Per {{ tanggal|date:"d F Y" }}', style: 'dateText', margin: [0, 0, 0, 20] },
+            {
+                table: { headerRows: 1, widths: ['*', 'auto'], body: body },
+                layout: {
+                    fillColor: (rowIndex) => (rowIndex === 0) ? '#696CFF' : ((rowIndex % 2 === 0) ? '#F5F5F9' : null),
+                    hLineWidth: () => 0.5,
+                    vLineWidth: () => 0.5,
+                    hLineColor: () => '#DBDADE',
+                    vLineColor: () => '#DBDADE'
+                }
+            }
+        ],
+        footer: function (currentPage, pageCount) {
+            if (companyInfoExists) {
+                return {
+                    margin: [40, 10, 40, 10],
+                    columns: [
+                        { text: 'Dicetak pada: ' + new Date().toLocaleString('id-ID'), style: 'footerText' },
+                        { text: PDF_INFO.copyright, style: 'footerText', alignment: 'right' }
+                    ]
+                };
+            }
+            return { text: 'Dicetak pada: ' + new Date().toLocaleString('id-ID'), margin: [40, 10, 40, 10], style: 'footerText' };
+        },
+        styles: {
+            companyName: { fontSize: 14, bold: true, color: '#5F61E6' },
+            companyInfo: { fontSize: 9, color: '#697A8D' },
+            pageNumber: { fontSize: 9, color: '#697A8D' },
+            documentTitle: { fontSize: 18, bold: true, color: '#5F61E6' },
+            dateText: { fontSize: 10, color: '#697A8D' },
+            tableHeader: { bold: true, fontSize: 10, color: '#FFFFFF' },
+            footerText: { fontSize: 8, color: '#697A8D' }
+        },
+        defaultStyle: { fontSize: 9 }
+    };
+
+    pdfMake.createPdf(docDefinition).download('Neraca_' + new Date().toISOString().slice(0, 10) + '.pdf');
+}
+
+function searchPage(q) {
+    var rows = document.querySelectorAll('#neracaContent table tbody tr');
+    var val = q.toLowerCase().trim();
+    rows.forEach(function(r) {
+        r.style.display = (val === '' || r.textContent.toLowerCase().includes(val)) ? '' : 'none';
+    });
+}
+
+// Initialize Chart on DOM Ready
+document.addEventListener('DOMContentLoaded', function () {
+    var el = document.getElementById('neracaChart');
+    if (!el) return;
+    var seriesData = [{name:'Komposisi Neraca', data: {{ chart_data|safe }}}];
+    var hasData = seriesData.some(function(s){ return s.data && s.data.some(function(v){return v>0;}); });
+    if (!hasData) {
+        el.innerHTML = '<div class="text-center text-muted py-5"><i class="ri-bar-chart-2-line ri-3x d-block mb-2" style="opacity:0.3"></i><small>Belum ada data untuk ditampilkan</small></div>';
+        return;
+    }
+    var isDark = typeof isDarkStyle !== 'undefined' ? isDarkStyle : document.documentElement.classList.contains('dark-style');
+    var gridColor  = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+    var labelColor = isDark ? '#b4b5ba' : '#a5a3ae';
+    var chartColors = ['#7367f0'];
+    new ApexCharts(el, {
+        chart: {
+            type: 'area', height: 300,
+            fontFamily: 'Inter, -apple-system, sans-serif', background: 'transparent',
+            toolbar: { show: true, tools: { download: '<i class="ri-download-2-line" style="font-size:16px"></i>', selection:false,zoom:false,zoomin:false,zoomout:false,pan:false,reset:false } },
+            animations: { enabled:true, easing:'easeinout', speed:800, dynamicAnimation:{enabled:true,speed:350} },
+            dropShadow: { enabled:true, top:6, left:0, blur:6, opacity:isDark?0.15:0.08, color:chartColors }
+        },
+        colors: chartColors,
+        dataLabels: { enabled:false },
+        stroke: { curve:'smooth', width:3, lineCap:'round' },
+        fill: { type:'gradient', gradient:{ shade:isDark?'dark':'light', type:'vertical', shadeIntensity:0.3, opacityFrom:isDark?0.25:0.4, opacityTo:0.02, stops:[0,95,100] } },
+        series: seriesData,
+        xaxis: {
+            categories: {{ chart_labels|safe }},
+            labels: { style:{ colors:labelColor, fontSize:'13px', fontWeight:400 } },
+            axisBorder:{show:false}, axisTicks:{show:false},
+            crosshairs:{ stroke:{ color:isDark?'#555':'#ddd', dashArray:4 } }
+        },
+        yaxis: { labels: { style:{colors:labelColor,fontSize:'13px'}, formatter:function(val){ return 'Rp '+val.toLocaleString('id-ID'); } } },
+        tooltip: {
+            theme:isDark?'dark':'light', shared:true, intersect:false,
+            style:{fontSize:'13px'}, x:{show:true},
+            y:{ formatter:function(val){ return 'Rp '+val.toLocaleString('id-ID'); } },
+            marker:{show:true}
+        },
+        legend: { position:'top', horizontalAlign:'left', fontSize:'13px', fontWeight:500, labels:{colors:isDark?'#ccc':'#555'}, markers:{size:5,strokeWidth:0,offsetX:-3}, itemMargin:{horizontal:12,vertical:4} },
+        markers: { size:0, hover:{size:6,sizeOffset:3}, strokeWidth:2, strokeColors:isDark?'#2b2c40':'#fff' },
+        grid: { borderColor:gridColor, strokeDashArray:4, padding:{top:-10,left:10,right:10,bottom:0}, xaxis:{lines:{show:false}}, yaxis:{lines:{show:true}} },
+        responsive: [{ breakpoint:768, options:{ chart:{height:240}, legend:{fontSize:'11px'}, stroke:{width:2} } }]
+    }).render();
+});
+</script>
+{% endblock page_js %}

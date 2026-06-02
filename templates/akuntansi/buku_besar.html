@@ -1,0 +1,351 @@
+{% extends 'layout/layout_vertical.html' %}
+{% comment %}
+==========================================================================
+BUKU BESAR - General Ledger per Akun
+Filter akun/periode/cabang, tabel mutasi D/K/saldo berjalan, export.
+==========================================================================
+{% endcomment %}
+{% load static %}
+{% load currency_filters %}
+
+{% block title %}Buku Besar - Akuntansi ERP{% endblock title %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/flatpickr/flatpickr.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+<script src="{% static 'vendor/libs/flatpickr/flatpickr.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock vendor_js %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="ri-book-open-line me-2"></i>Buku Besar (General Ledger)</h4>
+            <p class="text-muted mb-0">Mutasi debit/kredit per akun dengan saldo berjalan</p>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" id="filterForm">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Pilih Akun <span class="text-danger">*</span></label>
+                        <select class="form-select" name="akun" id="akunFilter" required>
+                            <option value="">— Pilih Akun —</option>
+                            {% for a in akun_list %}
+                            <option value="{{ a.pk }}" {% if selected_akun == a.pk|stringformat:"s" %}selected{% endif %}>{{ a.kode }} - {{ a.nama }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Tanggal Mulai</label>
+                        <input type="text" class="form-control flatpickr-input" name="start" id="startDate" value="{{ selected_start }}" placeholder="Dari">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Tanggal Akhir</label>
+                        <input type="text" class="form-control flatpickr-input" name="end" id="endDate" value="{{ selected_end }}" placeholder="Sampai">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Cabang</label>
+                        <select class="form-select" name="cabang">
+                            <option value="">Semua</option>
+                            {% for c in cabang_list %}
+                            <option value="{{ c.pk }}" {% if selected_cabang == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.nama }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="row g-3 mt-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Pilih Kolom</label>
+                        <div class="dropdown">
+                            <button class="btn btn-label-secondary dropdown-toggle waves-effect w-100" type="button" id="bbColumnFilter" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                                <i class="ri-layout-column-line me-1"></i>Pilih Kolom Yang Ditampilkan
+                            </button>
+                            <div class="dropdown-menu p-3" style="min-width:280px;">
+                                <h6 class="dropdown-header px-0 mb-2">Kolom Tabel</h6>
+                                <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="0" checked onchange="toggleBBColumns()"><label class="form-check-label">Tanggal</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="1" checked onchange="toggleBBColumns()"><label class="form-check-label">No. Jurnal</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="2" checked onchange="toggleBBColumns()"><label class="form-check-label">Deskripsi</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="3" checked onchange="toggleBBColumns()"><label class="form-check-label">Debit</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="4" checked onchange="toggleBBColumns()"><label class="form-check-label">Kredit</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="5" checked onchange="toggleBBColumns()"><label class="form-check-label">Saldo</label></div>
+                                <div class="dropdown-divider my-2"></div>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-primary flex-fill" type="button" onclick="selectAllBBColumns()"><i class="ri-checkbox-multiple-line"></i> Semua</button>
+                                    <button class="btn btn-sm btn-label-secondary flex-fill" type="button" onclick="deselectAllBBColumns()"><i class="ri-checkbox-blank-line"></i> Kosongkan</button>
+                                </div>
+                            </div>
+                        </div>
+                        <small class="text-muted d-block mt-1">Klik untuk memilih kolom</small>
+                    </div>
+                    <div class="col-md-6"></div>
+                    <div class="col-md-3">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="ri-filter-3-line me-1"></i>Terapkan Filter
+                            </button>
+                            <a href="{% url 'akuntansi:buku_besar' %}" class="btn btn-label-secondary">
+                                <i class="ri-refresh-line me-1"></i>Reset
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if buku_besar %}
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3">
+                            <span class="avatar-initial rounded bg-label-primary"><i class="ri-book-2-line ri-24px"></i></span>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">{{ buku_besar.akun.kode }}</h6>
+                            <small class="text-muted">{{ buku_besar.akun.nama }}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3">
+                            <span class="avatar-initial rounded bg-label-info"><i class="ri-wallet-3-line ri-24px"></i></span>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">{{ buku_besar.saldo_awal|rupiah }}</h5>
+                            <small class="text-muted">Saldo Awal</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3">
+                            <span class="avatar-initial rounded bg-label-success"><i class="ri-arrow-up-circle-line ri-24px"></i></span>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 text-success">{{ buku_besar.total_debit|rupiah }}</h5>
+                            <small class="text-muted">Total Debit</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3">
+                            <span class="avatar-initial rounded {% if buku_besar.saldo_akhir >= 0 %}bg-label-success{% else %}bg-label-danger{% endif %}"><i class="ri-bar-chart-box-line ri-24px"></i></span>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 {% if buku_besar.saldo_akhir >= 0 %}text-success{% else %}text-danger{% endif %}">{{ buku_besar.saldo_akhir|rupiah }}</h5>
+                            <small class="text-muted">Saldo Akhir</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="card mb-4" id="chartCard" style="display:none;">
+        <div class="card-header"><h5 class="mb-0"><i class="ri-line-chart-line me-2"></i>Grafik Saldo Berjalan</h5></div>
+        <div class="card-body">
+            <canvas id="saldoChart" height="80"></canvas>
+        </div>
+    </div>
+
+
+    <!-- Mutasi Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Mutasi - {{ buku_besar.akun.nama }}</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+            </div>
+        </div>
+        <!-- Baris Saldo Awal: di LUAR DataTable agar tidak mencemari column count -->
+        <div class="px-4 pt-3">
+            <div class="alert alert-warning d-flex align-items-center py-2 mb-0" role="alert" style="border-radius:6px;">
+                <i class="ri-wallet-3-line me-2 fs-5"></i>
+                <span class="fw-semibold me-2">Saldo Awal:</span>
+                <span class="fw-bold fs-6">{{ buku_besar.saldo_awal|rupiah }}</span>
+                <span class="ms-3 text-muted small">— periode sebelum filter yang dipilih</span>
+            </div>
+        </div>
+        <div class="card-datatable table-responsive">
+            <table class="accounting-data-table table table-hover" id="bukuBesarTable"
+                data-accounting-primary="true"
+                data-export-title="Buku Besar - {{ buku_besar.akun.kode }} {{ buku_besar.akun.nama }}"
+                data-export-filename="Buku_Besar_{{ buku_besar.akun.kode|default:'' }}"
+                data-search-placeholder="Cari tanggal/jurnal/deskripsi...">
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>No. Jurnal</th>
+                        <th>Deskripsi</th>
+                        <th class="text-end">Debit</th>
+                        <th class="text-end">Kredit</th>
+                        <th class="text-end">Saldo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in buku_besar.mutasi %}
+                    <tr>
+                        <td>{{ m.tanggal|date:"d/m/Y" }}</td>
+                        <td><a href="{% url 'akuntansi:jurnal_detail' m.jurnal_id %}" class="text-primary fw-medium">{{ m.nomor_jurnal }}</a></td>
+                        <td>{{ m.deskripsi|truncatewords:8 }}</td>
+                        <td class="text-end {% if m.debit > 0 %}text-success fw-medium{% endif %}">{% if m.debit > 0 %}{{ m.debit|rupiah }}{% else %}-{% endif %}</td>
+                        <td class="text-end {% if m.kredit > 0 %}text-danger fw-medium{% endif %}">{% if m.kredit > 0 %}{{ m.kredit|rupiah }}{% else %}-{% endif %}</td>
+                        <td class="text-end fw-bold {% if m.saldo >= 0 %}text-success{% else %}text-danger{% endif %}">{{ m.saldo|rupiah }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="3" class="text-start ps-4 py-3">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size:1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size:1rem;">RINGKASAN</strong>
+                                    <small class="text-muted" style="font-size:.75rem;">Saldo Awal: {{ buku_besar.saldo_awal|rupiah }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-end text-success py-3 fw-bold">{{ buku_besar.total_debit|rupiah }}</td>
+                        <td class="text-end text-danger py-3 fw-bold">{{ buku_besar.total_kredit|rupiah }}</td>
+                        <td class="text-end py-3 fw-bold {% if buku_besar.saldo_akhir >= 0 %}text-success{% else %}text-danger{% endif %}">{{ buku_besar.saldo_akhir|rupiah }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    {% elif selected_akun %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="ri-book-open-line ri-3x text-muted mb-3 d-block"></i>
+            <p class="text-muted">Tidak ada data buku besar untuk akun ini pada periode yang dipilih</p>
+        </div>
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="ri-search-eye-line ri-3x text-muted mb-3 d-block"></i>
+            <h5 class="text-muted">Pilih Akun</h5>
+            <p class="text-muted">Silakan pilih akun untuk melihat buku besar</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock content %}
+
+{% block page_js %}
+<style>
+    .card-datatable { padding-bottom: 0; }
+    .dataTables_wrapper .dataTables_info { padding: 1rem 1.5rem; font-size: .875rem; }
+    .dataTables_wrapper .dataTables_paginate { padding: 1rem 1.5rem; }
+    .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter { padding: 0 1.5rem 1rem; }
+    .dataTables_wrapper .dataTables_filter input { border: 1px solid #d9dee3; border-radius: .375rem; padding: .4375rem .875rem; }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current { background: #696cff !important; color: #fff !important; border: none; }
+    @media (max-width: 768px) { .card-datatable { overflow-x: auto; } table { min-width: 700px; } }
+</style>
+<script>
+$(document).ready(function() {
+    flatpickr('#startDate', {dateFormat:'Y-m-d'});
+    flatpickr('#endDate', {dateFormat:'Y-m-d'});
+
+    {% if buku_besar %}
+
+    // Build chart data from mutasi
+    const chartLabels = [{% for m in buku_besar.mutasi %}'{{ m.tanggal|date:"d/m" }}',{% endfor %}];
+    const chartSaldo = [{% for m in buku_besar.mutasi %}{{ m.saldo }},{% endfor %}];
+
+    if (chartLabels.length > 0) {
+        document.getElementById('chartCard').style.display = '';
+        new Chart(document.getElementById('saldoChart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    label: 'Saldo (Rp)',
+                    data: chartSaldo,
+                    borderColor: '#696CFF',
+                    backgroundColor: 'rgba(105,108,255,0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#696CFF',
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => 'Rp ' + ctx.raw.toLocaleString('id-ID') } }
+                },
+                scales: {
+                    y: { ticks: { callback: v => 'Rp ' + v.toLocaleString('id-ID') } }
+                }
+            }
+        });
+    }
+    {% endif %}
+});
+function toggleBBColumns() {
+    if (!$.fn.dataTable.isDataTable('#bukuBesarTable')) return;
+    const dt = new $.fn.dataTable.Api('#bukuBesarTable');
+    // Map nilai checkbox ke index kolom DataTable (harus eksplisit, bukan parseInt biasa)
+    const columnMap = {
+        '0': 0, // Tanggal
+        '1': 1, // No. Jurnal
+        '2': 2, // Deskripsi
+        '3': 3, // Debit
+        '4': 4, // Kredit
+        '5': 5  // Saldo
+    };
+    document.querySelectorAll('.column-checkbox').forEach(cb => {
+        const colIdx = columnMap[cb.value];
+        if (colIdx !== undefined) {
+            dt.column(colIdx).visible(cb.checked);
+        }
+    });
+}
+function selectAllBBColumns() {
+    document.querySelectorAll('.column-checkbox').forEach(cb => { cb.checked = true; });
+    toggleBBColumns();
+}
+function deselectAllBBColumns() {
+    document.querySelectorAll('.column-checkbox').forEach(cb => { cb.checked = false; });
+    toggleBBColumns();
+}
+
+</script>
+{% include 'accounting/partials/table_tools.html' %}
+{% endblock page_js %}

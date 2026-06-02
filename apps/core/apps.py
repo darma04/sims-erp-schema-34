@@ -34,3 +34,8 @@ class CoreConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'apps.core'   # Path modul Python (folder apps/core/)
     verbose_name = 'Core'  # Nama yang ditampilkan di Django admin
+
+    def ready(self):
+        """Register signal invalidasi cache tampilan untuk data operasional."""
+        from apps.core.cache_invalidation import register_data_cache_invalidation_signals
+        register_data_cache_invalidation_signals()

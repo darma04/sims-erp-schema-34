@@ -1,0 +1,48 @@
+{% extends 'layout/layout_vertical.html' %}
+
+{% block title %}Konfirmasi Hapus{% endblock title %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <h4 class="py-3 mb-4">
+        <span class="text-muted fw-light">Konfirmasi /</span> Hapus Data
+    </h4>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-7 col-xl-6">
+            <div class="card">
+                <div class="card-header bg-danger">
+                    <h5 class="mb-0 text-white">
+                        <i class="ri-delete-bin-line me-2"></i>Konfirmasi Hapus
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning d-flex align-items-start" role="alert">
+                        <i class="ri-alert-line me-2 fs-5"></i>
+                        <div>
+                            Data yang sudah dihapus tidak dapat dikembalikan. Pastikan data ini tidak sedang digunakan oleh transaksi lain.
+                        </div>
+                    </div>
+
+                    <p class="mb-4">
+                        Apakah Anda yakin ingin menghapus
+                        <strong>{{ object }}</strong>?
+                    </p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ request.META.HTTP_REFERER|default:'/' }}" class="btn btn-label-secondary">
+                                <i class="ri-arrow-left-line me-1"></i>Batal
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="ri-delete-bin-line me-1"></i>Ya, Hapus
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

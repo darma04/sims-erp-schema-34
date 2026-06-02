@@ -75,6 +75,8 @@ class TemplateBootstrapLayoutVertical:
             'penjualan': 'penjualan',
             'pos': 'pos',
             'invoice': 'pos',  # Invoice uses same module as POS
+            'kas-bank': 'kas_bank',
+            'kas_bank': 'kas_bank',
             'biaya': 'biaya',
             'hr': 'hr',
             'laporan': 'laporan',
@@ -83,10 +85,18 @@ class TemplateBootstrapLayoutVertical:
             'activity-log': 'activity_log',
             'pengaturan': 'pengaturan',
             'automation': 'automation',
-            'ai-assistant': 'ai',
-            'ai-dashboard': 'ai',
+            'ai-assistant': 'ai_assistant',
+            'ai-dashboard': 'ai_assistant',
             'fraud-detection': 'fraud_detection',
+            'akuntansi': 'akuntansi',
+            'laporan-keuangan': 'laporan_keuangan',
+            'piutang': 'piutang',
+            'hutang': 'hutang',
+            'aset': 'aset',
+            'pajak': 'pajak',
+            # SIMS modules
             'service-center': 'service_center',
+            'sparepart': 'sparepart',
         }
 
         filtered_menu = {"menu": []}

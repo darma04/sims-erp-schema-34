@@ -57,6 +57,7 @@ class UserActivity(models.Model):
         ('import', 'Import Data'),
         ('approve', 'Approve'),
         ('reject', 'Reject'),
+        ('cancel', 'Batalkan'),
         # Stock-specific actions
         ('stock_in', 'Stok Masuk'),
         ('stock_out', 'Stok Keluar'),
@@ -143,7 +144,7 @@ class UserActivity(models.Model):
         if self.changes:
             try:
                 return json.loads(self.changes)
-            except:
+            except Exception:
                 return {}
         return {}
     

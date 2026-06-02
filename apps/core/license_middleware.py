@@ -170,7 +170,7 @@ class LicenseMiddleware:
         )
 
         try:
-            with urllib.request.urlopen(req, timeout=10) as response:
+            with urllib.request.urlopen(req, timeout=3) as response:
                 data = json.loads(response.read().decode('utf-8'))
 
                 if data.get('is_valid', False):

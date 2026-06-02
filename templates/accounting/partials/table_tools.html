@@ -1,0 +1,644 @@
+<style>
+    .treasury-stat-card .avatar-initial {
+        width: 42px;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        flex-shrink: 0;
+    }
+
+    .card-datatable {
+        padding-bottom: 0;
+    }
+
+    .dataTables_wrapper .dataTables_info {
+        padding: 1rem 1.5rem;
+        font-size: 0.875rem;
+        color: #697a8d;
+    }
+
+    .dataTables_wrapper .dataTables_paginate {
+        padding: 1rem 1.5rem;
+    }
+
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter {
+        padding: 0 1.5rem 1rem 1.5rem;
+    }
+
+    .dataTables_wrapper .dataTables_filter input,
+    .dataTables_wrapper .dataTables_length select {
+        border: 1px solid #d9dee3;
+        border-radius: 0.375rem;
+        padding: 0.4375rem 0.875rem;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        padding: 0.438rem 0.875rem;
+        border-radius: 0.375rem;
+        margin: 0 0.125rem;
+        border: none;
+        background: transparent;
+        color: #697a8d;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        background: #696cff !important;
+        color: white !important;
+        border: none;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.disabled) {
+        background: rgba(105, 108, 255, 0.08) !important;
+        border: none;
+        color: #696cff !important;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
+        color: #c7cdd4 !important;
+        cursor: not-allowed;
+    }
+
+    .accounting-data-table thead th,
+    .datatables-kas-bank thead th {
+        font-weight: 600;
+        font-size: 0.8125rem;
+        text-transform: none;
+        letter-spacing: 0;
+        vertical-align: middle;
+    }
+
+    .accounting-data-table tbody td,
+    .datatables-kas-bank tbody td {
+        vertical-align: middle;
+    }
+
+    .table-footer-summary td {
+        vertical-align: middle;
+        background-color: rgba(105, 108, 255, 0.04);
+    }
+
+    @media (max-width: 768px) {
+        .card-datatable {
+            overflow-x: hidden !important;
+            -webkit-overflow-scrolling: touch;
+            max-width: 100%;
+        }
+
+        .accounting-data-table,
+        .datatables-kas-bank {
+            min-width: 980px !important;
+            width: 980px !important;
+            table-layout: auto !important;
+        }
+
+        .dataTables_wrapper {
+            overflow-x: hidden !important;
+            max-width: 100% !important;
+        }
+
+        .accounting-data-table tfoot td,
+        .accounting-data-table th,
+        .accounting-data-table td,
+        .datatables-kas-bank tfoot td,
+        .datatables-kas-bank th,
+        .datatables-kas-bank td {
+            white-space: nowrap;
+        }
+    }
+</style>
+
+<script>
+var kasBankDataTable = window.kasBankDataTable || null;
+
+(function () {
+    var accountingTables = {};
+    var ACCOUNTING_EXPORT_TEMPLATE_INFO = {
+        excel: {
+            name: "{{ export_excel_template.header_nama_perusahaan|default:'Nama Perusahaan'|escapejs }}",
+            address: "{{ export_excel_template.header_alamat|default:'Alamat Bisnis'|escapejs }}",
+            phone: "{{ export_excel_template.header_telepon|default:'No Telp'|escapejs }}",
+            email: "Email: {{ export_excel_template.header_email|default:'email@domain.com'|escapejs }}",
+            website: "{{ export_excel_template.header_website|default_if_none:''|escapejs }}",
+            copyright: "{{ export_excel_template.footer_copyright|default_if_none:'Hak Cipta Dilindungi'|escapejs }}"
+        },
+        pdf: {
+            name: "{{ export_pdf_template.header_nama_perusahaan|default:'Nama Perusahaan'|escapejs }}",
+            address: "{{ export_pdf_template.header_alamat|default:'Alamat Bisnis'|escapejs }}",
+            phone: "{{ export_pdf_template.header_telepon|default:'No Telp'|escapejs }}",
+            email: "Email: {{ export_pdf_template.header_email|default:'email@domain.com'|escapejs }}",
+            website: "{{ export_pdf_template.header_website|default_if_none:''|escapejs }}",
+            copyright: "{{ export_pdf_template.footer_copyright|default_if_none:'Hak Cipta Dilindungi'|escapejs }}"
+        }
+    };
+
+    function onReady(callback) {
+        if (typeof $ !== 'undefined') {
+            $(callback);
+            return;
+        }
+        document.addEventListener('DOMContentLoaded', callback);
+    }
+
+    function cleanText(value) {
+        var wrapper = document.createElement('div');
+        wrapper.innerHTML = (value || '').toString();
+        return (wrapper.textContent || wrapper.innerText || '').replace(/\s+/g, ' ').trim();
+    }
+
+    function escapeHtml(value) {
+        return cleanText(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function todayIso() {
+        return new Date().toISOString().slice(0, 10);
+    }
+
+    function slugify(value) {
+        return cleanText(value || 'laporan')
+            .replace(/[^\w\s-]/g, '')
+            .replace(/\s+/g, '_')
+            .replace(/_+/g, '_') || 'laporan';
+    }
+
+    function getTables() {
+        var tables = Array.prototype.slice.call(document.querySelectorAll('table.accounting-data-table, table.datatables-kas-bank'));
+        var legacyTable = document.getElementById('dataTable');
+        if (legacyTable && tables.indexOf(legacyTable) === -1) tables.unshift(legacyTable);
+        return tables;
+    }
+
+    function getTableId(table) {
+        if (!table.id) table.id = 'accountingTable' + Object.keys(accountingTables).length;
+        return table.id;
+    }
+
+    function parseDefaultOrder(table) {
+        if (!table.dataset.defaultOrder) return [];
+        try {
+            return JSON.parse(table.dataset.defaultOrder);
+        } catch (error) {
+            return [];
+        }
+    }
+
+    function ignoredColumnIndexes(table) {
+        var ignored = [];
+        table.querySelectorAll('thead th').forEach(function (th, index) {
+            var label = cleanText(th.textContent).toLowerCase();
+            if (th.dataset.exportIgnore === 'true' || label === 'aksi') ignored.push(index);
+        });
+        return ignored;
+    }
+
+    function initDataTable(table) {
+        if (typeof $ === 'undefined' || !$.fn || !$.fn.DataTable) return null;
+
+        var id = getTableId(table);
+        if ($.fn.dataTable.isDataTable(table)) {
+            accountingTables[id] = $(table).DataTable();
+            if (!kasBankDataTable) {
+                kasBankDataTable = accountingTables[id];
+                window.kasBankDataTable = kasBankDataTable;
+            }
+            return accountingTables[id];
+        }
+
+        var actionColumns = ignoredColumnIndexes(table);
+        var columnDefs = [];
+        if (actionColumns.length) {
+            columnDefs.push({
+                orderable: false,
+                searchable: false,
+                targets: actionColumns
+            });
+        }
+
+        var dataTable = $(table).DataTable({
+            language: {
+                sEmptyTable: 'Tidak ada data yang tersedia pada tabel ini',
+                sProcessing: 'Sedang memproses...',
+                sLengthMenu: 'Tampilkan _MENU_ data',
+                sZeroRecords: 'Tidak ditemukan data yang sesuai',
+                sInfo: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
+                sInfoEmpty: 'Menampilkan 0 sampai 0 dari 0 data',
+                sInfoFiltered: '(disaring dari _MAX_ total data)',
+                sInfoPostFix: '',
+                sSearch: 'Cari:',
+                sUrl: '',
+                oPaginate: {
+                    sFirst: 'Pertama',
+                    sPrevious: 'Sebelumnya',
+                    sNext: 'Selanjutnya',
+                    sLast: 'Terakhir'
+                }
+            },
+            order: parseDefaultOrder(table),
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 75, 100, -1], ['10', '25', '50', '75', '100', 'Semua']],
+            responsive: false,
+            columnDefs: columnDefs,
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            initComplete: function () {
+                $(table).closest('.dataTables_wrapper').find('.dataTables_filter input').attr('placeholder', table.dataset.searchPlaceholder || 'Cari data...');
+            }
+        });
+
+        accountingTables[id] = dataTable;
+        if (!kasBankDataTable) {
+            kasBankDataTable = dataTable;
+            window.kasBankDataTable = kasBankDataTable;
+        }
+        return dataTable;
+    }
+
+    function getDataTable(table) {
+        if (!table) return null;
+        var id = getTableId(table);
+        return accountingTables[id] || initDataTable(table);
+    }
+
+    function getPrimaryTable() {
+        return document.querySelector('table[data-accounting-primary="true"]') || getTables()[0] || null;
+    }
+
+    function getButtonTable(button) {
+        if (!button) return getPrimaryTable();
+        var card = button.closest('.card');
+        return card ? card.querySelector('table.accounting-data-table, table.datatables-kas-bank') || getPrimaryTable() : getPrimaryTable();
+    }
+
+    function exportInfo(type, table) {
+        var baseTitle = table && table.dataset.exportTitle ? table.dataset.exportTitle : document.title || 'Laporan';
+        var source = ACCOUNTING_EXPORT_TEMPLATE_INFO[type] || {};
+
+        return {
+            title: baseTitle,
+            name: source.name || 'Nama Perusahaan',
+            address: source.address || 'Alamat Bisnis',
+            phone: source.phone || 'No Telp',
+            email: source.email || 'Email: email@domain.com',
+            website: source.website || '',
+            copyright: source.copyright || 'Hak Cipta Dilindungi',
+            filename: table && table.dataset.exportFilename ? table.dataset.exportFilename : slugify(baseTitle)
+        };
+    }
+
+    function visibleColumns(dataTable) {
+        var columns = [];
+        dataTable.columns().every(function (index) {
+            var headerNode = this.header();
+            var headerText = headerNode ? cleanText(headerNode.textContent) : '';
+            var key = headerText.toLowerCase();
+            if (!this.visible()) return;
+            if (headerNode && headerNode.dataset.exportIgnore === 'true') return;
+            if (key === 'aksi' || key === 'gambar') return;
+            columns.push({ index: index, text: headerText });
+        });
+        return columns;
+    }
+
+    function footerSpans(table, columns) {
+        var rows = [];
+        if (!table || !table.tFoot) return rows;
+
+        Array.prototype.forEach.call(table.tFoot.rows, function (tr) {
+            var spans = [];
+            var sourceIndex = 0;
+            Array.prototype.forEach.call(tr.cells, function (cell) {
+                var span = Number(cell.colSpan || 1);
+                spans.push({
+                    start: sourceIndex,
+                    end: sourceIndex + span - 1,
+                    text: cleanText(cell.innerHTML)
+                });
+                sourceIndex += span;
+            });
+
+            var row = [];
+            var i = 0;
+            while (i < columns.length) {
+                var colIndex = columns[i].index;
+                var sourceSpan = spans.find(function (span) {
+                    return colIndex >= span.start && colIndex <= span.end;
+                });
+                if (!sourceSpan) {
+                    row.push({ text: '', colSpan: 1 });
+                    i += 1;
+                    continue;
+                }
+
+                var spanCount = 0;
+                var j = i;
+                while (j < columns.length && columns[j].index >= sourceSpan.start && columns[j].index <= sourceSpan.end) {
+                    spanCount += 1;
+                    j += 1;
+                }
+                row.push({ text: sourceSpan.text, colSpan: spanCount });
+                i += spanCount;
+            }
+            if (row.length) rows.push(row);
+        });
+        return rows;
+    }
+
+    function tableRows(dataTable, columns) {
+        var rows = [];
+        dataTable.rows({ page: 'current' }).every(function (rowIdx) {
+            var row = [];
+            columns.forEach(function (col) {
+                var cellNode = dataTable.cell(rowIdx, col.index).node();
+                row.push(cellNode ? cleanText(cellNode.innerHTML) : '');
+            });
+            rows.push(row);
+        });
+        return rows;
+    }
+
+    function excelSection(table) {
+        var dataTable = getDataTable(table);
+        var columns = visibleColumns(dataTable);
+        var rows = tableRows(dataTable, columns);
+        var footerRows = footerSpans(table, columns);
+        return { table: table, columns: columns, rows: rows, footerRows: footerRows };
+    }
+
+    function exportExcelForTables(tables) {
+        var validTables = tables.filter(Boolean);
+        if (!validTables.length) {
+            alert('Tabel tidak ditemukan!');
+            return;
+        }
+
+        var info = exportInfo('excel', validTables[0]);
+        var firstSection = excelSection(validTables[0]);
+        var colCount = firstSection.columns.length || 1;
+
+        var html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+        html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head><body>';
+        html += '<table border="0">';
+        html += '<tr><td colspan="' + colCount + '" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">' + escapeHtml(info.name) + '</td></tr>';
+        html += '<tr><td colspan="' + colCount + '" style="text-align:center; font-size:12px;">' + escapeHtml(info.address) + '</td></tr>';
+        html += '<tr><td colspan="' + colCount + '" style="text-align:center; font-size:12px;">' + escapeHtml(info.phone) + ' | ' + escapeHtml(info.email) + '</td></tr>';
+        html += '<tr><td colspan="' + colCount + '"></td></tr>';
+        html += '</table>';
+
+        validTables.forEach(function (table, tableIndex) {
+            var section = tableIndex === 0 ? firstSection : excelSection(table);
+            if (tableIndex > 0) html += '<table border="0"><tr><td colspan="' + section.columns.length + '"></td></tr></table>';
+            if (validTables.length > 1) {
+                html += '<table border="0"><tr><td colspan="' + section.columns.length + '" style="font-weight:bold;">' + escapeHtml(table.dataset.exportTitle || info.title) + '</td></tr></table>';
+            }
+            html += '<table border="1"><thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;">';
+            section.columns.forEach(function (col) {
+                html += '<th>' + escapeHtml(col.text) + '</th>';
+            });
+            html += '</tr></thead><tbody>';
+
+            section.rows.forEach(function (row) {
+                html += '<tr>';
+                row.forEach(function (cell) {
+                    html += '<td>' + escapeHtml(cell) + '</td>';
+                });
+                html += '</tr>';
+            });
+
+            section.footerRows.forEach(function (row) {
+                html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
+                row.forEach(function (cell) {
+                    html += '<td colspan="' + cell.colSpan + '">' + escapeHtml(cell.text) + '</td>';
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+        });
+
+        html += '<table border="0">';
+        html += '<tr><td colspan="' + colCount + '"></td></tr>';
+        html += '<tr><td colspan="' + colCount + '" style="text-align:right; font-size:10px; color:#697A8D;">Dicetak pada: ' + new Date().toLocaleString('id-ID') + '</td></tr>';
+        html += '<tr><td colspan="' + colCount + '" style="text-align:right; font-size:10px; color:#697A8D;">' + escapeHtml(info.copyright) + '</td></tr>';
+        html += '</table></body></html>';
+
+        var blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+        var link = document.createElement('a');
+        link.setAttribute('href', URL.createObjectURL(blob));
+        link.setAttribute('download', info.filename + '_' + todayIso() + '.xls');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function pdfSection(table) {
+        var dataTable = getDataTable(table);
+        var columns = visibleColumns(dataTable);
+        var body = [
+            columns.map(function (col) {
+                return { text: col.text, style: 'tableHeader', fillColor: '#696CFF', color: '#FFFFFF', bold: true };
+            })
+        ];
+
+        tableRows(dataTable, columns).forEach(function (row) {
+            body.push(row);
+        });
+
+        footerSpans(table, columns).forEach(function (row) {
+            var pdfRow = [];
+            row.forEach(function (cell) {
+                pdfRow.push({ text: cell.text, colSpan: cell.colSpan, bold: true, fillColor: '#f8f9fa' });
+                for (var i = 1; i < cell.colSpan; i += 1) pdfRow.push({});
+            });
+            body.push(pdfRow);
+        });
+
+        return {
+            title: table.dataset.exportTitle || '',
+            widths: columns.map(function () { return 'auto'; }),
+            body: body
+        };
+    }
+
+    function exportPDFForTables(tables) {
+        var validTables = tables.filter(Boolean);
+        if (!validTables.length) {
+            alert('Tabel tidak ditemukan!');
+            return;
+        }
+        if (typeof pdfMake === 'undefined') {
+            alert('pdfMake library tidak tersedia!');
+            return;
+        }
+
+        var info = exportInfo('pdf', validTables[0]);
+        var content = [
+            { text: info.title.toUpperCase(), style: 'documentTitle', margin: [0, 0, 0, 5] },
+            { text: 'Tanggal: ' + new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }), style: 'dateText', margin: [0, 0, 0, 20] }
+        ];
+
+        validTables.forEach(function (table, index) {
+            var section = pdfSection(table);
+            if (validTables.length > 1) {
+                if (index > 0) content.push({ text: '', margin: [0, 8] });
+                content.push({ text: section.title, style: 'sectionTitle', margin: [0, 0, 0, 6] });
+            }
+            content.push({
+                table: { headerRows: 1, widths: section.widths, body: section.body },
+                layout: {
+                    fillColor: function (rowIndex) {
+                        return rowIndex === 0 ? '#696CFF' : (rowIndex % 2 === 0 ? '#F5F5F9' : null);
+                    },
+                    hLineWidth: function () { return 0.5; },
+                    vLineWidth: function () { return 0.5; },
+                    hLineColor: function () { return '#DBDADE'; },
+                    vLineColor: function () { return '#DBDADE'; }
+                }
+            });
+        });
+
+        var docDefinition = {
+            pageOrientation: 'landscape',
+            pageMargins: [40, 100, 40, 60],
+            header: function (currentPage) {
+                return {
+                    margin: [40, 20, 40, 10],
+                    columns: [
+                        {
+                            width: '*',
+                            stack: [
+                                { text: info.name, style: 'companyName' },
+                                { text: info.address, style: 'companyInfo' },
+                                { text: info.phone + ' | ' + info.email, style: 'companyInfo' }
+                            ]
+                        },
+                        { width: 'auto', stack: [{ text: 'Halaman ' + currentPage, style: 'pageNumber', alignment: 'right' }] }
+                    ]
+                };
+            },
+            content: content,
+            footer: function () {
+                return {
+                    margin: [40, 10, 40, 10],
+                    columns: [
+                        { text: 'Dicetak pada: ' + new Date().toLocaleString('id-ID'), style: 'footerText' },
+                        { text: info.copyright, style: 'footerText', alignment: 'right' }
+                    ]
+                };
+            },
+            styles: {
+                companyName: { fontSize: 14, bold: true, color: '#5F61E6' },
+                companyInfo: { fontSize: 9, color: '#697A8D' },
+                pageNumber: { fontSize: 9, color: '#697A8D' },
+                documentTitle: { fontSize: 18, bold: true, color: '#5F61E6' },
+                sectionTitle: { fontSize: 11, bold: true, color: '#566A7F' },
+                dateText: { fontSize: 10, color: '#697A8D' },
+                tableHeader: { bold: true, fontSize: 10, color: '#FFFFFF' },
+                footerText: { fontSize: 8, color: '#697A8D' }
+            },
+            defaultStyle: { fontSize: 9 }
+        };
+
+        pdfMake.createPdf(docDefinition).download(info.filename + '_' + todayIso() + '.pdf');
+    }
+
+    function tablesForToggle(checkbox) {
+        var target = checkbox.dataset.tableTarget;
+        var container = checkbox.closest('[data-table-target]');
+        if (!target && container) target = container.dataset.tableTarget;
+        if (target) return Array.prototype.slice.call(document.querySelectorAll(target));
+        return getTables();
+    }
+
+    function applyColumnToggle(checkbox) {
+        var columnIndex = Number(checkbox.dataset.column || checkbox.value);
+        if (Number.isNaN(columnIndex)) return;
+
+        tablesForToggle(checkbox).forEach(function (table) {
+            var dataTable = getDataTable(table);
+            if (!dataTable || columnIndex >= dataTable.columns().count()) return;
+            dataTable.column(columnIndex).visible(checkbox.checked);
+            dataTable.columns.adjust();
+        });
+    }
+
+    onReady(function () {
+        getTables().forEach(initDataTable);
+        document.querySelectorAll('[data-column-toggle], .column-checkbox').forEach(function (checkbox) {
+            checkbox.addEventListener('change', function () {
+                applyColumnToggle(checkbox);
+            });
+        });
+    });
+
+    window.getAccountingDataTable = getDataTable;
+    window.toggleColumns = function () {
+        document.querySelectorAll('[data-column-toggle], .column-checkbox').forEach(applyColumnToggle);
+    };
+    window.selectAllColumns = function () {
+        document.querySelectorAll('[data-column-toggle], .column-checkbox').forEach(function (checkbox) {
+            checkbox.checked = true;
+            applyColumnToggle(checkbox);
+        });
+    };
+    window.deselectAllColumns = function () {
+        document.querySelectorAll('[data-column-toggle], .column-checkbox').forEach(function (checkbox) {
+            checkbox.checked = false;
+            applyColumnToggle(checkbox);
+        });
+    };
+    window.exportAccountingTableExcelFromButton = function (button) {
+        exportExcelForTables([getButtonTable(button)]);
+    };
+    window.exportAccountingTablePDFFromButton = function (button) {
+        exportPDFForTables([getButtonTable(button)]);
+    };
+    window.exportAccountingTableExcel = function () {
+        exportExcelForTables([getPrimaryTable()]);
+    };
+    window.exportAccountingTablePDF = function () {
+        exportPDFForTables([getPrimaryTable()]);
+    };
+    window.exportAccountingTablesExcel = function () {
+        exportExcelForTables(getTables());
+    };
+    window.exportAccountingTablesPDF = function () {
+        exportPDFForTables(getTables());
+    };
+    window.exportToExcel = window.exportAccountingTableExcel;
+    window.exportToPDF = window.exportAccountingTablePDF;
+    window.exportExcel = window.exportAccountingTableExcel;
+    window.exportPDF = window.exportAccountingTablePDF;
+    window.exportAgingExcel = window.exportAccountingTablesExcel;
+    window.exportAgingPDF = window.exportAccountingTablesPDF;
+    window.deleteKasBank = function (url, message) {
+        if (!confirm(message || 'Apakah Anda yakin ingin menghapus data ini?')) return;
+
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = url;
+
+        var csrfToken = '';
+        var csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+        if (csrfInput) csrfToken = csrfInput.value;
+        if (!csrfToken) {
+            var match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+            csrfToken = match ? decodeURIComponent(match[1]) : '';
+        }
+
+        if (csrfToken) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'csrfmiddlewaretoken';
+            input.value = csrfToken;
+            form.appendChild(input);
+        }
+
+        document.body.appendChild(form);
+        form.submit();
+    };
+})();
+</script>

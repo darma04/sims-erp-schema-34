@@ -1,0 +1,288 @@
+{% extends 'layout/layout_vertical.html' %}
+{% load static %}
+{% load currency_filters %}
+
+{% block title %}Rekonsiliasi Kas & Bank - Treasury{% endblock title %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+{% endblock vendor_js %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <div>
+            <h4 class="mb-1"><i class="ri-file-search-line me-2"></i>Rekonsiliasi Kas & Bank</h4>
+            <p class="text-muted mb-0">Pencocokan saldo sistem dengan rekening koran atau kas fisik, termasuk arus PPN yang masuk/keluar bersama pembayaran.</p>
+        </div>
+        <a href="{% url 'kas_bank:reconciliation_add' %}" class="btn btn-primary">
+            <i class="ri-add-line me-1"></i>Tambah Rekonsiliasi
+        </a>
+    </div>
+    <!-- Label Sumber Data -->
+    <div class="mb-4">
+        <span class="badge bg-label-info rounded-pill px-3 py-2">
+            <i class="ri-bank-line me-1"></i>Rekonsiliasi Bank (Bulanan)
+        </span>
+        <small class="text-muted ms-2" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="right" title="Membandingkan saldo sistem Kas/Bank dengan saldo rekening koran atau kas fisik. Rekonsiliasi memakai uang aktual, sehingga pembayaran SO/POS/PO dapat mencakup PPN; ini berbeda dari Laba Rugi yang mengecualikan PPN dari pendapatan/beban.">
+            <i class="ri-information-line"></i> Apa artinya?
+        </small>
+    </div>
+
+    <div class="row g-6 mb-4">
+        <div class="col-xl-3 col-sm-6">
+            <div class="card treasury-stat-card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar me-4">
+                            <div class="avatar-initial bg-label-primary rounded-3">
+                                <i class="ri-file-list-3-line ri-24px"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="mb-0 text-muted">Total Data</p>
+                            <h5 class="mb-0">{{ total_rows }}</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6">
+            <div class="card treasury-stat-card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar me-4">
+                            <div class="avatar-initial bg-label-secondary rounded-3">
+                                <i class="ri-draft-line ri-24px"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="mb-0 text-muted">Draft</p>
+                            <h5 class="mb-0">{{ draft_count }}</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6">
+            <div class="card treasury-stat-card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar me-4">
+                            <div class="avatar-initial bg-label-success rounded-3">
+                                <i class="ri-checkbox-circle-line ri-24px"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="mb-0 text-muted">Direkonsiliasi</p>
+                            <h5 class="mb-0">{{ reconciled_count }}</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6">
+            <div class="card treasury-stat-card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar me-4">
+                            <div class="avatar-initial bg-label-warning rounded-3">
+                                <i class="ri-scales-3-line ri-24px"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="mb-0 text-muted">Total Selisih</p>
+                            <h5 class="mb-0">{{ total_selisih|rupiah }}</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Cari Rekonsiliasi</label>
+                        <input name="q" value="{{ request.GET.q }}" class="form-control" placeholder="Akun atau catatan">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Akun</label>
+                        <select name="account" class="form-select">
+                            <option value="">Semua Akun</option>
+                            {% for account in accounts %}
+                            <option value="{{ account.id }}" {% if request.GET.account == account.id|stringformat:'s' %}selected{% endif %}>{{ account.kode }} - {{ account.nama }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select">
+                            <option value="">Semua Status</option>
+                            {% for value,label in status_choices %}
+                            <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">S.d Tanggal</label>
+                        <input type="date" name="tanggal_akhir" value="{{ request.GET.tanggal_akhir }}" class="form-control">
+                    </div>
+                </div>
+                <div class="row g-3 mt-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Pilih Kolom yang Ditampilkan</label>
+                        <div class="dropdown">
+                            <button class="btn btn-label-secondary dropdown-toggle w-100" type="button" data-bs-toggle="dropdown">
+                                Pilih Kolom yang Ditampilkan
+                            </button>
+                            <div class="dropdown-menu p-3" style="min-width: 250px;">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" data-column="0" checked id="colAkun">
+                                    <label class="form-check-label" for="colAkun">Akun</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" data-column="1" checked id="colPeriode">
+                                    <label class="form-check-label" for="colPeriode">Periode</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" data-column="2" checked id="colSaldoSistem">
+                                    <label class="form-check-label" for="colSaldoSistem">Saldo Sistem</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" data-column="3" checked id="colSaldoStatement">
+                                    <label class="form-check-label" for="colSaldoStatement">Saldo Statement</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" data-column="4" checked id="colSelisih">
+                                    <label class="form-check-label" for="colSelisih">Selisih</label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input column-checkbox" type="checkbox" data-column="5" checked id="colStatus">
+                                    <label class="form-check-label" for="colStatus">Status</label>
+                                </div>
+                                <div class="dropdown-divider"></div>
+                                <button type="button" class="btn btn-sm btn-primary w-100 mb-2" onclick="selectAllColumns()">Pilih Semua</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary w-100" onclick="deselectAllColumns()">Hapus Semua</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6"></div>
+                    <div class="col-md-3">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="ri-filter-3-line me-1"></i>Terapkan Filter
+                            </button>
+                            <a class="btn btn-label-secondary" href="{% url 'kas_bank:reconciliation_list' %}">
+                                <i class="ri-refresh-line me-1"></i>Reset
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <h5 class="mb-0">Daftar Rekonsiliasi</h5>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcel()">
+                    <i class="ri-file-excel-2-line me-1"></i>Export Excel
+                </button>
+                <button type="button" class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDF()">
+                    <i class="ri-file-pdf-2-line me-1"></i>Export PDF
+                </button>
+            </div>
+        </div>
+        <div class="card-datatable table-responsive">
+            <table id="dataTable" class="datatables-kas-bank accounting-data-table table table-hover" data-accounting-primary="true" data-export-title="Rekonsiliasi Kas Bank" data-search-placeholder="Cari rekonsiliasi kas/bank...">
+                <thead>
+                    <tr>
+                        <th>Akun</th>
+                        <th>Periode</th>
+                        <th>Saldo Sistem</th>
+                        <th>Saldo Statement</th>
+                        <th>Selisih</th>
+                        <th>Status</th>
+                        <th data-export-ignore="true" data-action-icon="ri-more-2-line">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in reconciliations %}
+                    <tr>
+                        <td>{{ item.akun_kas_bank.kode }} - {{ item.akun_kas_bank.nama }}</td>
+                        <td>{{ item.tanggal_mulai|date:"d/m/Y" }} - {{ item.tanggal_akhir|date:"d/m/Y" }}</td>
+                        <td>{{ item.saldo_sistem|rupiah }}</td>
+                        <td>{{ item.saldo_statement|rupiah }}</td>
+                        <td class="{% if item.selisih == 0 %}text-success{% else %}text-warning{% endif %} fw-semibold">{{ item.selisih|rupiah }}</td>
+                        <td><span class="badge bg-label-{% if item.status == 'reconciled' %}success{% elif item.status == 'cancelled' %}danger{% else %}secondary{% endif %}">{{ item.get_status_display }}</span></td>
+                        <td>
+                            <div class="dropdown">
+                                <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                                    <i class="ri-more-2-line"></i>
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="{% url 'kas_bank:reconciliation_detail' item.pk %}">
+                                        <i class="ri-eye-line me-2"></i>Detail
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'kas_bank:reconciliation_edit' item.pk %}">
+                                        <i class="ri-edit-line me-2"></i>Edit
+                                    </a>
+                                    <button type="button" class="dropdown-item text-danger" onclick="deleteKasBank('{% url 'kas_bank:reconciliation_delete' item.pk %}', '{{ item.akun_kas_bank.kode }}')">
+                                        <i class="ri-delete-bin-line me-2"></i>Hapus
+                                    </button>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="3" class="text-start ps-4 py-3">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 0.875rem;">RINGKASAN</strong>
+                                    <small class="text-muted">{{ total_rows }} rekonsiliasi</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td colspan="2" class="py-3">
+                            <div class="text-center">
+                                <span class="badge bg-label-warning">{{ total_selisih|rupiah }}</span>
+                                <small class="d-block text-muted mt-1">Total Selisih</small>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="text-center">
+                                <span class="badge bg-label-success">{{ reconciled_count }} selesai</span>
+                                <small class="d-block text-muted mt-1">Status</small>
+                            </div>
+                        </td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block page_js %}
+{{ block.super }}
+{% include 'kas_bank/partials/list_tools.html' %}
+{% endblock page_js %}

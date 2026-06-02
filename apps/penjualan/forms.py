@@ -62,7 +62,7 @@ class SalesOrderForm(forms.ModelForm):
     class Meta:
         """Konfigurasi form SalesOrder — field utama SO termasuk diskon dan pajak."""
         model = SalesOrder
-        fields = ['nomor_so', 'tanggal', 'customer', 'gudang', 'metode_pembayaran', 'status', 'catatan', 'diskon', 'pajak']
+        fields = ['nomor_so', 'tanggal', 'customer', 'gudang', 'metode_pembayaran', 'status', 'catatan', 'diskon', 'pajak', 'biaya_pengiriman']
         # Widget HTML untuk setiap field form (class CSS, placeholder, dll)
         widgets = {
             'nomor_so': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Auto-generate jika kosong'}),
@@ -74,6 +74,7 @@ class SalesOrderForm(forms.ModelForm):
             'catatan': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'diskon': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0'}),
             'pajak': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0'}),
+            'biaya_pengiriman': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0'}),
         }
     
     def __init__(self, *args, **kwargs):
@@ -90,7 +91,17 @@ class SalesOrderForm(forms.ModelForm):
         # Query database — ambil data self.fields['metode_pembayaran'].queryset yang sesuai filter
         # Set queryset dropdown metode_pembayaran
         self.fields['metode_pembayaran'].queryset = MetodePembayaran.objects.filter(aktif=True)
+        if not self.instance.pk:
+            metode_tempo = MetodePembayaran.objects.filter(
+                aktif=True, kode__in=['TEMPO', 'KREDIT', 'CREDIT']
+            ).order_by('kode').first()
+            if metode_tempo:
+                self.initial['metode_pembayaran'] = metode_tempo.pk
         
+        # nomor_so opsional — boleh dikosongkan agar auto-generate via SalesOrder.save()
+        # (model field unique=True secara default membuat form field required, padahal kita mau kosong)
+        self.fields['nomor_so'].required = False
+
         # Label Indonesia
         self.fields['nomor_so'].label = 'Nomor SO'
         # Set label field tanggal dalam Bahasa Indonesia
@@ -109,11 +120,12 @@ class SalesOrderForm(forms.ModelForm):
         self.fields['diskon'].label = 'Diskon (Rp)'
         # Set label field pajak dalam Bahasa Indonesia
         self.fields['pajak'].label = 'Pajak (Rp)'
+        self.fields['biaya_pengiriman'].label = 'Biaya Pengiriman/Ongkir (Rp)'
         
         # Placeholder dropdown kosong
         self.fields['customer'].empty_label = 'Pilih Customer'
         self.fields['gudang'].empty_label = 'Pilih Gudang'
-        self.fields['metode_pembayaran'].empty_label = 'Pilih Metode Pembayaran (Opsional)'
+        self.fields['metode_pembayaran'].empty_label = 'Kredit/Tempo (default jika kosong)'
         
         # Format tanggal saat edit (datetime-local format: YYYY-MM-DDThh:mm)
         if self.instance and self.instance.pk and self.instance.tanggal:

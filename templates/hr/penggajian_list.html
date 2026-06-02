@@ -1,4 +1,4 @@
-﻿{% extends 'layout/layout_vertical.html' %}
+{% extends 'layout/layout_vertical.html' %}
 {% comment %}
 ==========================================================================
 PENGGAJIAN LIST - Daftar Penggajian
@@ -311,6 +311,12 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
                                     <a class="dropdown-item" href="{% url 'hr:penggajian-edit' slip.pk %}">
                                         <i class="ri-edit-line me-2"></i>Edit
                                     </a>
+                                    {% if slip.status != 'dibayar' %}
+                                    <a class="dropdown-item text-success" href="javascript:void(0);"
+                                        onclick="openStatusModal({{ slip.pk }}, '{{ slip.status }}', '{{ slip.karyawan.nama|escapejs }} - {{ slip.periode }}')">
+                                        <i class="ri-exchange-line me-2"></i>Update Status
+                                    </a>
+                                    {% endif %}
                                     {% endif %}
                                     {% if can_edit.hr and can_delete.hr %}
                                     <div class="dropdown-divider"></div>
@@ -394,6 +400,47 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
             </div>
         </div>
     </div>
+
+    <!-- ===== MODAL UPDATE STATUS PENGGAJIAN ===== -->
+    <div class="modal fade" id="statusModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary align-items-center py-3">
+                    <h5 class="modal-title text-white mb-0">
+                        <i class="ri-exchange-line me-2"></i>Update Status Slip Gaji
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body py-4">
+                    <p class="mb-3">Slip: <strong id="statusSlipName"></strong></p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Status Saat Ini</label>
+                        <div id="statusCurrentBadge"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Ubah Status Ke <span class="text-danger">*</span></label>
+                        <select class="form-select" id="statusSelectNew" name="status">
+                            <option value="draft">Draft</option>
+                            <option value="diproses">Diproses</option>
+                            <option value="dibayar">Dibayar</option>
+                            <option value="batal">Batal</option>
+                        </select>
+                    </div>
+                    <div class="alert alert-info d-flex align-items-start py-2 mb-0" id="statusInfoBox">
+                        <i class="ri-information-line me-2 mt-1 flex-shrink-0"></i>
+                        <small id="statusInfoText">Pilih status untuk melihat informasi.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" id="btnSimpanStatus">
+                        <i class="ri-save-line me-1"></i>Simpan Status
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 {% csrf_token %}
 {% endblock content %}
@@ -815,6 +862,94 @@ $('#confirmDeleteBtn').on('click', function() {
             $('#deleteModal .modal-body').append('<div class="delete-error-msg alert alert-danger d-flex align-items-start mt-3 mb-0" role="alert"><i class="ri-error-warning-line me-2 fs-5"></i><div>' + msg + '</div></div>');
             btn.prop('disabled', false).html(originalText);
         }
+    });
+});
+</script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// UPDATE STATUS SLIP GAJI — AJAX MODAL
+// ═══════════════════════════════════════════════════════════════
+
+var statusSlipId = null;
+
+var STATUS_INFO = {
+    'draft'   : { badge: 'secondary', info: 'Status awal. Slip belum diproses.' },
+    'diproses': { badge: 'warning',   info: 'Slip sedang diproses oleh tim HR/keuangan.' },
+    'dibayar' : { badge: 'success',   info: 'Slip telah dibayar. Jurnal akuntansi akan dibuat otomatis.' },
+    'batal'   : { badge: 'danger',    info: 'Slip dibatalkan dan tidak akan diproses.' }
+};
+
+function openStatusModal(slipId, currentStatus, slipName) {
+    statusSlipId = slipId;
+    document.getElementById('statusSlipName').textContent = slipName;
+
+    // Set badge status saat ini
+    var info = STATUS_INFO[currentStatus] || { badge: 'secondary', info: '-' };
+    document.getElementById('statusCurrentBadge').innerHTML =
+        '<span class="badge bg-label-' + info.badge + '">' + (currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1)) + '</span>';
+
+    // Pre-select next logical status
+    var nextStatus = { 'draft': 'diproses', 'diproses': 'dibayar' }[currentStatus] || 'diproses';
+    var sel = document.getElementById('statusSelectNew');
+    sel.value = nextStatus;
+    updateStatusInfo(nextStatus);
+
+    new bootstrap.Modal(document.getElementById('statusModal')).show();
+}
+
+function updateStatusInfo(status) {
+    var info = STATUS_INFO[status] || { badge: 'secondary', info: '' };
+    document.getElementById('statusInfoText').textContent = info.info;
+    var box = document.getElementById('statusInfoBox');
+    box.className = 'alert d-flex align-items-start py-2 mb-0 alert-' +
+        ({ 'success': 'success', 'danger': 'danger', 'warning': 'warning' }[info.badge] || 'info');
+}
+
+document.getElementById('statusSelectNew').addEventListener('change', function() {
+    updateStatusInfo(this.value);
+});
+
+document.getElementById('btnSimpanStatus').addEventListener('click', function() {
+    if (!statusSlipId) return;
+    var btn = this;
+    var newStatus = document.getElementById('statusSelectNew').value;
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...';
+
+    var formData = new FormData();
+    formData.append('status', newStatus);
+    formData.append('csrfmiddlewaretoken', csrfToken);
+
+    fetch('/hr/penggajian/' + statusSlipId + '/update-status-ajax/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+        body: formData
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('statusModal')).hide();
+            // Tampilkan toast sukses
+            var toastHtml = '<div class="bs-toast toast align-items-center text-bg-success border-0 show" style="position:fixed;top:20px;right:20px;z-index:9999" role="alert">' +
+                '<div class="d-flex"><div class="toast-body"><i class="ri-check-circle-line me-2"></i>' + data.message + '</div>' +
+                '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>';
+            var toastEl = document.createElement('div');
+            toastEl.innerHTML = toastHtml;
+            document.body.appendChild(toastEl);
+            setTimeout(function() { location.reload(); }, 1200);
+        } else {
+            alert(data.message || 'Gagal mengubah status.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ri-save-line me-1"></i>Simpan Status';
+        }
+    })
+    .catch(function() {
+        alert('Terjadi kesalahan pada server.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ri-save-line me-1"></i>Simpan Status';
     });
 });
 </script>

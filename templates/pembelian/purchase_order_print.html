@@ -134,7 +134,11 @@
                     </div>
                     <div class="info-row">
                         <span class="info-label">Pajak:</span>
-                        <span>{{ purchase_order.pajak }}%</span>
+                        <span>{{ purchase_order.pajak|rupiah }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Pembayaran:</span>
+                        <span>{% if purchase_order.metode_pembayaran %}{{ purchase_order.metode_pembayaran.nama }}{% else %}Tempo/Kredit{% endif %}</span>
                     </div>
                 </td>
                 <td style="vertical-align: top; width: 50%;" class="info-section">
@@ -191,9 +195,19 @@
         <!-- Totals -->
         {% if purchase_order.items.all %}
         <table class="totals-table">
+            <tr>
+                <td>Subtotal:</td>
+                <td style="text-align: right;">{{ purchase_order.subtotal|rupiah }}</td>
+            </tr>
+            {% if purchase_order.biaya_pengiriman > 0 %}
+            <tr>
+                <td>Ongkir:</td>
+                <td style="text-align: right;">{{ purchase_order.biaya_pengiriman|rupiah }}</td>
+            </tr>
+            {% endif %}
             {% if purchase_order.pajak > 0 %}
             <tr>
-                <td>Pajak ({{ purchase_order.pajak }}%):</td>
+                <td>Pajak:</td>
                 <td style="text-align: right;">{{ purchase_order.nilai_pajak|rupiah }}</td>
             </tr>
             {% endif %}

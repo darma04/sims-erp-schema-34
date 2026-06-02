@@ -66,6 +66,7 @@ from apps.inventory.forms import TransferStokForm, AdjustmentStokForm, TransferS
 from web_project import TemplateLayout
 # Import dari modul internal proyek
 from apps.core.mixins import ReadPermissionMixin, CreatePermissionMixin, UpdatePermissionMixin, DeletePermissionMixin
+from apps.core.permissions import has_permission, permission_required
 from django.db import transaction
 
 
@@ -103,7 +104,7 @@ class GudangCreateView(CreatePermissionMixin, CreateView):
     Fields: kode, nama, alamat, aktif
     """
     model = Gudang
-    fields = ['kode', 'nama', 'alamat', 'metode_pembayaran_default', 'aktif']
+    fields = ['kode', 'nama', 'alamat', 'pajak_persen', 'metode_pembayaran_default', 'aktif']
     # Template HTML yang digunakan untuk render halaman
     template_name = 'inventory/gudang_form.html'
     # URL redirect setelah operasi berhasil
@@ -133,6 +134,15 @@ class GudangCreateView(CreatePermissionMixin, CreateView):
         form.fields['metode_pembayaran_default'].queryset = MetodePembayaran.objects.filter(aktif=True)
         form.fields['metode_pembayaran_default'].empty_label = 'Pilih Metode Pembayaran (Opsional)'
         form.fields['metode_pembayaran_default'].widget.attrs['class'] = 'form-select'
+        # Kustomisasi field pajak_persen
+        form.fields['pajak_persen'].widget.attrs.update({
+            'class': 'form-control',
+            'min': '0',
+            'max': '100',
+            'step': '0.01',
+            'placeholder': '0.00'
+        })
+        form.fields['pajak_persen'].help_text = 'Tarif PPN khusus cabang ini. Kosongkan atau 0 = menggunakan default perusahaan.'
         return form
 
 
@@ -150,7 +160,7 @@ class GudangUpdateView(UpdatePermissionMixin, UpdateView):
     URL: /inventory/gudang/<pk>/edit/
     """
     model = Gudang
-    fields = ['kode', 'nama', 'alamat', 'metode_pembayaran_default', 'aktif']
+    fields = ['kode', 'nama', 'alamat', 'pajak_persen', 'metode_pembayaran_default', 'aktif']
     # Template HTML yang digunakan untuk render halaman
     template_name = 'inventory/gudang_form.html'
     # URL redirect setelah operasi berhasil
@@ -180,6 +190,15 @@ class GudangUpdateView(UpdatePermissionMixin, UpdateView):
         form.fields['metode_pembayaran_default'].queryset = MetodePembayaran.objects.filter(aktif=True)
         form.fields['metode_pembayaran_default'].empty_label = 'Pilih Metode Pembayaran (Opsional)'
         form.fields['metode_pembayaran_default'].widget.attrs['class'] = 'form-select'
+        # Kustomisasi field pajak_persen
+        form.fields['pajak_persen'].widget.attrs.update({
+            'class': 'form-control',
+            'min': '0',
+            'max': '100',
+            'step': '0.01',
+            'placeholder': '0.00'
+        })
+        form.fields['pajak_persen'].help_text = 'Tarif PPN khusus cabang ini. Kosongkan atau 0 = menggunakan default perusahaan.'
         return form
 
 
@@ -298,6 +317,7 @@ class AdjustmentStokView(ReadPermissionMixin, ListView):
     context_object_name = 'adjustment_list'
     # Modul permission yang dicek: 'inventory'
     permission_module = 'inventory'
+    permission_sub_module = 'adjustment_stok'
 
     def get_queryset(self):
         """Override queryset — support filter by date, jenis, gudang."""
@@ -390,17 +410,18 @@ class TransferStokCreateView(CreatePermissionMixin, CreateView):
         formset = context['formset']
 
         if formset.is_valid():
-            # Set user pembuat
-            form.instance.dibuat_oleh = self.request.user
-            self.object = form.save()
+            with transaction.atomic():
+                # Set user pembuat
+                form.instance.dibuat_oleh = self.request.user
+                self.object = form.save()
 
-            # Link formset items ke transfer yang baru dibuat
-            formset.instance = self.object
-            formset.save()
+                # Link formset items ke transfer yang baru dibuat
+                formset.instance = self.object
+                formset.save()
 
             # Tampilkan pesan sukses ke user
             messages.success(self.request, f'Transfer Stok {self.object.nomor_transfer} berhasil dibuat')
-            return super().form_valid(form)
+            return redirect(self.get_success_url())
         else:
             # Formset tidak valid → render ulang form dengan error
             return self.render_to_response(self.get_context_data(form=form))
@@ -422,6 +443,7 @@ class AdjustmentStokCreateView(CreatePermissionMixin, CreateView):
     success_url = reverse_lazy('inventory:adjustment')
     # Modul permission yang dicek: 'inventory'
     permission_module = 'inventory'
+    permission_sub_module = 'adjustment_stok'
 
     def get_context_data(self, **kwargs):
         """Menambahkan data konteks tambahan ke template."""
@@ -437,6 +459,80 @@ class AdjustmentStokCreateView(CreatePermissionMixin, CreateView):
         # Tampilkan pesan sukses ke user
         messages.success(self.request, 'Adjustment Stok berhasil dibuat')
         return super().form_valid(form)
+
+
+class AdjustmentStokDeleteView(DeletePermissionMixin, DeleteView):
+    """
+    Hapus adjustment stok dengan rollback stok otomatis.
+    URL: /inventory/adjustment/<pk>/delete/
+    Return: JSON response untuk AJAX
+
+    Saat dihapus:
+    - Tipe 'in' (penambahan): stok dikurangi kembali
+    - Tipe 'out' (pengurangan): stok dikembalikan
+    - Produk.cabang: diupdate ke gudang stok terbanyak
+    """
+    model = AdjustmentStok
+    # URL redirect setelah operasi berhasil
+    success_url = reverse_lazy('inventory:adjustment')
+    # Modul permission yang dicek: 'inventory'
+    permission_module = 'inventory'
+    permission_sub_module = 'adjustment_stok'
+
+    def delete(self, request, *args, **kwargs):
+        """Hapus adjustment - rollback stok, return JSON response."""
+        self.object = self.get_object()
+
+        try:
+            adjustment = self.object
+            nomor = adjustment.nomor_adjustment
+
+            with transaction.atomic():
+                # Rollback stok: kebalikan dari operasi adjustment awal
+                stok, _ = Stok.objects.select_for_update().get_or_create(
+                    produk=adjustment.produk, gudang=adjustment.gudang,
+                    defaults={'jumlah': 0}
+                )
+
+                if adjustment.tipe == 'in':
+                    # Adjustment tambah → rollback = kurangi stok
+                    stok.jumlah -= adjustment.jumlah
+                    if stok.jumlah < 0:
+                        stok.jumlah = 0
+                else:
+                    # Adjustment kurang → rollback = tambah stok
+                    stok.jumlah += adjustment.jumlah
+
+                stok.save()
+
+                # Update cabang produk ke gudang dengan stok terbanyak
+                produk = adjustment.produk
+                stok_terbanyak = Stok.objects.filter(
+                    produk=produk, jumlah__gt=0
+                ).order_by('-jumlah').first()
+
+                if stok_terbanyak:
+                    if produk.cabang != stok_terbanyak.gudang:
+                        produk.cabang = stok_terbanyak.gudang
+                        produk.save(update_fields=['cabang'])
+                else:
+                    # Tidak ada stok di gudang manapun → cabang NULL
+                    if produk.cabang is not None:
+                        produk.cabang = None
+                        produk.save(update_fields=['cabang'])
+
+            adjustment.delete()
+            return JsonResponse({
+                'success': True,
+                'message': f'Adjustment Stok {nomor} berhasil dihapus dan stok telah di-rollback'
+            })
+        except ProtectedError:
+            return JsonResponse({'success': False, 'message': 'Data tidak dapat dihapus karena sedang digunakan atau terkait dengan data lain.'}, status=400)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Gagal menghapus adjustment stok: {str(e)}'
+            }, status=400)
 
 
 class TransferStokDetailView(ReadPermissionMixin, DetailView):
@@ -461,11 +557,9 @@ class TransferStokDetailView(ReadPermissionMixin, DetailView):
 
 class TransferStokUpdateView(UpdatePermissionMixin, UpdateView):
     """
-    Edit transfer stok - hanya bisa jika status masih 'draft'.
+    Edit transfer stok - bisa diedit pada semua status.
     URL: /inventory/transfer/<pk>/edit/
-
-    dispatch() mengecek status sebelum tampilkan form.
-    Jika bukan draft → redirect ke halaman detail dengan pesan error.
+    Permission: UpdatePermissionMixin → cek can_edit untuk modul inventory via RBAC
     """
     model = TransferStok
     form_class = TransferStokForm
@@ -584,24 +678,32 @@ class TransferStokUpdateView(UpdatePermissionMixin, UpdateView):
             return self.render_to_response(self.get_context_data(form=form))
 
 
-
 # ╔══════════════════════════════════════════════════════════════╗
             # ║            FUNCTION-BASED VIEWS (FBV)                         ║
 # ╚══════════════════════════════════════════════════════════════╝
 
 # Wajib login - redirect ke login page jika belum login
 @login_required
+@permission_required('update', 'inventory')
 def transfer_stok_approve(request, pk):
     """
     Approve transfer stok dan proses update stok.
     URL: /inventory/transfer/<pk>/approve/
+    Permission: Mengecek can_edit pada modul inventory via RBAC
 
     Alur:
-    1. Cek status (harus draft/submitted)
-    2. Jika masih draft → set ke submitted dulu
-    3. Panggil transfer.approve() → update stok gudang asal & tujuan
-    4. Redirect ke halaman detail
+    1. Cek permission RBAC (harus punya can_edit inventory)
+    2. Cek status (harus draft/submitted)
+    3. Jika masih draft → set ke submitted dulu
+    4. Panggil transfer.approve() → update stok gudang asal & tujuan
+    5. Redirect ke halaman detail
     """
+    # Cek permission RBAC - hanya user dengan can_edit inventory yang bisa approve
+    if not request.user.is_superuser:
+        if not has_permission(request.user, 'write', 'inventory', 'transfer_stok'):
+            messages.error(request, 'Anda tidak memiliki izin untuk melakukan approve transfer stok.')
+            return redirect('inventory:transfer')
+
     transfer = get_object_or_404(TransferStok, pk=pk)
 
     if transfer.status not in ['draft', 'submitted']:
@@ -638,9 +740,15 @@ def transfer_stok_approve(request, pk):
 
 class TransferStokDeleteView(DeletePermissionMixin, DeleteView):
     """
-    Hapus transfer stok - hanya bisa jika status masih 'draft'.
+    Hapus transfer stok - bisa dihapus pada semua status.
     URL: /inventory/transfer/<pk>/delete/
     Return: JSON response untuk AJAX
+    Permission: DeletePermissionMixin → cek can_delete untuk modul inventory
+
+    Jika transfer sudah completed, stok akan di-rollback:
+    - Gudang asal: stok dikembalikan (+)
+    - Gudang tujuan: stok dikurangi (-)
+    - Produk.cabang: diupdate ke gudang stok terbanyak
     """
     model = TransferStok
     # URL redirect setelah operasi berhasil
@@ -650,7 +758,7 @@ class TransferStokDeleteView(DeletePermissionMixin, DeleteView):
     permission_sub_module = 'transfer_stok'
 
     def delete(self, request, *args, **kwargs):
-        """Hapus data - return JSON response untuk AJAX."""
+        """Hapus data - rollback stok jika completed, return JSON response."""
         self.object = self.get_object()
 
         # Blok penanganan error - coba jalankan kode di bawah
@@ -703,6 +811,7 @@ class TransferStokDeleteView(DeletePermissionMixin, DeleteView):
                 'success': False,
                 'message': f'Gagal menghapus transfer stok: {str(e)}'
             }, status=400)
+
 
 class AdjustmentStokDeleteView(DeletePermissionMixin, DeleteView):
     """
@@ -782,6 +891,7 @@ class AdjustmentStokDeleteView(DeletePermissionMixin, DeleteView):
 
 # Wajib login - redirect ke login page jika belum login
 @login_required
+@permission_required('read', 'inventory')
 def get_stok_tersedia(request):
     """
     API endpoint: dapatkan stok tersedia per produk per gudang.
@@ -830,6 +940,7 @@ def get_stok_tersedia(request):
 
 # Wajib login - redirect ke login page jika belum login
 @login_required
+@permission_required('read', 'inventory')
 def get_stok_produk_gudang(request):
     """
     API endpoint: stok saat ini (untuk form adjustment).
@@ -876,6 +987,7 @@ def get_stok_produk_gudang(request):
 
 # Wajib login - redirect ke login page jika belum login
 @login_required
+@permission_required('read', 'inventory')
 def search_produk(request):
     """
     API endpoint: pencarian produk via Select2 AJAX.
@@ -929,8 +1041,7 @@ def search_produk(request):
         satuan_singkatan = produk.satuan.singkatan if produk.satuan else 'pcs'
 
         # Format text untuk tampilan Select2
-        tipe_label = '[SP] ' if produk.tipe == 'sparepart' else ''
-        text = f"{tipe_label}{produk.nama}"
+        text = f"{produk.nama}"
         if produk.sku:
             text += f" ({produk.sku})"
         if gudang_id:
@@ -941,7 +1052,6 @@ def search_produk(request):
             'text': text,
             'nama': produk.nama,
             'sku': produk.sku or '',
-            'tipe': produk.tipe,
             'stok': stok_tersedia,
             'satuan': satuan_nama,
             'satuan_singkatan': satuan_singkatan,

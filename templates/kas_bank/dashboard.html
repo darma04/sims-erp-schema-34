@@ -1,0 +1,432 @@
+{% extends 'layout/layout_vertical.html' %}
+{% load static %}
+{% load currency_filters %}
+
+{% block title %}Kas & Bank - Treasury{% endblock title %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/apex-charts/apex-charts.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/apex-charts/apexcharts.js' %}"></script>
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+{% endblock vendor_js %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="ri-bank-card-line me-2"></i>Kas & Bank</h4>
+            <p class="text-muted mb-0">Kontrol saldo, mutasi, transfer, dan rekonsiliasi treasury. Saldo kas mengikuti uang aktual, termasuk PPN bila ada pada pembayaran.</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'kas_bank:transaction_add' %}" class="btn btn-primary">
+                <i class="ri-add-line me-1"></i>Tambah Mutasi
+            </a>
+            <a href="{% url 'kas_bank:transfer_add' %}" class="btn btn-outline-primary">
+                <i class="ri-arrow-left-right-line me-1"></i>Transfer
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-6 mb-4">
+        <div class="col-xl-3 col-sm-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3 treasury-stat-card">
+                        <div class="avatar flex-shrink-0">
+                            <span class="avatar-initial rounded bg-label-primary">
+                                <i class="ri-bank-line ri-24px"></i>
+                            </span>
+                        </div>
+                        <div>
+                            <span class="d-block text-muted small">Akun Aktif</span>
+                            <h5 class="mb-0 fw-bold">{{ active_accounts }} / {{ total_accounts }}</h5>
+                            <small class="text-muted">Kas, bank, QRIS, e-wallet</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3 treasury-stat-card">
+                        <div class="avatar flex-shrink-0">
+                            <span class="avatar-initial rounded bg-label-success">
+                                <i class="ri-arrow-down-circle-line ri-24px"></i>
+                            </span>
+                        </div>
+                        <div>
+                            <span class="d-block text-muted small">Total Masuk</span>
+                            <h5 class="mb-0 fw-bold text-success" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total mutasi kas/bank masuk berstatus posted. Nilai mengikuti uang aktual, sehingga penerimaan SO/POS dan pelunasan piutang dapat mencakup PPN bila transaksi asal memilikinya.">{{ total_masuk|rupiah }}</h5>
+                            <small class="text-muted">Mutasi posted</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3 treasury-stat-card">
+                        <div class="avatar flex-shrink-0">
+                            <span class="avatar-initial rounded bg-label-danger">
+                                <i class="ri-arrow-up-circle-line ri-24px"></i>
+                            </span>
+                        </div>
+                        <div>
+                            <span class="d-block text-muted small">Total Keluar</span>
+                            <h5 class="mb-0 fw-bold text-danger" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total mutasi kas/bank keluar berstatus posted. Nilai mengikuti pembayaran aktual, sehingga pembayaran PO/hutang dan settlement PPN dapat mencakup arus pajak.">{{ total_keluar|rupiah }}</h5>
+                            <small class="text-muted">Mutasi posted</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3 treasury-stat-card">
+                        <div class="avatar flex-shrink-0">
+                            <span class="avatar-initial rounded bg-label-info">
+                                <i class="ri-funds-line ri-24px"></i>
+                            </span>
+                        </div>
+                        <div>
+                            <span class="d-block text-muted small">Net Cashflow</span>
+                            <h5 class="mb-0 fw-bold" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Net cashflow = total kas/bank masuk - keluar. Berbeda dari laba rugi: kas/bank memakai uang aktual, sedangkan laba rugi memisahkan PPN dari pendapatan/beban.">{{ net_cashflow|rupiah }}</h5>
+                            <small class="text-muted">Masuk - keluar</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-6 mb-4">
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h5 class="card-title mb-0">
+                        <i class="ri-line-chart-line me-2"></i>Arus Kas Posted
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="cashflowChart" style="min-height: 320px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="ri-pie-chart-line me-2"></i>Status Mutasi
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <div id="statusChart" style="min-height: 260px;"></div>
+                    <div class="d-flex align-items-center justify-content-between border-top pt-3 mt-3">
+                        <span class="text-muted">Rekonsiliasi Draft</span>
+                        <span class="fw-semibold">{{ pending_reconciliation }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-6">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div>
+                        <h5 class="mb-1">Saldo Akun Aktif</h5>
+                        <p class="text-muted mb-0">Total saldo terhitung: <span class="fw-semibold">{{ total_saldo_aktif|rupiah }}</span></p>
+                    </div>
+                    <a href="{% url 'kas_bank:account_list' %}" class="btn btn-sm btn-label-primary">
+                        Lihat Semua
+                    </a>
+                </div>
+                <div class="card-datatable table-responsive">
+                    <table id="accountBalanceTable" class="table table-hover mb-0 dashboard-datatable">
+                        <thead>
+                            <tr>
+                                <th>Akun</th>
+                                <th>Tipe</th>
+                                <th>Masuk</th>
+                                <th>Keluar</th>
+                                <th>Saldo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in account_cards %}
+                            <tr>
+                                <td class="fw-semibold">{{ row.account.kode }} - {{ row.account.nama }}</td>
+                                <td>{{ row.account.get_tipe_display }}</td>
+                                <td class="text-success">{{ row.masuk|rupiah }}</td>
+                                <td class="text-danger">{{ row.keluar|rupiah }}</td>
+                                <td class="fw-semibold">{{ row.saldo|rupiah }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <h5 class="mb-0">Mutasi Terakhir</h5>
+                    <a href="{% url 'kas_bank:transaction_list' %}" class="btn btn-sm btn-label-primary">
+                        Lihat Semua
+                    </a>
+                </div>
+                <div class="card-datatable table-responsive">
+                    <table id="recentTransactionTable" class="table table-hover mb-0 dashboard-datatable">
+                        <thead>
+                            <tr>
+                                <th>Nomor</th>
+                                <th>Tanggal</th>
+                                <th>Akun</th>
+                                <th>Tipe</th>
+                                <th>Jumlah</th>
+                                <th>Referensi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in recent_transactions %}
+                            <tr>
+                                <td class="fw-semibold">{{ item.nomor }}</td>
+                                <td>{{ item.tanggal|date:"d/m/Y H:i" }}</td>
+                                <td>{{ item.akun_kas_bank.nama }}</td>
+                                <td>{{ item.get_tipe_display }}</td>
+                                <td class="{% if item.is_debit_kas %}text-success{% else %}text-danger{% endif %} fw-semibold">{{ item.jumlah|rupiah }}</td>
+                                <td>{{ item.sumber_ref|default:"-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block page_js %}
+{{ block.super }}
+<style>
+.treasury-stat-card .avatar-initial {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+.dashboard-datatable thead th {
+    font-weight: 600;
+    font-size: 0.8125rem;
+    letter-spacing: 0;
+}
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_paginate {
+    padding: 1rem 1.5rem;
+}
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter {
+    padding: 0 1.5rem 1rem 1.5rem;
+}
+@media (max-width: 575.98px) {
+    .treasury-stat-card {
+        gap: 0.75rem !important;
+    }
+    .treasury-stat-card .avatar-initial {
+        width: 36px;
+        height: 36px;
+    }
+    .treasury-stat-card .avatar-initial i {
+        font-size: 18px;
+    }
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]')).forEach(function (el) {
+        new bootstrap.Tooltip(el);
+    });
+
+    var isDark = typeof isDarkStyle !== 'undefined' ? isDarkStyle :
+        (document.documentElement.classList.contains('dark-style') ||
+            document.body.classList.contains('dark-style'));
+    var gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+    var labelColor = isDark ? '#b4b5ba' : '#a5a3ae';
+
+    if (typeof $ !== 'undefined') {
+        ['#accountBalanceTable', '#recentTransactionTable'].forEach(function (selector) {
+            if ($(selector).length && !$.fn.dataTable.isDataTable(selector)) {
+                $(selector).DataTable({
+                    language: {
+                        sEmptyTable: 'Tidak ada data yang tersedia',
+                        sProcessing: 'Sedang memproses...',
+                        sLengthMenu: 'Tampilkan _MENU_ data',
+                        sZeroRecords: 'Tidak ditemukan data yang sesuai',
+                        sInfo: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
+                        sInfoEmpty: 'Menampilkan 0 sampai 0 dari 0 data',
+                        sInfoFiltered: '(disaring dari _MAX_ total data)',
+                        sSearch: 'Cari:',
+                        oPaginate: {
+                            sFirst: 'Pertama',
+                            sPrevious: 'Sebelumnya',
+                            sNext: 'Selanjutnya',
+                            sLast: 'Terakhir'
+                        }
+                    },
+                    pageLength: 5,
+                    lengthMenu: [[5, 10, 25, -1], ['5', '10', '25', 'Semua']],
+                    order: [],
+                    responsive: false
+                });
+            }
+        });
+    }
+
+    if (typeof ApexCharts === 'undefined') return;
+
+    var cashflowEl = document.querySelector('#cashflowChart');
+    var cashflowLabels = {{ cashflow_chart_labels|safe }};
+    var cashflowValues = {{ cashflow_chart_values|safe }};
+    if (cashflowEl) {
+        new ApexCharts(cashflowEl, {
+            chart: {
+                type: 'area',
+                height: 320,
+                fontFamily: 'Inter, -apple-system, sans-serif',
+                background: 'transparent',
+                toolbar: {
+                    show: true,
+                    tools: {
+                        download: '<i class="ri-download-2-line" style="font-size:16px"></i>',
+                        selection: false,
+                        zoom: false,
+                        zoomin: false,
+                        zoomout: false,
+                        pan: false,
+                        reset: false
+                    }
+                },
+                animations: { enabled: true, easing: 'easeinout', speed: 800 }
+            },
+            colors: ['#7367f0'],
+            dataLabels: { enabled: false },
+            stroke: { curve: 'smooth', width: 3, lineCap: 'round' },
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shade: isDark ? 'dark' : 'light',
+                    type: 'vertical',
+                    shadeIntensity: 0.3,
+                    opacityFrom: isDark ? 0.25 : 0.4,
+                    opacityTo: 0.02,
+                    stops: [0, 95, 100]
+                }
+            },
+            series: [{ name: 'Nilai', data: cashflowValues }],
+            xaxis: {
+                categories: cashflowLabels,
+                labels: { style: { colors: labelColor, fontSize: '13px' } },
+                axisBorder: { show: false },
+                axisTicks: { show: false }
+            },
+            yaxis: {
+                labels: {
+                    style: { colors: labelColor, fontSize: '13px' },
+                    formatter: function (val) { return 'Rp ' + Math.round(val).toLocaleString('id-ID'); }
+                }
+            },
+            tooltip: {
+                theme: isDark ? 'dark' : 'light',
+                y: { formatter: function (val) { return 'Rp ' + Math.round(val).toLocaleString('id-ID'); } }
+            },
+            markers: {
+                size: 5,
+                hover: { size: 7, sizeOffset: 2 },
+                strokeWidth: 2,
+                strokeColors: isDark ? '#2b2c40' : '#fff'
+            },
+            grid: {
+                borderColor: gridColor,
+                strokeDashArray: 4,
+                padding: { top: -10, left: 10, right: 10, bottom: 0 }
+            }
+        }).render();
+    }
+
+    var statusEl = document.querySelector('#statusChart');
+    var statusLabels = {{ status_chart_labels|safe }};
+    var statusValues = {{ status_chart_values|safe }};
+    if (statusEl) {
+        if (!statusValues.length) {
+            statusLabels = ['Tidak Ada Data'];
+            statusValues = [1];
+        }
+        new ApexCharts(statusEl, {
+            chart: {
+                type: 'donut',
+                height: 260,
+                fontFamily: 'Inter, -apple-system, sans-serif',
+                background: 'transparent',
+                animations: { enabled: true, easing: 'easeinout', speed: 800 }
+            },
+            labels: statusLabels,
+            series: statusValues,
+            colors: ['#7367f0', '#28c76f', '#ff9f43', '#ea5455'],
+            dataLabels: { enabled: false },
+            stroke: { width: 2, colors: [isDark ? '#2b2c40' : '#fff'] },
+            plotOptions: {
+                pie: {
+                    donut: {
+                        size: '60%',
+                        labels: {
+                            show: true,
+                            name: { show: true, fontSize: '13px', color: labelColor },
+                            value: {
+                                show: true,
+                                fontSize: '18px',
+                                fontWeight: 700,
+                                color: isDark ? '#fff' : '#333'
+                            },
+                            total: {
+                                show: true,
+                                label: 'Total',
+                                color: labelColor,
+                                formatter: function (w) {
+                                    return w.globals.seriesTotals.reduce(function (a, b) { return a + b; }, 0);
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            legend: {
+                position: 'bottom',
+                fontSize: '13px',
+                labels: { colors: isDark ? '#ccc' : '#555' },
+                markers: { size: 6, strokeWidth: 0, offsetX: -3 },
+                itemMargin: { horizontal: 8, vertical: 4 }
+            },
+            tooltip: {
+                theme: isDark ? 'dark' : 'light',
+                y: { formatter: function (val) { return val + ' mutasi'; } }
+            }
+        }).render();
+    }
+});
+</script>
+{% endblock page_js %}

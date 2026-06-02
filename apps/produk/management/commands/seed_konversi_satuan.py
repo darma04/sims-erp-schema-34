@@ -1,217 +1,314 @@
 """
-Management command untuk seed data konversi satuan default.
-Jalankan: python manage.py seed_konversi_satuan
+Seed master Satuan dan KonversiSatuan default.
 
-Mendukung 7 kategori satuan:
-1. Jumlah (PCS, Unit, Buah, Set, Pack, Box, Dus, Karton, Roll, Lembar, Pasang, Rim, Lusin, Kodi, Pallet)
-2. Berat (mg, Gram, Kilogram, Ons, Kuintal/Kwintal, Ton)
-3. Volume Cairan (ML, Liter, Galon, Drum, Jerigen)
-4. Panjang (mm, CM, Meter, Inch, Km)
-5. Luas (M², CM², Hektar, Are)
-6. Volume Padat (M³, CM³)
-7. Satuan Khusus Retail/Industri (Set, Bundle, Paket, Tray, Slop, Sachet, Strip,
-   Tablet, Botol, Kaleng, Sak, Tabung, Batang, Karung)
+Jalankan:
+    python manage.py seed_konversi_satuan
+    python manage.py seed_konversi_satuan --dry-run
+
+Command ini idempotent:
+- Tidak membuat Satuan duplikat jika nama/singkatan/alias sudah ada.
+- Menormalisasi singkatan umum seperti gram -> g, liter -> l, meter -> m.
+- Membuat konversi global standar untuk satuan universal dan packaging default.
+
+Catatan:
+Konversi packaging seperti box -> pcs adalah default awal. Jika isi kemasan
+berbeda per produk, tambahkan KonversiSatuan khusus produk agar override global.
 """
+
+from decimal import Decimal
+
 from django.core.management.base import BaseCommand
-from apps.produk.models import Satuan, KonversiSatuan
+from django.db import transaction
+
+from apps.produk.models import KonversiSatuan, Satuan
+
+
+DEFAULT_UNITS = [
+    # Unit / count
+    ("Pieces", "pcs", ["pc", "pcs", "piece", "pieces", "pce"]),
+    ("Unit", "unit", ["unit", "unt"]),
+    ("Buah", "buah", ["buah", "bh"]),
+    ("Set", "set", ["set"]),
+    ("Pair", "pair", ["pair", "pr"]),
+    ("Pasang", "psng", ["psng", "pasang", "psg"]),
+    ("Lusin", "lsn", ["lsn", "lusin", "dozen", "dz"]),
+    ("Kodi", "kodi", ["kodi"]),
+    ("Gross", "gross", ["gross", "grs"]),
+    ("Pack", "pack", ["pack", "pak"]),
+    ("Bundle", "bdl", ["bdl", "bundle", "bundel"]),
+    ("Paket", "pkt", ["pkt", "paket"]),
+    ("Box", "box", ["box", "bx"]),
+    ("Dus", "dus", ["dus"]),
+    ("Karton", "ctn", ["ctn", "karton", "carton", "krt"]),
+    ("Pallet", "plt", ["plt", "pallet"]),
+    ("Roll", "roll", ["roll", "rol"]),
+    ("Lembar", "lbr", ["lbr", "lembar"]),
+    ("Rim", "rim", ["rim", "ream"]),
+    ("Sheet", "sheet", ["sheet", "sht"]),
+    ("Strip", "strip", ["strip"]),
+    ("Sachet", "sch", ["sch", "sachet", "sct"]),
+    ("Tablet", "tab", ["tab", "tablet"]),
+    ("Kapsul", "cap", ["cap", "capsule", "kapsul"]),
+    ("Blister", "bls", ["bls", "blister"]),
+    ("Tray", "tray", ["tray"]),
+    ("Slop", "slop", ["slop"]),
+
+    # Weight
+    ("Milligram", "mg", ["mg", "milligram"]),
+    ("Gram", "g", ["g", "gr", "gram"]),
+    ("Kilogram", "kg", ["kg", "kilogram"]),
+    ("Ons", "ons", ["ons"]),
+    ("Pound", "lb", ["lb", "lbs", "pound"]),
+    ("Ounce", "oz", ["oz", "ounce"]),
+    ("Kuintal", "kw", ["kw", "kuintal", "kwintal"]),
+    ("Ton", "ton", ["ton"]),
+    ("Sak", "sak", ["sak"]),
+    ("Karung", "krg", ["krg", "karung"]),
+
+    # Liquid / container
+    ("Milliliter", "ml", ["ml", "milliliter", "mililiter"]),
+    ("Centiliter", "cl", ["cl", "centiliter"]),
+    ("Liter", "l", ["l", "lt", "ltr", "liter"]),
+    ("Galon", "gal", ["gal", "galon", "gallon"]),
+    ("Drum", "drum", ["drum"]),
+    ("Jerigen", "jrg", ["jrg", "jerigen", "jirigen"]),
+    ("Botol", "btl", ["btl", "botol", "bottle", "bootle"]),
+    ("Kaleng", "klg", ["klg", "kaleng", "can"]),
+    ("Cup", "cup", ["cup"]),
+    ("Pail", "pail", ["pail", "ember"]),
+    ("Tube", "tube", ["tube"]),
+    ("Tabung", "tbg", ["tbg", "tabung"]),
+
+    # Length
+    ("Millimeter", "mm", ["mm", "millimeter", "milimeter"]),
+    ("Centimeter", "cm", ["cm", "centimeter", "sentimeter"]),
+    ("Meter", "m", ["m", "meter"]),
+    ("Kilometer", "km", ["km", "kilometer"]),
+    ("Inch", "inch", ["inch", "in"]),
+    ("Feet", "ft", ["ft", "feet", "foot"]),
+    ("Yard", "yd", ["yd", "yard"]),
+
+    # Area
+    ("Centimeter Persegi", "cm2", ["cm2", "cm^2", "cm\u00b2", "cm\u00c2\u00b2"]),
+    ("Meter Persegi", "m2", ["m2", "m^2", "m\u00b2", "m\u00c2\u00b2"]),
+    ("Are", "are", ["are"]),
+    ("Hektar", "ha", ["ha", "hektar", "hectare"]),
+
+    # Cubic volume
+    ("Centimeter Kubik", "cm3", ["cm3", "cm^3", "cm\u00b3", "cm\u00c2\u00b3"]),
+    ("Meter Kubik", "m3", ["m3", "m^3", "m\u00b3", "m\u00c2\u00b3"]),
+]
+
+
+DEFAULT_CONVERSIONS = [
+    # Count and retail packaging defaults
+    ("lsn", "pcs", "12"),
+    ("lsn", "buah", "12"),
+    ("kodi", "pcs", "20"),
+    ("gross", "pcs", "144"),
+    ("psng", "pcs", "2"),
+    ("rim", "lbr", "500"),
+    ("rim", "sheet", "500"),
+    ("pack", "pcs", "6"),
+    ("box", "pcs", "12"),
+    ("dus", "pcs", "24"),
+    ("ctn", "pcs", "24"),
+    ("ctn", "box", "2"),
+    ("plt", "ctn", "40"),
+    ("plt", "pcs", "960"),
+    ("bdl", "pcs", "10"),
+    ("tray", "pcs", "30"),
+    ("tray", "buah", "30"),
+    ("slop", "pack", "10"),
+    ("strip", "tab", "10"),
+    ("bls", "tab", "10"),
+
+    # Weight
+    ("ton", "kg", "1000"),
+    ("kw", "kg", "100"),
+    ("kg", "g", "1000"),
+    ("kg", "mg", "1000000"),
+    ("g", "mg", "1000"),
+    ("ons", "g", "100"),
+    ("lb", "g", "453.5924"),
+    ("oz", "g", "28.3495"),
+    ("sak", "kg", "50"),
+    ("krg", "kg", "50"),
+
+    # Liquid / volume
+    ("l", "ml", "1000"),
+    ("cl", "ml", "10"),
+    ("gal", "l", "19"),
+    ("gal", "ml", "19000"),
+    ("drum", "l", "200"),
+    ("drum", "ml", "200000"),
+    ("jrg", "l", "20"),
+    ("jrg", "ml", "20000"),
+    ("m3", "l", "1000"),
+    ("m3", "ml", "1000000"),
+    ("m3", "cm3", "1000000"),
+    ("cm3", "ml", "1"),
+
+    # Length
+    ("km", "m", "1000"),
+    ("km", "cm", "100000"),
+    ("m", "cm", "100"),
+    ("m", "mm", "1000"),
+    ("cm", "mm", "10"),
+    ("inch", "cm", "2.54"),
+    ("ft", "inch", "12"),
+    ("yd", "ft", "3"),
+    ("roll", "m", "50"),
+
+    # Area
+    ("m2", "cm2", "10000"),
+    ("ha", "m2", "10000"),
+    ("are", "m2", "100"),
+    ("ha", "are", "100"),
+]
 
 
 class Command(BaseCommand):
-    help = 'Seed data semua satuan dan konversi default (global)'
+    help = "Seed Satuan dan KonversiSatuan default secara idempotent."
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="Preview perubahan tanpa menulis ke database.",
+        )
+        parser.add_argument(
+            "--no-update",
+            action="store_true",
+            help="Jangan normalisasi nama/singkatan/faktor yang sudah ada.",
+        )
 
     def handle(self, *args, **options):
-        self.stdout.write(self.style.MIGRATE_HEADING('Memulai seed satuan dan konversi...'))
+        dry_run = options["dry_run"]
+        update_existing = not options["no_update"]
 
-        # ============================================================
-        # LANGKAH 1: Buat/temukan semua record Satuan
-        # ============================================================
-        satuan_data = [
-            # ── A. Satuan Unit (Barang Satuan) ──
-            ('Pieces', 'pcs'),
-            ('Unit', 'unit'),
-            ('Buah', 'buah'),
-            ('Set', 'set'),
-            ('Pack', 'pack'),
-            ('Box', 'box'),
-            ('Dus', 'dus'),
-            ('Karton', 'karton'),
-            ('Roll', 'roll'),
-            ('Lembar', 'lembar'),
-            ('Pasang', 'pasang'),
-            ('Rim', 'rim'),
-            ('Lusin', 'lusin'),
-            ('Kodi', 'kodi'),
-            ('Pallet', 'pallet'),
+        self.stdout.write(self.style.MIGRATE_HEADING("Seed satuan dan konversi default"))
+        if dry_run:
+            self.stdout.write("[DRY-RUN] Database tidak akan diubah.")
 
-            # ── B. Satuan Berat ──
-            ('Milligram', 'mg'),
-            ('Gram', 'gram'),
-            ('Kilogram', 'kg'),
-            ('Ons', 'ons'),
-            ('Kuintal', 'kuintal'),
-            ('Ton', 'ton'),
+        with transaction.atomic():
+            unit_map, unit_stats = self.seed_units(dry_run, update_existing)
+            conversion_stats = self.seed_conversions(unit_map, dry_run, update_existing)
 
-            # ── C. Satuan Panjang ──
-            ('Millimeter', 'mm'),
-            ('Centimeter', 'cm'),
-            ('Meter', 'meter'),
-            ('Kilometer', 'km'),
-            ('Inch', 'inch'),
+            if dry_run:
+                transaction.set_rollback(True)
 
-            # ── D. Satuan Volume ──
-            ('Mililiter', 'ml'),
-            ('Liter', 'liter'),
-            ('Galon', 'galon'),
-            ('Meter Kubik', 'm³'),
+        self.stdout.write("")
+        self.stdout.write(
+            "Satuan: {created} dibuat, {updated} dinormalisasi, {skipped} sudah sesuai.".format(
+                **unit_stats
+            )
+        )
+        self.stdout.write(
+            "Konversi: {created} dibuat, {updated} diperbarui, {skipped} sudah sesuai.".format(
+                **conversion_stats
+            )
+        )
+        self.stdout.write(f"Total master Satuan: {Satuan.objects.count()}")
+        self.stdout.write(
+            f"Total KonversiSatuan global: {KonversiSatuan.objects.filter(produk__isnull=True).count()}"
+        )
 
-            # ── E. Satuan Luas ──
-            ('Meter Persegi', 'm²'),
-            ('Centimeter Persegi', 'cm²'),
-            ('Hektar', 'ha'),
-            ('Are', 'are'),
+        if dry_run:
+            self.stdout.write(self.style.WARNING("Dry-run selesai. Jalankan tanpa --dry-run untuk eksekusi."))
+        else:
+            self.stdout.write(self.style.SUCCESS("Seed satuan dan konversi selesai."))
 
-            # ── F. Satuan Industri / Khusus ──
-            ('Tabung', 'tabung'),
-            ('Sak', 'sak'),
-            ('Drum', 'drum'),
-            ('Jerigen', 'jerigen'),
-            ('Batang', 'batang'),
-            ('Karung', 'karung'),
-            ('Tray', 'tray'),
-            ('Slop', 'slop'),
-            ('Sachet', 'sachet'),
-            ('Strip', 'strip'),
-            ('Tablet', 'tablet'),
-            ('Botol', 'botol'),
-            ('Kaleng', 'kaleng'),
-            ('Bundle', 'bundle'),
-            ('Paket', 'paket'),
-        ]
+    def seed_units(self, dry_run, update_existing):
+        stats = {"created": 0, "updated": 0, "skipped": 0}
+        unit_map = {}
 
-        satuan_map = {}
-        new_satuan_count = 0
+        for name, code, aliases in DEFAULT_UNITS:
+            unit = self.find_unit(name, code, aliases)
+            if unit:
+                changes = {}
+                if update_existing and unit.nama != name:
+                    changes["nama"] = name
+                if update_existing and unit.singkatan != code:
+                    changes["singkatan"] = code
 
-        for nama, singkatan in satuan_data:
-            # Cari existing berdasarkan singkatan (case insensitive)
-            existing = Satuan.objects.filter(singkatan__iexact=singkatan).first()
-            if not existing:
-                # Coba cari berdasarkan nama (case insensitive)
-                existing = Satuan.objects.filter(nama__iexact=nama).first()
-            if existing:
-                satuan_map[singkatan.lower()] = existing
-            else:
-                obj = Satuan.objects.create(nama=nama, singkatan=singkatan)
-                satuan_map[singkatan.lower()] = obj
-                new_satuan_count += 1
-                self.stdout.write(f'  + Satuan baru: {obj.nama} ({obj.singkatan})')
-
-        self.stdout.write(f'\n  {new_satuan_count} satuan baru ditambahkan.\n')
-
-        # ============================================================
-        # LANGKAH 2: Buat data konversi global
-        # Format: (dari_singkatan, ke_singkatan, faktor_konversi)
-        # Artinya: 1 [dari] = [faktor] [ke]
-        # ============================================================
-        konversi_data = [
-            # ── A. Satuan Unit / Jumlah ──
-            ('lusin', 'pcs', 12),          # 1 lusin = 12 pcs
-            ('lusin', 'buah', 12),         # 1 lusin = 12 buah
-            ('kodi', 'pcs', 20),           # 1 kodi = 20 pcs
-            ('rim', 'lembar', 500),        # 1 rim = 500 lembar
-            ('rim', 'pcs', 500),           # 1 rim = 500 pcs (kertas)
-            ('pack', 'pcs', 6),            # 1 pack = 6 pcs (default, bisa override per produk)
-            ('box', 'pcs', 12),            # 1 box = 12 pcs (default, bisa override per produk)
-            ('dus', 'pcs', 24),            # 1 dus = 24 pcs (default)
-            ('karton', 'pcs', 24),         # 1 karton = 24 pcs (default, bisa override per produk)
-            ('karton', 'box', 2),          # 1 karton = 2 box (default)
-            ('karton', 'dus', 1),          # 1 karton = 1 dus (default)
-            ('pallet', 'karton', 40),      # 1 pallet = 40 karton (default)
-            ('pallet', 'pcs', 960),        # 1 pallet = 960 pcs (40x24)
-            ('slop', 'pcs', 10),           # 1 slop = 10 pcs (rokok)
-            ('pasang', 'pcs', 2),          # 1 pasang = 2 pcs
-
-            # ── B. Satuan Berat ──
-            ('ton', 'kg', 1000),           # 1 ton = 1000 kg
-            ('ton', 'gram', 1000000),      # 1 ton = 1.000.000 gram
-            ('kuintal', 'kg', 100),        # 1 kuintal = 100 kg
-            ('kuintal', 'gram', 100000),   # 1 kuintal = 100.000 gram
-            ('kg', 'gram', 1000),          # 1 kg = 1000 gram
-            ('kg', 'mg', 1000000),         # 1 kg = 1.000.000 mg
-            ('kg', 'ons', 10),             # 1 kg = 10 ons
-            ('ons', 'gram', 100),          # 1 ons = 100 gram
-            ('gram', 'mg', 1000),          # 1 gram = 1000 mg
-            ('sak', 'kg', 50),             # 1 sak = 50 kg (semen, default)
-            ('karung', 'kg', 50),          # 1 karung = 50 kg (beras, default)
-
-            # ── C. Satuan Volume ──
-            ('liter', 'ml', 1000),         # 1 liter = 1000 ml
-            ('galon', 'liter', 19),        # 1 galon = 19 liter (Indonesia)
-            ('galon', 'ml', 19000),        # 1 galon = 19.000 ml
-            ('drum', 'liter', 200),        # 1 drum = 200 liter
-            ('drum', 'ml', 200000),        # 1 drum = 200.000 ml
-            ('jerigen', 'liter', 20),      # 1 jerigen = 20 liter (default)
-            ('jerigen', 'ml', 20000),      # 1 jerigen = 20.000 ml
-            ('m³', 'liter', 1000),         # 1 m³ = 1000 liter
-            ('m³', 'ml', 1000000),         # 1 m³ = 1.000.000 ml
-
-            # ── D. Satuan Panjang ──
-            ('km', 'meter', 1000),         # 1 km = 1000 meter
-            ('km', 'cm', 100000),          # 1 km = 100.000 cm
-            ('meter', 'cm', 100),          # 1 meter = 100 cm
-            ('meter', 'mm', 1000),         # 1 meter = 1000 mm
-            ('cm', 'mm', 10),              # 1 cm = 10 mm
-            ('inch', 'cm', 2.54),          # 1 inch = 2.54 cm
-            ('meter', 'inch', 39.37),      # 1 meter = 39.37 inch
-            ('roll', 'meter', 50),         # 1 roll = 50 meter (default, bisa override)
-
-            # ── E. Satuan Luas ──
-            ('m²', 'cm²', 10000),          # 1 m² = 10.000 cm²
-            ('ha', 'm²', 10000),           # 1 hektar = 10.000 m²
-            ('are', 'm²', 100),            # 1 are = 100 m²
-            ('ha', 'are', 100),            # 1 hektar = 100 are
-
-            # ── F. Satuan Khusus ──
-            ('tray', 'pcs', 30),           # 1 tray = 30 pcs (telur, default)
-            ('tray', 'buah', 30),          # 1 tray = 30 buah (telur)
-        ]
-
-        created_count = 0
-        skipped_count = 0
-
-        for dari_key, ke_key, faktor in konversi_data:
-            dari = satuan_map.get(dari_key)
-            ke = satuan_map.get(ke_key)
-
-            if dari and ke:
-                _, created = KonversiSatuan.objects.get_or_create(
-                    dari_satuan=dari,
-                    ke_satuan=ke,
-                    produk=None,  # Global (berlaku untuk semua produk)
-                    defaults={'faktor_konversi': faktor}
-                )
-                if created:
-                    created_count += 1
-                    self.stdout.write(f'  + 1 {dari.singkatan} = {faktor} {ke.singkatan}')
+                if changes:
+                    stats["updated"] += 1
+                    if not dry_run:
+                        for field, value in changes.items():
+                            setattr(unit, field, value)
+                        unit.save(update_fields=list(changes.keys()))
                 else:
-                    skipped_count += 1
-            else:
-                missing = []
-                if not dari:
-                    missing.append(dari_key)
-                if not ke:
-                    missing.append(ke_key)
-                self.stdout.write(self.style.WARNING(
-                    f'  ⚠ Satuan tidak ditemukan: {", ".join(missing)}'
-                ))
+                    stats["skipped"] += 1
 
-        self.stdout.write('')
-        self.stdout.write(self.style.SUCCESS(
-            f'Selesai! {created_count} konversi baru ditambahkan, '
-            f'{skipped_count} sudah ada (dilewati).'
-        ))
-        self.stdout.write(self.style.SUCCESS(
-            f'Total satuan tersedia: {Satuan.objects.count()}'
-        ))
-        self.stdout.write(self.style.SUCCESS(
-            f'Total konversi global: {KonversiSatuan.objects.filter(produk__isnull=True).count()}'
-        ))
+                unit_map[code] = unit
+                continue
+
+            stats["created"] += 1
+            if dry_run:
+                unit_map[code] = None
+            else:
+                unit_map[code] = Satuan.objects.create(nama=name, singkatan=code)
+
+        return unit_map, stats
+
+    def seed_conversions(self, unit_map, dry_run, update_existing):
+        stats = {"created": 0, "updated": 0, "skipped": 0}
+
+        for from_code, to_code, factor_text in DEFAULT_CONVERSIONS:
+            factor = Decimal(factor_text)
+            from_unit = unit_map.get(from_code)
+            to_unit = unit_map.get(to_code)
+
+            if dry_run and (from_unit is None or to_unit is None):
+                stats["created"] += 1
+                continue
+
+            if not from_unit or not to_unit:
+                self.stdout.write(self.style.WARNING(
+                    f"Konversi dilewati, satuan belum tersedia: {from_code} -> {to_code}"
+                ))
+                continue
+
+            conversion = KonversiSatuan.objects.filter(
+                dari_satuan=from_unit,
+                ke_satuan=to_unit,
+                produk__isnull=True,
+            ).first()
+
+            if conversion:
+                if update_existing and conversion.faktor_konversi != factor:
+                    stats["updated"] += 1
+                    if not dry_run:
+                        conversion.faktor_konversi = factor
+                        conversion.save(update_fields=["faktor_konversi"])
+                else:
+                    stats["skipped"] += 1
+                continue
+
+            stats["created"] += 1
+            if not dry_run:
+                KonversiSatuan.objects.create(
+                    dari_satuan=from_unit,
+                    ke_satuan=to_unit,
+                    faktor_konversi=factor,
+                    produk=None,
+                )
+
+        return stats
+
+    @staticmethod
+    def find_unit(name, code, aliases):
+        lookup_values = [code, *aliases]
+        for value in lookup_values:
+            unit = Satuan.objects.filter(singkatan__iexact=value).first()
+            if unit:
+                return unit
+
+        names = {name, name.lower(), name.title()}
+        for value in names:
+            unit = Satuan.objects.filter(nama__iexact=value).first()
+            if unit:
+                return unit
+
+        return None

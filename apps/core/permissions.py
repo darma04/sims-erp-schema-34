@@ -38,6 +38,9 @@ from django.shortcuts import redirect           # Fungsi redirect ke URL lain
 from django.contrib import messages              # Framework pesan flash
 
 
+SUPERUSER_ROLE_CODES = {'SUPERUSER', 'PEMILIK'}
+
+
 def get_user_role(user):
     """
     Mendapatkan role user dari Profile-nya.
@@ -69,11 +72,19 @@ def get_user_role(user):
     try:
         # Ambil role dari Profile (via relasi OneToOne: user.profile)
         role = user.profile.role
-        return role.upper() if role else 'USER'
+        role = role.upper() if role else 'USER'
+        if role in SUPERUSER_ROLE_CODES:
+            return 'SUPERUSER'
+        return role
     # Tangkap error Exception — lanjutkan tanpa crash
     except Exception:
         # Jika profile belum ada (error), default ke 'USER'
         return 'USER'
+
+
+def is_superuser_role(user):
+    """True jika user adalah Django superuser atau role bisnis full-access."""
+    return get_user_role(user) == 'SUPERUSER'
 
 
 def has_permission(user, action, module=None, sub_module=None):
@@ -110,12 +121,16 @@ def has_permission(user, action, module=None, sub_module=None):
 
             # Mapping aksi ke field database
             action_map = {
+                'add': 'can_create',
                 'create': 'can_create',
                 'read': 'can_view',
                 'view': 'can_view',
+                'edit': 'can_edit',
                 'update': 'can_edit',
                 'write': 'can_edit',
-                'delete': 'can_delete'
+                'delete': 'can_delete',
+                'del': 'can_delete',
+                'remove': 'can_delete'
             }
             perm_field = action_map.get(action)
             if not perm_field:
@@ -158,16 +173,60 @@ def has_permission(user, action, module=None, sub_module=None):
     return False
 
 
+def has_exact_submodule_permission(user, action, module, sub_module):
+    """
+    Cek permission sub-module tanpa fallback ke module-level.
+    Dipakai untuk tombol/fitur global yang harus bisa disembunyikan eksplisit
+    dari Add/Edit Role Permission.
+    """
+    role = get_user_role(user)
+
+    if not role:
+        return False
+
+    if role == 'SUPERUSER':
+        return True
+
+    if not module or not sub_module:
+        return False
+
+    try:
+        module_normalized = module.replace('-', '_').lower()
+        sub_module_normalized = sub_module.replace('-', '_').lower()
+        action_map = {
+            'add': 'can_create',
+            'create': 'can_create',
+            'read': 'can_view',
+            'view': 'can_view',
+            'edit': 'can_edit',
+            'update': 'can_edit',
+            'write': 'can_edit',
+            'delete': 'can_delete',
+            'del': 'can_delete',
+            'remove': 'can_delete',
+        }
+        perm_field = action_map.get(action)
+        if not perm_field:
+            return False
+
+        perms_cache = _get_role_permissions_cache(role)
+        return perms_cache.get((module_normalized, sub_module_normalized), {}).get(perm_field, False)
+    except Exception:
+        return False
+
+
 def _get_role_permissions_cache(role):
     """
     Load SEMUA permissions untuk sebuah role dalam 1 query dan cache.
 
     Return: Dictionary {(module, sub_module): {can_view, can_create, can_edit, can_delete}}
-    Cache TTL: 30 detik — balance antara performa dan freshness.
+    Cache TTL: 5 menit, dengan versioned invalidation saat permission role berubah.
     """
     from django.core.cache import cache
+    from apps.core.cache_utils import get_role_permissions_cache_key, normalize_role_code
 
-    cache_key = f'role_perms_{role}'
+    role = normalize_role_code(role)
+    cache_key = get_role_permissions_cache_key(role)
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
@@ -179,7 +238,7 @@ def _get_role_permissions_cache(role):
     # Satu query untuk SEMUA permission role ini
     all_perms = RolePermission.objects.filter(
         role__iexact=role
-    ).values('module', 'sub_module', 'can_view', 'can_create', 'can_edit', 'can_delete')
+    ).order_by().values('module', 'sub_module', 'can_view', 'can_create', 'can_edit', 'can_delete')
 
     for p in all_perms:
         mod = p['module'].lower() if p['module'] else ''
@@ -192,7 +251,7 @@ def _get_role_permissions_cache(role):
             'can_delete': p['can_delete'],
         }
 
-    cache.set(cache_key, perms_dict, 30)  # Cache 30 detik
+    cache.set(cache_key, perms_dict, 300)  # Cache 5 menit, aman karena invalidasi berbasis versi
     return perms_dict
 
 
@@ -210,7 +269,12 @@ def get_accessible_submodules(user, module):
 
     # Superuser bisa lihat SEMUA sub-modules
     if role == 'SUPERUSER':
-        return get_all_submodules_from_menu(module)
+        from apps.core.models import RolePermission
+        module_normalized = module.replace('-', '_').lower()
+        return [
+            RolePermission.SUB_MODULE_TO_SLUG.get(sub_code, sub_code)
+            for sub_code, _ in RolePermission.SUB_MODULE_CHOICES.get(module_normalized, [])
+        ]
 
     # Blok penanganan error — coba jalankan kode di bawah
     try:
@@ -242,6 +306,7 @@ def get_accessible_submodules(user, module):
 
 
 # Cache untuk data menu JSON (dibaca sekali dari disk, tidak perlu baca ulang)
+# v2: Reset cache setelah fix duplikat slug "laporan" → "laporan-keuangan"
 _menu_cache = None
 
 
@@ -263,6 +328,7 @@ def get_all_submodules_from_menu(module):
         # Reverse mapping: DB module → menu slug
         MODULE_TO_SLUG = {
             'user_management': 'users',
+            'laporan_keuangan': 'laporan-keuangan',
         }
 
         # Cache menu data di memori (baca file hanya sekali)

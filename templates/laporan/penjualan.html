@@ -34,9 +34,8 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div class="card-info">
-                            <p class="card-text text-muted">Total Penjualan</p>
-                            <h4 class="mb-0 text-success summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Σ total_harga Sales Order (confirmed/delivered/completed) + Σ total_harga POS (paid) + Σ biaya_akhir Service (lunas).<br><br><b>Sumber:</b> Tabel SalesOrder + POSTransaction + OrderService.<br>Mendukung filter tanggal.">{{ total_penjualan|rupiah }}</h4>
-                            <small class="text-muted">SO + POS + Service</small>
+                            <p class="card-text text-muted">Pendapatan Bersih</p>
+                            <h4 class="mb-0 text-success summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Sales Order dihitung dari subtotal setelah diskon + ongkir, POS dari subtotal setelah diskon, tanpa PPN Keluaran.<br><br><b>Sumber:</b> SalesOrder + POSTransaction.<br><b>Catatan:</b> Diskon mengurangi pendapatan, ongkir menambah pendapatan operasional, PPN masuk akun pajak/kas.">{{ total_penjualan|rupiah }}</h4>
                         </div>
                         <div class="card-icon">
                             <span class="badge bg-label-success rounded p-2">
@@ -53,7 +52,7 @@
                     <div class="d-flex justify-content-between">
                         <div class="card-info">
                             <p class="card-text text-muted">Total Keuntungan</p>
-                            <h4 class="mb-0 {% if total_keuntungan >= 0 %}text-success{% else %}text-danger{% endif %} summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Σ (harga_jual - harga_beli) x qty per item yang terjual.<br><br><b>Sumber:</b> SalesOrderItem + POSTransactionItem.<br>Keuntungan kotor dari semua barang terjual (tidak termasuk Service Center).">{{ total_keuntungan|rupiah }}</h4>
+                            <h4 class="mb-0 {% if total_keuntungan >= 0 %}text-success{% else %}text-danger{% endif %} summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Σ (harga_jual − harga_beli) × qty per item terjual.<br>SO: qty transaksi, POS: qty konversi (satuan dasar).<br><br><b>Sumber:</b> SalesOrderItem + POSTransactionItem.<br>Keuntungan kotor dari semua barang terjual.">{{ total_keuntungan|rupiah }}</h4>
                         </div>
                         <div class="card-icon">
                             <span class="badge bg-label-primary rounded p-2">
@@ -70,7 +69,7 @@
                     <div class="d-flex justify-content-between">
                         <div class="card-info">
                             <p class="card-text text-muted">Harga Beli</p>
-                            <h4 class="mb-0 text-info summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Σ (harga_beli x qty) per item yang terjual.<br><br><b>Sumber:</b> SalesOrderItem + POSTransactionItem.<br>Total modal dari barang yang sudah terjual.">{{ total_harga_beli|rupiah }}</h4>
+                            <h4 class="mb-0 text-info summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Σ (harga_beli × qty) per item terjual.<br>SO: qty transaksi, POS: qty konversi (satuan dasar).<br><br><b>Sumber:</b> SalesOrderItem + POSTransactionItem.<br>Total modal dari barang yang sudah terjual.">{{ total_harga_beli|rupiah }}</h4>
                         </div>
                         <div class="card-icon">
                             <span class="badge bg-label-info rounded p-2">
@@ -87,7 +86,7 @@
                     <div class="d-flex justify-content-between">
                         <div class="card-info">
                             <p class="card-text text-muted">Rata-rata Order</p>
-                            <h4 class="mb-0 text-warning summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Total Penjualan / Jumlah Transaksi.<br><br><b>Sumber:</b> (SO + POS + Service total) / (SO count + POS count + Service count).<br>Rata-rata nilai per transaksi.">{{ rata_rata_order|rupiah }}</h4>
+                            <h4 class="mb-0 text-warning summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Pendapatan bersih / jumlah transaksi.<br><br><b>Sumber:</b> SO net setelah diskon termasuk ongkir + POS net setelah diskon, tanpa PPN.">{{ rata_rata_order|rupiah }}</h4>
                         </div>
                         <div class="card-icon">
                             <span class="badge bg-label-warning rounded p-2">
@@ -148,7 +147,7 @@
                             <div class="form-check mb-2">
                                 <input class="form-check-input so-column-checkbox" type="checkbox" value="3" checked
                                     onchange="toggleSOColumns()">
-                                <label class="form-check-label">Harga Jual</label>
+                                <label class="form-check-label">Pendapatan Bersih</label>
                             </div>
                             <div class="form-check mb-2">
                                 <input class="form-check-input so-column-checkbox" type="checkbox" value="4" checked
@@ -201,7 +200,7 @@
                             <div class="form-check mb-2">
                                 <input class="form-check-input pos-column-checkbox" type="checkbox" value="3" checked
                                     onchange="togglePOSColumns()">
-                                <label class="form-check-label">Harga Jual</label>
+                                <label class="form-check-label">Pendapatan Bersih</label>
                             </div>
                             <div class="form-check mb-2">
                                 <input class="form-check-input pos-column-checkbox" type="checkbox" value="4" checked
@@ -249,7 +248,7 @@
 
     <!-- ========== Sales Order Table ========== -->
     <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="card-header d-flex justify-content-between">
             <div>
                 <h5 class="mb-0">Daftar Sales Order</h5>
                 <small class="text-muted">{{ so_count }} transaksi - {{ so_total|rupiah }}</small>
@@ -268,7 +267,7 @@
                         <th>No. SO</th>
                         <th>Tanggal</th>
                         <th>Customer</th>
-                        <th>Harga Jual</th>
+                        <th>Pendapatan Bersih</th>
                         <th>Harga Beli</th>
                         <th>Keuntungan</th>
                         <th>Status</th>
@@ -281,7 +280,7 @@
                         <td><code>{{ so.nomor_so }}</code></td>
                         <td>{{ so.tanggal|date:"d M Y" }}</td>
                         <td>{{ so.customer.nama }}</td>
-                        <td>{{ so.total_harga|rupiah }}</td>
+                        <td>{{ so.nilai_laporan|rupiah }}</td>
                         <td>{{ so.harga_beli_calc|rupiah }}</td>
                         <td>
                             <span class="{% if so.keuntungan_calc >= 0 %}text-success{% else %}text-danger{% endif %} fw-medium">
@@ -342,7 +341,7 @@
                                     <i class="ri-money-dollar-circle-line"></i>
                                     <span>{{ so_total|rupiah }}</span>
                                 </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Harga Jual</small>
+                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Pendapatan Bersih</small>
                             </div>
                         </td>
                         <td class="py-3" style="vertical-align: middle;">
@@ -375,7 +374,7 @@
 
     <!-- ========== POS Transaction Table ========== -->
     <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="card-header d-flex justify-content-between">
             <div>
                 <h5 class="mb-0"><i class="ri-store-2-line me-2"></i>Transaksi POS / Kasir</h5>
                 <small class="text-muted">{{ pos_count }} transaksi - {{ pos_total|rupiah }}</small>
@@ -394,7 +393,7 @@
                         <th>No. Transaksi</th>
                         <th>Tanggal</th>
                         <th>Kasir</th>
-                        <th>Harga Jual</th>
+                        <th>Pendapatan Bersih</th>
                         <th>Harga Beli</th>
                         <th>Keuntungan</th>
                         <th>Metode Bayar</th>
@@ -407,7 +406,7 @@
                         <td><code>{{ pos.nomor_transaksi }}</code></td>
                         <td>{{ pos.tanggal|date:"d M Y H:i" }}</td>
                         <td>{{ pos.kasir.username|default:"-" }}</td>
-                        <td>{{ pos.total_harga|rupiah }}</td>
+                        <td>{{ pos.nilai_laporan|rupiah }}</td>
                         <td>{{ pos.harga_beli_calc|rupiah }}</td>
                         <td>
                             <span class="{% if pos.keuntungan_calc >= 0 %}text-success{% else %}text-danger{% endif %} fw-medium">
@@ -454,7 +453,7 @@
                                     <i class="ri-money-dollar-circle-line"></i>
                                     <span>{{ pos_total|rupiah }}</span>
                                 </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Harga Jual</small>
+                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Pendapatan Bersih</small>
                             </div>
                         </td>
                         <td class="py-3" style="vertical-align: middle;">
@@ -475,80 +474,6 @@
                                     <span>{{ pos_keuntungan_total|rupiah }}</span>
                                 </span>
                                 <small class="text-muted fw-medium" style="font-size: 0.7rem;">Keuntungan</small>
-                            </div>
-                        </td>
-                        <td class="py-3"></td>
-                        <td class="py-3"></td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
-    </div>
-
-    <!-- ========== Service Center Table ========== -->
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <div>
-                <h5 class="mb-0"><i class="ri-tools-line me-2"></i>Service Center</h5>
-                <small class="text-muted">{{ sc_count }} order - {{ sc_total|rupiah }}</small>
-            </div>
-            <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-label-success" onclick="exportSCExcel()"><i
-                        class="ri-file-excel-2-line me-1"></i>Export Excel</button>
-                <button class="btn btn-sm btn-label-danger" onclick="exportSCPDF()"><i
-                        class="ri-file-pdf-line me-1"></i>Export PDF</button>
-            </div>
-        </div>
-        <div class="card-datatable table-responsive">
-            <table class="table table-hover" id="serviceTable">
-                <thead>
-                    <tr>
-                        <th>No. Service</th>
-                        <th>Tanggal</th>
-                        <th>Pelanggan</th>
-                        <th>Biaya Akhir</th>
-                        <th>Metode Bayar</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for sc in service_order_list %}
-                    <tr>
-                        <td><code>{{ sc.nomor_service }}</code></td>
-                        <td>{{ sc.tanggal_masuk|date:"d M Y H:i" }}</td>
-                        <td>{{ sc.pelanggan.nama|default:"-" }}</td>
-                        <td class="text-success fw-medium">{{ sc.biaya_akhir|rupiah }}</td>
-                        <td>{{ sc.metode_pembayaran.nama|default:"-" }}</td>
-                        <td><span class="badge bg-label-success">Lunas</span></td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="text-center py-5">
-                            <p class="text-muted">Belum ada order service lunas</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-                <tfoot class="table-footer-summary">
-                    <tr>
-                        <td colspan="3" class="text-start ps-4 py-3" style="vertical-align: middle;">
-                            <div class="d-flex align-items-center justify-content-start">
-                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
-                                <div class="text-start">
-                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN SERVICE</strong>
-                                    <small class="text-muted" style="font-size: 0.75rem;">{{ sc_count }}
-                                        Order Lunas</small>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="py-3" style="vertical-align: middle;">
-                            <div class="d-flex flex-column align-items-center">
-                                <span class="badge bg-label-success d-flex align-items-center gap-1 mb-1"
-                                    style="font-size: 0.85rem; padding: 0.4rem 0.6rem;">
-                                    <i class="ri-money-dollar-circle-line"></i>
-                                    <span>{{ sc_total|rupiah }}</span>
-                                </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Total Revenue</small>
                             </div>
                         </td>
                         <td class="py-3"></td>
@@ -591,10 +516,6 @@
 
         {% if pos_transaction_list %}
         window.posTable = $('#posTable').DataTable($.extend({}, dtConfig, { order: [[1, 'desc']] }));
-        {% endif %}
-
-        {% if service_order_list %}
-        window.scTable = $('#serviceTable').DataTable($.extend({}, dtConfig, { order: [[1, 'desc']] }));
         {% endif %}
     });
 
@@ -911,11 +832,6 @@
     const POS_FOOTER = { 3: "{{ pos_total|escapejs }}", 4: "{{ pos_harga_beli_total|escapejs }}", 5: "{{ pos_keuntungan_total|escapejs }}" };
     function exportPOSExcel() { genericExportExcel('posTable', 'Laporan_Transaksi_POS', 'Transaksi POS', POS_FOOTER, 'RINGKASAN POS'); }
     function exportPOSPDF()   { genericExportPDF('posTable', 'Laporan_Transaksi_POS', 'LAPORAN TRANSAKSI POS', POS_FOOTER, 'RINGKASAN POS'); }
-
-    // Footer data for Service table
-    const SC_FOOTER = { 3: "{{ sc_total|escapejs }}" };
-    function exportSCExcel() { genericExportExcel('serviceTable', 'Laporan_Service_Center', 'Service Center', SC_FOOTER, 'RINGKASAN SERVICE'); }
-    function exportSCPDF()   { genericExportPDF('serviceTable', 'Laporan_Service_Center', 'LAPORAN SERVICE CENTER', SC_FOOTER, 'RINGKASAN SERVICE'); }
 </script>
 <script>
     // Inisialisasi Bootstrap Tooltip

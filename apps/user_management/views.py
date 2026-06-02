@@ -151,7 +151,7 @@ class UserAddView(CreatePermissionMixin, CreateView):
         try:
             user.profile.role = role
             user.profile.save()
-        except:
+        except Exception:
             # Buat profile jika belum ada
             Profile.objects.create(user=user, email=user.email, role=role)
         
@@ -182,7 +182,7 @@ class UserDetailView(ReadPermissionMixin, DetailView):
         try:
             context['user_role'] = self.object.profile.role
             context['role_display'] = get_role_display(self.object.profile.role)
-        except:
+        except Exception:
             context['user_role'] = 'USER'
             context['role_display'] = 'User'
         return context
@@ -216,7 +216,7 @@ class UserDetailAjaxView(ReadPermissionMixin, View):
                     role = user.profile.role or 'USER'
                     role_display = get_role_display(role)
                     phone = user.profile.phone or '-'
-            except:
+            except Exception:
                 pass
         
             # Ambil permissions untuk role user ini
@@ -233,7 +233,7 @@ class UserDetailAjaxView(ReadPermissionMixin, View):
                         permissions.append(f"{module_name}: Edit")
                     if perm.can_delete:
                         permissions.append(f"{module_name}: Delete")
-            except:
+            except Exception:
                 pass
         
             return JsonResponse({
@@ -303,7 +303,7 @@ class UserEditView(UpdatePermissionMixin, UpdateView):
         context['role_choices'] = all_roles
         try:
             context['current_role'] = self.object.profile.role
-        except:
+        except Exception:
             context['current_role'] = 'USER'
         # Simpan referrer agar bisa redirect kembali ke halaman asal
         referer = self.request.GET.get('next') or self.request.META.get('HTTP_REFERER', '')
@@ -325,7 +325,7 @@ class UserEditView(UpdatePermissionMixin, UpdateView):
             try:
                 self.object.profile.role = role
                 self.object.profile.save()
-            except:
+            except Exception:
                 # Buat profile jika belum ada
                 Profile.objects.create(user=self.object, email=self.object.email, role=role)
     

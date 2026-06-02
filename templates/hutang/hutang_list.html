@@ -1,0 +1,295 @@
+﻿{% extends 'layout/layout_vertical.html' %}
+{% load static %}
+{% load currency_filters %}
+
+{% block title %}Hutang Usaha - Akuntansi ERP{% endblock title %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/flatpickr/flatpickr.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+<script src="{% static 'vendor/libs/flatpickr/flatpickr.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+{% endblock vendor_js %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="ri-hand-coin-line me-2"></i>Hutang Usaha (Accounts Payable)</h4>
+            <p class="text-muted mb-0">Kelola hutang dan pembayaran ke supplier</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'hutang:aging' %}" class="btn btn-outline-info"><i class="ri-bar-chart-box-line me-1"></i>Aging Report</a>
+            {% if rbac_can_create %}
+            <a href="{% url 'hutang:add' %}" class="btn btn-primary"><i class="ri-add-line me-1"></i>Input Hutang</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-primary"><i class="ri-file-list-3-line ri-24px"></i></span></div>
+                        <div><h5 class="mb-0">{{ count_total }}</h5><small class="text-muted">Total Hutang</small></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-danger"><i class="ri-hand-coin-line ri-24px"></i></span></div>
+                        <div><h5 class="mb-0 text-danger">{{ total_sisa|rupiah }}</h5><small class="text-muted">Sisa Hutang</small></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-success"><i class="ri-checkbox-circle-line ri-24px"></i></span></div>
+                        <div><h5 class="mb-0">{{ count_lunas }}</h5><small class="text-muted">Lunas</small></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-warning"><i class="ri-time-line ri-24px"></i></span></div>
+                        <div><h5 class="mb-0">{{ count_belum }}</h5><small class="text-muted">Belum Bayar</small></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-sm-6 col-md">
+                    <label class="form-label">Tanggal Mulai</label>
+                    <input type="text" class="form-control flatpickr-input" id="startDate" placeholder="Dari">
+                </div>
+                <div class="col-sm-6 col-md">
+                    <label class="form-label">Tanggal Akhir</label>
+                    <input type="text" class="form-control flatpickr-input" id="endDate" placeholder="Sampai">
+                </div>
+                <div class="col-sm-6 col-md">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" id="statusFilter">
+                        <option value="">Semua</option>
+                        {% for val, label in status_choices %}
+                        <option value="{{ val }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-sm-6 col-md">
+                    <label class="form-label">Cabang</label>
+                    <select class="form-select" id="cabangFilter">
+                        <option value="">Semua</option>
+                        {% for c in cabang_list %}
+                        <option value="{{ c.pk }}">{{ c.nama }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-sm-6 col-md">
+                    <label class="form-label">Supplier</label>
+                    <select class="form-select" id="supplierFilter">
+                        <option value="">Semua Supplier</option>
+                        {% for s in supplier_list %}
+                        <option value="{{ s.pk }}">{{ s.nama }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="row g-3 mt-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Pilih Kolom yang Ditampilkan</label>
+                    <div class="dropdown">
+                        <button class="btn btn-label-secondary dropdown-toggle waves-effect w-100" type="button" id="columnFilterDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                            <i class="ri-layout-column-line me-1"></i>Pilih Kolom yang Ditampilkan
+                        </button>
+                        <div class="dropdown-menu p-3" style="min-width: 280px;">
+                            <h6 class="dropdown-header px-0 mb-2">Kolom Tabel</h6>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="0" checked onchange="toggleColumns()"><label class="form-check-label">Nomor</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="1" checked onchange="toggleColumns()"><label class="form-check-label">Tanggal</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="2" checked onchange="toggleColumns()"><label class="form-check-label">Supplier</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="3" checked onchange="toggleColumns()"><label class="form-check-label">Sumber</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="4" checked onchange="toggleColumns()"><label class="form-check-label">Total</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="5" checked onchange="toggleColumns()"><label class="form-check-label">Dibayar</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="6" checked onchange="toggleColumns()"><label class="form-check-label">Sisa</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="7" checked onchange="toggleColumns()"><label class="form-check-label">Jatuh Tempo</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="8" checked onchange="toggleColumns()"><label class="form-check-label">Status</label></div>
+                            <div class="dropdown-divider my-2"></div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-primary flex-fill" onclick="selectAllColumns()"><i class="ri-checkbox-multiple-line"></i> Semua</button>
+                                <button class="btn btn-sm btn-label-secondary flex-fill" onclick="deselectAllColumns()"><i class="ri-checkbox-blank-line"></i> Kosongkan</button>
+                            </div>
+                        </div>
+                    </div>
+                    <small class="text-muted d-block mt-1">Klik untuk memilih kolom</small>
+                </div>
+                <div class="col-md-6"></div>
+                <div class="col-md-3">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" onclick="applyFilter()"><i class="ri-filter-3-line me-1"></i>Terapkan Filter</button>
+                        <button class="btn btn-label-secondary" onclick="resetFilter()"><i class="ri-refresh-line me-1"></i>Reset</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Daftar Hutang</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+            </div>
+        </div>
+        <div class="card-datatable table-responsive">
+            <table class="accounting-data-table table table-hover" id="hutangTable" data-accounting-primary="true" data-export-title="Daftar Hutang" data-export-filename="Daftar_Hutang" data-search-placeholder="Cari nomor/supplier..." data-default-order='[[1,"desc"]]'>
+                <thead>
+                    <tr>
+                        <th>Nomor</th>
+                        <th>Tanggal</th>
+                        <th>Supplier</th>
+                        <th>Sumber</th>
+                        <th class="text-end">Total</th>
+                        <th class="text-end">Dibayar</th>
+                        <th class="text-end">Sisa</th>
+                        <th>Jatuh Tempo</th>
+                        <th>Status</th>
+                        <th data-export-ignore="true" data-action-icon="ri-more-2-line">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in hutang_list %}
+                    <tr>
+                        <td><a href="{% url 'hutang:detail' h.pk %}" class="fw-semibold text-primary">{{ h.nomor }}</a></td>
+                        <td>{{ h.tanggal|date:"d/m/Y" }}</td>
+                        <td>{{ h.supplier.nama }}</td>
+                        <td>
+                            {% if h.sumber == 'po' %}<span class="badge bg-label-info">PO</span>
+                            {% else %}<span class="badge bg-label-primary">Manual</span>{% endif %}
+                        </td>
+                        <td class="text-end">{{ h.jumlah_total|rupiah }}</td>
+                        <td class="text-end text-success">{{ h.jumlah_dibayar|rupiah }}</td>
+                        <td class="text-end fw-bold {% if h.sisa > 0 %}text-danger{% else %}text-success{% endif %}">{{ h.sisa|rupiah }}</td>
+                        <td>
+                            {% if h.jatuh_tempo %}
+                            <span class="{% if h.is_overdue %}text-danger fw-bold{% endif %}">{{ h.jatuh_tempo|date:"d/m/Y" }}</span>
+                            {% if h.is_overdue %}<br><small class="text-danger">{{ h.hari_overdue }} hari</small>{% endif %}
+                            {% else %}-{% endif %}
+                        </td>
+                        <td>
+                            {% if h.status == 'lunas' %}<span class="badge bg-success">Lunas</span>
+                            {% elif h.status == 'sebagian' %}<span class="badge bg-warning">Sebagian</span>
+                            {% elif h.status == 'macet' %}<span class="badge bg-danger">Macet</span>
+                            {% else %}<span class="badge bg-label-secondary">Belum Bayar</span>{% endif %}
+                        </td>
+                        <td>
+                            <div class="dropdown">
+                                <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                                    <i class="ri-more-2-line"></i>
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="{% url 'hutang:detail' h.pk %}">
+                                        <i class="ri-eye-line me-2"></i>Detail
+                                    </a>
+                                    {% if rbac_can_edit and h.status != 'lunas' %}
+                                    <a class="dropdown-item text-success" href="{% url 'hutang:bayar' h.pk %}">
+                                        <i class="ri-bank-card-line me-2"></i>Bayar
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {# Tidak ada baris empty colspan; DataTables handle via language.sEmptyTable #}
+                </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="4" class="text-start ps-4 py-3">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 0.875rem;">RINGKASAN</strong>
+                                    <small class="text-muted">{{ count_total }} hutang</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td colspan="2" class="py-3">
+                            <div class="text-center">
+                                <span class="badge bg-label-danger">{{ total_sisa|rupiah }}</span>
+                                <small class="d-block text-muted mt-1">Sisa Hutang</small>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="text-center">
+                                <span class="badge bg-label-success">{{ count_lunas }}</span>
+                                <small class="d-block text-muted mt-1">Lunas</small>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="text-center">
+                                <span class="badge bg-label-warning">{{ count_belum }}</span>
+                                <small class="d-block text-muted mt-1">Belum Bayar</small>
+                            </div>
+                        </td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block page_js %}
+<style>
+    .card-datatable{padding-bottom:0} .dataTables_wrapper .dataTables_info{padding:1rem 1.5rem;font-size:.875rem;color:#697a8d}
+    .dataTables_wrapper .dataTables_paginate{padding:1rem 1.5rem} .dataTables_wrapper .dataTables_length,.dataTables_wrapper .dataTables_filter{padding:0 1.5rem 1rem 1.5rem}
+    .dataTables_wrapper .dataTables_filter input{border:1px solid #d9dee3;border-radius:.375rem;padding:.4375rem .875rem}
+    .dataTables_wrapper .dataTables_length select{border:1px solid #d9dee3;border-radius:.375rem;padding:.4375rem 2rem .4375rem .875rem}
+    .dataTables_wrapper .dataTables_paginate .paginate_button{padding:.438rem .875rem;border-radius:.375rem;margin:0 .125rem;border:none;background:transparent;color:#697a8d}
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current{background:#696cff!important;color:#fff!important;border:none}
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.disabled){background:rgba(105,108,255,.08)!important;border:none;color:#696cff!important}
+    @media(max-width:768px){.card-datatable{overflow-x:hidden!important;max-width:100%}table{min-width:1000px!important}}
+</style>
+<script>
+$(document).ready(function(){
+    flatpickr('#startDate',{dateFormat:'Y-m-d'});flatpickr('#endDate',{dateFormat:'Y-m-d'});
+});
+function applyFilter(){const p=new URLSearchParams();if($('#startDate').val())p.append('start',$('#startDate').val());if($('#endDate').val())p.append('end',$('#endDate').val());if($('#statusFilter').val())p.append('status',$('#statusFilter').val());if($('#supplierFilter').val())p.append('supplier',$('#supplierFilter').val());if($('#cabangFilter').val())p.append('cabang',$('#cabangFilter').val());window.location.href='{% url "hutang:list" %}?'+p.toString();}
+function resetFilter(){window.location.href='{% url "hutang:list" %}';}
+function toggleColumns() { const checkboxes = document.querySelectorAll('.column-checkbox'); const table = new $.fn.dataTable.Api('#hutangTable'); checkboxes.forEach(cb => { table.column(parseInt(cb.value)).visible(cb.checked); }); }
+function selectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(cb => { cb.checked = true; }); toggleColumns(); }
+function deselectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(cb => { cb.checked = false; }); toggleColumns(); }
+
+</script>
+{% include 'accounting/partials/table_tools.html' %}
+{% endblock page_js %}
+

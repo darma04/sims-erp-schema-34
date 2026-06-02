@@ -46,6 +46,7 @@ from django.contrib import messages
 from django.utils.decorators import method_decorator
 # Import dari framework Django
 from django.db import transaction  # Atomic transaction untuk operasi stok
+from django.views.decorators.http import require_http_methods
 from web_project import TemplateLayout
 # Import dari modul internal proyek
 from apps.pembelian.models import Supplier, PurchaseOrder, PurchaseOrderItem
@@ -129,7 +130,7 @@ class SupplierUpdateView(UpdatePermissionMixin, UpdateView):
 class SupplierDeleteView(DeletePermissionMixin, DeleteView):
     """
     Hapus supplier — return JSON untuk AJAX.
-    ⚠ Gagal jika supplier masih punya PO (FK PROTECT)
+    Catatan: Gagal jika supplier masih punya PO (FK PROTECT)
     """
     model = Supplier
     # URL redirect setelah operasi berhasil
@@ -178,6 +179,12 @@ class PurchaseOrderListView(ReadPermissionMixin, ListView):
     # Modul permission yang dicek: 'pembelian'
     permission_module = 'pembelian'
     permission_sub_module = 'purchase_order'
+
+    def get_queryset(self):
+        """Optimasi query list PO agar relasi utama sudah ikut diambil."""
+        return super().get_queryset().select_related(
+            'supplier', 'gudang', 'metode_pembayaran', 'dibuat_oleh', 'disetujui_oleh'
+        ).prefetch_related('items__produk')
     
     def get_context_data(self, **kwargs):
         """Menambahkan data konteks tambahan ke template."""
@@ -219,6 +226,11 @@ class PurchaseOrderCreateView(CreatePermissionMixin, CreateView):
     # Modul permission yang dicek: 'pembelian'
     permission_module = 'pembelian'
     permission_sub_module = 'purchase_order'
+
+    def get_queryset(self):
+        return super().get_queryset().select_related(
+            'supplier', 'gudang', 'metode_pembayaran', 'dibuat_oleh', 'disetujui_oleh'
+        ).prefetch_related('items__produk')
     
     def get_context_data(self, **kwargs):
         """Menambahkan data konteks tambahan ke template."""
@@ -244,7 +256,7 @@ class PurchaseOrderCreateView(CreatePermissionMixin, CreateView):
         Items diambil dari POST data manual (bukan formset standar).
         """
         from apps.produk.models import Produk, Kategori, Satuan
-        from decimal import Decimal
+        from decimal import Decimal, InvalidOperation
         import random
         
         # DIPERBAIKI QA-P1: Seluruh proses dalam atomic transaction
@@ -376,14 +388,17 @@ class PurchaseOrderCreateView(CreatePermissionMixin, CreateView):
         
         # Log activity
         from apps.activity_log.middleware import ActivityLogMiddleware
-        ActivityLogMiddleware.log_activity(
-            self.request,
-            action='create',
-            model_name='Purchase Order',
-            object_id=po.pk,
-            object_repr=str(po),
-            description=f'Membuat Purchase Order: {po.nomor_po} ke {po.supplier.nama} ({items_created} produk baru)'
-        )
+        try:
+            ActivityLogMiddleware.log_activity(
+                self.request,
+                action='create',
+                model_name='Purchase Order',
+                object_id=po.pk,
+                object_repr=str(po),
+                description=f'Membuat Purchase Order: {po.nomor_po} ke {po.supplier.nama} ({items_created} produk baru)'
+            )
+        except Exception:
+            pass
         
         # Tampilkan pesan sukses ke user
         messages.success(self.request, f'Purchase Order {po.nomor_po} berhasil dibuat dengan {items_created} produk baru')
@@ -402,7 +417,21 @@ class PurchaseOrderDetailView(ReadPermissionMixin, TemplateView):
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))
         po_id = kwargs.get('pk')
         # Data konteks: purchase_order — untuk ditampilkan di template
-        context['purchase_order'] = get_object_or_404(PurchaseOrder, pk=po_id)
+        purchase_order = get_object_or_404(
+            PurchaseOrder.objects.select_related(
+                'supplier', 'gudang', 'metode_pembayaran', 'dibuat_oleh', 'disetujui_oleh'
+            ).prefetch_related('items__produk', 'items__satuan_transaksi'),
+            pk=po_id
+        )
+        context['purchase_order'] = purchase_order
+        try:
+            from apps.kas_bank.services import metode_is_credit
+            from apps.hutang.models import Hutang
+            context['is_credit_tempo'] = purchase_order.metode_pembayaran is None or metode_is_credit(purchase_order.metode_pembayaran)
+            context['hutang_po'] = Hutang.objects.filter(purchase_order=purchase_order, sumber='po').first()
+        except Exception:
+            context['is_credit_tempo'] = False
+            context['hutang_po'] = None
         return context
 
 
@@ -421,7 +450,12 @@ class PurchaseOrderPrintView(ReadPermissionMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         po_id = kwargs.get('pk')
         # Data konteks: purchase_order — untuk ditampilkan di template
-        context['purchase_order'] = get_object_or_404(PurchaseOrder, pk=po_id)
+        context['purchase_order'] = get_object_or_404(
+            PurchaseOrder.objects.select_related(
+                'supplier', 'gudang', 'metode_pembayaran', 'dibuat_oleh', 'disetujui_oleh'
+            ).prefetch_related('items__produk', 'items__satuan_transaksi'),
+            pk=po_id
+        )
         # Import dari modul internal proyek
         from apps.pengaturan.models import TemplateCetak, PengaturanPerusahaan
         # Data konteks: template — untuk ditampilkan di template
@@ -445,6 +479,12 @@ class PurchaseOrderUpdateView(UpdatePermissionMixin, UpdateView):
     permission_module = 'pembelian'
     permission_sub_module = 'purchase_order'
     
+    def dispatch(self, request, *args, **kwargs):
+        """Simpan old_total sebelum edit untuk propagasi jurnal."""
+        po = self.get_object()
+        self._old_total = po.total_harga
+        return super().dispatch(request, *args, **kwargs)
+
     def get_success_url(self):
         """URL redirect setelah operasi berhasil."""
         return reverse_lazy('pembelian:purchase-order-detail', kwargs={'pk': self.object.pk})
@@ -480,24 +520,35 @@ class PurchaseOrderUpdateView(UpdatePermissionMixin, UpdateView):
         formset = context['formset']
         
         if formset.is_valid():
-            self.object = form.save()
-            formset.instance = self.object
-            formset.save()
+            with transaction.atomic():
+                self.object = form.save()
+                formset.instance = self.object
+                formset.save()
             
-            # Recalculate total setelah items berubah
-            self.object.calculate_total()
-            self.object.save()
+                # Recalculate total setelah items berubah
+                self.object.calculate_total()
+                self.object.save()
+
+                # Propagasi edit: reverse jurnal lama + buat baru jika PO sudah punya jurnal
+                from apps.core.propagation import handle_document_edit
+                from apps.akuntansi.models import JurnalEntry
+
+                if JurnalEntry.objects.filter(sumber='po', sumber_id=self.object.pk, is_reversed=False).exists():
+                    handle_document_edit(self.object, old_total=self._old_total, user=self.request.user)
             
             # Log activity
             from apps.activity_log.middleware import ActivityLogMiddleware
-            ActivityLogMiddleware.log_activity(
-                self.request,
-                action='update',
-                model_name='Purchase Order',
-                object_id=self.object.pk,
-                object_repr=str(self.object),
-                description=f'Mengubah Purchase Order: {self.object.nomor_po} - Rp {self.object.total_harga:,.0f}'
-            )
+            try:
+                ActivityLogMiddleware.log_activity(
+                    self.request,
+                    action='update',
+                    model_name='Purchase Order',
+                    object_id=self.object.pk,
+                    object_repr=str(self.object),
+                    description=f'Mengubah Purchase Order: {self.object.nomor_po} - Rp {self.object.total_harga:,.0f}'
+                )
+            except Exception:
+                pass
             
             # Tampilkan pesan sukses ke user
             messages.success(self.request, 'Purchase Order berhasil diupdate')
@@ -543,17 +594,24 @@ class PurchaseOrderDeleteView(DeletePermissionMixin, DeleteView):
         
         # Log activity sebelum hapus (agar referensi masih ada)
         from apps.activity_log.middleware import ActivityLogMiddleware
-        ActivityLogMiddleware.log_activity(
-            request,
-            action='delete',
-            model_name='Purchase Order',
-            object_id=po.pk,
-            object_repr=str(po),
-            description=f'Menghapus Purchase Order: {po.nomor_po}'
-        )
+        try:
+            ActivityLogMiddleware.log_activity(
+                request,
+                action='delete',
+                model_name='Purchase Order',
+                object_id=po.pk,
+                object_repr=str(po),
+                description=f'Menghapus Purchase Order: {po.nomor_po}'
+            )
+        except Exception:
+            pass
         
         # Seluruh proses rollback + hapus dalam atomic transaction
         try:
+            # 0. Reversal jurnal + cancel mutasi/hutang (propagation service)
+            from apps.core.propagation import handle_document_delete
+            handle_document_delete(po, user=request.user)
+
             # 1. Kumpulkan produk orphan SEBELUM hapus PO
             orphan_products = []
             for item in po.items.all():
@@ -632,6 +690,12 @@ def purchase_order_receive(request, pk):
     
     # Blok penanganan error — coba jalankan kode di bawah
     try:
+        # Validasi MetodePembayaran mapping sebelum receive (untuk jurnal otomatis)
+        from apps.core.validators import validate_metode_pembayaran_mapping
+        from apps.kas_bank.services import metode_is_credit
+        if po.metode_pembayaran and not metode_is_credit(po.metode_pembayaran):
+            validate_metode_pembayaran_mapping(po.metode_pembayaran)
+
         # Auto-approve jika masih draft
         if po.status == 'draft':
             po.status = 'approved'
@@ -642,14 +706,17 @@ def purchase_order_receive(request, pk):
         
         # Log activity
         from apps.activity_log.middleware import ActivityLogMiddleware
-        ActivityLogMiddleware.log_activity(
-            request,
-            action='update',
-            model_name='Purchase Order',
-            object_id=po.pk,
-            object_repr=str(po),
-            description=f'Menerima barang untuk PO: {po.nomor_po} - stok diupdate'
-        )
+        try:
+            ActivityLogMiddleware.log_activity(
+                request,
+                action='update',
+                model_name='Purchase Order',
+                object_id=po.pk,
+                object_repr=str(po),
+                description=f'Menerima barang untuk PO: {po.nomor_po} - stok diupdate'
+            )
+        except Exception:
+            pass
         
         # Tampilkan pesan sukses ke user
         messages.success(request, f'Barang untuk PO {po.nomor_po} berhasil diterima dan stok diupdate')
@@ -705,7 +772,7 @@ class PurchaseOrderImportView(CreatePermissionMixin, TemplateView):
     """
     template_name = 'pembelian/purchase_order_import.html'
     permission_module = 'pembelian'
-    permission_sub_module = 'purchase_order'
+    permission_sub_module = 'purchase_order_import'
 
     def get_context_data(self, **kwargs):
         """Menambahkan data konteks tambahan ke template."""
@@ -940,12 +1007,23 @@ class PurchaseOrderImportView(CreatePermissionMixin, TemplateView):
                         except (ValueError, InvalidOperation):
                             pajak_val = Decimal('0')
 
+                        # Biaya pengiriman/ongkir (dari baris pertama grup)
+                        biaya_pengiriman_val = Decimal('0')
+                        biaya_pengiriman_str = str(
+                            group_rows[0].get('biaya_pengiriman', group_rows[0].get('ongkir', '0'))
+                        ).strip()
+                        try:
+                            biaya_pengiriman_val = Decimal(biaya_pengiriman_str) if biaya_pengiriman_str else Decimal('0')
+                        except (ValueError, InvalidOperation):
+                            biaya_pengiriman_val = Decimal('0')
+
                         # Buat PO
                         po = PurchaseOrder(
                             supplier=supplier_obj,
                             gudang=gudang_obj,
                             metode_pembayaran=metode_obj,
                             pajak=pajak_val,
+                            biaya_pengiriman=biaya_pengiriman_val,
                             dibuat_oleh=request.user,
                         )
                         po.nomor_po = po.generate_nomor()
@@ -1130,3 +1208,34 @@ class PurchaseOrderImportView(CreatePermissionMixin, TemplateView):
             messages.error(request, f'Terjadi kesalahan: {str(e)}')
 
         return self.get(request, *args, **kwargs)
+
+
+# ╔══════════════════════════════════════════════════════════════╗
+# ║              CANCEL PURCHASE ORDER                             ║
+# ╚══════════════════════════════════════════════════════════════╝
+
+@login_required
+@require_http_methods(["POST"])
+def cancel_purchase_order(request, pk):
+    """Cancel PO yang sudah received. URL: /pembelian/po/<pk>/cancel/ (POST AJAX)"""
+    from django.http import JsonResponse
+    from apps.pembelian.models import PurchaseOrder
+    from apps.pembelian.services import transition_po_status
+    from apps.core.permissions import has_permission, is_superuser_role
+
+    if not is_superuser_role(request.user) and not has_permission(request.user, 'write', 'pembelian'):
+        return JsonResponse({'success': False, 'message': 'Anda tidak memiliki akses.'}, status=403)
+
+    try:
+        po = PurchaseOrder.objects.get(pk=pk)
+    except PurchaseOrder.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Purchase Order tidak ditemukan.'}, status=404)
+
+    if po.status not in ['submitted', 'approved', 'received']:
+        return JsonResponse({'success': False, 'message': f'PO dengan status "{po.get_status_display()}" tidak bisa dibatalkan.'}, status=400)
+
+    try:
+        transition_po_status(po, 'cancelled', user=request.user)
+        return JsonResponse({'success': True, 'message': f'PO {po.nomor_po} berhasil dibatalkan. Jurnal pembalik dibuat, stok dikurangi.'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f'Gagal membatalkan: {str(e)}'}, status=400)

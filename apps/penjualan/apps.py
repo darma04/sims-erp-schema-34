@@ -10,3 +10,7 @@ class PenjualanConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'apps.penjualan'
     verbose_name = 'Penjualan'
+    
+    def ready(self):
+        """Import signals saat aplikasi ready."""
+        import apps.penjualan.signals  # noqa: F401

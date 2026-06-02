@@ -84,10 +84,10 @@ if _USE_MULTI_TENANT:
         "apps.user_management",
         "apps.produk",
         "apps.inventory",
-        "apps.pembelian",
-        "apps.penjualan",
-        "apps.pos",
-        "apps.biaya",
+        "apps.pembelian.apps.PembelianConfig",
+        "apps.penjualan.apps.PenjualanConfig",
+        "apps.pos.apps.PosConfig",
+        "apps.biaya.apps.BiayaConfig",
         "apps.laporan",
         "apps.activity_log",
         "apps.pengaturan",
@@ -96,8 +96,14 @@ if _USE_MULTI_TENANT:
         "apps.automation",
         "apps.ai_assistant",
         "apps.fraud_detection",
+        # Akuntansi Module
+        "apps.akuntansi",
+        "apps.piutang.apps.PiutangConfig",
+        "apps.hutang.apps.HutangConfig",
+        "apps.aset.apps.AsetConfig",
+        "apps.pajak.apps.PajakConfig",
+        "apps.kas_bank.apps.KasBankConfig",
         "apps.service_center",
-        "apps.sample",
         "apps.pages",
     ]
 
@@ -114,10 +120,10 @@ if _USE_MULTI_TENANT:
         "apps.user_management",
         "apps.produk",
         "apps.inventory",
-        "apps.pembelian",
-        "apps.penjualan",
-        "apps.pos",
-        "apps.biaya",
+        "apps.pembelian.apps.PembelianConfig",
+        "apps.penjualan.apps.PenjualanConfig",
+        "apps.pos.apps.PosConfig",
+        "apps.biaya.apps.BiayaConfig",
         "apps.laporan",
         "apps.activity_log",
         "apps.pengaturan",
@@ -126,8 +132,14 @@ if _USE_MULTI_TENANT:
         "apps.automation",
         "apps.ai_assistant",
         "apps.fraud_detection",
+        # Akuntansi Module
+        "apps.akuntansi",
+        "apps.piutang.apps.PiutangConfig",
+        "apps.hutang.apps.HutangConfig",
+        "apps.aset.apps.AsetConfig",
+        "apps.pajak.apps.PajakConfig",
+        "apps.kas_bank.apps.KasBankConfig",
         "apps.service_center",
-        "apps.sample",
         "apps.pages",
     ]
 
@@ -155,10 +167,10 @@ else:
         "apps.user_management",
         "apps.produk",
         "apps.inventory",
-        "apps.pembelian",
-        "apps.penjualan",
-        "apps.pos",
-        "apps.biaya",
+        "apps.pembelian.apps.PembelianConfig",
+        "apps.penjualan.apps.PenjualanConfig",
+        "apps.pos.apps.PosConfig",
+        "apps.biaya.apps.BiayaConfig",
         "apps.laporan",
         "apps.activity_log",
         "apps.pengaturan",
@@ -167,8 +179,14 @@ else:
         "apps.automation",
         "apps.ai_assistant",
         "apps.fraud_detection",
+        # Akuntansi Module
+        "apps.akuntansi",
+        "apps.piutang.apps.PiutangConfig",
+        "apps.hutang.apps.HutangConfig",
+        "apps.aset.apps.AsetConfig",
+        "apps.pajak.apps.PajakConfig",
+        "apps.kas_bank.apps.KasBankConfig",
         "apps.service_center",
-        "apps.sample",
         "apps.pages",
     ]
     # Model tenant tetap didaftarkan meskipun django_tenants tidak aktif
@@ -179,6 +197,7 @@ MIDDLEWARE = [
     # TenantMainMiddleware hanya diperlukan saat multi-tenant mode (PostgreSQL)
     *(["django_tenants.middleware.main.TenantMainMiddleware"] if _USE_MULTI_TENANT else []),
     "django.middleware.security.SecurityMiddleware",
+    "apps.core.csp_middleware.CSPMiddleware",
     "django.middleware.gzip.GZipMiddleware",  # Compress responses for faster load
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -187,6 +206,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.core.cache_middleware.TenantCacheInvalidationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "apps.core.double_submit_middleware.PreventDoubleSubmitMiddleware",
@@ -250,6 +270,10 @@ if _USE_MULTI_TENANT:
             "PASSWORD": os.environ.get("DATABASE_PASSWORD", ""),
             "HOST": os.environ.get("DATABASE_HOST", "localhost"),
             "PORT": os.environ.get("DATABASE_PORT", "5432"),
+            "CONN_MAX_AGE": int(os.environ.get("DB_CONN_MAX_AGE", "600")),
+            "OPTIONS": {
+                "connect_timeout": 10,
+            },
         }
     }
     DATABASE_ROUTERS = ["apps.tenants.routers.SafeTenantSyncRouter"]
@@ -364,7 +388,7 @@ LOGIN_REDIRECT_URL = "/"
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_AGE = 86400  # 24 hours
-SESSION_SAVE_EVERY_REQUEST = True  # Refresh session expiry setiap request (cegah logout mendadak)
+SESSION_SAVE_EVERY_REQUEST = os.environ.get("SESSION_SAVE_EVERY_REQUEST", "False").lower() in ['true', 'yes', '1']
 
 # Cookie name unik per aplikasi — WAJIB agar session & CSRF tidak saling tabrakan
 # saat multiple Django app berjalan di localhost (port berbeda)
@@ -446,19 +470,34 @@ else:
 
 # Caching Configuration
 # ------------------------------------------------------------------------------
-# Using local memory cache for development (no setup required)
-# For production, consider Redis: django_redis.cache.RedisCache
+# Set CACHE_BACKEND=redis di .env untuk aktifkan Redis (production)
+# Default: locmem (development lokal — tidak perlu setup apapun)
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'erp-cache',
-        'OPTIONS': {
-            'MAX_ENTRIES': 1000,
-            'CULL_FREQUENCY': 3,  # Hapus 1/3 dari entri saat MAX_ENTRIES tercapai
+_CACHE_BACKEND = os.environ.get("CACHE_BACKEND", "locmem").lower()
+
+if _CACHE_BACKEND == "redis":
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/1'),
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            },
+            'KEY_PREFIX': 'sims_schema',
+            'TIMEOUT': 300,
         }
     }
-}
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'erp-cache',
+            'OPTIONS': {
+                'MAX_ENTRIES': 1000,
+                'CULL_FREQUENCY': 3,
+            }
+        }
+    }
 
 # Template Caching - Speeds up template rendering significantly
 # Templates are compiled once and cached in memory

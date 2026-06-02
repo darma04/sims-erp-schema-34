@@ -1,0 +1,109 @@
+{% extends 'layout/layout_vertical.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Pajak{% endblock title %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <h4 class="py-3 mb-4"><span class="text-muted fw-light">Akuntansi / <a href="{% url 'pajak:list' %}">Pajak</a> /</span> {{ title }}</h4>
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <h5 class="card-header"><i class="ri-file-text-line me-2"></i>{{ title }}</h5>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="card-body">
+                        {% if form.errors %}<div class="alert alert-danger">{{ form.errors }}</div>{% endif %}
+                        <div class="row gx-4">
+                            <div class="col-md-6 mb-4">
+                                <div class="form-floating form-floating-outline">
+                                    {{ form.nomor_seri }}
+                                    <label for="{{ form.nomor_seri.id_for_label }}">No. Seri <span class="text-danger">*</span></label>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-4">
+                                <div class="form-floating form-floating-outline">
+                                    {{ form.tipe }}
+                                    <label for="{{ form.tipe.id_for_label }}">Tipe <span class="text-danger">*</span></label>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-4">
+                                <div class="form-floating form-floating-outline">
+                                    {{ form.tanggal }}
+                                    <label for="{{ form.tanggal.id_for_label }}">Tanggal</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row gx-4">
+                            <div class="col-md-6 mb-4">
+                                <div class="form-floating form-floating-outline">
+                                    {{ form.dpp }}
+                                    <label for="{{ form.dpp.id_for_label }}">DPP <span class="text-danger">*</span></label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <div class="form-floating form-floating-outline">
+                                    {{ form.tarif_ppn }}
+                                    <label for="{{ form.tarif_ppn.id_for_label }}">PPN%</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row gx-4">
+                            <div class="col-md-6 mb-4">
+                                <div class="form-floating form-floating-outline">
+                                    {{ form.nama_lawan }}
+                                    <label for="{{ form.nama_lawan.id_for_label }}">Lawan <span class="text-danger">*</span></label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <div class="form-floating form-floating-outline">
+                                    {{ form.npwp_lawan }}
+                                    <label for="{{ form.npwp_lawan.id_for_label }}">NPWP</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row gx-4">
+                            <div class="col-md-6 mb-4">
+                                <div class="form-floating form-floating-outline">
+                                    {{ form.sales_order }}
+                                    <label for="{{ form.sales_order.id_for_label }}">SO Ref</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <div class="form-floating form-floating-outline">
+                                    {{ form.purchase_order }}
+                                    <label for="{{ form.purchase_order.id_for_label }}">PO Ref</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row gx-4">
+                            <div class="col-md-12 mb-4">
+                                <div class="form-floating form-floating-outline">
+                                    {{ form.keterangan }}
+                                    <label for="{{ form.keterangan.id_for_label }}">Keterangan</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary me-2"><i class="ri-save-line me-1"></i>Simpan</button>
+                            <a href="{% url 'pajak:list' %}" class="btn btn-outline-secondary">Batal</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+{% block page_js %}<script>
+$(document).ready(function(){
+    const dpp=$('input[name="dpp"]'),ppnRate=$('input[name="tarif_ppn"]');
+    function calcPPN(){const d=parseFloat(dpp.val())||0,r=parseFloat(ppnRate.val())||0;$('#ppnCalc').text('PPN: Rp '+(d*r/100).toLocaleString('id-ID'));}
+    dpp.on('input',calcPPN);ppnRate.on('input',calcPPN);calcPPN();
+    ppnRate.after('<div id="ppnCalc" class="form-text text-info"></div>');
+});
+</script>{% endblock page_js %}

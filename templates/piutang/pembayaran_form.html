@@ -1,0 +1,96 @@
+{% extends 'layout/layout_vertical.html' %}
+{% comment %}
+==========================================================================
+PEMBAYARAN PIUTANG FORM - Form Catat Pembayaran Piutang
+==========================================================================
+{% endcomment %}
+{% load static %}
+
+{% block title %}Catat Pembayaran - {{ piutang.nomor }} - ERP{% endblock title %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1">
+                <i class="ri-money-dollar-circle-line me-2"></i>{{ title }}
+            </h4>
+            <p class="text-muted mb-0">{{ piutang.nomor }} - {{ piutang.customer.nama }}</p>
+        </div>
+        <a href="{% url 'piutang:detail' piutang.pk %}" class="btn btn-label-secondary">
+            <i class="ri-arrow-left-line me-1"></i>Kembali
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <!-- Info Piutang -->
+                    <div class="alert alert-info mb-4">
+                        <div class="d-flex justify-content-between">
+                            <span>Total Piutang:</span>
+                            <strong>Rp {{ piutang.jumlah_total|floatformat:0 }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Sudah Dibayar:</span>
+                            <strong class="text-success">Rp {{ piutang.jumlah_dibayar|floatformat:0 }}</strong>
+                        </div>
+                        <hr class="my-2">
+                        <div class="d-flex justify-content-between">
+                            <span class="fw-bold">Sisa Piutang:</span>
+                            <strong class="text-danger">Rp {{ piutang.sisa_piutang|floatformat:0 }}</strong>
+                        </div>
+                    </div>
+
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        {% if form.errors %}
+                        <div class="alert alert-danger alert-dismissible mb-4">
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            <h6 class="alert-heading mb-1">Terdapat kesalahan:</h6>
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                <p class="mb-0">{{ error }}</p>
+                                {% endfor %}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.jumlah.label }} <span class="text-danger">*</span></label>
+                                {{ form.jumlah }}
+                                <small class="text-muted">Maksimal: Rp {{ piutang.sisa_piutang|floatformat:0 }}</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.tanggal.label }}</label>
+                                {{ form.tanggal }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.metode_pembayaran.label }}</label>
+                                {{ form.metode_pembayaran }}
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">{{ form.keterangan.label }}</label>
+                                {{ form.keterangan }}
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-success me-2">
+                                <i class="ri-money-dollar-circle-line me-1"></i> Simpan Pembayaran
+                            </button>
+                            <a href="{% url 'piutang:detail' piutang.pk %}" class="btn btn-outline-secondary">
+                                <i class="ri-close-line me-1"></i> Batal
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

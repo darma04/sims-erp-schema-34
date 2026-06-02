@@ -225,7 +225,12 @@ Fitur: export Excel & PDF, filter, search.
                         <td>
                             <span class="badge bg-label-info">{{ so.gudang.nama }}</span>
                         </td>
-                        <td class="fw-bold">{{ so.total_harga|rupiah }}</td>
+                        <td class="fw-bold">
+                            {{ so.total_harga|rupiah }}
+                            {% if so.biaya_pengiriman > 0 %}
+                            <br><small class="text-muted">Ongkir: {{ so.biaya_pengiriman|rupiah }}</small>
+                            {% endif %}
+                        </td>
                         <td>
                             {% if so.status == 'draft' %}
                             <span class="badge bg-label-secondary">Draft</span>

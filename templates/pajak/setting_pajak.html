@@ -1,0 +1,50 @@
+{% extends 'layout/layout_vertical.html' %}
+{% load static %}
+
+{% block title %}Setting PPN & Pajak{% endblock title %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <h4 class="py-3 mb-4"><span class="text-muted fw-light">Akuntansi / <a href="{% url 'pajak:list' %}">Pajak</a> /</span> Setting</h4>
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <h5 class="card-header"><i class="ri-settings-3-line me-2"></i>Setting PPN & Pajak</h5>
+                <form method="post">{% csrf_token %}
+                    <div class="card-body">
+                        {% if form.errors %}<div class="alert alert-danger">{{ form.errors }}</div>{% endif %}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Tarif PPN (%) <span class="text-danger">*</span></label>
+                                {{ form.tarif_ppn }}
+                                <div class="form-text">Tarif PPN Indonesia saat ini: 11%</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">NPWP Perusahaan</label>
+                                {{ form.npwp }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Nama PKP</label>
+                                {{ form.nama_pkp }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Alamat PKP</label>
+                                {{ form.alamat_pkp }}
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    {{ form.is_pkp }}
+                                    <label class="form-check-label ms-2">Perusahaan terdaftar sebagai PKP (wajib pungut PPN)</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body border-top pt-3">
+                        <button type="submit" class="btn btn-primary"><i class="ri-save-line me-1"></i>Simpan Setting</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

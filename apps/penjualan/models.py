@@ -27,6 +27,8 @@
 ==========================================================================
 """
 
+from decimal import Decimal
+
 from django.db import models, transaction    # Django ORM + atomic transaction
 from django.contrib.auth.models import User  # Model User bawaan Django (akun login)
 from apps.produk.models import Produk, Gudang, Stok  # Import model dari modul Produk untuk relasi FK
@@ -70,6 +72,9 @@ class Customer(models.Model):
         verbose_name = "Customer"          # Nama singular
         verbose_name_plural = "Customers"  # Nama plural
         ordering = ['nama']                # Urutan default A-Z
+        indexes = [
+            models.Index(fields=['aktif', 'nama'], name='sales_cust_aktif_idx'),
+        ]
 
     def __str__(self):
         """Representasi: 'CUS-01 - Toko Sejahtera'"""
@@ -128,7 +133,9 @@ class SalesOrder(models.Model):
     diskon = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name="Diskon")
     # pajak = PPN atau pajak lainnya
     pajak = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name="Pajak")
-    # total = subtotal - diskon + pajak (dihitung otomatis)
+    # biaya_pengiriman = ongkir/biaya kirim yang ditagihkan ke customer
+    biaya_pengiriman = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name="Biaya Pengiriman/Ongkir")
+    # total = subtotal - diskon + biaya_pengiriman + pajak (dihitung otomatis)
     total_harga = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name="Total Harga")
 
     # Catatan opsional — info tambahan
@@ -157,6 +164,38 @@ class SalesOrder(models.Model):
         verbose_name = "Sales Order"           # Nama singular
         verbose_name_plural = "Sales Orders"   # Nama plural
         ordering = ['-dibuat_pada']            # Terbaru di atas
+        indexes = [
+            models.Index(fields=['tanggal', 'status'], name='sales_so_tgl_status_idx'),
+            models.Index(fields=['customer', 'status'], name='sales_so_cust_status_idx'),
+            models.Index(fields=['gudang', 'tanggal'], name='sales_so_gdg_tgl_idx'),
+            models.Index(fields=['metode_pembayaran', 'status'], name='sales_so_pay_status_idx'),
+        ]
+
+    # ===== STATE MACHINE =====
+    # Transisi status yang valid — digunakan oleh transition_status()
+    VALID_TRANSITIONS = {
+        'draft': ['confirmed', 'cancelled'],
+        'confirmed': ['delivered', 'cancelled'],
+        'delivered': ['completed', 'cancelled'],
+        'completed': [],
+        'cancelled': [],
+    }
+
+    def transition_status(self, new_status, user=None):
+        """
+        Validasi dan set transisi status.
+        TIDAK memanggil save() — caller harus save dalam transaction.atomic().
+        Raises ValidationError jika transisi tidak valid.
+        """
+        from django.core.exceptions import ValidationError
+        valid_targets = self.VALID_TRANSITIONS.get(self.status, [])
+        if new_status not in valid_targets:
+            raise ValidationError(
+                f"Transisi status tidak valid: '{self.get_status_display()}' → '{new_status}'. "
+                f"Transisi yang diizinkan dari status '{self.status}': {valid_targets}"
+            )
+        self.status = new_status
+        return self
 
     def __str__(self):
         """Representasi: 'SO/2024/01/0001 - Toko Sejahtera'"""
@@ -230,7 +269,7 @@ class SalesOrder(models.Model):
             new_number = 1
 
         # Format dengan zero-padding 4 digit
-        # Tambahan: loop untuk memastikan nomor unik
+        # Loop untuk memastikan nomor yang dihasilkan benar-benar unik
         nomor = f"{prefix}/{new_number:04d}"
         while SalesOrder.objects.filter(nomor_so=nomor).exists():
             new_number += 1
@@ -241,15 +280,30 @@ class SalesOrder(models.Model):
         """
         Hitung total harga SO dari semua items.
 
-        Formula: total_harga = subtotal - diskon + pajak
+        Formula: total_harga = subtotal - diskon + biaya_pengiriman + pajak
         (Berbeda dengan PO yang tidak ada diskon)
 
-        ⚠ Method ini TIDAK memanggil save() — hanya mengubah field di memory.
+        Catatan: Method ini TIDAK memanggil save() — hanya mengubah field di memory.
         """
         # Hitung subtotal dari semua item SO
         self.subtotal = sum(item.subtotal for item in self.items.all())
-        # Total = subtotal - diskon + pajak
-        self.total_harga = self.subtotal - self.diskon + self.pajak
+        if self.diskon > self.subtotal:
+            self.diskon = self.subtotal
+        # Total = subtotal - diskon + ongkir + pajak
+        self.total_harga = self.subtotal - self.diskon + self.biaya_pengiriman + self.pajak
+
+    @property
+    def dpp_pajak(self):
+        """Dasar pengenaan pajak SO: subtotal setelah diskon plus ongkir."""
+        return max(
+            (self.subtotal or Decimal('0')) - (self.diskon or Decimal('0')) + (self.biaya_pengiriman or Decimal('0')),
+            Decimal('0')
+        )
+
+    @property
+    def nilai_pajak(self):
+        """Nilai pajak dalam Rupiah."""
+        return self.pajak or Decimal('0')
 
     def confirm_order(self, user=None):
         """
@@ -270,7 +324,7 @@ class SalesOrder(models.Model):
             ValueError: Jika stok tidak mencukupi untuk salah satu item
             ValueError: Jika produk tidak ada stok di gudang yang dipilih
 
-        ⚠ PENTING: Berbeda dengan POS yang langsung potong stok,
+        PENTING: Berbeda dengan POS yang langsung potong stok,
         SO memvalidasi ketersediaan stok terlebih dahulu!
         """
         # LANGKAH 1: Validasi status
@@ -304,10 +358,9 @@ class SalesOrder(models.Model):
                         produk=item.produk, jumlah__gt=0
                     ).order_by('-jumlah').first()
 
-                    if stok_terbanyak:
-                        if item.produk.cabang != stok_terbanyak.gudang:
-                            item.produk.cabang = stok_terbanyak.gudang
-                            item.produk.save(update_fields=['cabang'])
+                    if stok_terbanyak and item.produk.cabang != stok_terbanyak.gudang:
+                        item.produk.cabang = stok_terbanyak.gudang
+                        item.produk.save(update_fields=['cabang'])
 
                 except Stok.DoesNotExist:
                     # Produk tidak punya record stok di gudang ini
@@ -376,6 +429,16 @@ class SalesOrderItem(models.Model):
         help_text="Jumlah dalam satuan dasar produk, dihitung otomatis"
     )
 
+    # Snapshot HPP saat transaksi dibuat agar laporan lama tidak berubah
+    hpp_satuan = models.DecimalField(
+        max_digits=15, decimal_places=2, default=0,
+        verbose_name="HPP Satuan"
+    )
+    hpp_subtotal = models.DecimalField(
+        max_digits=15, decimal_places=2, default=0,
+        verbose_name="Subtotal HPP"
+    )
+
     # Catatan opsional per item
     catatan = models.CharField(max_length=200, blank=True, null=True, verbose_name="Catatan")
 
@@ -383,6 +446,9 @@ class SalesOrderItem(models.Model):
         """Konfigurasi metadata model SalesOrderItem."""
         verbose_name = "Item SO"
         verbose_name_plural = "Item SO"
+        indexes = [
+            models.Index(fields=['produk', 'sales_order'], name='sales_item_prod_so_idx'),
+        ]
 
     def __str__(self):
         """Representasi: 'Laptop Asus - 2'"""
@@ -423,6 +489,11 @@ class SalesOrderItem(models.Model):
                     self.jumlah_konversi = self.jumlah
         else:
             self.jumlah_konversi = self.jumlah
+
+        qty_stok = self.jumlah_konversi or self.jumlah
+        if self.produk_id and self.hpp_satuan == Decimal('0'):
+            self.hpp_satuan = self.produk.harga_beli or Decimal('0')
+        self.hpp_subtotal = qty_stok * (self.hpp_satuan or Decimal('0'))
 
         # LANGKAH 3: Simpan item ke database
         super().save(*args, **kwargs)

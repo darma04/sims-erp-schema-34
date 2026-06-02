@@ -1,0 +1,351 @@
+{% extends 'layout/layout_vertical.html' %}
+{% comment %}
+==========================================================================
+PERIODE LIST - Daftar Periode Akuntansi
+Filter, export Excel/PDF, DataTable standar, konsisten dengan CoA & produk.
+==========================================================================
+{% endcomment %}
+{% load static %}
+
+{% block title %}Periode Akuntansi - Akuntansi ERP{% endblock title %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+{% endblock vendor_js %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="ri-calendar-check-line me-2"></i>Periode Akuntansi</h4>
+            <p class="text-muted mb-0">Kelola periode buka &amp; tutup buku</p>
+        </div>
+        {% if rbac_can_create %}
+        <a href="{% url 'akuntansi:periode_add' %}" class="btn btn-primary">
+            <i class="ri-add-line me-1"></i>Tambah Periode
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Summary Cards — standar d-flex align-items-center (sama dengan CoA) -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3">
+                            <span class="avatar-initial rounded bg-label-primary">
+                                <i class="ri-calendar-line ri-24px"></i>
+                            </span>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">{{ total_periode }}</h5>
+                            <small class="text-muted">Total Periode</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3">
+                            <span class="avatar-initial rounded bg-label-success">
+                                <i class="ri-checkbox-circle-line ri-24px"></i>
+                            </span>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 text-success">{{ total_aktif }}</h5>
+                            <small class="text-muted">Aktif</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3">
+                            <span class="avatar-initial rounded bg-label-danger">
+                                <i class="ri-lock-line ri-24px"></i>
+                            </span>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 text-danger">{{ total_tutup }}</h5>
+                            <small class="text-muted">Ditutup</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Card — konsisten: Row1: filter fields | Row2: col-3+col-6+col-3 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <!-- Baris 1: Field filter -->
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Cari Periode</label>
+                    <div class="input-group input-group-merge">
+                        <span class="input-group-text"><i class="ri-search-line"></i></span>
+                        <input type="text" id="searchPeriode" class="form-control"
+                            placeholder="Nama periode..." oninput="filterPeriodeTable()">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Filter Status</label>
+                    <select id="statusFilter" class="form-select" onchange="filterPeriodeTable()">
+                        <option value="">Semua Status</option>
+                        <option value="aktif">Aktif</option>
+                        <option value="ditutup">Ditutup</option>
+                        <option value="nonaktif">Nonaktif</option>
+                    </select>
+                </div>
+            </div>
+            <!-- Baris 2: Pilih Kolom (kiri) + spacer + Tombol Filter (kanan) — standar 3+6+3 -->
+            <div class="row g-3 mt-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Pilih Kolom</label>
+                    <div class="dropdown">
+                        <button class="btn btn-label-secondary dropdown-toggle waves-effect w-100" type="button"
+                            id="columnFilterDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                            aria-expanded="false">
+                            <i class="ri-layout-column-line me-1"></i>
+                            Pilih Kolom yang Ditampilkan
+                        </button>
+                        <div class="dropdown-menu p-3" aria-labelledby="columnFilterDropdown" style="min-width: 280px;">
+                            <h6 class="dropdown-header px-0 mb-2">Kolom Tabel</h6>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="0" id="col-no" checked onchange="toggleColumns()">
+                                <label class="form-check-label" for="col-no">#</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="1" id="col-nama" checked onchange="toggleColumns()">
+                                <label class="form-check-label" for="col-nama">Nama Periode</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="2" id="col-mulai" checked onchange="toggleColumns()">
+                                <label class="form-check-label" for="col-mulai">Tanggal Mulai</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="3" id="col-akhir" checked onchange="toggleColumns()">
+                                <label class="form-check-label" for="col-akhir">Tanggal Akhir</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="4" id="col-status" checked onchange="toggleColumns()">
+                                <label class="form-check-label" for="col-status">Status</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="5" id="col-aksi" checked onchange="toggleColumns()">
+                                <label class="form-check-label" for="col-aksi">Aksi</label>
+                            </div>
+                            <div class="dropdown-divider my-2"></div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-primary flex-fill" type="button" onclick="selectAllColumns()">
+                                    <i class="ri-checkbox-multiple-line ri-16px"></i> Semua
+                                </button>
+                                <button class="btn btn-sm btn-label-secondary flex-fill" type="button" onclick="deselectAllColumns()">
+                                    <i class="ri-checkbox-blank-line ri-16px"></i> Kosongkan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <small class="text-muted d-block mt-1">Klik untuk memilih kolom</small>
+                </div>
+                <div class="col-md-6"></div>
+                <div class="col-md-3">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" onclick="filterPeriodeTable()">
+                            <i class="ri-filter-3-line me-1"></i>Terapkan Filter
+                        </button>
+                        <button class="btn btn-label-secondary" onclick="resetPeriodeFilter()">
+                            <i class="ri-refresh-line me-1"></i>Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Table Card -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="ri-calendar-check-line me-2"></i>Daftar Periode</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcel()">
+                    <i class="ri-file-excel-2-line me-1"></i>Export Excel
+                </button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDF()">
+                    <i class="ri-file-pdf-line me-1"></i>Export PDF
+                </button>
+            </div>
+        </div>
+        <div class="card-datatable table-responsive">
+            <table class="accounting-data-table table table-hover" id="periodeTable"
+                data-accounting-primary="true"
+                data-export-title="Tutup Buku - Periode Akuntansi"
+                data-export-filename="Periode_Akuntansi"
+                data-search-placeholder="Cari nama periode..."
+                data-default-order='[[2,"desc"]]'>
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Nama Periode</th>
+                        <th>Tanggal Mulai</th>
+                        <th>Tanggal Akhir</th>
+                        <th>Status</th>
+                        <th data-export-ignore="true" data-action-icon="ri-more-2-line">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in periode_list %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td class="fw-medium">{{ p.nama }}</td>
+                        <td>{{ p.tanggal_mulai|date:"d M Y" }}</td>
+                        <td>{{ p.tanggal_akhir|date:"d M Y" }}</td>
+                        <td>
+                            {% if p.is_tutup %}
+                            <span class="badge bg-danger"><i class="ri-lock-line me-1"></i>Ditutup</span>
+                            {% elif p.is_aktif %}
+                            <span class="badge bg-success"><i class="ri-checkbox-circle-line me-1"></i>Aktif</span>
+                            {% else %}
+                            <span class="badge bg-label-secondary">Nonaktif</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="dropdown">
+                                <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                                    <i class="ri-more-2-line"></i>
+                                </button>
+                                <div class="dropdown-menu">
+                                    {% if not p.is_tutup and rbac_can_edit %}
+                                    <a href="{% url 'akuntansi:periode_edit' p.pk %}" class="dropdown-item">
+                                        <i class="ri-edit-line me-2"></i>Edit
+                                    </a>
+                                    <button type="button" class="dropdown-item text-danger" onclick="tutupPeriode({{ p.pk }}, '{{ p.nama }}')">
+                                        <i class="ri-lock-line me-2"></i>Tutup Periode
+                                    </button>
+                                    {% else %}
+                                    <span class="dropdown-item text-muted">
+                                        <i class="ri-lock-line me-2"></i>Terkunci
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {# TIDAK ada baris {% empty %} dengan colspan — DataTables handle via language.sEmptyTable #}
+                </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="2" class="text-start ps-4 py-3">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size:1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size:1rem;">RINGKASAN</strong>
+                                    <small class="text-muted" style="font-size:.75rem;">{{ total_periode }} Periode</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td colspan="2" class="py-3"><span class="badge bg-label-success">{{ total_aktif }} Aktif</span></td>
+                        <td class="py-3"><span class="badge bg-label-danger">{{ total_tutup }} Ditutup</span></td>
+                        <td data-export-ignore="true"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% csrf_token %}
+{% endblock content %}
+
+{% block page_js %}
+<style>
+    .dataTables_wrapper .dataTables_info { padding: 1rem 1.5rem; font-size: 0.875rem; color: #697a8d; }
+    .dataTables_wrapper .dataTables_paginate { padding: 1rem 1.5rem; }
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter { padding: 0 1.5rem 1rem 1.5rem; }
+    .dataTables_wrapper .dataTables_filter input { border: 1px solid #d9dee3; border-radius: 0.375rem; padding: 0.4375rem 0.875rem; }
+    .dataTables_wrapper .dataTables_length select { border: 1px solid #d9dee3; border-radius: 0.375rem; padding: 0.4375rem 2rem 0.4375rem 0.875rem; }
+    .dataTables_wrapper .dataTables_paginate .paginate_button { padding: 0.438rem 0.875rem; border-radius: 0.375rem; margin: 0 0.125rem; border: none; background: transparent; color: #697a8d; }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current { background: #696cff !important; color: white !important; border: none; }
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.disabled) { background: rgba(105,108,255,0.08) !important; border: none; color: #696cff !important; }
+    .card-datatable { padding-bottom: 0; }
+    @media (max-width: 768px) { #periodeTable { min-width: 700px !important; } }
+</style>
+<script>
+// Filter via DataTable API — search global + column search status
+function filterPeriodeTable() {
+    if (!$.fn.dataTable.isDataTable('#periodeTable')) return;
+    const dt = new $.fn.dataTable.Api('#periodeTable');
+    const search = document.getElementById('searchPeriode').value;
+    const status = document.getElementById('statusFilter').value;
+    dt.search(search);
+    dt.column(4).search(status ? status : '', false, false);
+    dt.draw();
+}
+
+function resetPeriodeFilter() {
+    document.getElementById('searchPeriode').value = '';
+    document.getElementById('statusFilter').value = '';
+    if (!$.fn.dataTable.isDataTable('#periodeTable')) return;
+    const dt = new $.fn.dataTable.Api('#periodeTable');
+    dt.search('').columns().search('').draw();
+}
+
+// Toggle Kolom — pakai columnMap eksplisit (sama persis dengan produk_list.html)
+function toggleColumns() {
+    if (!$.fn.dataTable.isDataTable('#periodeTable')) return;
+    const dt = new $.fn.dataTable.Api('#periodeTable');
+    const columnMap = {
+        '0': 0, // #
+        '1': 1, // Nama Periode
+        '2': 2, // Tanggal Mulai
+        '3': 3, // Tanggal Akhir
+        '4': 4, // Status
+        '5': 5  // Aksi
+    };
+    document.querySelectorAll('.column-checkbox').forEach(cb => {
+        const colIdx = columnMap[cb.value];
+        if (colIdx !== undefined) {
+            dt.column(colIdx).visible(cb.checked);
+        }
+    });
+}
+function selectAllColumns() {
+    document.querySelectorAll('.column-checkbox').forEach(cb => { cb.checked = true; });
+    toggleColumns();
+}
+function deselectAllColumns() {
+    document.querySelectorAll('.column-checkbox').forEach(cb => { cb.checked = false; });
+    toggleColumns();
+}
+// Tutup Periode via AJAX
+function tutupPeriode(id, name) {
+    if (!confirm('Tutup periode "' + name + '"?\n\nSetelah ditutup, jurnal pada periode ini tidak dapat diubah lagi.')) return;
+    $.ajax({
+        url: `/akuntansi/periode/${id}/tutup/`, type: 'POST',
+        headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+        success: function (r) { if (r.success) { alert(r.message); location.reload(); } else { alert(r.message); } },
+        error: function (xhr) { var m = 'Error'; try { m = JSON.parse(xhr.responseText).message || m; } catch (e) {} alert(m); }
+    });
+}
+
+</script>
+{% include 'accounting/partials/table_tools.html' %}
+{% endblock page_js %}

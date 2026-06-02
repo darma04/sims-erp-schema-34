@@ -1,0 +1,704 @@
+{% extends 'layout/layout_vertical.html' %}
+{% load static %}
+{% load currency_filters %}
+
+{% block title %}Rekonsiliasi Keuangan - Akuntansi ERP{% endblock title %}
+
+{% block vendor_css %}{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/apex-charts/apex-charts.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}{{ block.super }}
+<script src="{% static 'vendor/libs/apex-charts/apexcharts.js' %}"></script>
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+{% endblock vendor_js %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <div>
+            <h4 class="mb-1"><i class="ri-git-merge-line me-2"></i>Rekonsiliasi Keuangan</h4>
+            <p class="text-muted mb-0">{{ tanggal_mulai|date:"d F Y" }} s/d {{ tanggal_akhir|date:"d F Y" }}</p>
+        </div>
+    </div>
+    <div class="mb-4">
+        <span class="badge bg-label-primary rounded-pill px-3 py-2"><i class="ri-git-merge-line me-1"></i>Analisis Rekonsiliasi</span>
+        <small class="text-muted ms-2" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="right" title="Membandingkan data operasional dengan jurnal akuntansi posted. Penjualan operasional memakai pendapatan bersih setelah diskon termasuk ongkir dan tanpa PPN. PO memakai DPP/subtotal termasuk ongkir tanpa PPN Masukan. Selisih dapat berasal dari jurnal non-operasional, penyusutan, penggajian, jurnal manual, atau settlement PPN."><i class="ri-information-line"></i> Apa artinya?</small>
+    </div>
+
+    <!-- Status -->
+    <div class="alert {% if is_reconciled %}alert-success{% else %}alert-warning{% endif %} d-flex align-items-center mb-4">
+        <i class="{% if is_reconciled %}ri-checkbox-circle-line{% else %}ri-error-warning-line{% endif %} me-2 ri-22px"></i>
+        <div>{% if is_reconciled %}<strong>Rekonsiliasi Seimbang</strong> — Data operasional dan akuntansi konsisten.{% else %}<strong>Terdapat Selisih</strong> — Ada perbedaan. Lihat detail penyebab di bawah.{% endif %}</div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-6 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card h-100"><div class="card-body"><div class="d-flex align-items-center gap-3"><div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-success"><i class="ri-arrow-down-circle-line ri-24px"></i></span></div><div><span class="d-block text-muted small">Pendapatan Operasional Bersih</span><h5 class="mb-0 fw-bold" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>SalesOrder dihitung dari subtotal setelah diskon + ongkir, POS dari subtotal setelah diskon, tanpa PPN Keluaran.<br><br><b>Sumber Tabel:</b><br>SalesOrder + POSTransaction<br><br><b>Filter:</b> tanggal & cabang">{{ ops_total_pemasukan|rupiah }}</h5></div></div></div></div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card h-100"><div class="card-body"><div class="d-flex align-items-center gap-3"><div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-danger"><i class="ri-arrow-up-circle-line ri-24px"></i></span></div><div><span class="d-block text-muted small">Beban/DPP Operasional</span><h5 class="mb-0 fw-bold" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>DPP/subtotal PurchaseOrder termasuk ongkir + jumlah TransaksiBiaya approved. PPN Masukan dipisahkan dari beban.<br><br><b>Sumber Tabel:</b><br>PurchaseOrder + TransaksiBiaya<br><br><b>Filter:</b> tanggal & cabang">{{ ops_total_pengeluaran|rupiah }}</h5></div></div></div></div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card h-100"><div class="card-body"><div class="d-flex align-items-center gap-3"><div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-primary"><i class="ri-book-2-line ri-24px"></i></span></div><div><span class="d-block text-muted small">Pendapatan Akuntansi Bersih</span><h5 class="mb-0 fw-bold" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Saldo akun pendapatan dikurangi akun contra pendapatan seperti diskon penjualan. PPN Keluaran tidak termasuk pendapatan.<br><br><b>Sumber Tabel:</b><br>JurnalLine posted">{{ akun_pendapatan|rupiah }}</h5></div></div></div></div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card h-100"><div class="card-body"><div class="d-flex align-items-center gap-3"><div class="avatar flex-shrink-0"><span class="avatar-initial rounded {% if selisih_laba == 0 %}bg-label-success{% else %}bg-label-warning{% endif %}"><i class="ri-exchange-funds-line ri-24px"></i></span></div><div><span class="d-block text-muted small">Selisih Laba</span><h5 class="mb-0 fw-bold {% if selisih_laba == 0 %}text-success{% else %}text-warning{% endif %}" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Rumus:</b><br>Selisih = Laba Akuntansi − Laba Operasional<br><br><b>Penyebab Selisih:</b><br>• Jurnal manual / adjusting entry<br>• Penyusutan aset tetap<br>• Penggajian (HR)<br>• Jurnal pembalik<br>• Pelunasan piutang/hutang<br><br>Lihat tabel <i>Penyebab Selisih</i> di bawah">{{ selisih_laba|rupiah }}</h5></div></div></div></div>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get">
+                <!-- Baris 1: Dari Tanggal + Sampai Tanggal (lebar penuh sebaris) -->
+                <div class="row g-3">
+                    <div class="col-md-6"><label class="form-label">Dari Tanggal</label><input type="date" name="start" class="form-control" value="{{ selected_start }}"></div>
+                    <div class="col-md-6"><label class="form-label">Sampai Tanggal</label><input type="date" name="end" class="form-control" value="{{ selected_end }}"></div>
+                </div>
+                <!-- Baris 2: Cabang (kiri) + spacer + Tombol Filter (kanan) -->
+                <div class="row g-3 mt-2 align-items-end">
+                    <div class="col-md-3"><label class="form-label">Cabang</label><select name="cabang" class="form-select"><option value="">Semua Cabang</option>{% for gudang in cabang_list %}<option value="{{ gudang.pk }}" {% if selected_cabang == gudang.pk|stringformat:'d' %}selected{% endif %}>{{ gudang.nama }}</option>{% endfor %}</select></div>
+                    <div class="col-md-6"></div>
+                    <div class="col-md-3"><div class="d-grid gap-2"><button type="submit" class="btn btn-primary"><i class="ri-filter-3-line me-1"></i>Terapkan Filter</button><a href="{% url 'akuntansi:rekonsiliasi_keuangan' %}" class="btn btn-label-secondary"><i class="ri-refresh-line me-1"></i>Reset</a></div></div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Perbandingan Detail + Chart -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header"><h5 class="mb-0"><i class="ri-bar-chart-grouped-line me-2"></i>Grafik Perbandingan</h5></div>
+                <div class="card-body"><div id="rekonChart" style="min-height: 350px;"></div></div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header"><h5 class="mb-0"><i class="ri-pie-chart-2-line me-2"></i>Rincian Sumber Data</h5></div>
+                <div class="card-body">
+                    <h6 class="text-muted mb-3">Pendapatan Operasional Bersih</h6>
+                    <div class="d-flex justify-content-between mb-2"><span><i class="ri-shopping-cart-2-line me-1 text-primary"></i>Sales Order</span><span class="fw-semibold" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-html="true" title="<b>Alur Data:</b><br>Subtotal SalesOrder setelah diskon + ongkir, tanpa PPN Keluaran, dengan status completed (sesuai trigger jurnal).<br><br><b>Sumber:</b> SalesOrder">{{ ops_pemasukan_so|rupiah }}</span></div>
+                    <div class="d-flex justify-content-between mb-3"><span><i class="ri-store-2-line me-1 text-success"></i>POS Transaction</span><span class="fw-semibold" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-html="true" title="<b>Alur Data:</b><br>Subtotal POS setelah diskon, tanpa PPN Keluaran, dengan status paid (sesuai trigger jurnal).<br><br><b>Sumber:</b> POSTransaction">{{ ops_pemasukan_pos|rupiah }}</span></div>
+                    <hr>
+                    <h6 class="text-muted mb-3">Beban/DPP Operasional</h6>
+                    <div class="d-flex justify-content-between mb-2"><span><i class="ri-truck-line me-1 text-warning"></i>Purchase Order</span><span class="fw-semibold" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-html="true" title="<b>Alur Data:</b><br>DPP/subtotal PurchaseOrder termasuk ongkir tanpa PPN Masukan, dengan status received (sesuai trigger jurnal).<br><br><b>Sumber:</b> PurchaseOrder">{{ ops_pengeluaran_po|rupiah }}</span></div>
+                    <div class="d-flex justify-content-between mb-3"><span><i class="ri-bill-line me-1 text-danger"></i>Biaya Operasional</span><span class="fw-semibold" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-html="true" title="<b>Alur Data:</b><br>Σ jumlah TransaksiBiaya dengan status: approved<br><br><b>Sumber:</b> Tabel TransaksiBiaya">{{ ops_pengeluaran_biaya|rupiah }}</span></div>
+                    <hr>
+                    <h6 class="text-muted mb-3">Akuntansi (Jurnal)</h6>
+                    <div class="d-flex justify-content-between mb-2"><span><i class="ri-money-dollar-circle-line me-1 text-success"></i>Pendapatan Bersih (4-xxxx)</span><span class="fw-semibold" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-html="true" title="<b>Alur Data:</b><br>Akun pendapatan dikurangi debit akun contra pendapatan seperti diskon penjualan. PPN tidak termasuk pendapatan.<br><br><b>Sumber:</b> JurnalLine posted">{{ akun_pendapatan|rupiah }}</span></div>
+                    <div class="d-flex justify-content-between mb-2"><span><i class="ri-price-tag-3-line me-1 text-warning"></i>HPP (5-xxxx)</span><span class="fw-semibold" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-html="true" title="<b>Alur Data:</b><br>Σ debit − Σ kredit pada JurnalLine yang akun-nya bertipe 'hpp' (kode 5-xxxx)<br><br><b>Sumber:</b> JurnalLine (jurnal posted)<br><br><b>Saldo Normal:</b> Debit">{{ akun_hpp|rupiah }}</span></div>
+                    <div class="d-flex justify-content-between"><span><i class="ri-bill-line me-1 text-danger"></i>Beban (6-xxxx)</span><span class="fw-semibold" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-html="true" title="<b>Alur Data:</b><br>Σ debit − Σ kredit pada JurnalLine yang akun-nya bertipe 'beban' (kode 6-xxxx)<br><br><b>Sumber:</b> JurnalLine (jurnal posted)<br><br><b>Saldo Normal:</b> Debit">{{ akun_beban|rupiah }}</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabel Penyebab Selisih -->
+    {% if penyebab_selisih %}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="ri-search-eye-line me-2"></i>Penyebab Selisih (Jurnal Non-Operasional)</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-label-success" onclick="exportPenyebabExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportPenyebabPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+            </div>
+        </div>
+        <div class="card-datatable table-responsive">
+            <table class="table table-hover datatables-penyebab" id="tabelPenyebab">
+                <thead>
+                    <tr>
+                        <th>Sumber Jurnal</th>
+                        <th class="text-center">Jumlah Jurnal</th>
+                        <th class="text-end" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" title="<b>Total Debit:</b><br>Σ debit dari semua JurnalLine pada jurnal yang sumbernya BUKAN dari transaksi operasional utama (POS, SO, PO, Biaya).<br><br>Misalnya: gaji, penyusutan, jurnal manual.">Total Debit</th>
+                        <th class="text-end" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" title="<b>Total Kredit:</b><br>Σ kredit dari semua JurnalLine pada jurnal yang sumbernya BUKAN dari transaksi operasional utama (POS, SO, PO, Biaya).<br><br>Misalnya: gaji, penyusutan, jurnal manual.">Total Kredit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in penyebab_selisih %}
+                    <tr>
+                        <td><span class="badge bg-label-secondary me-1">{{ item.sumber }}</span>{{ item.label }}</td>
+                        <td class="text-center"><span class="badge bg-label-primary" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="top" title="Jumlah jurnal entry yang berasal dari sumber ini pada periode terpilih">{{ item.jumlah_jurnal }}</span></td>
+                        <td class="text-end fw-semibold" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-html="true" title="<b>Total Debit dari sumber:</b><br>{{ item.label }}<br><br>Σ debit dari JurnalLine yang sumber jurnal-nya = '{{ item.sumber }}'">{{ item.total_debit|rupiah }}</td>
+                        <td class="text-end fw-semibold" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-html="true" title="<b>Total Kredit dari sumber:</b><br>{{ item.label }}<br><br>Σ kredit dari JurnalLine yang sumber jurnal-nya = '{{ item.sumber }}'">{{ item.total_kredit|rupiah }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tabel Detail Jurnal Non-Operasional -->
+    {% if detail_jurnal_non_ops %}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="ri-file-list-3-line me-2"></i>Detail Jurnal Non-Operasional</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-label-success" onclick="exportDetailExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportDetailPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+            </div>
+        </div>
+        <div class="card-datatable table-responsive">
+            <table class="table table-hover datatables-detail" id="tabelDetail">
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Nomor</th>
+                        <th>Deskripsi</th>
+                        <th>Sumber</th>
+                        <th>Cabang</th>
+                        <th>Dibuat Oleh</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for jurnal in detail_jurnal_non_ops %}
+                    <tr>
+                        <td>{{ jurnal.tanggal|date:"d/m/Y" }}</td>
+                        <td><code>{{ jurnal.nomor }}</code></td>
+                        <td>{{ jurnal.deskripsi|truncatechars:50 }}</td>
+                        <td><span class="badge bg-label-secondary">{{ jurnal.sumber|default:"manual" }}</span></td>
+                        <td>{{ jurnal.cabang.nama|default:"-" }}</td>
+                        <td>{{ jurnal.created_by.username|default:"-" }}</td>
+                        <td>
+                            <div class="dropdown">
+                                <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ri-more-2-line"></i></button>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="{% url 'akuntansi:jurnal_detail' jurnal.pk %}"><i class="ri-eye-line me-2"></i>Lihat Detail Jurnal</a>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- SECTION: Treasury vs Accounting (Saldo Kas/Bank)              -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-0"><i class="ri-bank-line me-2"></i>Sinkronisasi Treasury vs Accounting</h5>
+                <small class="text-muted">Membandingkan saldo setiap akun Kas/Bank (Treasury) dengan saldo akun CoA terkait di Buku Besar (Accounting).</small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge {% if treasury_all_match %}bg-success{% else %}bg-danger{% endif %}">
+                    {% if treasury_all_match %}✓ Semua Sinkron{% else %}⚠ Ada Selisih{% endif %}
+                </span>
+                <button class="btn btn-sm btn-label-success" onclick="exportTreasuryExcel()"><i class="ri-file-excel-2-line me-1"></i>Excel</button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportTreasuryPDF()"><i class="ri-file-pdf-line me-1"></i>PDF</button>
+            </div>
+        </div>
+        <div class="card-datatable table-responsive">
+            <table class="table table-hover" id="tabelTreasury">
+                <thead>
+                    <tr>
+                        <th>Akun Kas/Bank</th>
+                        <th>Tipe</th>
+                        <th>Akun CoA</th>
+                        <th class="text-end">Saldo Treasury</th>
+                        <th class="text-end">Saldo Accounting</th>
+                        <th class="text-end">Selisih</th>
+                        <th class="text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in treasury_vs_accounting %}
+                    <tr>
+                        <td><strong>{{ item.kode }}</strong> - {{ item.nama }}</td>
+                        <td><span class="badge bg-label-info">{{ item.tipe }}</span></td>
+                        <td><code>{{ item.akun_coa }}</code></td>
+                        <td class="text-end fw-semibold">{{ item.saldo_treasury|rupiah }}</td>
+                        <td class="text-end fw-semibold">{{ item.saldo_accounting|rupiah }}</td>
+                        <td class="text-end fw-semibold {% if item.selisih != 0 %}text-danger{% endif %}">{{ item.selisih|rupiah }}</td>
+                        <td class="text-center">
+                            {% if item.is_match %}
+                            <span class="badge bg-success"><i class="ri-check-line"></i> Sinkron</span>
+                            {% else %}
+                            <span class="badge bg-danger"><i class="ri-error-warning-line"></i> Selisih</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="text-center text-muted">Belum ada akun Kas/Bank aktif</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- SECTION: System Health Check (Trial Balance + Orphan)          -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div class="row g-3 mb-4">
+        <!-- Trial Balance Status -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="avatar avatar-lg mx-auto mb-3">
+                        <span class="avatar-initial rounded-circle {% if tb_is_balanced %}bg-success{% else %}bg-danger{% endif %}">
+                            <i class="ri-{% if tb_is_balanced %}check-double-line{% else %}close-line{% endif %} ri-24px"></i>
+                        </span>
+                    </div>
+                    <h6>Trial Balance</h6>
+                    {% if tb_is_balanced %}
+                    <p class="text-success mb-0"><strong>✓ BALANCE</strong></p>
+                    <small class="text-muted">Σ Debit = Σ Kredit</small>
+                    {% else %}
+                    <p class="text-danger mb-0"><strong>✗ TIDAK BALANCE</strong></p>
+                    <small class="text-muted">Selisih: {{ tb_selisih|rupiah }}</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <!-- Orphan Mutasi -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="avatar avatar-lg mx-auto mb-3">
+                        <span class="avatar-initial rounded-circle {% if orphan_mutasi_count == 0 %}bg-success{% else %}bg-warning{% endif %}">
+                            <i class="ri-{% if orphan_mutasi_count == 0 %}check-line{% else %}alert-line{% endif %} ri-24px"></i>
+                        </span>
+                    </div>
+                    <h6>Mutasi Tanpa Jurnal</h6>
+                    {% if orphan_mutasi_count == 0 %}
+                    <p class="text-success mb-0"><strong>✓ Tidak Ada</strong></p>
+                    <small class="text-muted">Semua mutasi posted punya jurnal</small>
+                    {% else %}
+                    <p class="text-warning mb-0"><strong>{{ orphan_mutasi_count }} record</strong></p>
+                    <small class="text-muted">Mutasi posted tanpa jurnal terkait</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <!-- Orphan Jurnal -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="avatar avatar-lg mx-auto mb-3">
+                        <span class="avatar-initial rounded-circle {% if orphan_jurnal_count == 0 %}bg-success{% else %}bg-warning{% endif %}">
+                            <i class="ri-{% if orphan_jurnal_count == 0 %}check-line{% else %}alert-line{% endif %} ri-24px"></i>
+                        </span>
+                    </div>
+                    <h6>Jurnal Tanpa Mutasi</h6>
+                    {% if orphan_jurnal_count == 0 %}
+                    <p class="text-success mb-0"><strong>✓ Tidak Ada</strong></p>
+                    <small class="text-muted">Semua jurnal kas/bank punya mutasi</small>
+                    {% else %}
+                    <p class="text-warning mb-0"><strong>{{ orphan_jurnal_count }} record</strong></p>
+                    <small class="text-muted">Jurnal akun kas tanpa mutasi treasury</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Orphan Mutasi -->
+    {% if orphan_mutasi %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0 text-warning"><i class="ri-error-warning-line me-2"></i>Mutasi Posted Tanpa Jurnal ({{ orphan_mutasi_count }} record)</h5>
+            <small class="text-muted">Mutasi ini menambah/mengurangi saldo Treasury tapi TIDAK tercatat di Accounting. Perlu diperbaiki.</small>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead><tr><th>Nomor</th><th>Tanggal</th><th>Akun</th><th>Tipe</th><th class="text-end">Jumlah</th><th>Deskripsi</th></tr></thead>
+                <tbody>
+                    {% for m in orphan_mutasi %}
+                    <tr>
+                        <td><code>{{ m.nomor }}</code></td>
+                        <td>{{ m.tanggal|date:"d/m/Y" }}</td>
+                        <td>{{ m.akun_kas_bank.nama }}</td>
+                        <td><span class="badge bg-label-{% if m.is_debit_kas %}success{% else %}danger{% endif %}">{{ m.get_tipe_display }}</span></td>
+                        <td class="text-end fw-semibold">{{ m.jumlah|rupiah }}</td>
+                        <td>{{ m.deskripsi|truncatechars:40 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Detail Orphan Jurnal -->
+    {% if orphan_jurnal %}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-0 text-warning"><i class="ri-error-warning-line me-2"></i>Jurnal Akun Kas Tanpa Mutasi Treasury ({{ orphan_jurnal_count }} record)</h5>
+                <small class="text-muted">Jurnal ini menyentuh akun kas/bank di Accounting tapi TIDAK ada mutasi di Treasury.</small>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-label-success" onclick="exportOrphanJurnalExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportOrphanJurnalPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+            </div>
+        </div>
+        <div class="card-datatable table-responsive">
+            <table class="table table-hover datatables-orphan-jurnal" id="tabelOrphanJurnal">
+                <thead><tr><th>Nomor</th><th>Tanggal</th><th>Deskripsi</th><th>Sumber</th><th>Dibuat Oleh</th></tr></thead>
+                <tbody>
+                    {% for j in orphan_jurnal %}
+                    <tr>
+                        <td><a href="{% url 'akuntansi:jurnal_detail' j.pk %}"><code>{{ j.nomor }}</code></a></td>
+                        <td>{{ j.tanggal|date:"d/m/Y" }}</td>
+                        <td>{{ j.deskripsi|truncatechars:50 }}</td>
+                        <td><span class="badge bg-label-secondary">{{ j.sumber }}</span></td>
+                        <td>{{ j.created_by.username|default:"-" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Jurnal Failure Log -->
+    {% if jurnal_failures_count > 0 %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0 text-danger"><i class="ri-bug-line me-2"></i>Kegagalan Pembuatan Jurnal ({{ jurnal_failures_count }} record)</h5>
+            <small class="text-muted">Transaksi yang gagal generate jurnal otomatis. Signal error tercatat di Activity Log.</small>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead><tr><th>Waktu</th><th>Sumber</th><th>Referensi</th><th>Deskripsi Error</th><th>User</th></tr></thead>
+                <tbody>
+                    {% for f in jurnal_failures %}
+                    <tr>
+                        <td>{{ f.timestamp|date:"d/m/Y H:i" }}</td>
+                        <td><span class="badge bg-label-danger">{{ f.source_type|default:"-" }}</span></td>
+                        <td><code>{{ f.source_repr|default:"-" }}</code></td>
+                        <td><small>{{ f.description|truncatechars:80 }}</small></td>
+                        <td>{{ f.user.username|default:"-" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock content %}
+
+{% block page_js %}
+<style>
+    .dataTables_wrapper .dataTables_info { padding: 1rem 1.5rem; font-size: 0.875rem; color: #697a8d; }
+    .dataTables_wrapper .dataTables_paginate { padding: 1rem 1.5rem; }
+    .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter { padding: 0 1.5rem 1rem 1.5rem; }
+    .dataTables_wrapper .dataTables_filter input { border: 1px solid #d9dee3; border-radius: 0.375rem; padding: 0.4375rem 0.875rem; }
+    .dataTables_wrapper .dataTables_length select { border: 1px solid #d9dee3; border-radius: 0.375rem; padding: 0.4375rem 2rem 0.4375rem 0.875rem; }
+    .dataTables_wrapper .dataTables_paginate .paginate_button { padding: 0.438rem 0.875rem; border-radius: 0.375rem; margin: 0 0.125rem; border: none; background: transparent; color: #697a8d; }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current { background: #696cff !important; color: white !important; border: none; }
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.disabled) { background: rgba(105, 108, 255, 0.08) !important; border: none; color: #696cff !important; }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.disabled { color: #c7cdd4 !important; cursor: not-allowed; }
+    .card-datatable { padding-bottom: 0; }
+    .datatables-penyebab thead th, .datatables-detail thead th, .datatables-orphan-jurnal thead th, #tabelTreasury thead th { font-weight: 600; font-size: 0.8125rem; text-transform: none; letter-spacing: 0; }
+</style>
+<script>
+// ═══ EXPORT TEMPLATE INFO (dari context processor) ═══
+const EXCEL_INFO = {
+    name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
+    address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
+    phone: "{{ export_excel_template.header_telepon|escapejs|default:'No Telp' }}",
+    email: "Email: {{ export_excel_template.header_email|escapejs|default:'email@domain.com' }}",
+    website: "{{ export_excel_template.header_website|escapejs|default:'' }}",
+    copyright: "{{ export_excel_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
+};
+const PDF_INFO = {
+    name: "{{ export_pdf_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
+    address: "{{ export_pdf_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
+    phone: "{{ export_pdf_template.header_telepon|escapejs|default:'No Telp' }}",
+    email: "Email: {{ export_pdf_template.header_email|escapejs|default:'email@domain.com' }}",
+    website: "{{ export_pdf_template.header_website|escapejs|default:'' }}",
+    copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
+};
+
+$(document).ready(function() {
+    // ═══ CHART: Perbandingan Operasional vs Akuntansi ═══
+    var chartEl = document.querySelector('#rekonChart');
+    if (chartEl) {
+        var chartDataOps = {{ chart_operasional }};
+        var chartDataAkun = {{ chart_akuntansi }};
+        var options = {
+            series: [
+                { name: 'Operasional', data: chartDataOps },
+                { name: 'Akuntansi', data: chartDataAkun }
+            ],
+            chart: { type: 'bar', height: 350, toolbar: { show: true }, fontFamily: 'inherit' },
+            plotOptions: { bar: { horizontal: false, columnWidth: '55%', borderRadius: 4 } },
+            dataLabels: { enabled: false },
+            stroke: { show: true, width: 2, colors: ['transparent'] },
+            xaxis: { categories: ['Pendapatan Bersih', 'Beban/DPP', 'Laba/Rugi'] },
+            yaxis: {
+                labels: {
+                    formatter: function(val) {
+                        if (Math.abs(val) >= 1e9) return 'Rp ' + (val / 1e9).toFixed(1) + ' M';
+                        if (Math.abs(val) >= 1e6) return 'Rp ' + (val / 1e6).toFixed(1) + ' Jt';
+                        if (Math.abs(val) >= 1e3) return 'Rp ' + (val / 1e3).toFixed(0) + ' K';
+                        return 'Rp ' + val.toFixed(0);
+                    }
+                }
+            },
+            fill: { opacity: 1 },
+            tooltip: {
+                y: { formatter: function(val) { return 'Rp ' + Number(val).toLocaleString('id-ID'); } }
+            },
+            colors: ['#ff9f43', '#7367f0'],
+            legend: { position: 'top' }
+        };
+        var chart = new ApexCharts(chartEl, options);
+        chart.render();
+    }
+
+    // ═══ DATATABLES: Tabel Treasury vs Accounting ═══
+    if ($('#tabelTreasury tbody tr').length > 0) {
+        $('#tabelTreasury').DataTable({
+            language: {
+                "sEmptyTable": "Tidak ada data yang tersedia",
+                "sLengthMenu": "Tampilkan _MENU_ data",
+                "sZeroRecords": "Tidak ditemukan data yang sesuai",
+                "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                "sInfoEmpty": "Menampilkan 0 sampai 0 dari 0 data",
+                "sInfoFiltered": "(disaring dari _MAX_ total data)",
+                "sSearch": "Cari:",
+                "oPaginate": { "sPrevious": "Sebelumnya", "sNext": "Selanjutnya" }
+            },
+            order: [[6, 'asc']],
+            pageLength: 10,
+            lengthMenu: [[10, 25, 50, -1], ['10', '25', '50', 'Semua']],
+            responsive: false,
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            initComplete: function() { $(this).closest('.dataTables_wrapper').find('.dataTables_filter input').attr('placeholder', 'Cari akun kas/bank...'); }
+        });
+    }
+
+    // ═══ DATATABLES: Tabel Penyebab Selisih ═══
+    if ($('#tabelPenyebab tbody tr').length > 0) {
+        $('#tabelPenyebab').DataTable({
+            language: {
+                "sEmptyTable": "Tidak ada data yang tersedia",
+                "sLengthMenu": "Tampilkan _MENU_ data",
+                "sZeroRecords": "Tidak ditemukan data yang sesuai",
+                "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                "sInfoEmpty": "Menampilkan 0 sampai 0 dari 0 data",
+                "sInfoFiltered": "(disaring dari _MAX_ total data)",
+                "sSearch": "Cari:",
+                "oPaginate": { "sPrevious": "Sebelumnya", "sNext": "Selanjutnya" }
+            },
+            order: [[1, 'desc']],
+            pageLength: 10,
+            lengthMenu: [[10, 25, 50, -1], ['10', '25', '50', 'Semua']],
+            responsive: false,
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            initComplete: function() { $(this).closest('.dataTables_wrapper').find('.dataTables_filter input').attr('placeholder', 'Cari penyebab...'); }
+        });
+    }
+
+    // ═══ DATATABLES: Tabel Detail Jurnal ═══
+    if ($('#tabelDetail tbody tr').length > 0) {
+        $('#tabelDetail').DataTable({
+            language: {
+                "sEmptyTable": "Tidak ada data yang tersedia",
+                "sLengthMenu": "Tampilkan _MENU_ data",
+                "sZeroRecords": "Tidak ditemukan data yang sesuai",
+                "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                "sInfoEmpty": "Menampilkan 0 sampai 0 dari 0 data",
+                "sInfoFiltered": "(disaring dari _MAX_ total data)",
+                "sSearch": "Cari:",
+                "oPaginate": { "sPrevious": "Sebelumnya", "sNext": "Selanjutnya" }
+            },
+            order: [[0, 'desc']],
+            pageLength: 10,
+            lengthMenu: [[10, 25, 50, -1], ['10', '25', '50', 'Semua']],
+            responsive: false,
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            initComplete: function() { $(this).closest('.dataTables_wrapper').find('.dataTables_filter input').attr('placeholder', 'Cari jurnal...'); }
+        });
+    }
+
+    // DATATABLES: Tabel Jurnal Akun Kas Tanpa Mutasi Treasury
+    if ($('#tabelOrphanJurnal tbody tr').length > 0) {
+        $('#tabelOrphanJurnal').DataTable({
+            language: {
+                "sEmptyTable": "Tidak ada data yang tersedia",
+                "sLengthMenu": "Tampilkan _MENU_ data",
+                "sZeroRecords": "Tidak ditemukan data yang sesuai",
+                "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                "sInfoEmpty": "Menampilkan 0 sampai 0 dari 0 data",
+                "sInfoFiltered": "(disaring dari _MAX_ total data)",
+                "sSearch": "Cari:",
+                "oPaginate": { "sPrevious": "Sebelumnya", "sNext": "Selanjutnya" }
+            },
+            order: [[1, 'desc']],
+            pageLength: 10,
+            lengthMenu: [[10, 25, 50, -1], ['10', '25', '50', 'Semua']],
+            responsive: false,
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            initComplete: function() { $(this).closest('.dataTables_wrapper').find('.dataTables_filter input').attr('placeholder', 'Cari jurnal kas tanpa mutasi...'); }
+        });
+    }
+
+    // ═══ TOOLTIPS ═══
+    [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]')).map(function(el) { return new bootstrap.Tooltip(el); });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// GENERIC EXPORT FUNCTIONS — Identik dengan Invoice (header + footer)
+// ═══════════════════════════════════════════════════════════════
+function _doExportExcel(tableId, filename, documentTitle) {
+    const tableObj = new $.fn.dataTable.Api('#' + tableId);
+    let colCount = 0, visibleColumns = [];
+    tableObj.columns().every(function(index) {
+        const headerNode = this.header();
+        const headerText = headerNode ? headerNode.textContent.trim() : '';
+        if (this.visible() && headerText.toLowerCase() !== 'aksi') {
+            visibleColumns.push({ index: index, text: headerText });
+            colCount++;
+        }
+    });
+
+    let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+    html += '<head><meta charset="utf-8"></head><body>';
+
+    // HEADER PERUSAHAAN
+    html += '<table border="0">';
+    html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
+    html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
+    html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
+    html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:14px; font-weight:bold; padding-top:8px;">${documentTitle}</td></tr>`;
+    html += `<tr><td colspan="${colCount}"></td></tr>`;
+    html += '</table>';
+
+    // TABEL DATA
+    html += '<table border="1"><thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;">';
+    visibleColumns.forEach(col => { html += `<th>${col.text}</th>`; });
+    html += '</tr></thead><tbody>';
+    tableObj.rows({ search: 'applied' }).every(function(rowIdx) {
+        html += '<tr>';
+        visibleColumns.forEach(col => {
+            const cellNode = tableObj.cell(rowIdx, col.index).node();
+            const text = cellNode ? cellNode.textContent.trim().replace(/\s+/g, ' ') : '';
+            html += `<td>${text}</td>`;
+        });
+        html += '</tr>';
+    });
+    html += '</tbody></table>';
+
+    // FOOTER COPYRIGHT
+    html += '<table border="0">';
+    html += `<tr><td colspan="${colCount}"></td></tr>`;
+    html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</td></tr>`;
+    html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">${EXCEL_INFO.copyright}</td></tr>`;
+    html += '</table></body></html>';
+
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const link = document.createElement('a');
+    link.setAttribute('href', URL.createObjectURL(blob));
+    link.setAttribute('download', filename + '_' + new Date().toISOString().slice(0, 10) + '.xls');
+    link.click();
+}
+
+function _doExportPDF(tableId, filename, documentTitle) {
+    if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
+    const tableObj = new $.fn.dataTable.Api('#' + tableId);
+    const headers = []; let visibleColumns = [];
+    tableObj.columns().every(function(index) {
+        const headerNode = this.header();
+        const headerText = headerNode ? headerNode.textContent.trim() : '';
+        if (this.visible() && headerText.toLowerCase() !== 'aksi') {
+            headers.push({ text: headerText, style: 'tableHeader', fillColor: '#696CFF', color: '#FFFFFF', bold: true });
+            visibleColumns.push({ index: index });
+        }
+    });
+
+    const body = [headers];
+    tableObj.rows({ search: 'applied' }).every(function(rowIdx) {
+        const row = [];
+        visibleColumns.forEach(col => {
+            const cellNode = tableObj.cell(rowIdx, col.index).node();
+            row.push(cellNode ? cellNode.textContent.trim().replace(/\s+/g, ' ') : '');
+        });
+        if (row.length > 0) body.push(row);
+    });
+
+    const docDefinition = {
+        pageOrientation: 'landscape',
+        pageMargins: [40, 100, 40, 60],
+        header: function(currentPage) {
+            return {
+                margin: [40, 20, 40, 10],
+                columns: [
+                    {
+                        width: '*',
+                        stack: [
+                            { text: PDF_INFO.name, style: 'companyName' },
+                            { text: PDF_INFO.address, style: 'companyInfo' },
+                            { text: PDF_INFO.phone + ' | ' + PDF_INFO.email, style: 'companyInfo' }
+                        ]
+                    },
+                    { width: 'auto', stack: [{ text: 'Halaman ' + currentPage, style: 'pageNumber', alignment: 'right' }] }
+                ]
+            };
+        },
+        content: [
+            { text: documentTitle, style: 'documentTitle', margin: [0, 0, 0, 5] },
+            { text: 'Tanggal: ' + new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }), style: 'dateText', margin: [0, 0, 0, 20] },
+            {
+                table: { headerRows: 1, widths: Array(headers.length).fill('auto'), body: body },
+                layout: {
+                    fillColor: (rowIndex) => (rowIndex === 0) ? '#696CFF' : ((rowIndex % 2 === 0) ? '#F5F5F9' : null),
+                    hLineWidth: () => 0.5,
+                    vLineWidth: () => 0.5,
+                    hLineColor: () => '#DBDADE',
+                    vLineColor: () => '#DBDADE'
+                }
+            }
+        ],
+        footer: function() {
+            return {
+                margin: [40, 10, 40, 10],
+                columns: [
+                    { text: 'Dicetak pada: ' + new Date().toLocaleString('id-ID'), style: 'footerText' },
+                    { text: PDF_INFO.copyright, style: 'footerText', alignment: 'right' }
+                ]
+            };
+        },
+        styles: {
+            companyName: { fontSize: 14, bold: true, color: '#5F61E6' },
+            companyInfo: { fontSize: 9, color: '#697A8D' },
+            pageNumber: { fontSize: 9, color: '#697A8D' },
+            documentTitle: { fontSize: 18, bold: true, color: '#5F61E6' },
+            dateText: { fontSize: 10, color: '#697A8D' },
+            tableHeader: { bold: true, fontSize: 10, color: '#FFFFFF' },
+            footerText: { fontSize: 8, color: '#697A8D' }
+        },
+        defaultStyle: { fontSize: 9 }
+    };
+    pdfMake.createPdf(docDefinition).download(filename + '_' + new Date().toISOString().slice(0, 10) + '.pdf');
+}
+
+// Wrapper functions per tabel
+function exportTreasuryExcel() { _doExportExcel('tabelTreasury', 'Rekonsiliasi_Treasury_vs_Accounting', 'SINKRONISASI TREASURY vs ACCOUNTING'); }
+function exportTreasuryPDF() { _doExportPDF('tabelTreasury', 'Rekonsiliasi_Treasury_vs_Accounting', 'SINKRONISASI TREASURY vs ACCOUNTING'); }
+function exportPenyebabExcel() { _doExportExcel('tabelPenyebab', 'Rekonsiliasi_Penyebab_Selisih', 'PENYEBAB SELISIH REKONSILIASI KEUANGAN'); }
+function exportPenyebabPDF() { _doExportPDF('tabelPenyebab', 'Rekonsiliasi_Penyebab_Selisih', 'PENYEBAB SELISIH REKONSILIASI KEUANGAN'); }
+function exportDetailExcel() { _doExportExcel('tabelDetail', 'Rekonsiliasi_Detail_Jurnal', 'DETAIL JURNAL NON-OPERASIONAL'); }
+function exportDetailPDF() { _doExportPDF('tabelDetail', 'Rekonsiliasi_Detail_Jurnal', 'DETAIL JURNAL NON-OPERASIONAL'); }
+function exportOrphanJurnalExcel() { _doExportExcel('tabelOrphanJurnal', 'Rekonsiliasi_Jurnal_Kas_Tanpa_Mutasi_Treasury', 'JURNAL AKUN KAS TANPA MUTASI TREASURY'); }
+function exportOrphanJurnalPDF() { _doExportPDF('tabelOrphanJurnal', 'Rekonsiliasi_Jurnal_Kas_Tanpa_Mutasi_Treasury', 'JURNAL AKUN KAS TANPA MUTASI TREASURY'); }
+</script>
+{% endblock page_js %}

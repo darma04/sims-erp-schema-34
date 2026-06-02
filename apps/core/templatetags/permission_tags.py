@@ -258,6 +258,22 @@ def extract_submodule(slug):
     """
     try:
         slug_str = str(slug).strip()
+        # PENTING: Hanya prefix yang benar-benar memetakan ke MODULE NAMA di sidebar.
+        # 'ai-assistant-' DIHAPUS karena 'ai-assistant-settings' harus memetakan ke
+        # sub-modul 'assistant-settings' (sesuai SUB_MODULE_TO_SLUG['pengaturan_ai']),
+        # bukan 'settings'.
+        known_prefixes = [
+            'kas-bank-',
+            'laporan-keuangan-',
+            'access-control-',
+            'activity-log-',
+            'fraud-detection-',
+        ]
+        slug_lower = slug_str.lower()
+        for prefix in known_prefixes:
+            if slug_lower.startswith(prefix):
+                return slug_lower[len(prefix):]
+
         parts = slug_str.split('-')
         if len(parts) > 1:
             # Ada dash → ambil semua bagian SETELAH dash pertama

@@ -1,0 +1,192 @@
+{% extends 'layout/layout_vertical.html' %}
+{% comment %}
+==========================================================================
+JURNAL FORM - Input Jurnal Manual (Header + Inline Lines)
+==========================================================================
+{% endcomment %}
+{% load static %}
+
+{% block title %}{{ title }} - Akuntansi ERP{% endblock title %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <h4 class="py-3 mb-4">
+        <span class="text-muted fw-light">Akuntansi / <a href="{% url 'akuntansi:jurnal' %}">Jurnal</a> /</span> {{ title }}
+    </h4>
+
+    <form method="post" id="jurnalForm">
+        {% csrf_token %}
+
+        <!-- Header Card -->
+        <div class="card mb-4">
+            <h5 class="card-header"><i class="ri-file-text-line me-2"></i>{{ title }}</h5>
+            <div class="card-body">
+                {% if form.errors %}
+                <div class="alert alert-danger"><i class="ri-error-warning-line me-2"></i>Perbaiki kesalahan: {{ form.errors }}</div>
+                {% endif %}
+
+                <div class="row mb-3">
+                    <label class="col-sm-2 col-form-label">Tanggal <span class="text-danger">*</span></label>
+                    <div class="col-sm-4">{{ form.tanggal }}</div>
+                    <label class="col-sm-2 col-form-label">Cabang</label>
+                    <div class="col-sm-4">{{ form.cabang }}</div>
+                </div>
+                <div class="row mb-3">
+                    <label class="col-sm-2 col-form-label">Periode</label>
+                    <div class="col-sm-4">{{ form.periode }}</div>
+                </div>
+                <div class="row mb-3">
+                    <label class="col-sm-2 col-form-label">Deskripsi <span class="text-danger">*</span></label>
+                    <div class="col-sm-10">{{ form.deskripsi }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lines Card -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="ri-list-check-2 me-2"></i>Detail Jurnal Lines</h5>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="addLineBtn">
+                    <i class="ri-add-line me-1"></i>Tambah Baris
+                </button>
+            </div>
+            <div class="card-body">
+                {{ formset.management_form }}
+                {% if formset.errors %}
+                <div class="alert alert-danger mb-3">
+                    <i class="ri-error-warning-line me-2"></i>
+                    {% for error in formset.errors %}{% if error %}{{ error }}{% endif %}{% endfor %}
+                    {% if formset.non_form_errors %}{{ formset.non_form_errors }}{% endif %}
+                </div>
+                {% endif %}
+
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="linesTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 35%;">Akun <span class="text-danger">*</span></th>
+                                <th style="width: 20%;" class="text-end">Debit (Rp)</th>
+                                <th style="width: 20%;" class="text-end">Kredit (Rp)</th>
+                                <th style="width: 20%;">Keterangan</th>
+                                <th style="width: 5%;">Hapus</th>
+                            </tr>
+                        </thead>
+                        <tbody id="linesBody">
+                            {% for line_form in formset %}
+                            <tr class="line-row {% if line_form.DELETE.value %}d-none{% endif %}">
+                                <td>{{ line_form.akun }}{{ line_form.id }}</td>
+                                <td>{{ line_form.debit }}</td>
+                                <td>{{ line_form.kredit }}</td>
+                                <td>{{ line_form.keterangan }}</td>
+                                <td class="text-center">
+                                    <div class="form-check d-inline-block">{{ line_form.DELETE }}</div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <td class="text-end fw-bold">TOTAL:</td>
+                                <td class="text-end fw-bold text-primary" id="totalDebit">Rp 0</td>
+                                <td class="text-end fw-bold text-primary" id="totalKredit">Rp 0</td>
+                                <td colspan="2">
+                                    <span id="balanceStatus" class="badge bg-label-secondary">Belum ada data</span>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="mt-4 d-flex flex-wrap gap-2">
+                    <button type="submit" class="btn btn-primary"><i class="ri-save-line me-1"></i>Simpan Jurnal</button>
+                    <a href="{% url 'akuntansi:jurnal' %}" class="btn btn-outline-secondary">Batal</a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock content %}
+
+{% block page_js %}
+<script>
+$(document).ready(function() {
+    calculateTotals();
+
+    // Listen for changes on debit/kredit inputs
+    $(document).on('input', '.debit-input, .kredit-input', function() {
+        calculateTotals();
+    });
+});
+
+function calculateTotals() {
+    let totalDebit = 0, totalKredit = 0;
+    $('#linesBody tr.line-row:visible').each(function() {
+        const d = parseFloat($(this).find('.debit-input').val()) || 0;
+        const k = parseFloat($(this).find('.kredit-input').val()) || 0;
+        totalDebit += d;
+        totalKredit += k;
+    });
+    $('#totalDebit').text('Rp ' + totalDebit.toLocaleString('id-ID'));
+    $('#totalKredit').text('Rp ' + totalKredit.toLocaleString('id-ID'));
+
+    if (totalDebit === 0 && totalKredit === 0) {
+        $('#balanceStatus').attr('class', 'badge bg-label-secondary').text('Belum ada data');
+    } else if (totalDebit === totalKredit) {
+        $('#balanceStatus').attr('class', 'badge bg-label-success').text('Balance');
+    } else {
+        const diff = Math.abs(totalDebit - totalKredit);
+        $('#balanceStatus').attr('class', 'badge bg-label-danger').text('Selisih: Rp ' + diff.toLocaleString('id-ID'));
+    }
+}
+
+// Add new line row
+$('#addLineBtn').on('click', function() {
+    const totalForms = $('#id_lines-TOTAL_FORMS');
+    const currentCount = parseInt(totalForms.val());
+    const newRow = $('#linesBody tr.line-row:first').clone();
+
+    // Update form indices
+    newRow.find('input, select, textarea').each(function() {
+        const name = $(this).attr('name');
+        if (name) {
+            $(this).attr('name', name.replace(/-\d+-/, `-${currentCount}-`));
+            $(this).attr('id', ($(this).attr('id') || '').replace(/-\d+-/, `-${currentCount}-`));
+        }
+        if ($(this).is('select')) { $(this).val(''); }
+        else if ($(this).is(':checkbox')) { $(this).prop('checked', false); }
+        else { $(this).val(''); }
+    });
+
+    newRow.removeClass('d-none');
+    $('#linesBody').append(newRow);
+    totalForms.val(currentCount + 1);
+});
+
+// Toggle delete row visibility
+$(document).on('change', 'input[type="checkbox"][name$="-DELETE"]', function() {
+    const row = $(this).closest('tr');
+    if ($(this).is(':checked')) { row.addClass('d-none'); }
+    else { row.removeClass('d-none'); }
+    calculateTotals();
+});
+
+// Form validation before submit
+$('#jurnalForm').on('submit', function(e) {
+    let totalD = 0, totalK = 0;
+    $('#linesBody tr.line-row:visible').each(function() {
+        totalD += parseFloat($(this).find('.debit-input').val()) || 0;
+        totalK += parseFloat($(this).find('.kredit-input').val()) || 0;
+    });
+    if (totalD !== totalK) {
+        e.preventDefault();
+        alert('Jurnal tidak balance!\nDebit: Rp ' + totalD.toLocaleString('id-ID') + '\nKredit: Rp ' + totalK.toLocaleString('id-ID') + '\n\nSelisih: Rp ' + Math.abs(totalD - totalK).toLocaleString('id-ID'));
+        return false;
+    }
+    if (totalD === 0) {
+        e.preventDefault();
+        alert('Total Debit dan Kredit tidak boleh 0!');
+        return false;
+    }
+});
+</script>
+{% endblock page_js %}

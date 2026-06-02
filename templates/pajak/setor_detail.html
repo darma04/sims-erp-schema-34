@@ -1,0 +1,154 @@
+{% extends 'layout/layout_vertical.html' %}
+{% load currency_filters %}
+
+{% block title %}{{ pembayaran.nomor }} - Detail Setor PPN{% endblock title %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <h4 class="py-3 mb-4">
+        <span class="text-muted fw-light">Pajak / <a href="{% url 'pajak:setor_list' %}">Setor PPN</a> /</span> {{ pembayaran.nomor }}
+    </h4>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="ri-bank-line me-2"></i>{{ pembayaran.nomor }}</h5>
+            <a href="{% url 'pajak:setor_list' %}" class="btn btn-outline-secondary"><i class="ri-arrow-left-line me-1"></i>Kembali</a>
+        </div>
+        <div class="card-body">
+            <div class="row g-4 mb-4">
+                <div class="col-md-3">
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted d-block mb-1">Masa Pajak</small>
+                        <h5 class="mb-0">{{ pembayaran.masa_bulan|stringformat:"02d" }}/{{ pembayaran.masa_tahun }}</h5>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted d-block mb-1">Tipe</small>
+                        {% if pembayaran.tipe == 'setor' %}
+                        <span class="badge bg-label-danger">{{ pembayaran.get_tipe_display }}</span>
+                        {% else %}
+                        <span class="badge bg-label-info">{{ pembayaran.get_tipe_display }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted d-block mb-1">Jumlah</small>
+                        <h5 class="mb-0 {% if pembayaran.tipe == 'setor' %}text-danger{% else %}text-info{% endif %}">{{ pembayaran.jumlah_setor|rupiah }}</h5>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted d-block mb-1">Tanggal Setor</small>
+                        <h5 class="mb-0">{{ pembayaran.tanggal_setor|date:"d M Y" }}</h5>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr><td class="text-muted" style="width:170px;">PPN Keluaran</td><td class="text-end text-success">{{ pembayaran.total_ppn_keluaran|rupiah }}</td></tr>
+                        <tr><td class="text-muted">PPN Masukan</td><td class="text-end text-warning">{{ pembayaran.total_ppn_masukan|rupiah }}</td></tr>
+                        <tr><td class="text-muted fw-bold">Selisih</td><td class="text-end fw-bold {% if pembayaran.tipe == 'setor' %}text-danger{% else %}text-info{% endif %}">{{ pembayaran.jumlah_setor|rupiah }}</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr><td class="text-muted" style="width:170px;">Metode Pembayaran</td><td>{{ pembayaran.metode_pembayaran.nama|default:"-" }}</td></tr>
+                        <tr><td class="text-muted">Nomor Bukti / NTPN</td><td>{{ pembayaran.nomor_bukti|default:"-" }}</td></tr>
+                        <tr><td class="text-muted">Jurnal</td><td>{% if pembayaran.jurnal %}<a href="{% url 'akuntansi:jurnal_detail' pembayaran.jurnal.pk %}">{{ pembayaran.jurnal.nomor }}</a>{% else %}-{% endif %}</td></tr>
+                        <tr><td class="text-muted">Dibuat Oleh</td><td>{{ pembayaran.created_by.username|default:"-" }} <small class="text-muted">{{ pembayaran.dibuat_pada|date:"d/m/Y H:i" }}</small></td></tr>
+                    </table>
+                </div>
+            </div>
+
+            {% if pembayaran.keterangan %}
+            <hr>
+            <small class="text-muted d-block mb-1">Keterangan</small>
+            <p class="mb-0">{{ pembayaran.keterangan }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if jurnal_lines %}
+    <div class="card mt-4">
+        <div class="card-header"><h5 class="mb-0"><i class="ri-file-list-3-line me-2"></i>Detail Jurnal</h5></div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Kode Akun</th>
+                        <th>Nama Akun</th>
+                        <th>Keterangan</th>
+                        <th class="text-end">Debit</th>
+                        <th class="text-end">Kredit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for line in jurnal_lines %}
+                    <tr>
+                        <td><span class="badge bg-label-primary">{{ line.akun.kode }}</span></td>
+                        <td>{{ line.akun.nama }}</td>
+                        <td><small class="text-muted">{{ line.keterangan|default:"-" }}</small></td>
+                        <td class="text-end">{% if line.debit > 0 %}<span class="text-success fw-semibold">{{ line.debit|rupiah }}</span>{% else %}-{% endif %}</td>
+                        <td class="text-end">{% if line.kredit > 0 %}<span class="text-danger fw-semibold">{{ line.kredit|rupiah }}</span>{% else %}-{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row mt-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header"><h5 class="mb-0 text-success"><i class="ri-arrow-up-circle-line me-2"></i>Faktur Keluaran ({{ faktur_keluaran|length }})</h5></div>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light"><tr><th>Tgl</th><th>No. Seri</th><th>Lawan</th><th class="text-end">DPP</th><th class="text-end">PPN</th></tr></thead>
+                        <tbody>
+                            {% for f in faktur_keluaran %}
+                            <tr>
+                                <td>{{ f.tanggal|date:"d/m/Y" }}</td>
+                                <td><small>{{ f.nomor_seri }}</small></td>
+                                <td><small>{{ f.nama_lawan|truncatechars:25 }}</small></td>
+                                <td class="text-end">{{ f.dpp|rupiah }}</td>
+                                <td class="text-end text-success">{{ f.ppn|rupiah }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center text-muted py-3">Tidak ada</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header"><h5 class="mb-0 text-warning"><i class="ri-arrow-down-circle-line me-2"></i>Faktur Masukan ({{ faktur_masukan|length }})</h5></div>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light"><tr><th>Tgl</th><th>No. Seri</th><th>Lawan</th><th class="text-end">DPP</th><th class="text-end">PPN</th></tr></thead>
+                        <tbody>
+                            {% for f in faktur_masukan %}
+                            <tr>
+                                <td>{{ f.tanggal|date:"d/m/Y" }}</td>
+                                <td><small>{{ f.nomor_seri }}</small></td>
+                                <td><small>{{ f.nama_lawan|truncatechars:25 }}</small></td>
+                                <td class="text-end">{{ f.dpp|rupiah }}</td>
+                                <td class="text-end text-warning">{{ f.ppn|rupiah }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center text-muted py-3">Tidak ada</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

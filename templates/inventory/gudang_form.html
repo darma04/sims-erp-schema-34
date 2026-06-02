@@ -58,6 +58,21 @@
                         </div>
 
                         <div class="row mb-3">
+                            <label class="col-sm-2 col-form-label" for="id_pajak_persen">Pajak / PPN (%)</label>
+                            <div class="col-sm-10">
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="id_pajak_persen" name="pajak_persen"
+                                        value="{{ form.pajak_persen.value|default:'0' }}" min="0" max="100" step="0.01">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <small class="text-muted d-block mt-1">Tarif PPN khusus cabang ini. Isi 0 untuk menggunakan default dari Pengaturan Perusahaan.</small>
+                                {% if form.pajak_persen.errors %}
+                                <div class="text-danger small">{{ form.pajak_persen.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
                             <label class="col-sm-2 col-form-label" for="id_metode_pembayaran_default">Metode Pembayaran Default</label>
                             <div class="col-sm-10">
                                 <select class="form-select" id="id_metode_pembayaran_default" name="metode_pembayaran_default">

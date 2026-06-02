@@ -59,6 +59,8 @@ urlpatterns = [
     path('sales-order/<int:pk>/confirm/', views.sales_order_confirm, name='sales-order-confirm'),
     # URL: /penjualan/sales-order/<int:pk>/delete/ — sales-order-delete
     path('sales-order/<int:pk>/delete/', views.SalesOrderDeleteView.as_view(), name='sales-order-delete'),
+    # URL: /penjualan/sales-order/<int:pk>/cancel/ — sales-order-cancel (POST AJAX)
+    path('sales-order/<int:pk>/cancel/', views.cancel_sales_order, name='sales-order-cancel'),
     
     # ===== TRANSAKSI POS (model dari apps.pos) =====
     path('transaksi/', views.TransactionListView.as_view(), name='transaksi'),

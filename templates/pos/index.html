@@ -1,4 +1,4 @@
-{% extends 'layout/layout_vertical.html' %}
+﻿{% extends 'layout/layout_vertical.html' %}
 {% load static %}`r`n{% load currency_filters %}
 {% load i18n %}
 
@@ -21,15 +21,15 @@
 
 {% block page_css %}
 <style>
-    /* ═══════════════════════════════════════════════════════════════════════════
-     * POS PAGE — Modern, Professional, Dark Mode Ready
-     * ═══════════════════════════════════════════════════════════════════════════
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+     * POS PAGE â€” Modern, Professional, Dark Mode Ready
+     * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      *
      * File ini berisi SELURUH CSS khusus untuk halaman POS (Point of Sale).
      * Halaman POS terdiri dari 3 komponen utama:
-     *   1. Warehouse Card  → Header pemilih Gudang/Cabang & Kasir
-     *   2. Daftar Produk   → Grid produk dengan kategori, pencarian, rating bintang
-     *   3. Keranjang        → Panel keranjang belanja di kanan
+     *   1. Warehouse Card  â†’ Header pemilih Gudang/Cabang & Kasir
+     *   2. Daftar Produk   â†’ Grid produk dengan kategori, pencarian, rating bintang
+     *   3. Keranjang        â†’ Panel keranjang belanja di kanan
      *
      * DESAIN:
      * - Menggunakan warna tema Sneat/Materialize (#696cff = primary, #71dd37 = hijau)
@@ -39,26 +39,26 @@
      *
      * KONEKSI:
      * - Template: templates/pos/index.html (file ini sendiri)
-     * - View: apps/pos/views.py → POSIndexView (mengirim data ke template)
-     * - JS: Script di bawah template ini → cart logic, payment, rating bintang
-     * - Layout: templates/layout/layout_vertical.html → master layout
-     * ═══════════════════════════════════════════════════════════════════════════ */
+     * - View: apps/pos/views.py â†’ POSIndexView (mengirim data ke template)
+     * - JS: Script di bawah template ini â†’ cart logic, payment, rating bintang
+     * - Layout: templates/layout/layout_vertical.html â†’ master layout
+     * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-    /* ─── Warehouse/Cabang Header Card ─────────────────────────────────────────
+    /* â”€â”€â”€ Warehouse/Cabang Header Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
      * Kartu header paling atas halaman POS untuk memilih Gudang/Cabang dan Kasir.
      * Menggunakan linear-gradient ungu agar terlihat premium dan eye-catching.
-     * Gradien 135deg dari #696cff → #7b7eff → #8c8eff memberikan kedalaman visual.
+     * Gradien 135deg dari #696cff â†’ #7b7eff â†’ #8c8eff memberikan kedalaman visual.
      * Shadow ungu (rgba 105,108,255) agar kartu "mengambang" dari background.
      *
      * Dark Mode:
-     * - Gradien diubah ke transparan (0.2 → 0.12) agar tidak terlalu terang di dark bg
+     * - Gradien diubah ke transparan (0.2 â†’ 0.12) agar tidak terlalu terang di dark bg
      * - Border ungu solid ditambahkan sebagai pengganti shadow yang kurang terlihat
      * - Form input pakai background dark (#2b2c40) agar kontras dengan kartu
      *
      * Terhubung dengan:
-     * - #gudangSelect (Select2) → Dropdown pilih gudang, data dari views.py gudang_list
-     * - #kasirSelect (Select2) → Dropdown pilih kasir, data dari views.py user_list
-     * ──────────────────────────────────────────────────────────────────────── */
+     * - #gudangSelect (Select2) â†’ Dropdown pilih gudang, data dari views.py gudang_list
+     * - #kasirSelect (Select2) â†’ Dropdown pilih kasir, data dari views.py user_list
+     * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .warehouse-card {
         margin-bottom: 1.5rem;                     /* Jarak bawah ke konten di bawahnya */
         border: none !important;                   /* Hapus border default card Bootstrap */
@@ -68,11 +68,11 @@
     }
     .warehouse-card .card-body { padding: 1.25rem 1.5rem !important; } /* Padding simetris */
 
-    /* Label di dalam warehouse card — warna putih semi-transparan agar tidak terlalu keras */
+    /* Label di dalam warehouse card â€” warna putih semi-transparan agar tidak terlalu keras */
     .warehouse-card .form-label,
     .warehouse-card .form-label i { color: rgba(255,255,255,0.9) !important; font-weight: 500; font-size: 0.8125rem; }
 
-    /* Input Select & Control di dalam kartu gudang — semi-transparan putih (glass effect) */
+    /* Input Select & Control di dalam kartu gudang â€” semi-transparan putih (glass effect) */
     .warehouse-card .form-select,
     .warehouse-card .form-control {
         background-color: rgba(255,255,255,0.95) !important; /* Hampir putih solid */
@@ -84,7 +84,7 @@
         backdrop-filter: blur(10px);                            /* Efek blur belakang (glass) */
     }
 
-    /* State fokus — border ungu + glow ring untuk accessibility (menunjukkan elemen aktif) */
+    /* State fokus â€” border ungu + glow ring untuk accessibility (menunjukkan elemen aktif) */
     .warehouse-card .form-select:focus,
     .warehouse-card .form-control:focus {
         background-color: #fff !important;
@@ -92,7 +92,7 @@
         box-shadow: 0 0 0 3px rgba(105,108,255,0.15) !important; /* Focus ring ungu lembut */
     }
 
-    /* Dark mode warehouse card — gradien transparan + border garis */
+    /* Dark mode warehouse card â€” gradien transparan + border garis */
     html.dark-style .warehouse-card {
         background: linear-gradient(135deg, rgba(105,108,255,0.2) 0%, rgba(105,108,255,0.12) 100%) !important;
         border: 1px solid rgba(105,108,255,0.4) !important; /* Border ungu sebagai batas visual */
@@ -107,7 +107,7 @@
         color: #c4c6d0 !important;                          /* Teks terang untuk kontras */
     }
 
-    /* ─── Select2 Styling ──────────────────────────────────────────────────────
+    /* â”€â”€â”€ Select2 Styling â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
      * Override tampilan Select2 (library dropdown) agar sesuai desain Materialize.
      * Select2 digunakan untuk #gudangSelect dan #kasirSelect karena mendukung
      * pencarian di dalam dropdown (ketik untuk filter opsi).
@@ -117,7 +117,7 @@
      *
      * Semua warna menggunakan CSS variable (--bs-body-bg, --bs-border-color)
      * agar otomatis adaptif dengan dark mode tanpa kode tambahan.
-     * ──────────────────────────────────────────────────────────────────────── */
+     * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .warehouse-card .select2-container .select2-selection--single {
         height: 44px !important;                   /* Sama tinggi dengan form-select biasa */
         padding: 0 0.875rem !important;
@@ -137,7 +137,7 @@
         border-color: #696cff !important; box-shadow: 0 0 0 3px rgba(105,108,255,0.15) !important;
     }
 
-    /* Select2 dark mode — background dan teks menyesuaikan tema gelap */
+    /* Select2 dark mode â€” background dan teks menyesuaikan tema gelap */
     html.dark-style .warehouse-card .select2-container .select2-selection--single {
         background-color: rgba(43,44,64,0.95) !important;
         border: 1px solid rgba(105,108,255,0.25) !important;
@@ -146,21 +146,21 @@
         color: #c4c6d0 !important;
     }
 
-    /* Override dropdown Select2 (panel yang muncul saat klik) — warna tema */
+    /* Override dropdown Select2 (panel yang muncul saat klik) â€” warna tema */
     html body .select2-container--default .select2-results__option {
         padding: 0.625rem 0.875rem !important; background-color: var(--bs-body-bg, #fff) !important;
         color: var(--bs-body-color, #697a8d) !important; font-size: 0.9375rem !important; border: none !important;
     }
-    /* Hover pada opsi dropdown — warna ungu muda */
+    /* Hover pada opsi dropdown â€” warna ungu muda */
     html body .select2-container--default .select2-results__option--highlighted,
     html body .select2-container--default .select2-results__option--highlighted[aria-selected] {
         background-color: rgba(105,108,255,0.08) !important; color: #696cff !important;
     }
-    /* Opsi yang sudah dipilih — ungu lebih gelap + bold */
+    /* Opsi yang sudah dipilih â€” ungu lebih gelap + bold */
     html body .select2-container--default .select2-results__option[aria-selected="true"] {
         background-color: rgba(105,108,255,0.12) !important; color: #696cff !important; font-weight: 500 !important;
     }
-    /* Container dropdown Select2 — shadow dan rounded corners */
+    /* Container dropdown Select2 â€” shadow dan rounded corners */
     html body .select2-dropdown {
         border: 1px solid var(--bs-border-color, #d9dee3) !important; border-radius: 0.5rem !important;
         box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.12) !important; background-color: var(--bs-body-bg, #fff) !important;
@@ -168,18 +168,18 @@
     html body .select2-results__options { max-height: 300px !important; border-radius: 0.5rem !important; }
     html body .select2-results { background-color: var(--bs-body-bg, #fff) !important; border-radius: 0.5rem !important; }
 
-    /* ─── Product Card ─────────────────────────────────────────────────────────
+    /* â”€â”€â”€ Product Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
      * Kartu produk di grid POS (menampilkan gambar, nama, rating, harga, stok).
      * Setiap produk ditampilkan dalam satu card dengan efek hover interaktif.
      *
-     * cubic-bezier(0.4, 0, 0.2, 1) = Material Design easing curve → transisi yang
+     * cubic-bezier(0.4, 0, 0.2, 1) = Material Design easing curve â†’ transisi yang
      * terasa natural (mulai perlahan, cepat di tengah, melambat di akhir).
      *
      * Hover: kartu naik 4px + shadow ungu + border ungu + gambar zoom 3%
-     * → memberikan feedback visual bahwa produk bisa diklik/ditambahkan.
+     * â†’ memberikan feedback visual bahwa produk bisa diklik/ditambahkan.
      *
      * Dark Mode: border putih tipis + shadow lebih gelap, hover tetap ungu.
-     * ──────────────────────────────────────────────────────────────────────── */
+     * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .pos-product-card {
         cursor: pointer;                           /* Tanda bahwa elemen bisa diklik */
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Material Design easing */
@@ -190,14 +190,14 @@
         box-shadow: 0 1px 4px rgba(0,0,0,0.04);   /* Shadow minimal untuk kedalaman */
     }
 
-    /* Hover: elevasi + shadow ungu + border berubah ungu → feedback interaktif */
+    /* Hover: elevasi + shadow ungu + border berubah ungu â†’ feedback interaktif */
     .pos-product-card:hover {
         box-shadow: 0 8px 25px rgba(105,108,255,0.15); /* Shadow ungu saat hover */
-        transform: translateY(-4px);                     /* Naik 4px → efek "mengambang" */
+        transform: translateY(-4px);                     /* Naik 4px â†’ efek "mengambang" */
         border-color: rgba(105,108,255,0.25) !important; /* Border menjadi ungu tipis */
     }
 
-    /* Dark mode product card — border putih tipis sebagai separator antar kartu */
+    /* Dark mode product card â€” border putih tipis sebagai separator antar kartu */
     html.dark-style .pos-product-card {
         border: 1px solid rgba(255,255,255,0.1) !important;
         box-shadow: 0 1px 4px rgba(0,0,0,0.15);   /* Shadow lebih kuat di dark mode */
@@ -207,13 +207,13 @@
         box-shadow: 0 8px 25px rgba(105,108,255,0.2);
     }
 
-    /* Wrapper gambar produk — padding atas & samping tapi tidak bawah */
+    /* Wrapper gambar produk â€” padding atas & samping tapi tidak bawah */
     .pos-product-img-wrapper {
         padding: 0.75rem 0.75rem 0;
         overflow: hidden;                          /* Mencegah gambar zoom keluar batas */
     }
 
-    /* Gambar produk — cover agar proporsional, dengan zoom effect saat hover */
+    /* Gambar produk â€” cover agar proporsional, dengan zoom effect saat hover */
     .pos-product-img {
         height: 140px;                             /* Tinggi tetap agar grid seragam */
         object-fit: cover;                         /* Crop proporsional (tidak stretch) */
@@ -223,10 +223,10 @@
         border-radius: 0.5rem !important;
         transition: transform 0.3s ease;           /* Animasi zoom saat parent di-hover */
     }
-    /* Saat kartu di-hover, gambar sedikit membesar → efek "zoom in" yang menarik */
+    /* Saat kartu di-hover, gambar sedikit membesar â†’ efek "zoom in" yang menarik */
     .pos-product-card:hover .pos-product-img { transform: scale(1.03); }
 
-    /* Placeholder jika produk tidak punya gambar — gradien ungu tipis + ikon */
+    /* Placeholder jika produk tidak punya gambar â€” gradien ungu tipis + ikon */
     .product-img-placeholder {
         height: 140px;
         background: linear-gradient(135deg, rgba(105,108,255,0.04), rgba(105,108,255,0.08));
@@ -240,12 +240,12 @@
     }
     html.dark-style .pos-product-img { background-color: rgba(255,255,255,0.04); }
 
-    /* ─── Grid Produk — Kolom Responsif ────────────────────────────────────────
+    /* â”€â”€â”€ Grid Produk â€” Kolom Responsif â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
      * Default: 2 kolom per baris (50%) di mobile
-     * Desktop XL (≥1200px): 4 kolom per baris (25%)
+     * Desktop XL (â‰¥1200px): 4 kolom per baris (25%)
      * Saat keranjang belum ditampilkan (full-width): 5 kolom di XL, 4 kolom di LG
      * Menggunakan !important untuk override Bootstrap col-xl-3 bawaan
-     * ──────────────────────────────────────────────────────────────────────── */
+     * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #productGrid > .product-item {
         flex: 0 0 50% !important;
         max-width: 50% !important;
@@ -258,7 +258,7 @@
             width: 25% !important;
         }
     }
-    /* Saat mode full-width (keranjang belum dibuka) → 4 kolom hanya di desktop */
+    /* Saat mode full-width (keranjang belum dibuka) â†’ 4 kolom hanya di desktop */
     @media (min-width: 992px) {
         .product-section-fullwidth #productGrid > .product-item {
             flex: 0 0 25% !important;
@@ -273,7 +273,7 @@
             width: 20% !important;
         }
     }
-    /* Mobile/Tablet (≤991px): fullwidth mode tetap 2 kolom */
+    /* Mobile/Tablet (â‰¤991px): fullwidth mode tetap 2 kolom */
     @media (max-width: 991px) {
         .product-section-fullwidth #productGrid > .product-item {
             flex: 0 0 50% !important;
@@ -290,10 +290,10 @@
     }
     html.dark-style #productGrid { border-top-color: rgba(255,255,255,0.08); }
 
-    /* ─── Mobile Responsive ────────────────────────────────────────────────────
-     * Pada layar ≤991px (mobile + tablet), paksa 2 produk per baris.
+    /* â”€â”€â”€ Mobile Responsive â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+     * Pada layar â‰¤991px (mobile + tablet), paksa 2 produk per baris.
      * Ukuran font, padding, dan gambar disesuaikan agar rapi dan readable.
-     * ──────────────────────────────────────────────────────────────────────── */
+     * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     @media (max-width: 991px) {
         /* Paksa 2 kolom per baris di mobile */
         #productGrid > .col-xl-3,
@@ -310,7 +310,7 @@
             padding: 0.5rem;
         }
 
-        /* Nama produk — ukuran readable, 2 baris max */
+        /* Nama produk â€” ukuran readable, 2 baris max */
         .pos-product-card .product-name {
             font-size: 0.8rem;
             min-height: 2.2rem;
@@ -318,7 +318,7 @@
             margin-bottom: 0.25rem;
         }
 
-        /* Harga — ukuran lebih kecil tapi tebal agar tetap menonjol */
+        /* Harga â€” ukuran lebih kecil tapi tebal agar tetap menonjol */
         .pos-product-card .product-price {
             font-size: 0.8rem;
             margin-bottom: 0.25rem;
@@ -327,7 +327,7 @@
             text-overflow: ellipsis;
         }
 
-        /* Stok — kecil dan kompak */
+        /* Stok â€” kecil dan kompak */
         .pos-product-card .product-stock {
             font-size: 0.7rem;
             margin-bottom: 0.35rem !important;
@@ -336,12 +336,12 @@
             text-overflow: ellipsis;
         }
 
-        /* Bintang rating — lebih kecil */
+        /* Bintang rating â€” lebih kecil */
         .pos-product-card .product-stars i {
             font-size: 0.6rem;
         }
 
-        /* Tombol Tambah — ukuran compact untuk mobile device asli */
+        /* Tombol Tambah â€” ukuran compact untuk mobile device asli */
         .pos-product-card .btn {
             font-size: 0.65rem;
             padding: 0.2rem 0.4rem;
@@ -351,7 +351,7 @@
             margin-right: 0.15rem !important;
         }
 
-        /* Gambar produk — proporsional dengan 2 kolom (lebih lebar) */
+        /* Gambar produk â€” proporsional dengan 2 kolom (lebih lebar) */
         .pos-product-img, .product-img-placeholder {
             height: 120px;
             border-radius: 0.375rem;
@@ -360,7 +360,7 @@
             padding: 0.5rem 0.5rem 0;
         }
 
-        /* Badge stok — lebih kecil agar tidak menutupi gambar */
+        /* Badge stok â€” lebih kecil agar tidak menutupi gambar */
         .product-badge {
             font-size: 0.6rem !important;
             padding: 0.15rem 0.4rem !important;
@@ -369,10 +369,10 @@
         }
     }
 
-    /* ─── Cart Section ─────────────────────────────────────────────────────────
+    /* â”€â”€â”€ Cart Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
      * Styling untuk panel Keranjang di sisi kanan halaman POS.
      * cart-header-flex: layout flexbox agar judul dan badge sejajar horizontal.
-     * ──────────────────────────────────────────────────────────────────────── */
+     * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .cart-header-flex {
         display: flex !important;
         justify-content: space-between !important;
@@ -392,9 +392,9 @@
     /* Info produk: nama, rating bintang, harga, stok */
     .product-info { padding: 1rem; }
 
-    /* Nama produk — 2 baris maksimal, overflow di-hidden (ellipsis via webkit-line-clamp) */
+    /* Nama produk â€” 2 baris maksimal, overflow di-hidden (ellipsis via webkit-line-clamp) */
     .product-name {
-        font-size: 0.9375rem;                      /* 15px — ukuran teks standar Sneat */
+        font-size: 0.9375rem;                      /* 15px â€” ukuran teks standar Sneat */
         font-weight: 600;                          /* Semi-bold agar menonjol */
         margin-bottom: 0.5rem;
         min-height: 2.8rem;                        /* Minimal 2 baris agar grid seragam */
@@ -405,7 +405,7 @@
         color: var(--bs-heading-color, #566a7f);   /* Warna heading Sneat (otomatis dark mode) */
     }
 
-    /* Harga produk — ukuran SAMA dengan nama produk agar hemat tempat */
+    /* Harga produk â€” ukuran SAMA dengan nama produk agar hemat tempat */
     .product-price {
         font-size: 0.9375rem;                      /* Sama dengan product-name (15px) */
         font-weight: 700;                          /* Bold agar menonjol sbg info utama */
@@ -414,7 +414,7 @@
         letter-spacing: -0.01em;                   /* Tight spacing agar harga terlihat compact */
     }
 
-    /* ─── Star Ratings ─────────────────────────────────────────────────────────
+    /* â”€â”€â”€ Star Ratings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
      * Rating bintang 1-5 di bawah nama produk.
      * Dihitung berdasarkan jumlah pembelian (total qty terjual) dari data
      * POSTransactionItem yang statusnya 'paid' (lihat views.py).
@@ -425,7 +425,7 @@
      * Data rating dikirim dari views.py sebagai JSON (product_ratings_json)
      * lalu di-render oleh JavaScript di bawah template ini.
      * Default: 1 bintang jika produk belum pernah terjual.
-     * ──────────────────────────────────────────────────────────────────────── */
+     * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .product-stars {
         display: flex;
         align-items: center;
@@ -436,34 +436,34 @@
         font-size: 0.75rem;                        /* Ukuran bintang kecil (12px) */
         line-height: 1;
     }
-    .product-stars .star-filled { color: #ffab00; }  /* Emas/amber — bintang aktif */
-    .product-stars .star-empty { color: #d9dee3; }   /* Abu-abu — bintang kosong */
+    .product-stars .star-filled { color: #ffab00; }  /* Emas/amber â€” bintang aktif */
+    .product-stars .star-empty { color: #d9dee3; }   /* Abu-abu â€” bintang kosong */
     html.dark-style .product-stars .star-empty { color: rgba(255,255,255,0.15); } /* Dark mode lebih gelap */
 
-    /* Teks stok produk — kecil dan muted agar tidak mengalahkan harga */
+    /* Teks stok produk â€” kecil dan muted agar tidak mengalahkan harga */
     .product-stock {
         font-size: 0.8125rem;                      /* 13px */
         color: var(--bs-text-muted, #697a8d);      /* Warna muted otomatis dark mode */
     }
 
-    /* ─── Cart Scroll ──────────────────────────────────────────────────────────
+    /* â”€â”€â”€ Cart Scroll â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
      * Area scrollable untuk daftar item di keranjang.
      * Tinggi dinamis: 100vh - 450px agar menyesuaikan layar.
-     * ──────────────────────────────────────────────────────────────────────── */
+     * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .cart-scroll {
         max-height: calc(100vh - 450px);           /* Tinggi dinamis berdasarkan viewport */
         overflow-y: auto;                          /* Scroll vertikal saat item banyak */
         overflow-x: hidden;                        /* Tidak scroll horizontal */
     }
 
-    /* ─── Custom Scrollbar ─────────────────────────────────────────────────────
+    /* â”€â”€â”€ Custom Scrollbar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
      * Scrollbar kustom untuk daftar produk dan keranjang.
      * Desain: tipis (5px), warna ungu accent, track transparan.
      * Konsisten dengan scrollbar sidebar aplikasi agar tampilan seragam.
      *
      * Webkit (Chrome/Safari/Edge): ::-webkit-scrollbar
      * Firefox: scrollbar-width + scrollbar-color
-     * ──────────────────────────────────────────────────────────────────────── */
+     * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #productGrid::-webkit-scrollbar,
     .cart-scroll::-webkit-scrollbar {
         width: 5px;                                /* Lebar scrollbar tipis */
@@ -481,14 +481,14 @@
     .cart-scroll::-webkit-scrollbar-track {
         background: transparent;                   /* Track tidak terlihat */
     }
-    /* Firefox scrollbar — menggunakan property standar */
+    /* Firefox scrollbar â€” menggunakan property standar */
     #productGrid,
     .cart-scroll {
         scrollbar-width: thin;                     /* Lebar tipis (Firefox) */
         scrollbar-color: rgba(105,108,255,0.3) transparent; /* thumb color + track color */
     }
 
-    /* Item di keranjang — border bawah tipis + highlight hover ungu */
+    /* Item di keranjang â€” border bawah tipis + highlight hover ungu */
     .cart-item {
         padding: 1rem;
         border-bottom: 1px solid rgba(0,0,0,0.05);    /* Separator antar item */
@@ -498,6 +498,165 @@
     .cart-item:last-child { border-bottom: none; }                  /* Item terakhir tanpa garis */
     html.dark-style .cart-item { border-bottom-color: rgba(255,255,255,0.06); }
     html.dark-style .cart-item:hover { background-color: rgba(105,108,255,0.06); }
+
+    /* ─── Cart Item — 2-Row Compact Layout ─────────────────────────────────────
+     * Baris 1: [Thumb] [Nama Produk .............. Rp Harga × Qty = Subtotal]
+     * Baris 2: [      ] [Satuan ▾] [-][qty][+] [🗑]
+     *
+     * Thumb besar (span 2 baris) agar proporsional dengan tinggi total item.
+     * Menggunakan CSS Grid: kolom kiri = thumb fixed, kolom kanan = info+kontrol.
+     * ──────────────────────────────────────────────────────────────────────── */
+    .cart-item {
+        padding: 0.75rem 1rem;
+        display: grid;
+        grid-template-columns: 52px 1fr;
+        grid-template-rows: auto auto;
+        gap: 0.25rem 0.625rem;
+    }
+    .cart-item-thumb {
+        grid-row: 1 / 3; /* span kedua baris */
+        width: 52px;
+        height: 52px;
+        border-radius: 0.5rem;
+        object-fit: cover;
+        align-self: center;
+    }
+    .cart-item-thumb-placeholder {
+        grid-row: 1 / 3;
+        width: 52px;
+        height: 52px;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bs-light, #f5f5f9);
+        align-self: center;
+    }
+    html.dark-style .cart-item-thumb-placeholder {
+        background: rgba(255,255,255,0.05);
+    }
+
+    /* Baris 1: nama + meta (kolom 2) */
+    .cart-item-info {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    .cart-item-name {
+        font-size: 0.8125rem;
+        font-weight: 600;
+        line-height: 1.3;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: var(--bs-heading-color, #566a7f);
+    }
+    .cart-item-meta {
+        font-size: 0.7rem;
+        color: var(--bs-text-muted, #a1acb8);
+        line-height: 1.3;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .cart-item-meta .cart-item-subtotal {
+        color: var(--bs-primary, #696cff);
+        font-weight: 600;
+    }
+
+    /* Baris 2: kontrol (kolom 2) — full width responsive */
+    .cart-item-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+    }
+    .cart-item-satuan-select {
+        font-size: 0.8rem;
+        padding: 0.2rem 1.6rem 0.2rem 0.5rem;
+        height: 28px;
+        flex: 1; /* mengisi ruang tersedia */
+        min-width: 0;
+        border-radius: 0.375rem;
+    }
+    .cart-item-controls .quantity-controls {
+        gap: 0.15rem;
+        flex: 1; /* mengisi ruang tersedia */
+        justify-content: center;
+    }
+    .cart-item-controls .quantity-controls .btn {
+        min-width: 28px;
+        height: 28px;
+        padding: 0.15rem 0.35rem;
+        font-size: 0.7rem;
+    }
+    .cart-item-controls .quantity-controls .qty-display {
+        flex: 1; /* input qty mengisi sisa ruang di dalam quantity-controls */
+        min-width: 36px;
+        max-width: 60px;
+        height: 28px;
+        font-size: 0.8rem;
+        padding: 0.1rem 0.2rem;
+    }
+    .cart-item-controls .btn-delete-item {
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .cart-item-controls .btn-delete-item i {
+        font-size: 0.8rem;
+    }
+
+    /* Mobile ≤575px */
+    @media (max-width: 575px) {
+        .cart-item {
+            padding: 0.625rem 0.75rem;
+            grid-template-columns: 44px 1fr;
+            gap: 0.2rem 0.5rem;
+        }
+        .cart-item-thumb,
+        .cart-item-thumb-placeholder {
+            width: 44px;
+            height: 44px;
+        }
+        .cart-item-name {
+            font-size: 0.75rem;
+        }
+        .cart-item-meta {
+            font-size: 0.65rem;
+        }
+        .cart-item-controls {
+            gap: 0.375rem;
+        }
+        .cart-item-satuan-select {
+            font-size: 0.7rem;
+            height: 26px;
+            padding: 0.15rem 1.3rem 0.15rem 0.4rem;
+        }
+        .cart-item-controls .quantity-controls .btn {
+            min-width: 26px;
+            height: 26px;
+            font-size: 0.65rem;
+        }
+        .cart-item-controls .quantity-controls .qty-display {
+            min-width: 30px;
+            max-width: 50px;
+            height: 26px;
+            font-size: 0.7rem;
+        }
+        .cart-item-controls .btn-delete-item {
+            width: 26px;
+            height: 26px;
+        }
+        .cart-item-controls .btn-delete-item i {
+            font-size: 0.7rem;
+        }
+    }
 
     /* ─── Category Pills ───────────────────────────────────────────────────────
      * Tombol filter kategori produk (Semua, Elektronik, Makanan, dll).
@@ -517,10 +676,10 @@
         transition: all 0.25s ease;                /* Transisi halus saat klik/hover */
         font-weight: 500;
         border-radius: 0.375rem !important;        /* Konsisten dengan tombol lain (bukan pill) */
-        font-size: 0.8125rem;                      /* 13px — ukuran compact */
+        font-size: 0.8125rem;                      /* 13px â€” ukuran compact */
         padding: 0.35rem 0.75rem;                  /* Padding nyaman untuk sentuhan */
     }
-    /* Tombol kategori yang TIDAK dipilih — outline style */
+    /* Tombol kategori yang TIDAK dipilih â€” outline style */
     .category-pill:not(.active) {
         border-color: rgba(105,108,255,0.3) !important;
         color: #696cff !important;                 /* Teks ungu agar tetap terbaca */
@@ -530,7 +689,7 @@
         background-color: rgba(105,108,255,0.08) !important; /* Highlight hover ungu tipis */
         border-color: #696cff !important;
     }
-    /* Tombol kategori yang DIPILIH — solid ungu + shadow */
+    /* Tombol kategori yang DIPILIH â€” solid ungu + shadow */
     .category-pill.active {
         background-color: #696cff !important;
         color: white !important;
@@ -543,10 +702,10 @@
         color: rgba(105,108,255,0.85) !important;
     }
 
-    /* ─── Empty State ──────────────────────────────────────────────────────────
+    /* â”€â”€â”€ Empty State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
      * Tampilan saat keranjang kosong atau produk tidak ditemukan.
-     * Ikon besar ungu tipis + teks muted → informasi visual yang rapi.
-     * ──────────────────────────────────────────────────────────────────────── */
+     * Ikon besar ungu tipis + teks muted â†’ informasi visual yang rapi.
+     * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .empty-state {
         padding: 3rem 1rem;
         text-align: center;
@@ -559,47 +718,130 @@
     }
     html.dark-style .empty-state-icon { color: rgba(105,108,255,0.4); } /* Lebih terlihat di dark */
 
-    /* ─── Payment Modal ────────────────────────────────────────────────────────
-     * Modal pembayaran yang muncul saat tombol "Bayar Sekarang" ditekan.
-     * Kartu metode pembayaran: bisa diklik, border menjadi hijau saat selected.
-     * Warna hijau #71dd37 = Sneat success color.
-     *
-     * Terhubung dengan:
-     * - showPaymentModal() → buka modal
-     * - selectPaymentMethod() → pilih metode
-     * - processPayment() → proses transaksi via AJAX ke create_transaction()
-     * ──────────────────────────────────────────────────────────────────────── */
-    .payment-method-card {
+    /* â”€â”€â”€ Payment Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+     * Modal pembayaran â€” 2 dropdown sebaris (Tunai & Non-Tunai)
+     * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    .payment-method-dropdown .input-group {
+        border-radius: 0.5rem;
+        overflow: hidden;
+        transition: all 0.25s ease;
+        border: 2px solid transparent;
+        min-height: 41px;
+    }
+    .payment-method-dropdown .input-group-text {
+        background-color: var(--bs-paper-bg, #fff);
+        border: 1px solid var(--bs-border-color, #d9dee3);
+        border-right: none;
+        font-size: 1.1rem;
+        padding: 0.5rem 0.75rem;
+        color: var(--bs-body-color, #566a7f);
+        min-height: 41px;
+    }
+    .payment-method-dropdown .input-group-text i { color: inherit; }
+    .payment-method-dropdown .form-select {
+        border: 1px solid var(--bs-border-color, #d9dee3);
+        border-left: none;
+        font-weight: 600;
+        font-size: 0.875rem;
+        padding: 0.5rem 2rem 0.5rem 0.75rem;
         cursor: pointer;
         transition: all 0.25s ease;
-        border: 2px solid rgba(0,0,0,0.1);         /* Border tipis default */
-        text-align: center;
-        padding: 0;
-        border-radius: 0.625rem;                   /* 10px — sudut lembut */
-        position: relative;
-        overflow: hidden;
+        min-height: 41px;
     }
-    /* Hover: border hijau + naik sedikit (tanpa shadow) */
-    .payment-method-card:hover {
-        border-color: #71dd37;
-        transform: translateY(-2px);
+    .payment-method-dropdown .form-select:focus { box-shadow: none; border-color: var(--bs-border-color, #d9dee3); }
+    .payment-method-dropdown .input-group.pm-selected {
+        border-color: transparent;
+        border-radius: 0.5rem;
+        box-shadow: none;
     }
-    /* Selected: border hijau + bg hijau tipis + shadow (shadow HANYA saat dipilih) */
-    .payment-method-card.selected {
-        border-color: #71dd37;
-        background-color: rgba(113,221,55,0.08);
-        box-shadow: 0 4px 16px rgba(113,221,55,0.3);
+    .payment-method-dropdown .input-group.pm-selected .input-group-text {
+        background-color: var(--bs-paper-bg, #fff); border-color: var(--bs-border-color, #d9dee3);
     }
-    /* Dark mode payment card */
-    html.dark-style .payment-method-card { border-color: rgba(255,255,255,0.12); }
-    html.dark-style .payment-method-card:hover { border-color: #71dd37; }
+    .payment-method-dropdown .input-group.pm-selected .form-select {
+        border-color: var(--bs-border-color, #d9dee3); color: var(--bs-body-color, #566a7f);
+    }
+    .payment-method-dropdown .pm-dropdown-label {
+        font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+        letter-spacing: 0.03em; margin-bottom: 0.375rem;
+        color: var(--bs-body-color, #566a7f);
+        display: flex; align-items: center; gap: 0.25rem;
+    }
+    .payment-method-dropdown .pm-dropdown-label i { color: inherit; }
+    .pm-label-tunai,
+    .pm-label-non-tunai { color: var(--bs-body-color, #566a7f); }
+    html.dark-style .payment-method-dropdown .input-group-text {
+        background-color: var(--bs-body-bg, #2b2c40); border-color: rgba(255,255,255,0.12);
+        color: var(--bs-body-color, #c4c6d0);
+    }
+    html.dark-style .payment-method-dropdown .form-select {
+        border-color: rgba(255,255,255,0.12);
+        background-color: var(--bs-body-bg, #2b2c40); color: var(--bs-body-color, #c4c6d0);
+    }
+    html.dark-style .payment-method-dropdown .input-group.pm-selected .input-group-text {
+        background-color: var(--bs-body-bg, #2b2c40);
+        border-color: rgba(255,255,255,0.12);
+    }
+    html.dark-style .payment-method-dropdown .input-group.pm-selected .form-select {
+        border-color: rgba(255,255,255,0.12);
+        color: var(--bs-body-color, #c4c6d0);
+    }
 
-    /* Elemen di dalam payment card */
-    .payment-method-card .card-body { padding: 0.5rem 0.375rem !important; }
-    .payment-method-logo { width: 32px; height: 32px; object-fit: contain; margin-bottom: 0.125rem; }
-    .payment-icon { font-size: 1.25rem; color: #696cff; margin-bottom: 0.125rem; }
-    .payment-method-card.selected .payment-icon { color: #71dd37; } /* Ikon berubah hijau saat dipilih */
-    .payment-method-card .pm-label { font-size: 0.7rem; line-height: 1.1; font-weight: 600; }
+    .payment-input-row,
+    .payment-input-row .form-control,
+    .payment-input-row .input-group-text {
+        min-height: 41px;
+    }
+    #paymentModal {
+        --payment-modal-border-gray: #d9dee3;
+    }
+    .payment-kasbon-toggle {
+        border: 1px solid var(--payment-modal-border-gray) !important;
+        border-radius: 0.5rem;
+        padding: 0.625rem 0.75rem;
+        background-color: var(--bs-paper-bg, #fff);
+    }
+    .payment-kasbon-toggle .form-switch {
+        padding-left: 0;
+        min-height: auto;
+    }
+    .payment-kasbon-toggle .form-check-input {
+        margin-left: 0;
+        margin-top: 0;
+    }
+    html.dark-style .payment-kasbon-toggle {
+        background-color: var(--bs-body-bg, #2b2c40);
+        border-color: var(--payment-modal-border-gray) !important;
+    }
+    .payment-collapse-toggle {
+        border: 1px solid var(--payment-modal-border-gray) !important;
+        border-radius: 0.5rem;
+        background-color: var(--bs-paper-bg, #fff);
+        color: var(--bs-body-color, #566a7f);
+    }
+    .payment-collapse-toggle:hover,
+    .payment-collapse-toggle:focus,
+    .payment-collapse-toggle:active,
+    .payment-collapse-toggle[aria-expanded="true"] {
+        border-color: var(--payment-modal-border-gray) !important;
+        background-color: var(--bs-paper-bg, #fff);
+        color: var(--bs-body-color, #566a7f);
+        box-shadow: none;
+    }
+    html.dark-style .payment-collapse-toggle,
+    html.dark-style .payment-collapse-toggle:hover,
+    html.dark-style .payment-collapse-toggle:focus,
+    html.dark-style .payment-collapse-toggle:active,
+    html.dark-style .payment-collapse-toggle[aria-expanded="true"] {
+        background-color: var(--bs-body-bg, #2b2c40);
+        border-color: var(--payment-modal-border-gray) !important;
+        color: var(--bs-body-color, #c4c6d0);
+    }
+    #paymentModal #customerFormFields,
+    #paymentModal #transactionNotes,
+    #paymentModal #transactionNotes:focus {
+        border-color: var(--payment-modal-border-gray) !important;
+        box-shadow: none;
+    }
 
     /* Header modal pembayaran */
     #paymentModal .modal-header { padding: 1rem 1.25rem; }
@@ -607,26 +849,108 @@
     #paymentModal .modal-title i { font-size: 1.75rem; line-height: 1; }
     #paymentModal .modal-header .btn-close { padding: 0.5rem; margin: 0; }
 
-    /* ─── Payment Amount Display — Responsive untuk nominal besar ─────
+    /* â”€â”€â”€ Payment Amount Display â€” Responsive untuk nominal besar â”€â”€â”€â”€â”€
      * Pada mobile, nominal bisa sangat panjang (Rp 1.500.000.000)
      * maka font-size di-kecilkan agar muat di setengah layar.
      * Desktop: tetap besar dan jelas.
-     * ──────────────────────────────────────────────────────────── */
+     * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    .payment-summary-strip {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+    }
+    .payment-summary-item {
+        min-width: 0;
+        border: 1px solid var(--payment-modal-border-gray);
+        border-radius: 0.5rem;
+        padding: 0.45rem 0.55rem;
+        background-color: var(--bs-paper-bg, #fff);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.375rem;
+    }
+    .payment-summary-total {
+        background-color: rgba(113, 221, 55, 0.12);
+    }
+    .payment-summary-change,
+    .payment-summary-change.alert-success,
+    .payment-summary-change.alert-danger {
+        background-color: rgba(255, 62, 29, 0.10);
+        border-color: var(--payment-modal-border-gray);
+    }
+    .payment-summary-label {
+        color: var(--bs-secondary-color, #a1acb8);
+        font-size: 0.72rem;
+        line-height: 1.2;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
     .payment-amount-display {
-        font-size: 1.15rem;
+        min-width: 0;
+        max-width: 100%;
+        font-size: 0.86rem;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.2;
+        text-align: right;
         word-break: break-word;
-        overflow-wrap: break-word;
+        overflow-wrap: anywhere;
+        letter-spacing: 0;
+    }
+    .payment-summary-total .payment-amount-display {
+        color: var(--bs-success, #71dd37);
+    }
+    .payment-summary-change .payment-amount-display,
+    .payment-summary-change.alert-success .payment-amount-display,
+    .payment-summary-change.alert-danger .payment-amount-display {
+        color: var(--bs-danger, #ff3e1d);
+    }
+    html.dark-style .payment-summary-item {
+        background-color: var(--bs-body-bg, #2b2c40);
+        border-color: var(--payment-modal-border-gray);
+    }
+    html.dark-style .payment-summary-total {
+        background-color: rgba(113, 221, 55, 0.14);
+    }
+    html.dark-style .payment-summary-change,
+    html.dark-style .payment-summary-change.alert-success,
+    html.dark-style .payment-summary-change.alert-danger {
+        background-color: rgba(255, 62, 29, 0.14);
     }
 
     /* Modal footer: safe-area padding untuk Android/iPhone nav bar */
     #paymentModal .modal-footer {
         padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+        justify-content: center;
     }
 
     /* Mobile: perkecil font agar nominal miliaran muat di setengah layar */
     @media (max-width: 576px) {
+        .payment-summary-strip {
+            gap: 0.375rem;
+        }
+        .payment-summary-item {
+            align-items: stretch;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 54px;
+            padding: 0.375rem 0.425rem;
+            gap: 0.2rem;
+        }
         .payment-amount-display {
-            font-size: 0.95rem;
+            display: block;
+            width: 100%;
+            font-size: 0.70rem;
+            text-align: left;
+            white-space: normal;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+        .payment-summary-label {
+            font-size: 0.62rem;
+            line-height: 1;
         }
         #paymentModal .modal-body {
             padding: 0.75rem;
@@ -640,18 +964,18 @@
     /* Tablet: font sedikit lebih besar */
     @media (min-width: 577px) and (max-width: 991px) {
         .payment-amount-display {
-            font-size: 1.05rem;
+            font-size: 0.8rem;
         }
         #paymentModal .modal-footer {
             padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 8px));
         }
     }
 
-    /* ─── Quantity Controls ────────────────────────────────────────────────────
+    /* â”€â”€â”€ Quantity Controls â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
      * Kontrol jumlah item di keranjang: tombol [-] [qty] [+]
      * Ukuran compact (28px tinggi) agar tidak memakan tempat di keranjang.
      * Input number: spinner arrow dihilangkan (moz-appearance + webkit-appearance)
-     * ──────────────────────────────────────────────────────────────────────── */
+     * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .quantity-controls {
         display: inline-flex;
         align-items: center;
@@ -667,7 +991,7 @@
         align-items: center;
         justify-content: center;
     }
-    /* Input qty — tanpa spinner, text center, border standar */
+    /* Input qty â€” tanpa spinner, text center, border standar */
     .quantity-controls .qty-display {
         min-width: 50px; width: 60px; text-align: center; font-weight: 600;
         font-size: 0.875rem; border: 1px solid var(--bs-border-color, #d9dee3);
@@ -682,10 +1006,10 @@
         -webkit-appearance: none; margin: 0;
     }
 
-    /* ─── Tombol "Tambah" pada Produk ──────────────────────────────────────────
+    /* â”€â”€â”€ Tombol "Tambah" pada Produk â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
      * Tombol di bawah setiap kartu produk untuk menambahkan ke keranjang.
-     * Hover: shadow ungu + naik sedikit → feedback visual.
-     * ──────────────────────────────────────────────────────────────────────── */
+     * Hover: shadow ungu + naik sedikit â†’ feedback visual.
+     * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .pos-product-card .btn-primary {
         border-radius: 0.5rem;                     /* Sudut membulat (8px) */
         font-weight: 600;
@@ -698,11 +1022,11 @@
         transform: translateY(-1px);                     /* Naik 1px */
     }
 
-    /* ─── Cart Summary ─────────────────────────────────────────────────────────
+    /* â”€â”€â”€ Cart Summary â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
      * Bagian bawah panel keranjang (subtotal, diskon, pajak, total, tombol bayar).
      * Kartu memiliki radius 0.75rem supaya konsisten dengan kartu lain.
      * Border-top sebagai separator antara daftar item dan ringkasan.
-     * ──────────────────────────────────────────────────────────────────────── */
+     * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .cart-section-col .card {
         border-radius: 0.75rem !important;
         overflow: hidden;
@@ -714,12 +1038,12 @@
         border-top-color: rgba(255,255,255,0.08) !important;
     }
 
-    /* ─── Search Bar ───────────────────────────────────────────────────────────
+    /* â”€â”€â”€ Search Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
      * Input pencarian produk di atas grid produk.
      * pos-search-group membungkus input-group agar border kanan input dihilangkan
      * (karena menyatu dengan tombol Scan di sebelahnya).
      * Saat fokus, border berubah ungu (#696cff) termasuk icon di sebelah kirinya.
-     * ──────────────────────────────────────────────────────────────────────── */
+     * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .pos-search-group { border-radius: 0.5rem; overflow: hidden; }
     .pos-search-group .form-control {
         border-right: none !important;             /* Hilangkan border kanan (menyatu dengan tombol) */
@@ -734,11 +1058,11 @@
         border-color: #696cff !important;
     }
 
-    /* ─── Card Header: Badge & Kembali selalu di kanan (termasuk mobile) ─────
+    /* â”€â”€â”€ Card Header: Badge & Kembali selalu di kanan (termasuk mobile) â”€â”€â”€â”€â”€
      * Menggunakan position: relative/absolute agar badge "X Produk" dan
      * tombol "Kembali" PASTI selalu di pojok kanan card, tanpa tergantung
      * pada flexbox yang bisa bermasalah di mobile Sneat template.
-     * ──────────────────────────────────────────────────────────────────────── */
+     * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #productSectionCol > .card > .card-header,
     #cartSectionCol > .card > .card-header {
         position: relative !important;
@@ -746,7 +1070,7 @@
         align-items: center !important;
         padding-right: 7rem !important;
     }
-    /* Badge "X Produk" — posisi absolute di pojok kanan tengah vertikal */
+    /* Badge "X Produk" â€” posisi absolute di pojok kanan tengah vertikal */
     #productSectionCol > .card > .card-header #productCountBadge {
         position: absolute !important;
         right: 1.5rem;
@@ -755,7 +1079,7 @@
         white-space: nowrap;
         z-index: 1;
     }
-    /* Tombol "Kembali" — posisi absolute di pojok kanan tengah vertikal */
+    /* Tombol "Kembali" â€” posisi absolute di pojok kanan tengah vertikal */
     #cartSectionCol > .card > .card-header .btn-back-to-products {
         position: absolute !important;
         right: 1.5rem;
@@ -776,12 +1100,12 @@
         }
     }
 
-    /* ─── Tombol Lanjutkan Pembelian (Floating Bar) ────────────────────────────
+    /* â”€â”€â”€ Tombol Lanjutkan Pembelian (Floating Bar) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
      * Muncul setelah produk pertama ditambahkan ke keranjang.
      * Desktop: sticky di dalam card-body produk.
      * Mobile: fixed di bawah viewport, posisi sejajar AI FAB button
      *         (bottom: 80px) agar tidak tertutup navigation bar Android.
-     * ──────────────────────────────────────────────────────────────────────── */
+     * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #continueBar {
         display: none;
         position: sticky;
@@ -828,7 +1152,7 @@
         font-size: 1.1rem;
     }
 
-    /* ─── Mobile/Tablet: Card produk sebaris AI FAB + padding proper ─── */
+    /* â”€â”€â”€ Mobile/Tablet: Card produk sebaris AI FAB + padding proper â”€â”€â”€ */
     @media (max-width: 991px) {
         /* Seluruh card produk dibatasi tingginya agar posisi bawah card
            sejajar dengan tombol AI Assistant. */
@@ -912,10 +1236,10 @@
         background: #696cff;
     }
 
-    /* ─── Cart Section Visibility ──────────────────────────────────────────────
+    /* â”€â”€â”€ Cart Section Visibility â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
      * Keranjang awalnya tersembunyi, muncul dengan animasi slide.
      * Produk section berubah dari full-width ke 8/12 kolom.
-     * ──────────────────────────────────────────────────────────────────────── */
+     * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .cart-section-col {
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -953,7 +1277,7 @@
         border-color: rgba(105,108,255,0.4);
     }
     /* ==========================================
-     * SWAL POPUP — Action Icons (Transaksi Berhasil)
+     * SWAL POPUP â€” Action Icons (Transaksi Berhasil)
      * ========================================== */
     .swal-action-icon {
         transition: transform 0.2s ease, opacity 0.2s ease;
@@ -1092,7 +1416,7 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <div class="continue-summary">
                                 <i class="ri-shopping-cart-2-line me-1"></i>
-                                <span id="continueBadge">0</span> item · 
+                                <span id="continueBadge">0</span> item Â· 
                                 Total: <span class="continue-total" id="continueTotal">Rp 0</span>
                             </div>
                             <button class="btn btn-continue" onclick="showCartSection()">
@@ -1193,26 +1517,41 @@
             </div>
             <div class="modal-body">
 
-                <!-- Metode Pembayaran -->
-                <div class="mb-3">
-                    <label class="form-label fw-semibold mb-2">
-                        <i class="ri-bank-card-line me-1"></i>Metode Pembayaran
-                    </label>
-                    <div class="d-flex flex-wrap gap-2">
-                        {% for metode in metode_pembayaran %}
-                        <div class="card payment-method-card mb-0" onclick="selectPaymentMethod({{ metode.id }}, this)" style="width: 80px; flex-shrink: 0;">
-                            <input type="radio" class="d-none" name="paymentMethod" value="{{ metode.id }}"
-                                id="method{{ metode.id }}">
-                            <div class="card-body">
-                                {% if metode.gambar %}
-                                <img src="{{ metode.gambar.url }}" alt="{{ metode.nama }}" class="payment-method-logo d-block mx-auto">
-                                {% else %}
-                                <i class="ri-wallet-3-line payment-icon d-block"></i>
-                                {% endif %}
-                                <div class="pm-label">{{ metode.nama }}</div>
+                <!-- Metode Pembayaran â€” 2 Dropdown Sebaris (Tunai & Non-Tunai) -->
+                <div class="mb-3 payment-method-dropdown">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <div class="pm-dropdown-label pm-label-tunai">
+                                <i class="ri-money-dollar-circle-line"></i> Tunai
+                            </div>
+                            <div class="input-group" id="tunaiInputGroup">
+                                <span class="input-group-text">
+                                    <i class="ri-money-dollar-circle-line"></i>
+                                </span>
+                                <select class="form-select" id="metodeTunaiSelect" onchange="selectPaymentFromDropdown('tunai')">
+                                    <option value="">-- Pilih Tunai --</option>
+                                    {% for metode in metode_tunai %}
+                                    <option value="{{ metode.id }}">{{ metode.nama }}</option>
+                                    {% endfor %}
+                                </select>
                             </div>
                         </div>
-                        {% endfor %}
+                        <div class="col-6">
+                            <div class="pm-dropdown-label pm-label-non-tunai">
+                                <i class="ri-bank-line"></i> Non-Tunai
+                            </div>
+                            <div class="input-group" id="nonTunaiInputGroup">
+                                <span class="input-group-text">
+                                    <i class="ri-bank-line"></i>
+                                </span>
+                                <select class="form-select" id="metodeNonTunaiSelect" onchange="selectPaymentFromDropdown('non_tunai')">
+                                    <option value="">-- Pilih Non-Tunai --</option>
+                                    {% for metode in metode_non_tunai %}
+                                    <option value="{{ metode.id }}">{{ metode.nama }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1221,7 +1560,7 @@
                 <!-- Data Customer (Opsional) -->
                 <div class="mb-3">
                     <!-- Collapse Trigger untuk form customer agar tampilan lebih hemat dan ringkas -->
-                    <button class="btn btn-outline-primary w-100 text-start d-flex justify-content-between align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCustomer" aria-expanded="false" aria-controls="collapseCustomer">
+                    <button class="btn payment-collapse-toggle w-100 text-start d-flex justify-content-between align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCustomer" aria-expanded="false" aria-controls="collapseCustomer">
                         <span><i class="ri-user-line me-2"></i>Data Customer <small class="text-muted fw-normal">(Opsional)</small></span>
                         <i class="ri-arrow-down-s-line"></i>
                     </button>
@@ -1253,9 +1592,9 @@
                     </div> <!-- /collapse -->
                 </div>
 
-                <!-- Catatan (Opsional) — dipindah ke atas Uang Diterima -->
+                <!-- Catatan (Opsional) â€” dipindah ke atas Uang Diterima -->
                 <div class="mb-3">
-                    <button class="btn btn-outline-secondary w-100 text-start d-flex justify-content-between align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCatatan" aria-expanded="false" aria-controls="collapseCatatan">
+                    <button class="btn payment-collapse-toggle w-100 text-start d-flex justify-content-between align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCatatan" aria-expanded="false" aria-controls="collapseCatatan">
                         <span><i class="ri-file-text-line me-2"></i>Catatan Transaksi <small class="text-muted fw-normal">(Opsional)</small></span>
                         <i class="ri-arrow-down-s-line"></i>
                     </button>
@@ -1267,12 +1606,38 @@
                 </div>
 
 
-                <!-- Uang Diterima -->
+                <!-- Opsi Kasbon (Belum Lunas) -->
                 <div class="mb-3">
+                    <div class="payment-kasbon-toggle d-flex align-items-center justify-content-between gap-3">
+                        <label class="form-check-label fw-semibold mb-0" for="kasbon_toggle">
+                            <i class="ri-time-line me-1"></i>Kasbon (Belum Lunas)
+                        </label>
+                        <div class="form-check form-switch mb-0 flex-shrink-0">
+                            <input class="form-check-input" type="checkbox" id="kasbon_toggle" onchange="toggleKasbon(this)">
+                        </div>
+                    </div>
+                    <div id="kasbon_options" class="mt-2" style="display: none;">
+                        <small class="text-muted d-block mb-2">Customer akan membayar nanti. Piutang otomatis tercatat di modul Piutang.</small>
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <label class="form-label small mb-1">Jatuh Tempo</label>
+                                <input type="date" class="form-control form-control-sm" id="kasbon_jatuh_tempo">
+                            </div>
+                        </div>
+                        <div class="alert alert-info mt-2 mb-0 py-2 px-3">
+                            <small><i class="ri-information-line me-1"></i>Uang diterima bisa diisi 0 (full kasbon) atau sebagian (DP). Sisa akan tercatat sebagai piutang.</small>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-3">
+
+                <!-- Uang Diterima â€” selalu tampil, kasbon pun bisa input DP -->
+                <div class="mb-3" id="uang_diterima_section">
                     <label class="form-label fw-semibold">
                         <i class="ri-money-dollar-circle-line me-1"></i>Uang Diterima
                     </label>
-                    <div class="input-group input-group-lg mb-2">
+                    <div class="input-group payment-input-row mb-2">
                         <span class="input-group-text">Rp</span>
                         <input type="number" class="form-control" id="amountReceived" placeholder="0"
                             onkeyup="calculateChange()" min="0">
@@ -1286,35 +1651,34 @@
                     </div>
                 </div>
 
-                <!-- Total Tagihan & Kembalian — Sebaris di mobile agar hemat ruang -->
-                <div class="d-flex gap-2 mb-0">
+                <!-- Total Tagihan & Kembalian â€” Sebaris di mobile agar hemat ruang -->
+                <div class="payment-summary-strip mb-0">
                     <!-- Total Tagihan (kiri) -->
-                    <div class="alert alert-primary text-center mb-0 py-2 flex-fill" style="min-width: 0;">
-                        <small class="d-block mb-1">Total Tagihan</small>
-                        <h5 class="mb-0 text-primary fw-bold payment-amount-display" id="modalTotalAmount">Rp 0</h5>
+                    <div class="payment-summary-item payment-summary-total">
+                        <span class="payment-summary-label"><i class="ri-bill-line"></i>Total</span>
+                        <strong class="payment-amount-display" id="modalTotalAmount">Rp 0</strong>
                     </div>
                     <!-- Kembalian (kanan) -->
-                    <div class="alert alert-success text-center mb-0 py-2 flex-fill" id="changeAlert" style="min-width: 0;">
-                        <small class="d-block mb-1">Kembalian</small>
-                        <h5 class="mb-0 fw-bold payment-amount-display" id="changeAmount">Rp 0</h5>
+                    <div class="payment-summary-item payment-summary-change alert-success" id="changeAlert">
+                        <span class="payment-summary-label"><i class="ri-refund-2-line"></i>Kembalian</span>
+                        <strong class="payment-amount-display" id="changeAmount">Rp 0</strong>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer" style="padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));">
-                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Batal</button>
-                <button type="button" class="btn btn-success" onclick="processPayment()">
-                    <i class="ri-check-line me-1"></i>Proses Transaksi
+            <div class="modal-footer justify-content-center" style="padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));">
+                <button type="button" class="btn btn-success px-4" onclick="processPayment()">
+                    <i class="ri-secure-payment-line me-1"></i>Proses Transaksi
                 </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      MODAL: Barcode Scanner via Kamera
      Muncul saat tombol "Scan" diklik di search bar POS.
      Menggunakan html5-qrcode untuk membaca barcode via kamera.
-     ═══════════════════════════════════════════════════════════════ -->
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="modal fade" id="barcodeScannerModal" tabindex="-1" aria-labelledby="barcodeScannerLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -1351,18 +1715,18 @@
 
 {% block page_js %}
 <script>
-// ═══════════════════════════════════════════════════════════════════════════
-// RENDER STAR RATINGS — Rating Bintang Produk Berdasarkan Jumlah Pembelian
-// ═══════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// RENDER STAR RATINGS â€” Rating Bintang Produk Berdasarkan Jumlah Pembelian
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //
 // ALUR DATA:
-// 1. views.py → POSIndexView.get_context_data():
+// 1. views.py â†’ POSIndexView.get_context_data():
 //    - Query POSTransactionItem (status='paid'), group by produk_id
 //    - Hitung total qty terjual per produk (Sum('jumlah'))
-//    - Buat rating_map: produk_id → rating (1-5) berdasarkan persentil
+//    - Buat rating_map: produk_id â†’ rating (1-5) berdasarkan persentil
 //    - Kirim ke template sebagai JSON string: product_ratings_json
 //
-// 2. Template ini → script berikut:
+// 2. Template ini â†’ script berikut:
 //    - Parse JSON ratings dari Django template variable
 //    - Cari semua div.product-stars[data-produk-id] di halaman
 //    - Generate 5 ikon bintang (ri-star-fill) per div:
@@ -1371,18 +1735,18 @@
 //    - Default: 1 bintang jika produk belum pernah terjual
 //
 // DISTRIBUSI RATING (berdasarkan rasio terhadap produk paling laris):
-//   ≥80% dari max → 5 bintang (produk terlaris)
-//   ≥60% dari max → 4 bintang
-//   ≥40% dari max → 3 bintang
-//   ≥20% dari max → 2 bintang
-//   <20% dari max → 1 bintang
-//   Belum ada data → 1 bintang (default)
+//   â‰¥80% dari max â†’ 5 bintang (produk terlaris)
+//   â‰¥60% dari max â†’ 4 bintang
+//   â‰¥40% dari max â†’ 3 bintang
+//   â‰¥20% dari max â†’ 2 bintang
+//   <20% dari max â†’ 1 bintang
+//   Belum ada data â†’ 1 bintang (default)
 //
 // TERHUBUNG DENGAN:
-// - apps/pos/views.py → product_ratings_json (data rating)
-// - apps/pos/models.py → POSTransactionItem (sumber data pembelian)
+// - apps/pos/views.py â†’ product_ratings_json (data rating)
+// - apps/pos/models.py â†’ POSTransactionItem (sumber data pembelian)
 // - CSS: .product-stars, .star-filled, .star-empty (styling bintang)
-// ═══════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 (function() {
     // Parse data rating dari Django template variable (JSON object: {produk_id: rating})
     var ratings = {{ product_ratings_json|safe }};
@@ -1392,14 +1756,14 @@
         var pid = el.getAttribute('data-produk-id'); // Ambil ID produk dari data attribute
         var rating = ratings[pid] || 1;               // Default 1 bintang jika tidak ada data
 
-        // Generate 5 ikon bintang — terisi (filled) atau kosong (empty)
+        // Generate 5 ikon bintang â€” terisi (filled) atau kosong (empty)
         var html = '';
         for (var i = 1; i <= 5; i++) {
             if (i <= rating) {
-                // Bintang emas — produk memiliki rating pada level ini
+                // Bintang emas â€” produk memiliki rating pada level ini
                 html += '<i class="ri-star-fill star-filled"></i>';
             } else {
-                // Bintang abu-abu — rating belum mencapai level ini
+                // Bintang abu-abu â€” rating belum mencapai level ini
                 html += '<i class="ri-star-fill star-empty"></i>';
             }
         }
@@ -1414,9 +1778,9 @@
     let currentPajakPersen = 0; // Pajak persen dari gudang/cabang
     let cartVisible = false; // Status apakah keranjang sedang ditampilkan
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // SHOW/HIDE CART SECTION — Kontrol Tampilan Keranjang
-    // ═══════════════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // SHOW/HIDE CART SECTION â€” Kontrol Tampilan Keranjang
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     function showCartSection() {
         // Tampilkan keranjang dan ubah layout produk menjadi col-xl-8
         const productCol = document.getElementById('productSectionCol');
@@ -1614,10 +1978,10 @@
                 item.satuan_id = satuanId;
                 item.satuan = konversi.singkatan;
                 if (konversi.arah === 'turun') {
-                    // kg→gram: harga per gram = harga per kg / faktor
+                    // kgâ†’gram: harga per gram = harga per kg / faktor
                     item.price = item.harga_asli / konversi.faktor;
                 } else {
-                    // gram→kg: harga per kg = harga per gram * faktor
+                    // gramâ†’kg: harga per kg = harga per gram * faktor
                     item.price = item.harga_asli * konversi.faktor;
                 }
             }
@@ -1709,51 +2073,47 @@
             const itemTotal = (item.price * item.qty) - item.diskon;
             subtotal += itemTotal;
 
+            const thumbHTML = item.img
+                ? `<img src="${item.img}" class="cart-item-thumb" alt="">`
+                : `<div class="cart-item-thumb-placeholder"><i class="ri-image-line text-muted" style="font-size: 1.1rem;"></i></div>`;
+
+            const satuanHTML = item.konversi_list && item.konversi_list.length > 0
+                ? `<select class="form-select form-select-sm cart-item-satuan-select" onchange="changeSatuan('${item.id}', this.value)">
+                       <option value="${item.satuan_id_asli}" ${item.satuan_id === item.satuan_id_asli ? 'selected' : ''}>${item.satuan_asli}</option>
+                       ${item.konversi_list.map(k => `<option value="${k.satuan_id}" ${item.satuan_id === k.satuan_id ? 'selected' : ''}>${k.singkatan}</option>`).join('')}
+                   </select>`
+                : '';
+
             const itemHTML = `
                 <div class="cart-item">
-                    <div class="d-flex align-items-start">
-                        <div class="flex-shrink-0 me-3">
-                            ${item.img ?
-                    `<img src="${item.img}" class="rounded" style="width: 50px; height: 50px; object-fit: cover;">` :
-                    `<div class="rounded d-flex align-items-center justify-content-center bg-light" style="width: 50px; height: 50px; flex-shrink: 0;"><i class="ri-image-line text-muted" style="font-size: 1.2rem;"></i></div>`
-                }
-                        </div>
-                        <div class="flex-grow-1">
-                            <h6 class="mb-1">${item.name}</h6>
-                            <div class="text-primary fw-semibold small mb-1">Rp ${item.price.toLocaleString('id-ID', {minimumFractionDigits: 0, maximumFractionDigits: 2})} / ${item.satuan}</div>
-                            <div class="d-flex align-items-center gap-2 flex-wrap">
-                                ${item.konversi_list && item.konversi_list.length > 0 ? `
-                                <select class="form-select form-select-sm" style="font-size: 0.7rem; padding: 0.15rem 1.4rem 0.15rem 0.35rem; height: auto; max-width: 110px; flex-shrink: 0;" onchange="changeSatuan('${item.id}', this.value)">
-                                    <option value="${item.satuan_id_asli}" ${item.satuan_id === item.satuan_id_asli ? 'selected' : ''}>${item.satuan_asli}</option>
-                                    ${item.konversi_list.map(k => `<option value="${k.satuan_id}" ${item.satuan_id === k.satuan_id ? 'selected' : ''}>${k.singkatan}</option>`).join('')}
-                                </select>
-                                ` : ''}
-                                <div class="quantity-controls">
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="updateQty('${item.id}', -1)">
-                                        <i class="ri-subtract-line"></i>
-                                    </button>
-                                    <input type="number" class="qty-display" value="${item.qty}" min="0.01" step="0.01"
-                                        onchange="setQty('${item.id}', this.value)"
-                                        onkeydown="if(event.key==='Enter'){this.blur();}">
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="updateQty('${item.id}', 1)">
-                                        <i class="ri-add-line"></i>
-                                    </button>
-                                </div>
-                                <button class="btn btn-sm btn-icon btn-label-danger ms-auto" onclick="removeFromCart('${item.id}')">
-                                    <i class="ri-delete-bin-line"></i>
-                                </button>
-                            </div>
+                    ${thumbHTML}
+                    <div class="cart-item-info">
+                        <div class="cart-item-name" title="${item.name}">${item.name}</div>
+                        <div class="cart-item-meta">
+                            Rp ${item.price.toLocaleString('id-ID', {minimumFractionDigits: 0, maximumFractionDigits: 0})} × ${item.qty} ${item.satuan}
+                            = <span class="cart-item-subtotal">Rp ${itemTotal.toLocaleString('id-ID')}</span>
                         </div>
                     </div>
-                    <div class="mt-2 pt-2 border-top">
-                        <div class="d-flex justify-content-between">
-                            <span class="text-muted small">Subtotal:</span>
-                            <span class="fw-semibold">Rp ${itemTotal.toLocaleString('id-ID')}</span>
+                    <div class="cart-item-controls">
+                        ${satuanHTML}
+                        <div class="quantity-controls">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="updateQty('${item.id}', -1)" title="Kurangi">
+                                <i class="ri-subtract-line"></i>
+                            </button>
+                            <input type="number" class="qty-display" value="${item.qty}" min="0.01" step="0.01"
+                                onchange="setQty('${item.id}', this.value)"
+                                onkeydown="if(event.key==='Enter'){this.blur();}">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="updateQty('${item.id}', 1)" title="Tambah">
+                                <i class="ri-add-line"></i>
+                            </button>
                         </div>
+                        <button class="btn btn-sm btn-label-danger btn-delete-item" onclick="removeFromCart('${item.id}')" title="Hapus">
+                            <i class="ri-delete-bin-line"></i>
+                        </button>
                     </div>
                 </div>
             `;
-            cartItemsHTML += itemHTML; // Tambahkan ke variable, bukan langsung ke DOM
+            cartItemsHTML += itemHTML;
         });
 
         // Clear semua cart items lama (kecuali emptyMsg)
@@ -1888,7 +2248,11 @@
         changeAlert.classList.add('alert-success');
 
         // Reset metode pembayaran
-        document.querySelectorAll('.payment-method-card').forEach(card => card.classList.remove('selected'));
+        // Reset dropdown metode pembayaran
+        document.getElementById('metodeTunaiSelect').value = '';
+        document.getElementById('metodeNonTunaiSelect').value = '';
+        document.getElementById('tunaiInputGroup').classList.remove('pm-selected');
+        document.getElementById('nonTunaiInputGroup').classList.remove('pm-selected');
         selectedPaymentMethod = null;
 
         // Reset customer form
@@ -1906,11 +2270,47 @@
         modal.show();
     }
 
-    function selectPaymentMethod(methodId, element) {
-        document.querySelectorAll('.payment-method-card').forEach(card => card.classList.remove('selected'));
-        element.classList.add('selected');
-        selectedPaymentMethod = methodId;
-        document.getElementById(`method${methodId}`).checked = true;
+    function selectPaymentFromDropdown(tipe) {
+        if (tipe === 'tunai') {
+            document.getElementById('metodeNonTunaiSelect').value = '';
+            document.getElementById('nonTunaiInputGroup').classList.remove('pm-selected');
+            const val = document.getElementById('metodeTunaiSelect').value;
+            selectedPaymentMethod = val ? parseInt(val) : null;
+            if (val) {
+                document.getElementById('tunaiInputGroup').classList.add('pm-selected');
+            } else {
+                document.getElementById('tunaiInputGroup').classList.remove('pm-selected');
+            }
+        } else {
+            document.getElementById('metodeTunaiSelect').value = '';
+            document.getElementById('tunaiInputGroup').classList.remove('pm-selected');
+            const val = document.getElementById('metodeNonTunaiSelect').value;
+            selectedPaymentMethod = val ? parseInt(val) : null;
+            if (val) {
+                document.getElementById('nonTunaiInputGroup').classList.add('pm-selected');
+            } else {
+                document.getElementById('nonTunaiInputGroup').classList.remove('pm-selected');
+            }
+        }
+    }
+
+    function toggleKasbon(checkbox) {
+        const kasbonOptions = document.getElementById('kasbon_options');
+        
+        if (checkbox.checked) {
+            kasbonOptions.style.display = 'block';
+            // Set default jatuh tempo 30 hari dari sekarang
+            const today = new Date();
+            today.setDate(today.getDate() + 30);
+            document.getElementById('kasbon_jatuh_tempo').value = today.toISOString().split('T')[0];
+            // Expand customer section (wajib untuk kasbon)
+            const collapseCustomer = document.getElementById('collapseCustomer');
+            if (collapseCustomer && !collapseCustomer.classList.contains('show')) {
+                new bootstrap.Collapse(collapseCustomer, {toggle: true});
+            }
+        } else {
+            kasbonOptions.style.display = 'none';
+        }
     }
 
     // === Data customer dari Django (untuk autocomplete) ===
@@ -1937,7 +2337,7 @@
         const matches = customerDataList.filter(c => c.nama.toLowerCase().includes(query));
 
         if (matches.length === 0) {
-            custSuggestionList.innerHTML = '<div class="list-group-item text-muted small py-2"><i class="ri-information-line me-1"></i>Customer baru — data akan dibuat otomatis</div>';
+            custSuggestionList.innerHTML = '<div class="list-group-item text-muted small py-2"><i class="ri-information-line me-1"></i>Customer baru â€” data akan dibuat otomatis</div>';
             custSuggestionList.style.display = 'block';
             // Enable all fields for new customer
             document.getElementById('custInputTelepon').readOnly = false;
@@ -1975,7 +2375,7 @@
         setTimeout(() => { custSuggestionList.style.display = 'none'; }, 200);
     });
 
-    // Saat user menghapus/mengubah nama setelah pilih customer → reset ke mode baru
+    // Saat user menghapus/mengubah nama setelah pilih customer â†’ reset ke mode baru
     custNamaInput.addEventListener('keydown', function() {
         if (document.getElementById('custSelectedId').value) {
             // User mengubah nama setelah memilih customer terdaftar
@@ -2029,14 +2429,31 @@
             return;
         }
 
-        if (received < window.currentTotal) {
+        // Cek apakah mode kasbon
+        const isKasbon = document.getElementById('kasbon_toggle').checked;
+
+        if (!isKasbon && received < window.currentTotal) {
             Swal.fire({
                 icon: 'error',
                 title: 'Pembayaran Kurang',
-                text: 'Jumlah pembayaran kurang dari total tagihan!',
+                text: 'Jumlah pembayaran kurang dari total tagihan! Aktifkan opsi Kasbon jika customer belum bayar.',
                 confirmButtonColor: '#696cff'
             });
             return;
+        }
+
+        // Kasbon wajib pilih customer terdaftar
+        if (isKasbon) {
+            const customerId = document.getElementById('custSelectedId').value;
+            if (!customerId) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Customer Wajib Dipilih',
+                    text: 'Untuk transaksi kasbon, customer terdaftar wajib dipilih agar piutang dapat dicatat.',
+                    confirmButtonColor: '#696cff'
+                });
+                return;
+            }
         }
 
         // Ambil data customer dari form fields modal pembayaran
@@ -2064,6 +2481,8 @@
             total: window.currentTotal,
             metode_pembayaran_id: selectedPaymentMethod,
             jumlah_bayar: received,
+            status: isKasbon ? 'unpaid' : 'paid',
+            jatuh_tempo: isKasbon ? (document.getElementById('kasbon_jatuh_tempo').value || '') : '',
             catatan: document.getElementById('transactionNotes').value
         };
 
@@ -2173,7 +2592,7 @@
         const title = 'Invoice ' + nomorTransaksi;
         const text = 'Invoice transaksi POS - ' + nomorTransaksi;
 
-        // 1. Android WebView — gunakan SerpApp.shareUrl() bridge
+        // 1. Android WebView â€” gunakan SerpApp.shareUrl() bridge
         if (typeof SerpApp !== 'undefined' && typeof SerpApp.shareUrl === 'function') {
             SerpApp.shareUrl(url, title, text);
             return;
@@ -2210,7 +2629,7 @@
         } catch(e) { alert('Tidak dapat menyalin link. Salin manual: ' + text); }
     }
 
-    // Fungsi Transaksi Baru — reset keranjang dan tutup popup
+    // Fungsi Transaksi Baru â€” reset keranjang dan tutup popup
     function posNewTransaction() {
         Swal.close();
         cart = [];
@@ -2350,9 +2769,9 @@
     $(document).ready(function() {
         resetStockDisplay();
     });
-    // ╔══════════════════════════════════════════════════════════════╗
-    // ║          BARCODE SCANNER VIA KAMERA (html5-qrcode)           ║
-    // ╚══════════════════════════════════════════════════════════════╝
+    // â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+    // â•‘          BARCODE SCANNER VIA KAMERA (html5-qrcode)           â•‘
+    // â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     let html5QrcodeScanner = null;
 
@@ -2530,7 +2949,7 @@
      * Callback saat scan gagal (bukan error, hanya belum menemukan barcode).
      */
     function onScanFailure(error) {
-        // Tidak perlu diproses — scanner masih berjalan
+        // Tidak perlu diproses â€” scanner masih berjalan
     }
 
     /**

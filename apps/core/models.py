@@ -26,6 +26,8 @@
 """
 
 from django.db import models  # Django ORM untuk definisi model database
+from django.db.models.signals import post_delete, post_save
+from django.dispatch import receiver
 
 
 class RolePermission(models.Model):
@@ -66,6 +68,7 @@ class RolePermission(models.Model):
         ('pembelian', 'Pembelian'),                # Supplier, purchase order
         ('penjualan', 'Penjualan'),                # Customer, sales order
         ('pos', 'POS / Kasir'),                    # Point of Sale / kasir
+        ('kas_bank', 'Kas & Bank / Treasury'),     # Akun kas/bank, mutasi, transfer, rekonsiliasi
         ('biaya', 'Biaya'),                        # Pengeluaran / biaya operasional
         ('laporan', 'Laporan'),                    # Laporan: produk, stok, keuangan
         ('hr', 'HR / Human Resource'),             # Karyawan, absensi, penggajian
@@ -75,19 +78,31 @@ class RolePermission(models.Model):
         ('automation', 'Automasi Telegram'),        # Notifikasi Telegram
         ('access_control', 'Access Control'),       # Kelola role & permission
         ('ai_assistant', 'AI Manajemen'),            # AI Dashboard & AI Assistant
-        ('fraud_detection', 'Fraud Detection'),         # Deteksi kecurangan
+        ('fraud_detection', 'Fraud Detection'),      # Deteksi kecurangan
         ('service_center', 'Service Center'),             # Manajemen service elektronik
+        # ========== MODUL AKUNTANSI ==========
+        ('akuntansi', 'Akuntansi'),                # CoA, Jurnal, Buku Besar, Periode
+        ('laporan_keuangan', 'Laporan Keuangan'),  # Trial Balance, Laba Rugi, Neraca, Arus Kas
+        ('piutang', 'Piutang (AR)'),               # Accounts Receivable
+        ('hutang', 'Hutang (AP)'),                 # Accounts Payable
+        ('aset', 'Aset Tetap'),                    # Fixed Assets & Penyusutan
+        ('pajak', 'Pajak (PPN)'),                  # Faktur Pajak & Rekap PPN
+        ('rekonsiliasi_keuangan', 'Rekonsiliasi Keuangan'),  # Perbandingan Operasional vs Akuntansi
     ]
 
     # ==================== DAFTAR SUB-MODUL ====================
     # Sub-modul per modul — setiap sub-modul = 1 submenu di sidebar
     # Dictionary: key = kode modul, value = list of (kode_sub, nama_sub)
     SUB_MODULE_CHOICES = {
+        'dashboard': [
+            ('refresh_cache', 'Tombol Refresh Cache'),       # Floating button refresh cache tenant
+        ],
         'produk': [
             ('kategori', 'Kategori'),              # CRUD Kategori Produk
             ('satuan', 'Satuan'),                   # CRUD Satuan (pcs, kg, liter)
             ('daftar_produk', 'Daftar Produk'),     # List semua produk
             ('tambah_produk', 'Tambah Produk'),     # Form tambah produk baru
+            ('produk_import', 'Import Produk'),      # Import produk dari CSV/Excel
         ],
         'sparepart': [
             ('daftar_sparepart', 'Daftar Sparepart'),  # List semua sparepart
@@ -104,11 +119,19 @@ class RolePermission(models.Model):
         'pembelian': [
             ('supplier', 'Supplier'),               # CRUD Supplier
             ('purchase_order', 'Purchase Order'),    # CRUD Purchase Order
+            ('purchase_order_import', 'Import Purchase Order'), # Import PO dari CSV/Excel
         ],
         'penjualan': [
             ('customer', 'Customer'),               # CRUD Customer
             ('sales_order', 'Sales Order'),          # CRUD Sales Order
             ('transaksi_pos', 'Transaksi POS'),     # Daftar transaksi POS
+        ],
+        'kas_bank': [
+            ('dashboard', 'Dashboard Treasury'),       # Ringkasan saldo dan arus kas/bank
+            ('akun', 'Akun Kas & Bank'),             # Rekening kas/bank/ewallet/clearing
+            ('mutasi', 'Mutasi Kas & Bank'),         # Kas masuk/keluar dari transaksi operasional
+            ('transfer', 'Transfer Kas & Bank'),     # Transfer internal antar akun kas/bank
+            ('rekonsiliasi', 'Rekonsiliasi Kas & Bank'), # Cocokkan saldo sistem dengan statement
         ],
         'biaya': [
             ('kategori_biaya', 'Kategori Biaya'),   # CRUD Kategori Biaya
@@ -121,6 +144,7 @@ class RolePermission(models.Model):
             ('karyawan', 'Karyawan'),                        # CRUD Karyawan
             ('absensi', 'Absensi'),                          # Daftar Absensi
             ('penggajian', 'Penggajian'),                    # CRUD Penggajian
+            ('penggajian_import', 'Import Penggajian'),       # Import slip gaji dari CSV/Excel
             ('pengaturan_absensi', 'Pengaturan Absensi'),    # Setting absensi
         ],
         'laporan': [
@@ -128,10 +152,10 @@ class RolePermission(models.Model):
             ('laporan_stok', 'Laporan Stok'),               # Laporan stok
             ('laporan_penjualan', 'Laporan Penjualan'),     # Laporan penjualan
             ('laporan_pembelian', 'Laporan Pembelian'),     # Laporan pembelian
-            ('laporan_keuangan', 'Laporan Keuangan'),       # Laporan keuangan
+            ('laporan_keuangan', 'Laporan Keuangan Operasional'), # Laporan keuangan operasional
             ('laporan_service', 'Laporan Service'),         # Laporan service center
             ('laporan_sparepart', 'Laporan Sparepart'),     # Laporan penggunaan sparepart
-            ('laporan_cabang', 'Laporan Cabang'),             # Laporan performa per cabang/gudang
+            ('laporan_cabang', 'Laporan Cabang'),           # Laporan cabang
         ],
         'access_control': [
             ('roles', 'Roles'),                     # Daftar role
@@ -150,6 +174,7 @@ class RolePermission(models.Model):
             ('manajemen_data', 'Manajemen Data'),            # Manajemen hapus data dll
         ],
         'ai_assistant': [
+            ('chat_widget', 'Tombol AI Assistant'),           # Floating AI Chat Assistant
             ('dashboard_ai', 'AI Dashboard'),                # Dashboard analitik AI
             ('pengaturan_ai', 'AI Assistant'),                # Pengaturan AI Assistant
         ],
@@ -170,6 +195,40 @@ class RolePermission(models.Model):
             ('terima_unit', 'Terima Unit Baru'),              # Form terima unit
             ('laporan_service', 'Laporan Service'),           # Laporan service center
         ],
+        # ========== AKUNTANSI ==========
+        'akuntansi': [
+            ('coa', 'Chart of Accounts'),              # Bagan akun
+            ('jurnal', 'Jurnal Umum'),                  # Jurnal entry
+            ('buku_besar', 'Buku Besar'),               # General Ledger
+            ('periode', 'Periode Akuntansi'),           # Tutup buku / periode
+            ('panduan', 'Panduan Akuntansi'),           # Panduan & referensi
+        ],
+        'laporan_keuangan': [
+            ('trial_balance', 'Neraca Saldo'),          # Trial Balance
+            ('laba_rugi', 'Laporan Laba Rugi'),         # Income Statement
+            ('neraca', 'Neraca Keuangan'),              # Balance Sheet
+            ('arus_kas', 'Laporan Arus Kas'),           # Cash Flow Statement
+        ],
+        'piutang': [
+            ('daftar_piutang', 'Daftar Piutang'),      # List piutang AR
+            ('aging_piutang', 'Aging Report Piutang'), # Aging analysis
+        ],
+        'hutang': [
+            ('daftar_hutang', 'Daftar Hutang'),        # List hutang AP
+            ('aging_hutang', 'Aging Report Hutang'),   # Aging analysis
+        ],
+        'aset': [
+            ('daftar_aset', 'Daftar Aset Tetap'),      # Fixed asset list
+            ('penyusutan', 'Dashboard Penyusutan'),    # Depreciation dashboard
+        ],
+        'pajak': [
+            ('faktur_pajak', 'Daftar Faktur Pajak'),   # Tax invoice list
+            ('rekap_ppn', 'Rekap PPN'),                # VAT summary report
+            ('setting_pajak', 'Setting PPN'),          # Konfigurasi tarif PPN dan PKP
+        ],
+        # Catatan: 'rekonsiliasi_keuangan' TIDAK memiliki sub-modul.
+        # Pola sama dengan 'dashboard', 'pos', 'activity_log' — modul tanpa submenu.
+        # Permission dicek hanya di level modul (can_view, can_create, can_edit, can_delete).
     }
 
     # ==================== MAPPING SUB-MODULE KE SLUG MENU ====================
@@ -183,11 +242,15 @@ class RolePermission(models.Model):
     # - Di sidebar (vertical_menu.json), slug-nya 'produk-list', 'pembelian-po'
     # - Mapping ini menjembatani keduanya
     SUB_MODULE_TO_SLUG = {
+        # === Dashboard ===
+        'refresh_cache': 'refresh-cache',
         # === Produk ===
         'kategori': 'kategori',
         'satuan': 'satuan',
         'daftar_produk': 'list',       # sidebar: produk-list
         'tambah_produk': 'tambah',     # sidebar: produk-tambah
+        'produk_import': 'import',     # sidebar/url: produk-import
+        # === Sparepart ===
         'daftar_sparepart': 'daftar_sparepart',   # sidebar: sparepart-daftar_sparepart
         'tambah_sparepart': 'tambah_sparepart',   # sidebar: sparepart-tambah_sparepart
         'kategori_sparepart': 'kategori',          # sidebar: sparepart-kategori
@@ -200,10 +263,17 @@ class RolePermission(models.Model):
         # === Pembelian ===
         'supplier': 'supplier',
         'purchase_order': 'po',        # sidebar: pembelian-po
+        'purchase_order_import': 'po-import',
         # === Penjualan ===
         'customer': 'customer',
         'sales_order': 'so',           # sidebar: penjualan-so
         'transaksi_pos': 'transaksi',
+        # === Kas & Bank / Treasury ===
+        'dashboard': 'dashboard',
+        'akun': 'akun',
+        'mutasi': 'mutasi',
+        'transfer': 'transfer',
+        'rekonsiliasi': 'rekonsiliasi',
         # === Biaya ===
         'kategori_biaya': 'kategori',
         'tambah_biaya': 'transaksi',
@@ -214,6 +284,7 @@ class RolePermission(models.Model):
         'karyawan': 'karyawan',
         'absensi': 'absensi',
         'penggajian': 'penggajian',
+        'penggajian_import': 'penggajian-import',
         'pengaturan_absensi': 'pengaturan-absensi',
         # === Laporan ===
         'laporan_produk': 'produk',
@@ -223,7 +294,7 @@ class RolePermission(models.Model):
         'laporan_keuangan': 'keuangan',
         'laporan_service': 'service',              # sidebar: laporan-service
         'laporan_sparepart': 'sparepart',          # sidebar: laporan-sparepart
-        'laporan_cabang': 'cabang',                  # sidebar: laporan-cabang
+        'laporan_cabang': 'cabang',
         # === Access Control ===
         'roles': 'roles',
         'permissions': 'permissions',
@@ -238,13 +309,14 @@ class RolePermission(models.Model):
         'template_cetak': 'template-cetak',
         'manajemen_data': 'manajemen-data',
         # === AI Manajemen ===
+        'chat_widget': 'chat-widget',
         'dashboard_ai': 'dashboard',             # sidebar: ai-dashboard → extract → 'dashboard'
         'pengaturan_ai': 'assistant-settings',   # sidebar: ai-assistant-settings → extract → 'assistant-settings'
         # === Fraud Detection ===
         'dashboard_fraud': 'dashboard',           # sidebar: fraud-dashboard
         'daftar_anomali': 'anomali',              # sidebar: fraud-anomali
         'rekonsiliasi_kas': 'kas',                # sidebar: fraud-kas
-        'pengaturan_fraud': 'pengaturan',          # sidebar: fraud-pengaturan
+        'pengaturan_fraud': 'pengaturan',         # sidebar: fraud-pengaturan
         # === Service Center ===
         'dashboard_service': 'dashboard',          # sidebar: service-center-dashboard
         'pelanggan_service': 'pelanggan',          # sidebar: service-center-pelanggan
@@ -255,6 +327,29 @@ class RolePermission(models.Model):
         'sparepart_service': 'sparepart',          # DIPERBAIKI QA-R1: sidebar: service-center-sparepart
         'terima_unit': 'terima',                   # sidebar: service-center-terima
         'laporan_service': 'laporan',              # sidebar: service-center-laporan
+        # === Akuntansi ===
+        'coa': 'coa',
+        'jurnal': 'jurnal',
+        'buku_besar': 'buku-besar',
+        'periode': 'periode',
+        'trial_balance': 'trial-balance',
+        'laba_rugi': 'laba-rugi',
+        'neraca': 'neraca',
+        'arus_kas': 'arus-kas',
+        'panduan': 'panduan',
+        # === Piutang ===
+        'daftar_piutang': 'list',
+        'aging_piutang': 'aging',
+        # === Hutang ===
+        'daftar_hutang': 'list',
+        'aging_hutang': 'aging',
+        # === Aset ===
+        'daftar_aset': 'list',
+        'penyusutan': 'penyusutan',
+        # === Pajak ===
+        'faktur_pajak': 'list',
+        'rekap_ppn': 'rekap',
+        'setting_pajak': 'setting',
     }
 
     # ==================== REVERSE MAPPING: SLUG → DB CODE ====================
@@ -340,6 +435,10 @@ class RolePermission(models.Model):
         verbose_name = "Role Permission"
         verbose_name_plural = "Role Permissions"
         ordering = ['role', 'module', 'sub_module']  # Urutan default saat query
+        indexes = [
+            models.Index(fields=['role', 'module', 'sub_module'], name='core_rp_role_mod_sub_idx'),
+            models.Index(fields=['module', 'sub_module'], name='core_rp_mod_sub_idx'),
+        ]
 
     # ==================== METHOD ====================
 
@@ -428,3 +527,12 @@ class RolePermission(models.Model):
         # Konversi ke list of tuples dan sort
         result = [(code, name) for code, name in active_roles.items()]
         return sorted(result, key=lambda x: x[1])
+
+
+@receiver(post_save, sender=RolePermission)
+@receiver(post_delete, sender=RolePermission)
+def invalidate_role_permission_cache_on_change(sender, instance, **kwargs):
+    """Pastikan perubahan RolePermission langsung berlaku untuk menu dan action gating."""
+    from apps.core.cache_utils import invalidate_role_permissions_cache
+
+    invalidate_role_permissions_cache(instance.role)

@@ -44,4 +44,6 @@ urlpatterns = [
     path('invoice/<int:pk>/print/', views.InvoicePrintView.as_view(), name='invoice_print'),
     # URL: /pos/invoice/<int:pk>/delete/ — invoice_delete
     path('invoice/<int:pk>/delete/', views.InvoiceDeleteView.as_view(), name='invoice_delete'),
+    # URL: /pos/invoice/<int:pk>/cancel/ — invoice_cancel (POST AJAX)
+    path('invoice/<int:pk>/cancel/', views.cancel_pos_transaction, name='invoice_cancel'),
 ]

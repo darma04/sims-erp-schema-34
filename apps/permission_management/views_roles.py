@@ -48,6 +48,7 @@ from web_project import TemplateLayout
 from apps.core.models import RolePermission
 # Import dari modul internal proyek
 from apps.core.mixins import SuperuserRequiredMixin
+from apps.core.cache_utils import invalidate_role_permissions_cache, invalidate_user_permissions_cache
 from auth.models import Profile
 
 
@@ -141,24 +142,53 @@ class RoleDataAjaxView(SuperuserRequiredMixin, View):
     def get(self, request, role):
         """Handle HTTP GET request."""
         try:
-            # Ambil permissions untuk role ini — hanya field yang dibutuhkan
+            role_name = dict(RolePermission.get_all_roles()).get(role, role.replace('_', ' ').title())
+
+            # SUPERUSER selalu punya semua permission — generate full list untuk UI
+            if role == 'SUPERUSER':
+                permissions_list = []
+                for module_code, module_name in RolePermission.MODULE_CHOICES:
+                    # Module-level permission
+                    permissions_list.append({
+                        'module': module_code,
+                        'sub_module': None,
+                        'can_view': True,
+                        'can_create': True,
+                        'can_edit': True,
+                        'can_delete': True,
+                    })
+                    # Sub-module permissions
+                    for sub_code, sub_name in RolePermission.SUB_MODULE_CHOICES.get(module_code, []):
+                        permissions_list.append({
+                            'module': module_code,
+                            'sub_module': sub_code,
+                            'can_view': True,
+                            'can_create': True,
+                            'can_edit': True,
+                            'can_delete': True,
+                        })
+                return JsonResponse({
+                    'success': True,
+                    'role_code': role,
+                    'role_display': role_name,
+                    'permissions': permissions_list,
+                    'is_superuser': True,
+                })
+
+            # Role biasa — ambil dari database
             permissions = RolePermission.objects.filter(role=role).values(
                 'module', 'sub_module', 'can_view', 'can_create', 'can_edit', 'can_delete'
             )
-            
-            # Ambil nama tampilan role
-            role_name = dict(RolePermission.get_all_roles()).get(role, role.replace('_', ' ').title())
-            
-            # Kembalikan permissions sebagai list flat
             permissions_list = list(permissions)
-            
+
             return JsonResponse({
                 'success': True,
                 'role_code': role,
                 'role_display': role_name,
-                'permissions': permissions_list
+                'permissions': permissions_list,
+                'is_superuser': False,
             })
-            
+
         # Tangkap error Exception — lanjutkan tanpa crash
         except Exception as e:
             return JsonResponse({
@@ -274,8 +304,7 @@ class RoleCreateAjaxView(SuperuserRequiredMixin, View):
                 created_count = len(new_permissions)
             
             # Hapus cache permission agar role baru langsung dikenali (real-time, 0 detik delay)
-            from django.core.cache import cache
-            cache.delete(f'role_perms_{role_name}')
+            invalidate_role_permissions_cache(role_name)
             
             return JsonResponse({
                 'success': True,
@@ -415,12 +444,9 @@ class RoleUpdateAjaxView(SuperuserRequiredMixin, View):
                 
                 created_count = len(new_permissions)
             
-            # Hapus cache permission secara langsung (real-time, 0 detik delay)
-            from django.core.cache import cache
-            
             if role_renamed:
-                cache.delete(f'role_perms_{old_role_name}')
-            cache.delete(f'role_perms_{target_role}')
+                invalidate_role_permissions_cache(old_role_name)
+            invalidate_role_permissions_cache(target_role)
             
             role_display = dict(RolePermission.get_all_roles()).get(target_role, target_role)
             message += f'Permissions untuk {role_display} berhasil diupdate! ({created_count} permissions)'
@@ -462,6 +488,7 @@ class RoleDeleteView(SuperuserRequiredMixin, View):
 
             # Cek apakah masih ada user yang memakai role ini
             user_count = Profile.objects.filter(role=role_code).count()
+            affected_user_ids = list(Profile.objects.filter(role=role_code).values_list('user_id', flat=True))
 
             # Cek apakah ada parameter force dari request
             force = False
@@ -490,9 +517,9 @@ class RoleDeleteView(SuperuserRequiredMixin, View):
             deleted_count, _ = RolePermission.objects.filter(role=role_code).delete()
 
             # Hapus cache permission agar perubahan langsung terasa
-            from django.core.cache import cache
-            cache.delete(f'role_perms_{role_code}')
-            cache.delete(f'role_perms_{role_code.upper()}')
+            invalidate_role_permissions_cache(role_code)
+            for user_id in affected_user_ids:
+                invalidate_user_permissions_cache(user_id)
 
             role_display = role_code.replace('_', ' ').title()
             msg = f'Role {role_display} berhasil dihapus. ({deleted_count} permission records dihapus)'

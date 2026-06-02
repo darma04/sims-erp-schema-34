@@ -31,6 +31,8 @@ from django.db.models import ProtectedError
 # Import dari framework Django
 from django.contrib.auth.decorators import login_required
 # Import dari framework Django
+from django.views.decorators.http import require_http_methods
+# Import dari framework Django
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
 # Import dari framework Django
 from django.utils.decorators import method_decorator
@@ -170,6 +172,12 @@ class TransaksiBiayaListView(ReadPermissionMixin, ListView):
     # Modul permission yang dicek: 'biaya'
     permission_module = 'biaya'
 
+    def get_queryset(self):
+        """Optimasi query list biaya untuk kolom kategori, cabang, user, dan metode bayar."""
+        return super().get_queryset().select_related(
+            'kategori', 'cabang', 'metode_pembayaran', 'dibuat_oleh', 'disetujui_oleh'
+        )
+
     def get_context_data(self, **kwargs):
         """Menambahkan data konteks tambahan ke template."""
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))
@@ -279,8 +287,8 @@ class TransaksiBiayaUpdateView(UpdatePermissionMixin, UpdateView):
     """
     Edit transaksi biaya + log activity. URL: /biaya/transaksi/<pk>/edit/
 
-    ⚠ PROTEKSI: Transaksi yang sudah 'approved' atau 'rejected' TIDAK bisa diedit.
-    Untuk koreksi, buat transaksi baru atau ubah status terlebih dahulu.
+    Catatan: Transaksi 'approved' boleh diedit jika user punya permission edit.
+    Transaksi 'rejected' tetap dikunci karena tidak berdampak sebagai pengeluaran valid.
     """
     model = TransaksiBiaya
     form_class = TransaksiBiayaForm
@@ -294,7 +302,15 @@ class TransaksiBiayaUpdateView(UpdatePermissionMixin, UpdateView):
     def dispatch(self, request, *args, **kwargs):
         """Cek apakah transaksi masih boleh diedit sebelum memproses request."""
         self.object = self.get_object()
-        if self.object.status in ['approved', 'rejected']:
+        self._old_biaya_signature = (
+            self.object.tanggal,
+            self.object.kategori_id,
+            self.object.cabang_id,
+            self.object.jumlah,
+            self.object.metode_pembayaran_id,
+            self.object.deskripsi,
+        )
+        if self.object.status == 'rejected':
             messages.error(request, f'Transaksi biaya {self.object.nomor_transaksi} sudah berstatus "{self.object.get_status_display()}" dan tidak dapat diedit.')
             return redirect('biaya:transaksi_detail', pk=self.object.pk)
         return super().dispatch(request, *args, **kwargs)
@@ -308,7 +324,19 @@ class TransaksiBiayaUpdateView(UpdatePermissionMixin, UpdateView):
 
     def form_valid(self, form):
         """Dipanggil saat form valid — proses penyimpanan data."""
-        response = super().form_valid(form)
+        with transaction.atomic():
+            response = super().form_valid(form)
+            new_biaya_signature = (
+                self.object.tanggal,
+                self.object.kategori_id,
+                self.object.cabang_id,
+                self.object.jumlah,
+                self.object.metode_pembayaran_id,
+                self.object.deskripsi,
+            )
+            if self.object.status == 'approved' and new_biaya_signature != getattr(self, '_old_biaya_signature', None):
+                from apps.core.propagation import handle_document_edit
+                handle_document_edit(self.object, None, user=self.request.user)
 
         # Import dari modul internal proyek
         from apps.activity_log.middleware import ActivityLogMiddleware
@@ -356,6 +384,11 @@ class TransaksiBiayaDeleteView(DeletePermissionMixin, DeleteView):
         # Blok penanganan error — coba jalankan kode di bawah
         try:
             nomor_transaksi = self.object.nomor_transaksi
+
+            # Reversal jurnal + cancel mutasi (propagation service)
+            from apps.core.propagation import handle_document_delete
+            handle_document_delete(self.object, user=request.user)
+
             self.object.delete()
             return JsonResponse({
                 'success': True,
@@ -414,6 +447,9 @@ class TransaksiBiayaApproveView(UpdatePermissionMixin, TemplateView):
     template_name = 'biaya/transaksi_detail.html'
     permission_module = 'biaya'
 
+    def get(self, request, *args, **kwargs):
+        return redirect('biaya:transaksi_detail', pk=kwargs['pk'])
+
     def post(self, request, *args, **kwargs):
         """Proses approve transaksi biaya via AJAX POST."""
         from django.http import JsonResponse
@@ -431,9 +467,25 @@ class TransaksiBiayaApproveView(UpdatePermissionMixin, TemplateView):
         # Simpan status lama untuk log
         old_status = transaksi.get_status_display()
 
-        # Update status ke approved
-        transaksi.status = 'approved'
-        transaksi.save()
+        try:
+            with transaction.atomic():
+                from apps.biaya.services import ensure_biaya_accounting
+                from apps.core.validators import validate_metode_pembayaran_mapping
+                from apps.kas_bank.services import metode_is_credit
+
+                # Validasi MetodePembayaran mapping (kecuali metode kredit)
+                if transaksi.metode_pembayaran and not metode_is_credit(transaksi.metode_pembayaran):
+                    validate_metode_pembayaran_mapping(transaksi.metode_pembayaran)
+
+                transaksi.status = 'approved'
+                transaksi.disetujui_oleh = request.user
+                transaksi.save(update_fields=['status', 'disetujui_oleh', 'diupdate_pada'])
+                ensure_biaya_accounting(transaksi, user=request.user)
+        except Exception as exc:
+            return JsonResponse({
+                'success': False,
+                'message': f'Gagal menyetujui transaksi biaya: {str(exc)}'
+            }, status=400)
 
         # Log activity
         from apps.activity_log.middleware import ActivityLogMiddleware
@@ -465,6 +517,9 @@ class TransaksiBiayaRejectView(UpdatePermissionMixin, TemplateView):
     """
     template_name = 'biaya/transaksi_detail.html'
     permission_module = 'biaya'
+
+    def get(self, request, *args, **kwargs):
+        return redirect('biaya:transaksi_detail', pk=kwargs['pk'])
 
     def post(self, request, *args, **kwargs):
         """Proses reject transaksi biaya via AJAX POST."""
@@ -502,3 +557,54 @@ class TransaksiBiayaRejectView(UpdatePermissionMixin, TemplateView):
             'success': True,
             'message': f'Transaksi biaya {transaksi.nomor_transaksi} berhasil ditolak.'
         })
+
+
+# ╔══════════════════════════════════════════════════════════════╗
+# ║              CANCEL TRANSAKSI BIAYA                            ║
+# ╚══════════════════════════════════════════════════════════════╝
+
+@login_required
+@require_http_methods(["POST"])
+def cancel_transaksi_biaya(request, pk):
+    """
+    Cancel transaksi biaya yang sudah approved.
+    Membuat reversal jurnal + cancel mutasi kas/bank.
+    URL: /biaya/transaksi/<pk>/cancel/ (POST via AJAX)
+    """
+    from django.http import JsonResponse
+    from apps.biaya.models import TransaksiBiaya
+    from apps.biaya.services import transition_biaya_status
+    from apps.core.permissions import has_permission, is_superuser_role
+
+    # RBAC check
+    if not is_superuser_role(request.user) and not has_permission(request.user, 'write', 'biaya'):
+        return JsonResponse({'success': False, 'message': 'Anda tidak memiliki akses untuk membatalkan transaksi biaya.'}, status=403)
+
+    try:
+        transaksi = TransaksiBiaya.objects.get(pk=pk)
+    except TransaksiBiaya.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Transaksi tidak ditemukan.'}, status=404)
+
+    if transaksi.status != 'approved':
+        return JsonResponse({'success': False, 'message': f'Hanya transaksi berstatus "Disetujui" yang bisa dibatalkan. Status saat ini: {transaksi.get_status_display()}'}, status=400)
+
+    try:
+        transition_biaya_status(transaksi, 'cancelled', user=request.user)
+
+        # Log activity
+        from apps.activity_log.middleware import ActivityLogMiddleware
+        ActivityLogMiddleware.log_activity(
+            request,
+            action='update',
+            model_name='Transaksi Biaya',
+            object_id=transaksi.pk,
+            object_repr=str(transaksi),
+            description=f'Membatalkan transaksi biaya: {transaksi.nomor_transaksi} (status: Disetujui → Dibatalkan)'
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Transaksi {transaksi.nomor_transaksi} berhasil dibatalkan. Jurnal pembalik telah dibuat.'
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f'Gagal membatalkan: {str(e)}'}, status=400)

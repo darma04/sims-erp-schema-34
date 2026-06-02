@@ -1,0 +1,296 @@
+{% extends 'layout/layout_vertical.html' %}
+{% load static %}
+{% load currency_filters %}
+
+{% block title %}Transfer Kas & Bank - Treasury{% endblock title %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+{% endblock vendor_js %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="ri-arrow-left-right-line me-2"></i>Transfer Kas & Bank</h4>
+            <p class="text-muted mb-0">Pemindahan saldo antar akun kas/bank internal</p>
+        </div>
+        <a href="{% url 'kas_bank:transfer_add' %}" class="btn btn-primary">
+            <i class="ri-add-line me-1"></i>Tambah Transfer
+        </a>
+    </div>
+
+    <div class="row g-6 mb-4">
+        <div class="col-xl-3 col-sm-6">
+            <div class="card treasury-stat-card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar me-4">
+                            <div class="avatar-initial bg-label-primary rounded-3">
+                                <i class="ri-file-list-3-line ri-24px"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="mb-0 text-muted">Total Data</p>
+                            <h5 class="mb-0">{{ total_rows }}</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6">
+            <div class="card treasury-stat-card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar me-4">
+                            <div class="avatar-initial bg-label-success rounded-3">
+                                <i class="ri-checkbox-circle-line ri-24px"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="mb-0 text-muted">Posted</p>
+                            <h5 class="mb-0">{{ posted_count }}</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6">
+            <div class="card treasury-stat-card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar me-4">
+                            <div class="avatar-initial bg-label-info rounded-3">
+                                <i class="ri-exchange-funds-line ri-24px"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="mb-0 text-muted">Transfer Posted</p>
+                            <h5 class="mb-0">{{ total_transfer|rupiah }}</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6">
+            <div class="card treasury-stat-card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar me-4">
+                            <div class="avatar-initial bg-label-warning rounded-3">
+                                <i class="ri-bank-card-line ri-24px"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="mb-0 text-muted">Biaya Admin</p>
+                            <h5 class="mb-0">{{ total_biaya_admin|rupiah }}</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Cari Transfer</label>
+                        <input name="q" value="{{ request.GET.q }}" class="form-control" placeholder="Nomor, akun, atau catatan">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select">
+                            <option value="">Semua Status</option>
+                            {% for value,label in status_choices %}
+                            <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Dari Akun</label>
+                        <select name="dari_akun" class="form-select">
+                            <option value="">Semua Akun</option>
+                            {% for account in accounts %}
+                            <option value="{{ account.id }}" {% if request.GET.dari_akun == account.id|stringformat:'s' %}selected{% endif %}>{{ account.kode }} - {{ account.nama }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Ke Akun</label>
+                        <select name="ke_akun" class="form-select">
+                            <option value="">Semua Akun</option>
+                            {% for account in accounts %}
+                            <option value="{{ account.id }}" {% if request.GET.ke_akun == account.id|stringformat:'s' %}selected{% endif %}>{{ account.kode }} - {{ account.nama }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="row g-3 mt-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Pilih Kolom yang Ditampilkan</label>
+                        <div class="dropdown">
+                            <button class="btn btn-label-secondary dropdown-toggle w-100" type="button" data-bs-toggle="dropdown">
+                                Pilih Kolom yang Ditampilkan
+                            </button>
+                            <div class="dropdown-menu p-3" style="min-width: 250px;">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" data-column="0" checked id="colNomor">
+                                    <label class="form-check-label" for="colNomor">Nomor</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" data-column="1" checked id="colTanggal">
+                                    <label class="form-check-label" for="colTanggal">Tanggal</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" data-column="2" checked id="colDari">
+                                    <label class="form-check-label" for="colDari">Dari Akun</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" data-column="3" checked id="colKe">
+                                    <label class="form-check-label" for="colKe">Ke Akun</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" data-column="4" checked id="colJumlah">
+                                    <label class="form-check-label" for="colJumlah">Jumlah</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" data-column="5" checked id="colBiaya">
+                                    <label class="form-check-label" for="colBiaya">Biaya Admin</label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input column-checkbox" type="checkbox" data-column="6" checked id="colStatus">
+                                    <label class="form-check-label" for="colStatus">Status</label>
+                                </div>
+                                <div class="dropdown-divider"></div>
+                                <button type="button" class="btn btn-sm btn-primary w-100 mb-2" onclick="selectAllColumns()">Pilih Semua</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary w-100" onclick="deselectAllColumns()">Hapus Semua</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6"></div>
+                    <div class="col-md-3">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="ri-filter-3-line me-1"></i>Terapkan Filter
+                            </button>
+                            <a class="btn btn-label-secondary" href="{% url 'kas_bank:transfer_list' %}">
+                                <i class="ri-refresh-line me-1"></i>Reset
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <h5 class="mb-0">Daftar Transfer</h5>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcel()">
+                    <i class="ri-file-excel-2-line me-1"></i>Export Excel
+                </button>
+                <button type="button" class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDF()">
+                    <i class="ri-file-pdf-2-line me-1"></i>Export PDF
+                </button>
+            </div>
+        </div>
+        <div class="card-datatable table-responsive">
+            <table id="dataTable" class="datatables-kas-bank accounting-data-table table table-hover" data-accounting-primary="true" data-export-title="Transfer Kas Bank" data-search-placeholder="Cari transfer kas/bank...">
+                <thead>
+                    <tr>
+                        <th>Nomor</th>
+                        <th>Tanggal</th>
+                        <th>Dari</th>
+                        <th>Ke</th>
+                        <th>Jumlah</th>
+                        <th>Biaya Admin</th>
+                        <th>Status</th>
+                        <th data-export-ignore="true" data-action-icon="ri-more-2-line">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in transfers %}
+                    <tr>
+                        <td class="fw-semibold">{{ item.nomor }}</td>
+                        <td>{{ item.tanggal|date:"d/m/Y H:i" }}</td>
+                        <td>{{ item.dari_akun.kode }} - {{ item.dari_akun.nama }}</td>
+                        <td>{{ item.ke_akun.kode }} - {{ item.ke_akun.nama }}</td>
+                        <td>{{ item.jumlah|rupiah }}</td>
+                        <td>{{ item.biaya_admin|rupiah }}</td>
+                        <td><span class="badge bg-label-{% if item.status == 'posted' %}success{% elif item.status == 'cancelled' %}danger{% else %}secondary{% endif %}">{{ item.get_status_display }}</span></td>
+                        <td>
+                            <div class="dropdown">
+                                <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                                    <i class="ri-more-2-line"></i>
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="{% url 'kas_bank:transfer_detail' item.pk %}">
+                                        <i class="ri-eye-line me-2"></i>Detail
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'kas_bank:transfer_edit' item.pk %}">
+                                        <i class="ri-edit-line me-2"></i>Edit
+                                    </a>
+                                    <button type="button" class="dropdown-item text-danger" onclick="deleteKasBank('{% url 'kas_bank:transfer_delete' item.pk %}', '{{ item.nomor }}')">
+                                        <i class="ri-delete-bin-line me-2"></i>Hapus
+                                    </button>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="3" class="text-start ps-4 py-3">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 0.875rem;">RINGKASAN</strong>
+                                    <small class="text-muted">{{ total_rows }} transfer</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td colspan="2" class="py-3">
+                            <div class="text-center">
+                                <span class="badge bg-label-primary">{{ total_transfer|rupiah }}</span>
+                                <small class="d-block text-muted mt-1">Total Transfer</small>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="text-center">
+                                <span class="badge bg-label-warning">{{ total_biaya_admin|rupiah }}</span>
+                                <small class="d-block text-muted mt-1">Biaya Admin</small>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="text-center">
+                                <span class="badge bg-label-success">{{ posted_count }} posted</span>
+                                <small class="d-block text-muted mt-1">Status</small>
+                            </div>
+                        </td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block page_js %}
+{{ block.super }}
+{% include 'kas_bank/partials/list_tools.html' %}
+{% endblock page_js %}

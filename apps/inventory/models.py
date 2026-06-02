@@ -106,6 +106,11 @@ class TransferStok(models.Model):
         verbose_name = "Transfer Stok"         # Nama singular
         verbose_name_plural = "Transfer Stok"  # Nama plural
         ordering = ['-dibuat_pada']            # Terbaru di atas
+        indexes = [
+            models.Index(fields=['status', 'dibuat_pada'], name='inv_trf_status_created_idx'),
+            models.Index(fields=['gudang_asal', 'status'], name='inv_trf_asal_status_idx'),
+            models.Index(fields=['gudang_tujuan', 'status'], name='inv_trf_tujuan_status_idx'),
+        ]
 
     def __str__(self):
         """Representasi: 'TRF/2024/01/0001 - Gudang A → Gudang B'"""
@@ -163,7 +168,7 @@ class TransferStok(models.Model):
             new_number = 1  # Transfer pertama bulan ini
 
         # Format dengan zero-padding 4 digit
-        # Tambahan: loop untuk memastikan nomor unik
+        # Loop untuk memastikan nomor yang dihasilkan benar-benar unik
         nomor = f"{prefix}/{new_number:04d}"
         while TransferStok.objects.filter(nomor_transfer=nomor).exists():
             new_number += 1
@@ -244,12 +249,15 @@ class TransferStok(models.Model):
                 stok_tujuan.save()  # Simpan perubahan
 
                 # 2c. Update cabang produk ke gudang dengan stok terbanyak
+                # Jika stok di gudang asal habis, pindahkan cabang produk
+                # ke gudang yang memiliki stok paling banyak
                 produk = item.produk
                 stok_terbanyak = Stok.objects.filter(
                     produk=produk, jumlah__gt=0
                 ).order_by('-jumlah').first()
 
                 if stok_terbanyak:
+                    # Update cabang ke gudang dengan stok terbanyak
                     if produk.cabang != stok_terbanyak.gudang:
                         produk.cabang = stok_terbanyak.gudang
                         produk.save(update_fields=['cabang'])
@@ -302,6 +310,9 @@ class TransferStokItem(models.Model):
         """Konfigurasi metadata model TransferStokItem."""
         verbose_name = "Item Transfer"
         verbose_name_plural = "Item Transfer"
+        indexes = [
+            models.Index(fields=['produk', 'transfer'], name='inv_item_prod_trf_idx'),
+        ]
 
     def __str__(self):
         """Representasi: 'Produk A - 50'"""
@@ -365,6 +376,11 @@ class AdjustmentStok(models.Model):
         verbose_name = "Adjustment Stok"           # Nama singular
         verbose_name_plural = "Adjustment Stok"    # Nama plural
         ordering = ['-dibuat_pada']                # Terbaru di atas
+        indexes = [
+            models.Index(fields=['tanggal', 'tipe'], name='inv_adj_tgl_tipe_idx'),
+            models.Index(fields=['produk', 'gudang'], name='inv_adj_prod_gdg_idx'),
+            models.Index(fields=['gudang', 'tanggal'], name='inv_adj_gdg_tgl_idx'),
+        ]
 
     def __str__(self):
         """Representasi: 'ADJ/2024/01/0001 - Produk ABC'"""
@@ -495,7 +511,7 @@ class AdjustmentStok(models.Model):
             new_number = 1  # Adjustment pertama bulan ini
 
         # Format dengan zero-padding 4 digit
-        # Tambahan: loop untuk memastikan nomor unik
+        # Loop untuk memastikan nomor yang dihasilkan benar-benar unik
         nomor = f"{prefix}/{new_number:04d}"
         while AdjustmentStok.objects.filter(nomor_adjustment=nomor).exists():
             new_number += 1

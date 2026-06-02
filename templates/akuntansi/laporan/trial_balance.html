@@ -1,0 +1,545 @@
+{% extends 'layout/layout_vertical.html' %}
+{% load static %}
+{% load currency_filters %}
+
+{% block title %}Trial Balance (Neraca Saldo) - Akuntansi ERP{% endblock title %}
+
+
+
+
+
+
+
+{% block vendor_css %}{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/apex-charts/apex-charts.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}{{ block.super }}
+<script src="{% static 'vendor/libs/apex-charts/apexcharts.js' %}"></script>
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+{% endblock vendor_js %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <div>
+            <h4 class="mb-1"><i class="ri-scales-3-line me-2"></i>Trial Balance (Neraca Saldo)</h4>
+            <p class="text-muted mb-0">Per {{ tanggal|date:"d F Y" }} — Validasi Total Debit = Total Kredit</p>
+        </div>
+    </div>
+    <!-- Label Sumber Data -->
+    <div class="mb-4">
+        <span class="badge bg-label-primary rounded-pill px-3 py-2">
+            <i class="ri-book-2-line me-1"></i>Laporan Akuntansi Resmi
+        </span>
+        <small class="text-muted ms-2" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="right" title="Data bersumber dari Jurnal Akuntansi (JurnalLine posted). Termasuk akun pendapatan, contra pendapatan seperti Diskon Penjualan, PPN Masukan sebagai aset pajak, dan PPN Keluaran sebagai kewajiban pajak.">
+            <i class="ri-information-line"></i> Apa artinya?
+        </small>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Per Tanggal</label>
+                        <input type="date" name="tanggal" class="form-control" value="{{ selected_tanggal }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Cabang</label>
+                        <select name="cabang" class="form-select">
+                            <option value="">Semua</option>
+                            {% for c in cabang_list %}
+                            <option value="{{ c.pk }}" {% if selected_cabang == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.nama }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <!-- Baris kedua: Pilih Kolom (kiri) dan Tombol Filter (kanan) -->
+                <div class="row g-3 mt-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Pilih Kolom yang Ditampilkan</label>
+                        <div class="dropdown">
+                            <button class="btn btn-label-secondary dropdown-toggle waves-effect w-100" type="button"
+                                id="columnFilterDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                                aria-expanded="false">
+                                <i class="ri-layout-column-line me-1"></i>
+                                Pilih Kolom yang Ditampilkan
+                            </button>
+                            <div class="dropdown-menu p-3" aria-labelledby="columnFilterDropdown" style="min-width: 280px;">
+                                <h6 class="dropdown-header px-0 mb-2">Kolom Tabel</h6>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="0" id="col-kode" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-kode">Kode</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="1" id="col-nama" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-nama">Nama Akun</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="2" id="col-tipe" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-tipe">Tipe</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="3" id="col-debit" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-debit">Saldo Debit</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="4" id="col-kredit" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-kredit">Saldo Kredit</label>
+                                </div>
+                                <div class="dropdown-divider my-2"></div>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-primary flex-fill" type="button" onclick="selectAllColumns()">
+                                        <i class="ri-checkbox-multiple-line ri-16px"></i> Semua
+                                    </button>
+                                    <button class="btn btn-sm btn-label-secondary flex-fill" type="button" onclick="deselectAllColumns()">
+                                        <i class="ri-checkbox-blank-line ri-16px"></i> Kosongkan
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <small class="text-muted d-block mt-1">Klik untuk memilih kolom</small>
+                    </div>
+                    <div class="col-md-6"></div>
+                    <div class="col-md-3">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="ri-filter-3-line me-1"></i>Terapkan Filter
+                            </button>
+                            <a href="{% url 'akuntansi:trial_balance' %}" class="btn btn-label-secondary">
+                                <i class="ri-refresh-line me-1"></i>Reset
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-primary"><i class="ri-scales-3-line ri-24px"></i></span></div>
+                        <div>
+                            <h5 class="mb-0">{{ total_debit|rupiah }}</h5>
+                            <small class="text-muted">Total Saldo Debit</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-info"><i class="ri-swap-line ri-24px"></i></span></div>
+                        <div>
+                            <h5 class="mb-0">{{ total_kredit|rupiah }}</h5>
+                            <small class="text-muted">Total Saldo Kredit</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-12 col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3">
+                            <span class="avatar-initial rounded {% if is_balanced %}bg-label-success{% else %}bg-label-danger{% endif %}">
+                                <i class="{% if is_balanced %}ri-checkbox-circle-line{% else %}ri-error-warning-line{% endif %} ri-24px"></i>
+                            </span>
+                        </div>
+                        <div>
+                            {% if is_balanced %}
+                            <h5 class="mb-0 text-success">BALANCE</h5>
+                            <small class="text-success">Debit = Kredit</small>
+                            {% else %}
+                            <h5 class="mb-0 text-danger">SELISIH!</h5>
+                            <small class="text-danger">Selisih: {{ selisih|rupiah }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="card mb-4">
+        <div class="card-header"><h5 class="mb-0"><i class="ri-pie-chart-line me-2"></i>Distribusi Saldo per Tipe Akun</h5></div>
+        <div class="card-body"><div id="tbChart" style="min-height:300px;"></div></div>
+    </div>
+
+    <!-- Main Card Tabel -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="ri-list-check me-2"></i>Neraca Saldo</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcel()">
+                    <i class="ri-file-excel-2-line me-1"></i>Export Excel
+                </button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDF()">
+                    <i class="ri-file-pdf-line me-1"></i>Export PDF
+                </button>
+            </div>
+        </div>
+        <div class="card-datatable table-responsive">
+            <table class="accounting-data-table table table-hover" id="tbTable" data-accounting-primary="true" data-export-title="Neraca Saldo" data-search-placeholder="Cari neraca saldo...">
+                <thead>
+                    <tr>
+                        <th>Kode</th>
+                        <th>Nama Akun</th>
+                        <th>Tipe</th>
+                        <th class="text-end">Saldo Debit</th>
+                        <th class="text-end">Saldo Kredit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    {% if row.saldo_debit > 0 or row.saldo_kredit > 0 %}
+                    <tr>
+                        <td class="fw-medium">{{ row.akun.kode }}</td>
+                        <td>{{ row.akun.nama }}</td>
+                        <td><span class="badge bg-label-{% if row.akun.tipe == 'aset' %}primary{% elif row.akun.tipe == 'kewajiban' %}warning{% elif row.akun.tipe == 'modal' %}success{% elif row.akun.tipe == 'pendapatan' %}info{% elif row.akun.tipe == 'hpp' %}danger{% else %}secondary{% endif %}">{{ row.akun.get_tipe_display }}</span></td>
+                        <td class="text-end {% if row.saldo_debit > 0 %}fw-bold{% endif %}">{% if row.saldo_debit > 0 %}{{ row.saldo_debit|rupiah }}{% else %}-{% endif %}</td>
+                        <td class="text-end {% if row.saldo_kredit > 0 %}fw-bold{% endif %}">{% if row.saldo_kredit > 0 %}{{ row.saldo_kredit|rupiah }}{% else %}-{% endif %}</td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="3" class="text-start ps-4 py-3">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 0.875rem;">RINGKASAN</strong>
+                                    <small class="text-muted">Total debit dan kredit</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-end py-3">
+                            <span class="badge bg-label-primary">{{ total_debit|rupiah }}</span>
+                        </td>
+                        <td class="text-end py-3">
+                            <span class="badge bg-label-success">{{ total_kredit|rupiah }}</span>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+
+{% block page_js %}
+<style>
+    .dataTables_wrapper .dataTables_info { padding: 1rem 1.5rem; font-size: 0.875rem; color: #697a8d; }
+    .dataTables_wrapper .dataTables_paginate { padding: 1rem 1.5rem; }
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter { padding: 0 1.5rem 1rem 1.5rem; }
+    .dataTables_wrapper .dataTables_filter input { border: 1px solid #d9dee3; border-radius: 0.375rem; padding: 0.4375rem 0.875rem; }
+    .dataTables_wrapper .dataTables_length select { border: 1px solid #d9dee3; border-radius: 0.375rem; padding: 0.4375rem 2rem 0.4375rem 0.875rem; }
+    .dataTables_wrapper .dataTables_paginate .paginate_button { padding: 0.438rem 0.875rem; border-radius: 0.375rem; margin: 0 0.125rem; border: none; background: transparent; color: #697a8d; }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current { background: #696cff !important; color: white !important; border: none; }
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.disabled) { background: rgba(105,108,255,0.08) !important; border: none; color: #696cff !important; }
+    .card-datatable { padding-bottom: 0; }
+    @media (max-width: 768px) { #tbTable { min-width: 700px !important; } }
+</style>
+<script>
+$(document).ready(function () {
+    if (!$.fn.dataTable.isDataTable('#tbTable')) {
+    const table = $('#tbTable').DataTable({
+        language: {
+            "sEmptyTable": "Tidak ada data yang tersedia",
+            "sProcessing": "Sedang memproses...",
+            "sLengthMenu": "Tampilkan _MENU_ data",
+            "sZeroRecords": "Tidak ditemukan data yang sesuai",
+            "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+            "sInfoEmpty": "Menampilkan 0 sampai 0 dari 0 data",
+            "sInfoFiltered": "(disaring dari _MAX_ total data)",
+            "sSearch": "Cari:",
+            "oPaginate": { "sFirst": "Pertama", "sPrevious": "Sebelumnya", "sNext": "Selanjutnya", "sLast": "Terakhir" }
+        },
+        order: [[0, 'asc']],
+        pageLength: 25,
+        lengthMenu: [[10, 25, 50, 75, 100, -1], ['10', '25', '50', '75', '100', 'Semua']],
+        responsive: false,
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+        initComplete: function () {
+            $('.dataTables_filter input').attr('placeholder', 'Cari neraca saldo...');
+        }
+    });
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    var el = document.getElementById('tbChart');
+    if (!el) return;
+    var seriesData = [{name:'Saldo Akun', data: {{ chart_data|safe }}}];
+    var hasData = seriesData.some(function(s){ return s.data && s.data.some(function(v){return v>0;}); });
+    if (!hasData) {
+        el.innerHTML = '<div class="text-center text-muted py-5"><i class="ri-bar-chart-2-line ri-3x d-block mb-2" style="opacity:0.3"></i><small>Belum ada data untuk ditampilkan</small></div>';
+        return;
+    }
+    var isDark = typeof isDarkStyle !== 'undefined' ? isDarkStyle : document.documentElement.classList.contains('dark-style');
+    var gridColor  = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+    var labelColor = isDark ? '#b4b5ba' : '#a5a3ae';
+    var chartColors = ['#7367f0'];
+    new ApexCharts(el, {
+        chart: {
+            type: 'area', height: 300,
+            fontFamily: 'Inter, -apple-system, sans-serif', background: 'transparent',
+            toolbar: { show: true, tools: { download: '<i class="ri-download-2-line" style="font-size:16px"></i>', selection:false,zoom:false,zoomin:false,zoomout:false,pan:false,reset:false } },
+            animations: { enabled:true, easing:'easeinout', speed:800, dynamicAnimation:{enabled:true,speed:350} },
+            dropShadow: { enabled:true, top:6, left:0, blur:6, opacity:isDark?0.15:0.08, color:chartColors }
+        },
+        colors: chartColors,
+        dataLabels: { enabled:false },
+        stroke: { curve:'smooth', width:3, lineCap:'round' },
+        fill: { type:'gradient', gradient:{ shade:isDark?'dark':'light', type:'vertical', shadeIntensity:0.3, opacityFrom:isDark?0.25:0.4, opacityTo:0.02, stops:[0,95,100] } },
+        series: seriesData,
+        xaxis: {
+            categories: {{ chart_labels|safe }},
+            labels: { style:{ colors:labelColor, fontSize:'13px', fontWeight:400 } },
+            axisBorder:{show:false}, axisTicks:{show:false},
+            crosshairs:{ stroke:{ color:isDark?'#555':'#ddd', dashArray:4 } }
+        },
+        yaxis: { labels: { style:{colors:labelColor,fontSize:'13px'}, formatter:function(val){ return 'Rp '+val.toLocaleString('id-ID'); } } },
+        tooltip: {
+            theme:isDark?'dark':'light', shared:true, intersect:false,
+            style:{fontSize:'13px'}, x:{show:true},
+            y:{ formatter:function(val){ return 'Rp '+val.toLocaleString('id-ID'); } },
+            marker:{show:true}
+        },
+        legend: { position:'top', horizontalAlign:'left', fontSize:'13px', fontWeight:500, labels:{colors:isDark?'#ccc':'#555'}, markers:{size:5,strokeWidth:0,offsetX:-3}, itemMargin:{horizontal:12,vertical:4} },
+        markers: { size:0, hover:{size:6,sizeOffset:3}, strokeWidth:2, strokeColors:isDark?'#2b2c40':'#fff' },
+        grid: { borderColor:gridColor, strokeDashArray:4, padding:{top:-10,left:10,right:10,bottom:0}, xaxis:{lines:{show:false}}, yaxis:{lines:{show:true}} },
+        responsive: [{ breakpoint:768, options:{ chart:{height:240}, legend:{fontSize:'11px'}, stroke:{width:2} } }]
+    }).render();
+});
+
+function toggleColumns() {
+    if (!$.fn.dataTable.isDataTable('#tbTable')) return;
+    var dt = new $.fn.dataTable.Api('#tbTable');
+    document.querySelectorAll('.column-checkbox').forEach(function(cb) {
+        var colIdx = parseInt(cb.value);
+        dt.column(colIdx).visible(cb.checked);
+    });
+}
+function selectAllColumns() {
+    document.querySelectorAll('.column-checkbox').forEach(function(cb) { cb.checked = true; });
+    toggleColumns();
+}
+function deselectAllColumns() {
+    document.querySelectorAll('.column-checkbox').forEach(function(cb) { cb.checked = false; });
+    toggleColumns();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXPORT EXCEL & PDF - STANDARD TEMPLATE (Support Android)
+// Konsisten dengan: Produk, POS, Sales Order, Purchase Order
+// ═══════════════════════════════════════════════════════════════
+
+const EXCEL_INFO = {
+    name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
+    address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
+    phone: "{{ export_excel_template.header_telepon|escapejs|default:'No Telp' }}",
+    email: "{{ export_excel_template.header_email|escapejs|default:'email@domain.com' }}",
+    copyright: "{{ export_excel_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
+};
+
+const PDF_INFO = {
+    name: "{{ export_pdf_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
+    address: "{{ export_pdf_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
+    phone: "{{ export_pdf_template.header_telepon|escapejs|default:'No Telp' }}",
+    email: "{{ export_pdf_template.header_email|escapejs|default:'email@domain.com' }}",
+    copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
+};
+
+function exportExcel() {
+    if (!$.fn.dataTable.isDataTable('#tbTable')) { alert('Tabel tidak tersedia!'); return; }
+    
+    const tableObj = new $.fn.dataTable.Api('#tbTable');
+    let colCount = 0;
+    let visibleColumns = [];
+
+    tableObj.columns().every(function (index) {
+        const headerNode = this.header();
+        const headerText = headerNode ? headerNode.textContent.trim() : '';
+        if (this.visible()) {
+            visibleColumns.push({ index: index, text: headerText });
+            colCount++;
+        }
+    });
+
+    let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+    html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
+    html += '<body>';
+
+    // --- ADD EXCEL HEADER (Company Info) ---
+    html += '<table border="0">';
+    if (typeof EXCEL_INFO !== 'undefined') {
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
+        html += `<tr><td colspan="${colCount}"></td></tr>`; // empty row for spacing
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:14px; font-weight:bold;">TRIAL BALANCE (NERACA SALDO)</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">Per {{ tanggal|date:"d F Y" }}</td></tr>`;
+        html += `<tr><td colspan="${colCount}"></td></tr>`;
+    }
+    html += '</table>';
+
+    html += '<table border="1">';
+    html += '<thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;">';
+
+    visibleColumns.forEach(col => {
+        html += `<th>${col.text}</th>`;
+    });
+
+    html += '</tr></thead><tbody>';
+
+    tableObj.rows({ search: 'applied' }).every(function (rowIdx, tableLoop, rowLoop) {
+        html += '<tr>';
+        visibleColumns.forEach(col => {
+            let cellNode = tableObj.cell(rowIdx, col.index).node();
+            let text = cellNode ? cellNode.textContent.trim().replace(/\s+/g, ' ') : '';
+            html += `<td>${text}</td>`;
+        });
+        html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+
+    // --- ADD EXCEL FOOTER ---
+    html += '<table border="0">';
+    html += `<tr><td colspan="${colCount}"></td></tr>`; // empty spacer
+    if (typeof EXCEL_INFO !== 'undefined') {
+        html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">${EXCEL_INFO.copyright}</td></tr>`;
+    }
+    html += '</table></body></html>';
+
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const link = document.createElement('a');
+    link.setAttribute('href', URL.createObjectURL(blob));
+    link.setAttribute('download', 'Trial_Balance_' + new Date().toISOString().slice(0, 10) + '.xls');
+    link.click();
+}
+
+function exportPDF() {
+    if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
+    if (!$.fn.dataTable.isDataTable('#tbTable')) { alert('Tabel tidak tersedia!'); return; }
+
+    const tableObj = new $.fn.dataTable.Api('#tbTable');
+    const headers = [];
+    let visibleColumns = [];
+
+    tableObj.columns().every(function (index) {
+        const headerNode = this.header();
+        const headerText = headerNode ? headerNode.textContent.trim() : '';
+        if (this.visible()) {
+            headers.push({
+                text: headerText,
+                style: 'tableHeader',
+                fillColor: '#696CFF',
+                color: '#FFFFFF',
+                bold: true
+            });
+            visibleColumns.push({ index: index });
+        }
+    });
+
+    const body = [headers];
+
+    tableObj.rows({ search: 'applied' }).every(function (rowIdx, tableLoop, rowLoop) {
+        const row = [];
+        visibleColumns.forEach(col => {
+            let cellNode = tableObj.cell(rowIdx, col.index).node();
+            let text = cellNode ? cellNode.textContent.trim().replace(/\s+/g, ' ') : '';
+            row.push(text);
+        });
+        if (row.length > 0) body.push(row);
+    });
+
+    let companyInfoExists = typeof PDF_INFO !== 'undefined';
+
+    const docDefinition = {
+        pageOrientation: 'landscape',
+        pageMargins: [40, 100, 40, 60],
+        header: function (currentPage) {
+            if (companyInfoExists) {
+                return {
+                    margin: [40, 20, 40, 10],
+                    columns: [
+                        {
+                            width: '*',
+                            stack: [
+                                { text: PDF_INFO.name, style: 'companyName' },
+                                { text: PDF_INFO.address, style: 'companyInfo' },
+                                { text: PDF_INFO.phone + ' | ' + PDF_INFO.email, style: 'companyInfo' }
+                            ]
+                        },
+                        { width: 'auto', stack: [{ text: 'Halaman ' + currentPage, style: 'pageNumber', alignment: 'right' }] }
+                    ]
+                };
+            }
+            return { text: 'Halaman ' + currentPage, margin: [40, 20, 40, 10], alignment: 'right', style: 'pageNumber' };
+        },
+        content: [
+            { text: 'TRIAL BALANCE (NERACA SALDO)', style: 'documentTitle', margin: [0, 0, 0, 5] },
+            { text: 'Per {{ tanggal|date:"d F Y" }}', style: 'dateText', margin: [0, 0, 0, 20] },
+            {
+                table: { headerRows: 1, widths: Array(headers.length).fill('auto'), body: body },
+                layout: {
+                    fillColor: (rowIndex) => (rowIndex === 0) ? '#696CFF' : ((rowIndex % 2 === 0) ? '#F5F5F9' : null),
+                    hLineWidth: () => 0.5,
+                    vLineWidth: () => 0.5,
+                    hLineColor: () => '#DBDADE',
+                    vLineColor: () => '#DBDADE'
+                }
+            }
+        ],
+        footer: function (currentPage, pageCount) {
+            if (companyInfoExists) {
+                return {
+                    margin: [40, 10, 40, 10],
+                    columns: [
+                        { text: 'Dicetak pada: ' + new Date().toLocaleString('id-ID'), style: 'footerText' },
+                        { text: PDF_INFO.copyright, style: 'footerText', alignment: 'right' }
+                    ]
+                };
+            }
+            return { text: 'Dicetak pada: ' + new Date().toLocaleString('id-ID'), margin: [40, 10, 40, 10], style: 'footerText' };
+        },
+        styles: {
+            companyName: { fontSize: 14, bold: true, color: '#5F61E6' },
+            companyInfo: { fontSize: 9, color: '#697A8D' },
+            pageNumber: { fontSize: 9, color: '#697A8D' },
+            documentTitle: { fontSize: 18, bold: true, color: '#5F61E6' },
+            dateText: { fontSize: 10, color: '#697A8D' },
+            tableHeader: { bold: true, fontSize: 10, color: '#FFFFFF' },
+            footerText: { fontSize: 8, color: '#697A8D' }
+        },
+        defaultStyle: { fontSize: 9 }
+    };
+
+    pdfMake.createPdf(docDefinition).download('Trial_Balance_' + new Date().toISOString().slice(0, 10) + '.pdf');
+}
+</script>
+{% include 'accounting/partials/table_tools.html' %}
+{% endblock page_js %}

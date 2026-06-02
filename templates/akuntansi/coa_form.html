@@ -1,0 +1,119 @@
+{% extends 'layout/layout_vertical.html' %}
+{% comment %}
+==========================================================================
+COA FORM - Form Tambah/Edit Akun Chart of Accounts
+==========================================================================
+{% endcomment %}
+{% load static %}
+
+{% block title %}{{ title }} - Akuntansi ERP{% endblock title %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <h4 class="py-3 mb-4">
+        <span class="text-muted fw-light">Akuntansi / <a href="{% url 'akuntansi:coa' %}">Chart of Accounts</a> /</span> {{ title }}
+    </h4>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card mb-4">
+                <h5 class="card-header">
+                    <i class="ri-book-2-line me-2"></i>{{ title }}
+                </h5>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="card-body">
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <i class="ri-error-warning-line me-2"></i>Perbaiki kesalahan berikut:
+                            {{ form.errors }}
+                        </div>
+                        {% endif %}
+
+                        <div class="row mb-3">
+                            <label class="col-sm-2 col-form-label" for="id_kode">Kode Akun <span class="text-danger">*</span></label>
+                            <div class="col-sm-10">
+                                {{ form.kode }}
+                                <small class="text-muted">Format: 1-1000 (Aset), 2-1000 (Kewajiban), dll</small>
+                                {% if form.kode.errors %}<div class="text-danger small">{{ form.kode.errors.0 }}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <label class="col-sm-2 col-form-label" for="id_nama">Nama Akun <span class="text-danger">*</span></label>
+                            <div class="col-sm-10">
+                                {{ form.nama }}
+                                {% if form.nama.errors %}<div class="text-danger small">{{ form.nama.errors.0 }}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <label class="col-sm-2 col-form-label" for="id_tipe">Tipe Akun <span class="text-danger">*</span></label>
+                            <div class="col-sm-4">
+                                {{ form.tipe }}
+                                {% if form.tipe.errors %}<div class="text-danger small">{{ form.tipe.errors.0 }}</div>{% endif %}
+                            </div>
+                            <label class="col-sm-2 col-form-label" for="id_sub_tipe">Sub Tipe</label>
+                            <div class="col-sm-4">
+                                {{ form.sub_tipe }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <label class="col-sm-2 col-form-label" for="id_saldo_normal">Saldo Normal <span class="text-danger">*</span></label>
+                            <div class="col-sm-4">
+                                {{ form.saldo_normal }}
+                                <small class="text-muted">Debit: Aset/Beban/HPP | Kredit: Kewajiban/Modal/Pendapatan</small>
+                                {% if form.saldo_normal.errors %}<div class="text-danger small">{{ form.saldo_normal.errors.0 }}</div>{% endif %}
+                            </div>
+                            <label class="col-sm-2 col-form-label" for="id_parent">Akun Induk</label>
+                            <div class="col-sm-4">
+                                {{ form.parent }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <label class="col-sm-2 col-form-label" for="id_deskripsi">Deskripsi</label>
+                            <div class="col-sm-10">
+                                {{ form.deskripsi }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <label class="col-sm-2 col-form-label">Status</label>
+                            <div class="col-sm-10 d-flex align-items-center">
+                                {{ form.is_active }}
+                                <label class="form-check-label ms-2" for="id_is_active">Aktif</label>
+                            </div>
+                        </div>
+
+                        <div class="row justify-content-end">
+                            <div class="col-sm-10">
+                                <button type="submit" class="btn btn-primary me-2">
+                                    <i class="ri-save-line me-1"></i>Simpan
+                                </button>
+                                <a href="{% url 'akuntansi:coa' %}" class="btn btn-outline-secondary">Batal</a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block page_js %}
+<script>
+// Auto-set saldo_normal based on tipe selection
+$('#id_tipe').on('change', function() {
+    const tipe = $(this).val();
+    const saldoNormal = $('#id_saldo_normal');
+    if (['aset', 'hpp', 'beban'].includes(tipe)) {
+        saldoNormal.val('debit');
+    } else if (['kewajiban', 'modal', 'pendapatan'].includes(tipe)) {
+        saldoNormal.val('kredit');
+    }
+});
+</script>
+{% endblock page_js %}

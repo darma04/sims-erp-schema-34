@@ -22,6 +22,7 @@
 from django import forms
 # Import dari modul internal proyek
 from apps.hr.models import Departemen, Jabatan, Karyawan, Absensi, Penggajian, FotoWajah, PengaturanAbsensi
+from apps.pos.models import MetodePembayaran
 
 
 class DepartemenForm(forms.ModelForm):
@@ -115,6 +116,7 @@ class PenggajianForm(forms.ModelForm):
         model = Penggajian
         fields = [
             'karyawan', 'periode_bulan', 'periode_tahun',
+            'metode_pembayaran',
             'gaji_pokok', 'tunjangan_jabatan', 'tunjangan_makan',
             'tunjangan_transport', 'tunjangan_lainnya', 'lembur', 'bonus',
             'potongan_bpjs_kesehatan', 'potongan_bpjs_ketenagakerjaan',
@@ -129,6 +131,7 @@ class PenggajianForm(forms.ModelForm):
                 (9, 'September'), (10, 'Oktober'), (11, 'November'), (12, 'Desember')
             ]),
             'periode_tahun': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '2026'}),
+            'metode_pembayaran': forms.Select(attrs={'class': 'form-select'}),
             'gaji_pokok': forms.NumberInput(attrs={'class': 'form-control'}),
             'tunjangan_jabatan': forms.NumberInput(attrs={'class': 'form-control'}),
             'tunjangan_makan': forms.NumberInput(attrs={'class': 'form-control'}),
@@ -142,6 +145,12 @@ class PenggajianForm(forms.ModelForm):
             'potongan_lainnya': forms.NumberInput(attrs={'class': 'form-control'}),
             'catatan': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['metode_pembayaran'].queryset = MetodePembayaran.objects.filter(aktif=True)
+        self.fields['metode_pembayaran'].required = False
+        self.fields['metode_pembayaran'].empty_label = 'Pilih Metode Pembayaran'
 
 
 class FotoWajahForm(forms.ModelForm):
@@ -159,6 +168,12 @@ class FotoWajahForm(forms.ModelForm):
 
 class GeneratePenggajianForm(forms.Form):
     """Form untuk generate penggajian bulanan"""
+    metode_pembayaran = forms.ModelChoiceField(
+        queryset=MetodePembayaran.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Metode Pembayaran'
+    )
     periode_bulan = forms.ChoiceField(
         choices=[
             (1, 'Januari'), (2, 'Februari'), (3, 'Maret'), (4, 'April'),
@@ -178,6 +193,11 @@ class GeneratePenggajianForm(forms.Form):
         initial=0,
         widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '300000'})
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['metode_pembayaran'].queryset = MetodePembayaran.objects.filter(aktif=True)
+        self.fields['metode_pembayaran'].empty_label = 'Pilih Metode Pembayaran'
 
 
 class PengaturanAbsensiForm(forms.ModelForm):

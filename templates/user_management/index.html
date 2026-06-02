@@ -41,15 +41,15 @@ Fitur: tambah user, edit, hapus, ubah status.
     <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-3">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-md">
                     <label class="form-label" for="searchUser">Cari User</label>
                     <div class="input-group input-group-merge">
                         <span class="input-group-text"><i class="ri-search-line"></i></span>
                         <input type="text" id="searchUser" class="form-control" placeholder="Username/Email/Nama">
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-12 col-md">
                     <label class="form-label">Role</label>
                     <select class="form-select" id="roleFilter">
                         <option value="">Semua Role</option>
@@ -58,7 +58,7 @@ Fitur: tambah user, edit, hapus, ubah status.
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-12 col-md">
                     <label class="form-label">Status</label>
                     <select class="form-select" id="statusFilter">
                         <option value="">Semua Status</option>

@@ -1,0 +1,107 @@
+{% extends 'layout/layout_vertical.html' %}
+{% load currency_filters %}
+
+{% block title %}{{ transfer.nomor }} - Detail Transfer Kas & Bank{% endblock title %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <h4 class="py-3 mb-4">
+        <span class="text-muted fw-light">Kas & Bank / <a href="{% url 'kas_bank:transfer_list' %}">Transfer</a> /</span> {{ transfer.nomor }}
+    </h4>
+
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="ri-arrow-left-right-line me-2"></i>{{ transfer.nomor }}</h5>
+            <div class="d-flex gap-2">
+                {% if not transfer.jurnal_entry_id %}
+                <a href="{% url 'kas_bank:transfer_edit' transfer.pk %}" class="btn btn-primary">
+                    <i class="ri-edit-line me-1"></i>Edit
+                </a>
+                {% endif %}
+                <a href="{% url 'kas_bank:transfer_list' %}" class="btn btn-outline-secondary">
+                    <i class="ri-arrow-left-line me-1"></i>Kembali
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-4 mb-4">
+                <div class="col-md-4">
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted d-block mb-1">Jumlah Transfer</small>
+                        <h4 class="mb-0">{{ transfer.jumlah|rupiah }}</h4>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted d-block mb-1">Biaya Admin</small>
+                        <h4 class="mb-0 text-warning">{{ transfer.biaya_admin|rupiah }}</h4>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted d-block mb-1">Status</small>
+                        <span class="badge bg-label-{% if transfer.status == 'posted' %}success{% elif transfer.status == 'cancelled' %}danger{% else %}secondary{% endif %}">{{ transfer.get_status_display }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr><td class="text-muted" style="width:170px;">Tanggal</td><td>{{ transfer.tanggal|date:"d F Y H:i" }}</td></tr>
+                        <tr><td class="text-muted">Dari Akun</td><td><a href="{% url 'kas_bank:account_detail' transfer.dari_akun.pk %}">{{ transfer.dari_akun.kode }} - {{ transfer.dari_akun.nama }}</a></td></tr>
+                        <tr><td class="text-muted">Ke Akun</td><td><a href="{% url 'kas_bank:account_detail' transfer.ke_akun.pk %}">{{ transfer.ke_akun.kode }} - {{ transfer.ke_akun.nama }}</a></td></tr>
+                        <tr><td class="text-muted">Cabang</td><td>{{ transfer.cabang.nama|default:"-" }}</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr><td class="text-muted" style="width:170px;">Akun Biaya Admin</td><td>{% if transfer.akun_biaya_admin %}{{ transfer.akun_biaya_admin.kode }} - {{ transfer.akun_biaya_admin.nama }}{% else %}-{% endif %}</td></tr>
+                        <tr><td class="text-muted">Jurnal</td><td>{% if transfer.jurnal_entry %}<a href="{% url 'akuntansi:jurnal_detail' transfer.jurnal_entry.pk %}">{{ transfer.jurnal_entry.nomor }}</a>{% else %}-{% endif %}</td></tr>
+                        <tr><td class="text-muted">Dibuat Oleh</td><td>{{ transfer.dibuat_oleh.username|default:"-" }} <small class="text-muted">{{ transfer.dibuat_pada|date:"d/m/Y H:i" }}</small></td></tr>
+                        <tr><td class="text-muted">Diubah Pada</td><td>{{ transfer.diubah_pada|date:"d/m/Y H:i" }}</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            {% if transfer.catatan %}
+            <hr>
+            <small class="text-muted d-block mb-1">Catatan</small>
+            <p class="mb-0">{{ transfer.catatan }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="ri-file-list-3-line me-2"></i>Mutasi yang Terbentuk</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nomor</th>
+                        <th>Akun</th>
+                        <th>Tipe</th>
+                        <th class="text-end">Jumlah</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in mutasi_list %}
+                    <tr>
+                        <td><a href="{% url 'kas_bank:transaction_detail' item.pk %}" class="fw-semibold">{{ item.nomor }}</a></td>
+                        <td>{{ item.akun_kas_bank.kode }} - {{ item.akun_kas_bank.nama }}</td>
+                        <td><span class="badge bg-label-info">{{ item.get_tipe_display }}</span></td>
+                        <td class="text-end {% if item.is_debit_kas %}text-success{% else %}text-danger{% endif %} fw-semibold">{{ item.jumlah|rupiah }}</td>
+                        <td><span class="badge bg-label-{% if item.status == 'posted' %}success{% elif item.status == 'cancelled' %}danger{% else %}secondary{% endif %}">{{ item.get_status_display }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="text-center text-muted py-4">Belum ada mutasi yang terbentuk.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock content %}

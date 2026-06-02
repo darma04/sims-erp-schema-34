@@ -35,6 +35,7 @@
 from django.db import models               # Django ORM untuk definisi model
 # Import dari framework Django
 from django.contrib.auth.models import User  # Model User bawaan Django
+from apps.core.validators import validate_image_file
 import uuid                                 # Modul untuk generate ID unik
 
 
@@ -330,13 +331,11 @@ class Produk(models.Model):
         upload_to='produk/',     # Disimpan di MEDIA_ROOT/produk/
         blank=True,
         null=True,
-        verbose_name="Gambar Produk"
+        verbose_name="Gambar Produk",
+        validators=[validate_image_file]
     )
 
-    # ===== STATUS =====
-    aktif = models.BooleanField(default=True, verbose_name="Aktif")
-
-    # ===== TIPE PRODUK =====
+    # ===== TIPE PRODUK (SIMS) =====
     TIPE_CHOICES = [
         ('produk', 'Produk'),
         ('sparepart', 'Sparepart'),
@@ -345,12 +344,24 @@ class Produk(models.Model):
         max_length=15,
         choices=TIPE_CHOICES,
         default='produk',
-        verbose_name="Tipe",
-        help_text="Produk untuk penjualan umum, Sparepart untuk service center"
+        verbose_name='Tipe',
+        help_text='Produk untuk penjualan umum, Sparepart untuk service center'
+    )
+
+    # ===== STATUS =====
+    aktif = models.BooleanField(default=True, verbose_name="Aktif")
+
+    # ===== PPN =====
+    # Flag apakah produk ini dikenakan PPN saat transaksi
+    # True = kena PPN (default), False = bebas PPN (makanan pokok, dll)
+    kena_ppn = models.BooleanField(
+        default=True,
+        verbose_name="Kena PPN",
+        help_text="Jika dicentang, produk ini akan dikenakan PPN saat transaksi"
     )
 
     # ===== METODE PEMBAYARAN =====
-    # FK ke MetodePembayaran — metode pembayaran saat menambahkan produk/sparepart
+    # FK ke MetodePembayaran — metode pembayaran saat menambahkan produk
     metode_pembayaran = models.ForeignKey(
         'pos.MetodePembayaran',
         on_delete=models.SET_NULL,
@@ -371,6 +382,12 @@ class Produk(models.Model):
         verbose_name = "Produk"
         verbose_name_plural = "Produk"
         ordering = ['-dibuat_pada']  # Terbaru di atas
+        indexes = [
+            models.Index(fields=['aktif', 'dibuat_pada'], name='prd_aktif_created_idx'),
+            models.Index(fields=['kategori', 'aktif'], name='prd_kat_aktif_idx'),
+            models.Index(fields=['cabang', 'aktif'], name='prd_cabang_aktif_idx'),
+            models.Index(fields=['metode_pembayaran', 'aktif'], name='prd_pay_aktif_idx'),
+        ]
 
     def __str__(self):
         """Representasi: 'PRD-00001 - Produk ABC'"""
@@ -417,15 +434,12 @@ class Produk(models.Model):
 
         Return: String SKU — contoh 'MAK-00001'
         """
-        # LANGKAH 1: Tentukan prefix berdasarkan tipe dan kategori
-        if self.tipe == 'sparepart':
-            prefix = "SPR"  # Prefix khusus sparepart
-        elif self.kategori:
+        # LANGKAH 1: Tentukan prefix berdasarkan kategori
+        prefix = "PRD"  # Default prefix jika produk belum punya kategori
+        if self.kategori:
             # Ambil 3 huruf pertama dari nama kategori, ubah ke uppercase
             # Contoh: 'Makanan' → 'Mak' → 'MAK'
             prefix = self.kategori.nama[:3].upper()
-        else:
-            prefix = "PRD"  # Default prefix jika produk belum punya kategori
 
         # LANGKAH 2: Cari produk terakhir dengan prefix yang sama
         # DIPERBAIKI: select_for_update() mencegah race condition saat concurrent create
@@ -540,6 +554,9 @@ class Gudang(models.Model):
         verbose_name = "Gudang"            # Nama singular
         verbose_name_plural = "Gudang"     # Nama plural
         ordering = ['nama']                # Urutan default A-Z
+        indexes = [
+            models.Index(fields=['aktif', 'nama'], name='gudang_aktif_nama_idx'),
+        ]
 
     def __str__(self):
         """
@@ -547,6 +564,28 @@ class Gudang(models.Model):
         Format: 'GD-001 - Gudang Utama'
         """
         return f"{self.kode} - {self.nama}"
+
+    def get_tarif_ppn(self):
+        """
+        Ambil tarif PPN efektif untuk cabang/gudang ini.
+
+        Hierarki:
+        1. Gudang.pajak_persen → jika > 0, gunakan nilai ini
+        2. PengaturanPerusahaan.pajak_default → fallback jika gudang belum diset
+
+        Return: Decimal — tarif PPN dalam persen (contoh: 11.00)
+        Dipakai oleh: SalesOrderCreate/UpdateView, POSIndexView,
+        PurchaseOrder views (untuk auto-hitung pajak di form).
+        """
+        if self.pajak_persen and self.pajak_persen > 0:
+            return self.pajak_persen
+        # Fallback ke pengaturan perusahaan
+        try:
+            from apps.pengaturan.models import PengaturanPerusahaan
+            setting = PengaturanPerusahaan.load()
+            return setting.pajak_default or 0
+        except Exception:
+            return 0
 
 
 class Stok(models.Model):
@@ -609,6 +648,9 @@ class Stok(models.Model):
         # produk yang sama di gudang yang sama
         unique_together = ['produk', 'gudang']
         ordering = ['produk', 'gudang']    # Urutan: produk → gudang
+        indexes = [
+            models.Index(fields=['gudang', 'produk'], name='stok_gudang_produk_idx'),
+        ]
 
     def __str__(self):
         """

@@ -1,0 +1,101 @@
+{% extends 'layout/layout_vertical.html' %}
+{% load currency_filters %}
+
+{% block title %}{{ title }} - Akuntansi ERP{% endblock title %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="ri-bank-line me-2"></i>{{ title }}</h4>
+            <p class="text-muted mb-0">Pilih masa pajak untuk diproses settlement (setor atau restitusi PPN)</p>
+        </div>
+        <a href="{% url 'pajak:setor_list' %}" class="btn btn-outline-secondary"><i class="ri-arrow-left-line me-1"></i>Kembali</a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="ri-edit-line me-2"></i>Form Setor / Restitusi PPN</h5>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+                    {% endfor %}
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Masa Bulan <span class="text-danger">*</span></label>
+                                <select name="masa_bulan" class="form-select" required>
+                                    {% for m in bulan_list %}
+                                    <option value="{{ m }}" {% if m == default_bulan %}selected{% endif %}>{{ m|stringformat:"02d" }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Masa Tahun <span class="text-danger">*</span></label>
+                                <select name="masa_tahun" class="form-select" required>
+                                    {% for y in tahun_list %}
+                                    <option value="{{ y }}" {% if y == default_tahun %}selected{% endif %}>{{ y }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tanggal Setor <span class="text-danger">*</span></label>
+                                <input type="date" name="tanggal_setor" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Metode Pembayaran</label>
+                                <select name="metode_pembayaran" class="form-select">
+                                    <option value="">— Default Kas (1-1000) —</option>
+                                    {% for m in metode_list %}
+                                    <option value="{{ m.pk }}">{{ m.nama }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">Akun Kas/Bank ditentukan dari mapping metode pembayaran.</small>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Nomor Bukti / NTPN</label>
+                                <input type="text" name="nomor_bukti" class="form-control" placeholder="Nomor bukti setor pajak (opsional)">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Keterangan</label>
+                                <textarea name="keterangan" class="form-control" rows="3" placeholder="Keterangan tambahan (opsional)"></textarea>
+                            </div>
+                        </div>
+                        <div class="mt-4 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary" onclick="return confirm('Proses settlement PPN untuk masa pajak yang dipilih? Jurnal & mutasi Kas/Bank akan dibuat otomatis.');">
+                                <i class="ri-save-line me-1"></i>Proses Setor PPN
+                            </button>
+                            <a href="{% url 'pajak:setor_list' %}" class="btn btn-label-secondary">Batal</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header"><h5 class="mb-0"><i class="ri-information-line me-2"></i>Info Settlement PPN</h5></div>
+                <div class="card-body">
+                    <p class="text-muted small mb-2">Sistem akan menghitung otomatis total PPN dari faktur pajak <strong>approved/reported</strong> pada masa yang dipilih.</p>
+                    <hr>
+                    <h6 class="mb-2">Jurnal yang dibuat:</h6>
+                    <p class="small mb-1"><strong>Setor (kurang bayar):</strong></p>
+                    <pre class="small text-muted mb-3" style="background:rgba(0,0,0,.04);padding:8px;border-radius:4px">D 2-2000 PPN Keluaran   Σ keluaran
+  K 1-1500 PPN Masukan       Σ masukan
+  K Kas/Bank                 selisih</pre>
+                    <p class="small mb-1"><strong>Restitusi (lebih bayar):</strong></p>
+                    <pre class="small text-muted mb-0" style="background:rgba(0,0,0,.04);padding:8px;border-radius:4px">D 2-2000 PPN Keluaran   Σ keluaran
+D Kas/Bank                 selisih
+  K 1-1500 PPN Masukan       Σ masukan</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

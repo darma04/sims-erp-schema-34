@@ -84,7 +84,7 @@
                                 <div class="mb-3">
                                     <label class="form-label">{{ form.metode_pembayaran.label }}</label>
                                     {{ form.metode_pembayaran }}
-                                    <div class="form-text">Metode pembayaran untuk PO ini (opsional)</div>
+                                    <div class="form-text">Kosong/TEMPO akan membentuk hutang sampai dibayar</div>
                                 </div>
 
                                 <div class="mb-3">
@@ -97,6 +97,14 @@
                                     <div class="input-group">
                                         <span class="input-group-text">Rp</span>
                                         {{ form.pajak }}
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">{{ form.biaya_pengiriman.label }}</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">Rp</span>
+                                        {{ form.biaya_pengiriman }}
                                     </div>
                                 </div>
 
@@ -135,14 +143,6 @@
                                                 class="text-danger">*</span></label>
                                         <input type="text" name="items-0-nama_produk" id="id_items-0-nama_produk"
                                             class="form-control" placeholder="Masukkan nama produk" required>
-                                    </div>
-                                    <div class="col-6 col-lg-1">
-                                        <label class="form-label mb-1">Tipe</label>
-                                        <select name="items-0-tipe" id="id_items-0-tipe" class="form-select">
-                                            {% for value, label in tipe_choices %}
-                                            <option value="{{ value }}">{{ label }}</option>
-                                            {% endfor %}
-                                        </select>
                                     </div>
                                     <div class="col-6 col-lg-2">
                                         <label class="form-label mb-1">Kategori</label>
@@ -200,6 +200,10 @@
                                         <div class="d-flex justify-content-between align-items-center mb-2">
                                             <span class="text-muted">Subtotal:</span>
                                             <span class="fw-medium" id="subtotal">Rp 0</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="text-muted">Ongkir:</span>
+                                            <span class="fw-medium" id="shipping-amount">Rp 0</span>
                                         </div>
                                         <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
                                             <span class="text-muted">Pajak:</span>
@@ -265,15 +269,17 @@
 
             const taxInput = $('[name="pajak"]').val() || 0;
             const tax = parseFloat(taxInput);
-            const total = subtotal + tax;
+            const ongkir = parseFloat($('[name="biaya_pengiriman"]').val()) || 0;
+            const total = subtotal + ongkir + tax;
 
             $('#subtotal').text(formatRupiah(subtotal));
+            $('#shipping-amount').text(formatRupiah(ongkir));
             $('#tax-amount').text(formatRupiah(tax));
             $('#total').text(formatRupiah(total));
         }
 
         // Update total saat input berubah
-        $(document).on('input', '[name$="-jumlah"], [name$="-harga_satuan"], [name="pajak"]', function () {
+        $(document).on('input', '[name$="-jumlah"], [name$="-harga_satuan"], [name="pajak"], [name="biaya_pengiriman"]', function () {
             calculateTotals();
         });
 
@@ -283,10 +289,9 @@
             const totalForms = $('#id_items-TOTAL_FORMS');
             const formIdx = parseInt(totalForms.val());
 
-            // Ambil opsi kategori, satuan, dan tipe dari baris pertama
+            // Ambil opsi kategori dan satuan dari baris pertama
             const kategoriOptions = $('#id_items-0-kategori').html();
             const satuanOptions = $('#id_items-0-satuan').html();
-            const tipeOptions = $('#id_items-0-tipe').html();
 
             // Bangun HTML form baru dengan field produk baru
             const newFormHTML = `
@@ -296,12 +301,6 @@
                         <label class="form-label mb-1">Nama Produk Baru <span class="text-danger">*</span></label>
                         <input type="text" name="items-${formIdx}-nama_produk" id="id_items-${formIdx}-nama_produk"
                                class="form-control" placeholder="Masukkan nama produk" required>
-                    </div>
-                    <div class="col-6 col-lg-1">
-                        <label class="form-label mb-1">Tipe</label>
-                        <select name="items-${formIdx}-tipe" id="id_items-${formIdx}-tipe" class="form-select">
-                            ${tipeOptions}
-                        </select>
                     </div>
                     <div class="col-6 col-lg-2">
                         <label class="form-label mb-1">Kategori</label>

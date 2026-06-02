@@ -12,3 +12,7 @@ class PembelianConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'apps.pembelian'
     verbose_name = 'Pembelian'
+    
+    def ready(self):
+        """Import signals saat aplikasi ready."""
+        import apps.pembelian.signals  # noqa: F401

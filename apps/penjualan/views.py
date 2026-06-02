@@ -56,7 +56,9 @@ from apps.penjualan.models import Customer, SalesOrder, SalesOrderItem
 from apps.penjualan.forms import CustomerForm, SalesOrderForm
 # Import dari modul internal proyek
 from apps.core.mixins import ReadPermissionMixin, CreatePermissionMixin, UpdatePermissionMixin, DeletePermissionMixin
+from apps.core.permissions import permission_required
 from django.db import transaction
+from django.views.decorators.http import require_http_methods
 
 
 # ╔══════════════════════════════════════════════════════════════╗
@@ -184,6 +186,11 @@ class SalesOrderListView(ReadPermissionMixin, ListView):
     permission_module = 'penjualan'
     permission_sub_module = 'sales_order'
 
+    def get_queryset(self):
+        return super().get_queryset().select_related(
+            'customer', 'gudang', 'metode_pembayaran', 'dibuat_oleh'
+        ).prefetch_related('items__produk')
+
     def get_context_data(self, **kwargs):
         """Menambahkan data konteks tambahan ke template."""
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))
@@ -248,6 +255,17 @@ class SalesOrderCreateView(CreatePermissionMixin, CreateView):
         # Query database - ambil semua data context['satuan_list']
         # Data konteks: satuan_list - untuk ditampilkan di template
         context['satuan_list'] = Satuan.objects.all().order_by('nama')
+
+        # Gudang list dengan tarif PPN efektif (untuk auto-hitung pajak)
+        from apps.produk.models import Gudang
+        gudang_qs = Gudang.objects.filter(aktif=True)
+        gudang_list = []
+        for g in gudang_qs:
+            gudang_list.append({
+                'id': g.id, 'nama': g.nama, 'kode': g.kode,
+                'pajak_persen': float(g.get_tarif_ppn())
+            })
+        context['gudang_pajak_list'] = gudang_list
         return context
 
 
@@ -260,13 +278,14 @@ class SalesOrderCreateView(CreatePermissionMixin, CreateView):
         form.instance.dibuat_oleh = self.request.user
 
         if formset.is_valid():
-            self.object = form.save()
-            formset.instance = self.object
-            formset.save()
+            with transaction.atomic():
+                self.object = form.save()
+                formset.instance = self.object
+                formset.save()
 
-            # Hitung ulang total setelah items tersimpan
-            self.object.calculate_total()
-            self.object.save()
+                # Hitung ulang total setelah items tersimpan
+                self.object.calculate_total()
+                self.object.save()
 
             # Notifikasi Telegram (opsional)
             try:
@@ -298,7 +317,16 @@ class SalesOrderDetailView(ReadPermissionMixin, TemplateView):
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))
         so_id = kwargs.get('pk')
         # Data konteks: sales_order - untuk ditampilkan di template
-        context['sales_order'] = get_object_or_404(SalesOrder, pk=so_id)
+        sales_order = get_object_or_404(SalesOrder, pk=so_id)
+        context['sales_order'] = sales_order
+        try:
+            from apps.kas_bank.services import metode_is_credit
+            from apps.piutang.models import Piutang
+            context['is_credit_tempo'] = sales_order.metode_pembayaran is None or metode_is_credit(sales_order.metode_pembayaran)
+            context['piutang_so'] = Piutang.objects.filter(sales_order=sales_order, sumber='so').first()
+        except Exception:
+            context['is_credit_tempo'] = False
+            context['piutang_so'] = None
         return context
 
 
@@ -313,7 +341,16 @@ class SalesOrderPrintView(ReadPermissionMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         so_id = kwargs.get('pk')
         # Data konteks: sales_order - untuk ditampilkan di template
-        context['sales_order'] = get_object_or_404(SalesOrder, pk=so_id)
+        sales_order = get_object_or_404(SalesOrder, pk=so_id)
+        context['sales_order'] = sales_order
+        try:
+            from apps.kas_bank.services import metode_is_credit
+            from apps.piutang.models import Piutang
+            context['is_credit_tempo'] = sales_order.metode_pembayaran is None or metode_is_credit(sales_order.metode_pembayaran)
+            context['piutang_so'] = Piutang.objects.filter(sales_order=sales_order, sumber='so').first()
+        except Exception:
+            context['is_credit_tempo'] = False
+            context['piutang_so'] = None
         # Import dari modul internal proyek
         from apps.pengaturan.models import TemplateCetak, PengaturanPerusahaan
         # Data konteks: template - untuk ditampilkan di template
@@ -358,6 +395,8 @@ class SalesOrderUpdateView(UpdatePermissionMixin, UpdateView):
         - apps/penjualan/models.py → SalesOrder.confirm_order() yang mengubah status
         """
         so = self.get_object()
+        # Simpan old_total sebelum edit untuk propagasi jurnal
+        self._old_total = so.total_harga
         if so.status != 'draft':
             messages.error(
                 request,
@@ -395,6 +434,17 @@ class SalesOrderUpdateView(UpdatePermissionMixin, UpdateView):
         # Query database - ambil semua data context['satuan_list']
         # Data konteks: satuan_list - untuk ditampilkan di template
         context['satuan_list'] = Satuan.objects.all().order_by('nama')
+
+        # Gudang list dengan tarif PPN efektif (untuk auto-hitung pajak)
+        from apps.produk.models import Gudang
+        gudang_qs = Gudang.objects.filter(aktif=True)
+        gudang_list = []
+        for g in gudang_qs:
+            gudang_list.append({
+                'id': g.id, 'nama': g.nama, 'kode': g.kode,
+                'pajak_persen': float(g.get_tarif_ppn())
+            })
+        context['gudang_pajak_list'] = gudang_list
         return context
 
 
@@ -405,12 +455,20 @@ class SalesOrderUpdateView(UpdatePermissionMixin, UpdateView):
         formset = context['formset']
 
         if formset.is_valid():
-            self.object = form.save()
-            formset.instance = self.object
-            formset.save()
+            with transaction.atomic():
+                self.object = form.save()
+                formset.instance = self.object
+                formset.save()
 
-            self.object.calculate_total()
-            self.object.save()
+                self.object.calculate_total()
+                self.object.save()
+
+                # Propagasi edit: reverse jurnal lama + buat baru jika SO sudah punya jurnal
+                from apps.core.propagation import handle_document_edit
+                from apps.akuntansi.models import JurnalEntry
+
+                if JurnalEntry.objects.filter(sumber='so', sumber_id=self.object.pk, is_reversed=False).exists():
+                    handle_document_edit(self.object, old_total=self._old_total, user=self.request.user)
 
             # Tampilkan pesan sukses ke user
             messages.success(self.request, 'Sales Order berhasil diupdate')
@@ -435,25 +493,63 @@ class SalesOrderDeleteView(DeletePermissionMixin, DeleteView):
         return self.delete(request, *args, **kwargs)
 
     def delete(self, request, *args, **kwargs):
-        """Hapus data - return JSON response untuk AJAX."""
+        """
+        Hapus SO - rollback stok jika sudah confirmed/delivered/completed.
+        Return JSON response untuk AJAX.
+
+        ALUR PENGHAPUSAN:
+        1. Jika SO sudah confirmed+ (stok sudah dikurangi saat confirm):
+           a. Untuk setiap item, kembalikan stok ke gudang
+           b. Update cabang produk ke gudang stok terbanyak
+        2. Hapus SO (items CASCADE otomatis)
+        """
         from django.http import JsonResponse
+        from django.db import transaction as db_transaction
+        from apps.produk.models import Stok
         from apps.fraud_detection.signals import set_current_delete_user, clear_current_delete_user
         self.object = self.get_object()
+        so = self.object
 
-        # Blok penanganan error - coba jalankan kode di bawah
         try:
-            set_current_delete_user(request.user)
-            self.object.delete()
-            clear_current_delete_user()
-            # Kembalikan respons JSON sukses ke klien
-            return JsonResponse({'success': True, 'message': 'Sales Order berhasil dihapus'})
-        # Tangkap error Exception - lanjutkan tanpa crash
+            # Rollback stok jika SO sudah melewati tahap confirm (stok sudah dikurangi)
+            with db_transaction.atomic():
+                # Reversal jurnal + cancel mutasi/piutang (propagation service)
+                from apps.core.propagation import handle_document_delete
+                handle_document_delete(so, user=request.user)
+
+                if so.status in ['confirmed', 'delivered', 'completed']:
+                    for item in so.items.select_related('produk'):
+                        # Gunakan jumlah_konversi (satuan dasar) untuk rollback
+                        qty_rollback = item.jumlah_konversi if item.jumlah_konversi else item.jumlah
+
+                        # Kembalikan stok ke gudang (kebalikan dari confirm_order)
+                        stok, _ = Stok.objects.select_for_update().get_or_create(
+                            produk=item.produk, gudang=so.gudang,
+                            defaults={'jumlah': 0}
+                        )
+                        stok.jumlah += qty_rollback
+                        stok.save()
+
+                        # Update cabang produk ke gudang dengan stok terbanyak
+                        produk = item.produk
+                        stok_terbanyak = Stok.objects.filter(
+                            produk=produk, jumlah__gt=0
+                        ).order_by('-jumlah').first()
+
+                        if stok_terbanyak and produk.cabang != stok_terbanyak.gudang:
+                            produk.cabang = stok_terbanyak.gudang
+                            produk.save(update_fields=['cabang'])
+
+                set_current_delete_user(request.user)
+                so.delete()
+                clear_current_delete_user()
+
+            return JsonResponse({'success': True, 'message': 'Sales Order berhasil dihapus dan stok telah di-rollback'})
         except ProtectedError:
             clear_current_delete_user()
             return JsonResponse({'success': False, 'message': 'Data tidak dapat dihapus karena sedang digunakan atau terkait dengan data lain.'}, status=400)
         except Exception as e:
             clear_current_delete_user()
-            # Kembalikan respons JSON gagal ke klien
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
 
@@ -463,6 +559,7 @@ class SalesOrderDeleteView(DeletePermissionMixin, DeleteView):
 
 # Wajib login - redirect ke login page jika belum login
 @login_required
+@permission_required('update', 'penjualan')
 def sales_order_confirm(request, pk):
     """
     Konfirmasi Sales Order + kurangi stok dari gudang.
@@ -480,32 +577,49 @@ def sales_order_confirm(request, pk):
     so = get_object_or_404(SalesOrder, pk=pk)
 
     if so.status == 'confirmed':
-        # Tampilkan pesan error ke user
         messages.error(request, 'Order ini sudah dikonfirmasi sebelumnya')
-        # Redirect ke halaman tujuan
         return redirect('penjualan:sales-order-detail', pk=pk)
 
+    # Validasi state machine — pastikan transisi valid
+    try:
+        so.transition_status.__func__  # Cek method ada
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        # Dry-run validation (tanpa save)
+        valid_targets = so.VALID_TRANSITIONS.get(so.status, [])
+        if 'confirmed' not in valid_targets:
+            messages.error(request, f'Order dengan status "{so.get_status_display()}" tidak bisa dikonfirmasi. Transisi yang diizinkan: {valid_targets}')
+            return redirect('penjualan:sales-order-detail', pk=pk)
+    except AttributeError:
+        pass  # Fallback jika transition_status belum ada
+
     if so.status in ['delivered', 'cancelled']:
-        # Tampilkan pesan error ke user
         messages.error(request, 'Order ini tidak bisa dikonfirmasi karena statusnya sudah ' + so.get_status_display())
-        # Redirect ke halaman tujuan
         return redirect('penjualan:sales-order-detail', pk=pk)
 
     # Blok penanganan error - coba jalankan kode di bawah
     try:
+        # Validasi MetodePembayaran mapping sebelum confirm (untuk jurnal otomatis)
+        from apps.core.validators import validate_metode_pembayaran_mapping
+        from apps.kas_bank.services import metode_is_credit
+        if so.metode_pembayaran and not metode_is_credit(so.metode_pembayaran):
+            validate_metode_pembayaran_mapping(so.metode_pembayaran)
+
         # Confirm order → kurangi stok otomatis (lihat SalesOrder.confirm_order())
         so.confirm_order(request.user)
 
         # Import dari modul internal proyek
         from apps.activity_log.middleware import ActivityLogMiddleware
-        ActivityLogMiddleware.log_activity(
-            request,
-            action='update',
-            model_name='Sales Order',
-            object_id=so.pk,
-            object_repr=str(so),
-            description=f'Mengkonfirmasi Sales Order: {so.nomor_so} - stok diupdate'
-        )
+        try:
+            ActivityLogMiddleware.log_activity(
+                request,
+                action='update',
+                model_name='Sales Order',
+                object_id=so.pk,
+                object_repr=str(so),
+                description=f'Mengkonfirmasi Sales Order: {so.nomor_so} - stok diupdate'
+            )
+        except Exception:
+            pass
 
         # Tampilkan pesan sukses ke user
         messages.success(request, f'Sales Order {so.nomor_so} berhasil dikonfirmasi dan stok diupdate')
@@ -513,9 +627,9 @@ def sales_order_confirm(request, pk):
     except ValueError as e:
         # Tampilkan pesan error ke user
         messages.error(request, str(e))
-    # Tangkap error Exception - lanjutkan tanpa crash
+    # Tangkap error ProtectedError - lanjutkan tanpa crash
     except ProtectedError:
-        return JsonResponse({'success': False, 'message': 'Data tidak dapat dihapus karena sedang digunakan atau terkait dengan data lain.'}, status=400)
+        messages.error(request, 'Data tidak dapat diproses karena sedang digunakan atau terkait dengan data lain.')
     except Exception as e:
         # Tampilkan pesan error ke user
         messages.error(request, f'Terjadi kesalahan: {str(e)}')
@@ -625,7 +739,7 @@ class TransactionPrintView(ReadPermissionMixin, TemplateView):
         try:
             # Data konteks: template - untuk ditampilkan di template
             context['template'] = TemplateCetak.get_template('pos_invoice')
-        except:
+        except Exception:
             # Data konteks: template - untuk ditampilkan di template
             context['template'] = None
 
@@ -650,17 +764,42 @@ class TransactionDeleteView(DeletePermissionMixin, DeleteView):
         return self.delete(request, *args, **kwargs)
 
     def delete(self, request, *args, **kwargs):
-        """Hapus data - return JSON response untuk AJAX."""
+        """Hapus data - return JSON response untuk AJAX. Rollback stok sebelum hapus."""
         from django.http import JsonResponse
+        from django.db import transaction as db_transaction
+        from apps.produk.models import Stok
         from apps.fraud_detection.signals import set_current_delete_user, clear_current_delete_user
         self.object = self.get_object()
 
         # Blok penanganan error - coba jalankan kode di bawah
         try:
             nomor_transaksi = self.object.nomor_transaksi
-            set_current_delete_user(request.user)
-            self.object.delete()
-            clear_current_delete_user()
+
+            # Rollback stok jika transaksi sudah lunas (stok sudah dikurangi saat create)
+            if self.object.status == 'paid':
+                with db_transaction.atomic():
+                    for item in self.object.items.select_related('produk'):
+                        # Gunakan jumlah_konversi (satuan dasar) untuk rollback
+                        qty_rollback = item.jumlah_konversi if item.jumlah_konversi else item.jumlah
+
+                        # Kembalikan stok ke gudang
+                        stok, _ = Stok.objects.select_for_update().get_or_create(
+                            produk=item.produk, gudang=self.object.gudang,
+                            defaults={'jumlah': 0}
+                        )
+                        stok.jumlah += qty_rollback
+                        stok.save()
+
+                    # Hapus transaksi dalam atomic block yang sama
+                    set_current_delete_user(request.user)
+                    self.object.delete()
+                    clear_current_delete_user()
+            else:
+                # Transaksi draft/unpaid/cancelled — langsung hapus tanpa rollback
+                set_current_delete_user(request.user)
+                self.object.delete()
+                clear_current_delete_user()
+
             return JsonResponse({
                 'success': True, 
                 'message': f'Transaksi {nomor_transaksi} berhasil dihapus'
@@ -675,3 +814,34 @@ class TransactionDeleteView(DeletePermissionMixin, DeleteView):
                 'success': False, 
                 'message': f'Gagal menghapus transaksi: {str(e)}'
             }, status=400)
+
+
+# ╔══════════════════════════════════════════════════════════════╗
+# ║              CANCEL SALES ORDER                                ║
+# ╚══════════════════════════════════════════════════════════════╝
+
+@login_required
+@require_http_methods(["POST"])
+def cancel_sales_order(request, pk):
+    """Cancel SO yang sudah confirmed/delivered. URL: /penjualan/so/<pk>/cancel/ (POST AJAX)"""
+    from django.http import JsonResponse
+    from apps.penjualan.models import SalesOrder
+    from apps.penjualan.services import transition_so_status
+    from apps.core.permissions import has_permission, is_superuser_role
+
+    if not is_superuser_role(request.user) and not has_permission(request.user, 'write', 'penjualan'):
+        return JsonResponse({'success': False, 'message': 'Anda tidak memiliki akses.'}, status=403)
+
+    try:
+        so = SalesOrder.objects.get(pk=pk)
+    except SalesOrder.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Sales Order tidak ditemukan.'}, status=404)
+
+    if so.status not in ['confirmed', 'delivered']:
+        return JsonResponse({'success': False, 'message': f'SO dengan status "{so.get_status_display()}" tidak bisa dibatalkan.'}, status=400)
+
+    try:
+        transition_so_status(so, 'cancelled', user=request.user)
+        return JsonResponse({'success': True, 'message': f'SO {so.nomor_so} berhasil dibatalkan. Jurnal pembalik dibuat, stok dikembalikan.'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f'Gagal membatalkan: {str(e)}'}, status=400)

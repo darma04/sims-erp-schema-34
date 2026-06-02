@@ -1,0 +1,408 @@
+{% extends 'layout/layout_vertical.html' %}
+{% comment %}
+==========================================================================
+JURNAL LIST - Daftar Jurnal Entry
+Fitur: filter tanggal/sumber/cabang/status, export Excel & PDF, cards.
+==========================================================================
+{% endcomment %}
+{% load static %}
+{% load currency_filters %}
+
+{% block title %}Jurnal Entry - Akuntansi ERP{% endblock title %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/flatpickr/flatpickr.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+<script src="{% static 'vendor/libs/flatpickr/flatpickr.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+{% endblock vendor_js %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="ri-file-text-line me-2"></i>Jurnal Entry</h4>
+            <p class="text-muted mb-0">Daftar jurnal transaksi keuangan</p>
+        </div>
+        {% if rbac_can_create %}
+        <a href="{% url 'akuntansi:jurnal_add' %}" class="btn btn-primary">
+            <i class="ri-add-line me-1"></i>Input Jurnal Manual
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3">
+                            <span class="avatar-initial rounded bg-label-primary"><i class="ri-file-text-line ri-24px"></i></span>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">{{ total_jurnal }}</h5>
+                            <small class="text-muted">Total Jurnal</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3">
+                            <span class="avatar-initial rounded bg-label-success"><i class="ri-checkbox-circle-line ri-24px"></i></span>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">{{ total_posted }}</h5>
+                            <small class="text-muted">Posted</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3">
+                            <span class="avatar-initial rounded bg-label-warning"><i class="ri-edit-line ri-24px"></i></span>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">{{ total_draft }}</h5>
+                            <small class="text-muted">Draft</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3">
+                            <span class="avatar-initial rounded bg-label-info"><i class="ri-scales-3-line ri-24px"></i></span>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 {% if total_debit == total_kredit %}text-success{% else %}text-danger{% endif %}">
+                                {% if total_debit == total_kredit %}Balance{% else %}Unbalanced!{% endif %}
+                            </h5>
+                            <small class="text-muted">Status D/K</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-sm-6 col-md">
+                    <label class="form-label">Tanggal Mulai</label>
+                    <input type="text" class="form-control flatpickr-input" id="startDate" placeholder="Pilih tanggal">
+                </div>
+                <div class="col-sm-6 col-md">
+                    <label class="form-label">Tanggal Akhir</label>
+                    <input type="text" class="form-control flatpickr-input" id="endDate" placeholder="Pilih tanggal">
+                </div>
+                <div class="col-sm-6 col-md">
+                    <label class="form-label">Sumber</label>
+                    <select class="form-select" id="sumberFilter">
+                        <option value="">Semua Sumber</option>
+                        {% for val, label in sumber_choices %}
+                        <option value="{{ val }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-sm-6 col-md">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" id="statusFilter">
+                        <option value="">Semua</option>
+                        <option value="posted">Posted</option>
+                        <option value="draft">Draft</option>
+                    </select>
+                </div>
+                <div class="col-sm-6 col-md">
+                    <label class="form-label">Cabang</label>
+                    <select class="form-select" id="cabangFilter">
+                        <option value="">Semua Cabang</option>
+                        {% for c in cabang_list %}
+                        <option value="{{ c.pk }}">{{ c.nama }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="row g-3 mt-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Pilih Kolom</label>
+                    <div class="dropdown">
+                        <button class="btn btn-label-secondary dropdown-toggle waves-effect w-100" type="button" id="columnFilterDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                            <i class="ri-layout-column-line me-1"></i>Pilih Kolom
+                        </button>
+                        <div class="dropdown-menu p-3" style="min-width: 280px;">
+                            <h6 class="dropdown-header px-0 mb-2">Kolom Tabel</h6>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="0" checked onchange="toggleColumns()"><label class="form-check-label">Nomor</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="1" checked onchange="toggleColumns()"><label class="form-check-label">Tanggal</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="2" checked onchange="toggleColumns()"><label class="form-check-label">Deskripsi</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="3" checked onchange="toggleColumns()"><label class="form-check-label">Sumber</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="4" checked onchange="toggleColumns()"><label class="form-check-label">Cabang</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="5" checked onchange="toggleColumns()"><label class="form-check-label">Status</label></div>
+                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="6" checked onchange="toggleColumns()"><label class="form-check-label">Dibuat Oleh</label></div>
+                            <div class="dropdown-divider my-2"></div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-primary flex-fill" onclick="selectAllColumns()"><i class="ri-checkbox-multiple-line"></i> Semua</button>
+                                <button class="btn btn-sm btn-label-secondary flex-fill" onclick="deselectAllColumns()"><i class="ri-checkbox-blank-line"></i> Kosongkan</button>
+                            </div>
+                        </div>
+                    </div>
+                    <small class="text-muted d-block mt-1">Klik untuk memilih kolom</small>
+                </div>
+                <div class="col-md-6"></div>
+                <div class="col-md-3">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" onclick="applyFilter()"><i class="ri-filter-3-line me-1"></i>Terapkan</button>
+                        <button class="btn btn-label-secondary" onclick="resetFilter()"><i class="ri-refresh-line me-1"></i>Reset</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Daftar Jurnal</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+            </div>
+        </div>
+        <div class="card-datatable table-responsive">
+            <table class="datatables-jurnal accounting-data-table table table-hover" id="jurnalTable"
+                data-accounting-primary="true"
+                data-export-title="Jurnal Umum"
+                data-export-filename="Jurnal_Umum"
+                data-search-placeholder="Cari nomor/deskripsi..."
+                data-default-order='[[1,"desc"]]'>
+                <thead>
+                    <tr>
+                        <th>Nomor</th>
+                        <th>Tanggal</th>
+                        <th>Deskripsi</th>
+                        <th>Sumber</th>
+                        <th>Cabang</th>
+                        <th>Status</th>
+                        <th>Dibuat Oleh</th>
+                        <th data-export-ignore="true" data-action-icon="ri-more-2-line">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if jurnal_list %}
+                    {% for j in jurnal_list %}
+                    <tr>
+                        <td><a href="{% url 'akuntansi:jurnal_detail' j.pk %}" class="fw-semibold text-primary">{{ j.nomor }}</a></td>
+                        <td>
+                            <div class="fw-medium">{{ j.tanggal|date:"d M Y" }}</div>
+                        </td>
+                        <td>{{ j.deskripsi|truncatewords:10 }}</td>
+                        <td>
+                            {% if j.sumber == 'manual' %}<span class="badge bg-label-primary">Manual</span>
+                            {% elif j.sumber == 'pos' %}<span class="badge bg-label-success">POS</span>
+                            {% elif j.sumber == 'so' %}<span class="badge bg-label-info">Sales Order</span>
+                            {% elif j.sumber == 'po' %}<span class="badge bg-label-warning">Purchase Order</span>
+                            {% elif j.sumber == 'biaya' %}<span class="badge bg-label-danger">Biaya</span>
+                            {% elif j.sumber == 'pembalik' %}<span class="badge bg-label-dark">Pembalik</span>
+                            {% else %}<span class="badge bg-label-secondary">{{ j.get_sumber_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if j.cabang %}<span class="badge bg-label-info">{{ j.cabang.nama }}</span>
+                            {% else %}<span class="text-muted">Pusat</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if j.is_posted %}<span class="badge bg-label-success">Posted</span>
+                            {% else %}<span class="badge bg-label-warning">Draft</span>{% endif %}
+                        </td>
+                        <td>{{ j.created_by.username|default:"-" }}</td>
+                        <td>
+                            <div class="dropdown">
+                                <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                                    <i class="ri-more-2-line"></i>
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="{% url 'akuntansi:jurnal_detail' j.pk %}">
+                                        <i class="ri-eye-line me-2"></i>Lihat Detail
+                                    </a>
+                                    {% if not j.is_posted and rbac_can_edit %}
+                                    <a class="dropdown-item text-success" href="javascript:void(0);" onclick="postJurnal({{ j.pk }}, '{{ j.nomor }}')">
+                                        <i class="ri-checkbox-circle-line me-2"></i>Posting
+                                    </a>
+                                    {% endif %}
+                                    {% if j.is_posted and rbac_can_edit %}
+                                    <a class="dropdown-item text-info" href="javascript:void(0);" onclick="reverseJurnal({{ j.pk }}, '{{ j.nomor }}')">
+                                        <i class="ri-arrow-go-back-line me-2"></i>Jurnal Pembalik
+                                    </a>
+                                    {% endif %}
+                                    {% if not j.is_posted and rbac_can_delete %}
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item text-danger" href="javascript:void(0);" onclick="confirmDelete({{ j.pk }}, '{{ j.nomor }}')">
+                                        <i class="ri-delete-bin-line me-2"></i>Hapus
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5">
+                            <i class="ri-file-text-line ri-3x text-muted mb-3 d-block"></i>
+                            <p class="text-muted mb-0">Belum ada jurnal entry</p>
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="3" class="text-start ps-4 py-3">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size:1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size:1rem;">RINGKASAN</strong>
+                                    <small class="text-muted" style="font-size:.75rem;">{{ total_jurnal }} Jurnal Terdaftar</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3"><span class="badge bg-label-success">{{ total_posted }} Posted</span></td>
+                        <td class="py-3"><span class="badge bg-label-warning">{{ total_draft }} Draft</span></td>
+                        <td class="py-3">
+                            {% if total_debit == total_kredit %}
+                            <span class="badge bg-label-success">Balance</span>
+                            {% else %}
+                            <span class="badge bg-label-danger">Unbalanced</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3">
+                            <div class="small">
+                                <div>Debit: {{ total_debit|rupiah }}</div>
+                                <div>Kredit: {{ total_kredit|rupiah }}</div>
+                            </div>
+                        </td>
+                        <td data-export-ignore="true"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- Delete Modal -->
+    <div class="modal fade" id="deleteJurnalModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger align-items-center py-3">
+                    <h5 class="modal-title text-white mb-0"><i class="ri-delete-bin-line me-2"></i>Hapus Jurnal</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <i class="ri-error-warning-line text-danger" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 mb-2">Hapus jurnal ini?</h4>
+                    <p class="text-muted">Jurnal: <strong id="deleteJurnalName"></strong></p>
+                    <p class="text-danger small">Hanya jurnal draft yang dapat dihapus!</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn"><i class="ri-delete-bin-line me-1"></i>Ya, Hapus</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% csrf_token %}
+{% endblock content %}
+
+{% block page_js %}
+<style>
+    .dataTables_wrapper .dataTables_info { padding: 1rem 1.5rem; font-size: 0.875rem; color: #697a8d; }
+    .dataTables_wrapper .dataTables_paginate { padding: 1rem 1.5rem; }
+    .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter { padding: 0 1.5rem 1rem 1.5rem; }
+    .dataTables_wrapper .dataTables_filter input { border: 1px solid #d9dee3; border-radius: 0.375rem; padding: 0.4375rem 0.875rem; }
+    .dataTables_wrapper .dataTables_length select { border: 1px solid #d9dee3; border-radius: 0.375rem; padding: 0.4375rem 2rem 0.4375rem 0.875rem; }
+    .dataTables_wrapper .dataTables_paginate .paginate_button { padding: 0.438rem 0.875rem; border-radius: 0.375rem; margin: 0 0.125rem; border: none; background: transparent; color: #697a8d; }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current { background: #696cff !important; color: white !important; border: none; }
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.disabled) { background: rgba(105,108,255,0.08) !important; border: none; color: #696cff !important; }
+    .card-datatable { padding-bottom: 0; }
+    .datatables-jurnal thead th { font-weight: 600; font-size: 0.8125rem; }
+    @media (max-width: 768px) {
+        .card-datatable { overflow-x: hidden !important; max-width: 100%; }
+        .datatables-jurnal { min-width: 900px !important; }
+        .dataTables_wrapper { overflow-x: hidden !important; max-width: 100% !important; }
+    }
+</style>
+<script>
+$(document).ready(function() {
+    flatpickr('#startDate', {dateFormat:'Y-m-d'});
+    flatpickr('#endDate', {dateFormat:'Y-m-d'});
+});
+
+function applyFilter() {
+    const p = new URLSearchParams();
+    if ($('#startDate').val()) p.append('start', $('#startDate').val());
+    if ($('#endDate').val()) p.append('end', $('#endDate').val());
+    if ($('#sumberFilter').val()) p.append('sumber', $('#sumberFilter').val());
+    if ($('#statusFilter').val()) p.append('status', $('#statusFilter').val());
+    if ($('#cabangFilter').val()) p.append('cabang', $('#cabangFilter').val());
+    window.location.href = '{% url "akuntansi:jurnal" %}?' + p.toString();
+}
+function resetFilter() { window.location.href = '{% url "akuntansi:jurnal" %}'; }
+function toggleColumns() { const cbs = document.querySelectorAll('.column-checkbox'); const t = new $.fn.dataTable.Api('#jurnalTable'); cbs.forEach(cb => { t.column(parseInt(cb.value)).visible(cb.checked); }); }
+function selectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(cb => { cb.checked = true; }); toggleColumns(); }
+function deselectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(cb => { cb.checked = false; }); toggleColumns(); }
+
+// ═══════════════════════════════════════════════════════════════
+// AJAX Actions
+const csrfToken = () => document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+function postJurnal(id, name) {
+    if(!confirm('Posting jurnal '+name+'? Setelah diposting, jurnal tidak dapat dihapus.')) return;
+    $.ajax({url:`/akuntansi/jurnal/${id}/post/`,type:'POST',headers:{'X-CSRFToken':csrfToken()},
+        success:function(r){if(r.success){alert(r.message);location.reload();}else{alert(r.message);}},
+        error:function(xhr){var m='Error';try{m=JSON.parse(xhr.responseText).message||m;}catch(e){}alert(m);}
+    });
+}
+
+function reverseJurnal(id, name) {
+    if(!confirm('Buat jurnal pembalik untuk '+name+'?')) return;
+    $.ajax({url:`/akuntansi/jurnal/${id}/reverse/`,type:'POST',headers:{'X-CSRFToken':csrfToken()},
+        success:function(r){if(r.success){alert(r.message);location.reload();}else{alert(r.message);}},
+        error:function(xhr){var m='Error';try{m=JSON.parse(xhr.responseText).message||m;}catch(e){}alert(m);}
+    });
+}
+
+let deleteId = null;
+function confirmDelete(id, name) { deleteId=id; $('#deleteJurnalName').text(name); new bootstrap.Modal(document.getElementById('deleteJurnalModal')).show(); }
+$('#confirmDeleteBtn').on('click', function() {
+    if(!deleteId) return; var btn=$(this),orig=btn.html();
+    btn.prop('disabled',true).html('<span class="spinner-border spinner-border-sm me-1"></span>Menghapus...');
+    $.ajax({url:`/akuntansi/jurnal/${deleteId}/delete/`,type:'POST',headers:{'X-CSRFToken':csrfToken()},
+        success:function(r){if(r.success){$('#deleteJurnalModal').modal('hide');location.reload();}else{alert(r.message);btn.prop('disabled',false).html(orig);}},
+        error:function(xhr){var m='Gagal';try{m=JSON.parse(xhr.responseText).message||m;}catch(e){}alert(m);btn.prop('disabled',false).html(orig);}
+    });
+});
+</script>
+{% include 'accounting/partials/table_tools.html' %}
+{% endblock page_js %}

@@ -29,7 +29,12 @@
 """
 
 # Import dari modul internal proyek
-from apps.core.permissions import has_permission, get_user_role, get_accessible_submodules
+from apps.core.permissions import (
+    has_exact_submodule_permission,
+    has_permission,
+    get_user_role,
+    get_accessible_submodules,
+)
 
 
 class PermissionChecker:
@@ -57,6 +62,20 @@ class PermissionChecker:
     # Mapping ini menjembatani perbedaan tersebut.
     SLUG_TO_MODULE = {
         'users': 'user_management',        # Manajemen User: slug 'users' → module 'user_management'
+        'kas_bank': 'kas_bank',
+        'kas-bank': 'kas_bank',
+        'laporan_keuangan': 'laporan_keuangan',
+        'laporan-keuangan': 'laporan_keuangan',
+        'rekonsiliasi_keuangan': 'rekonsiliasi_keuangan',
+        'rekonsiliasi-keuangan': 'rekonsiliasi_keuangan',
+        'access_control': 'access_control',
+        'access-control': 'access_control',
+        'activity_log': 'activity_log',
+        'activity-log': 'activity_log',
+        'ai_assistant': 'ai_assistant',
+        'ai-assistant': 'ai_assistant',
+        'fraud_detection': 'fraud_detection',
+        'fraud-detection': 'fraud_detection',
     }
 
     def __init__(self, user, action, module=None):
@@ -152,6 +171,7 @@ class AccessibleSubsChecker:
         """
         # Normalisasi nama modul
         normalized = module.replace('-', '_').lower()
+        normalized = PermissionChecker.SLUG_TO_MODULE.get(normalized, normalized)
 
         # Cek cache dulu
         if normalized not in self._cache:
@@ -197,6 +217,12 @@ def user_permissions(request):
 
         # Status superuser (untuk kasus khusus di template)
         is_superuser = user_role == 'SUPERUSER'
+        can_show_refresh_cache_button = has_exact_submodule_permission(
+            request.user, 'read', 'dashboard', 'refresh_cache'
+        )
+        can_show_ai_assistant_widget = has_exact_submodule_permission(
+            request.user, 'read', 'ai_assistant', 'chat_widget'
+        )
 
         return {
             'user_role': user_role,
@@ -212,6 +238,8 @@ def user_permissions(request):
 
             # Flag superuser
             'is_superuser': is_superuser,
+            'can_show_refresh_cache_button': can_show_refresh_cache_button,
+            'can_show_ai_assistant_widget': can_show_ai_assistant_widget,
         }
 
     # ==================== USER BELUM LOGIN ====================
@@ -239,4 +267,6 @@ def user_permissions(request):
         'can_manage_roles': False,
         'can_view_logs': False,
         'can_manage_settings': False,
+        'can_show_refresh_cache_button': False,
+        'can_show_ai_assistant_widget': False,
     }

@@ -4,39 +4,40 @@
 ==========================================================================
  File ini berisi 6 model untuk modul HR:
 
- 1. Departemen → Divisi/bagian perusahaan (IT, Finance, Marketing, dll)
- 2. Jabatan → Posisi/role karyawan (Staff, Supervisor, Manager)
- 3. Karyawan → Data master karyawan
- 4. FotoWajah → Foto untuk absensi face recognition
- 5. PengaturanAbsensi → Konfigurasi jam kerja, lokasi, hari kerja
- 6. Absensi → Record kehadiran harian karyawan
- 7. Penggajian → Slip gaji bulanan (pendapatan - potongan = gaji bersih)
+ 1. Departemen â†’ Divisi/bagian perusahaan (IT, Finance, Marketing, dll)
+ 2. Jabatan â†’ Posisi/role karyawan (Staff, Supervisor, Manager)
+ 3. Karyawan â†’ Data master karyawan
+ 4. FotoWajah â†’ Foto untuk absensi face recognition
+ 5. PengaturanAbsensi â†’ Konfigurasi jam kerja, lokasi, hari kerja
+ 6. Absensi â†’ Record kehadiran harian karyawan
+ 7. Penggajian â†’ Slip gaji bulanan (pendapatan - potongan = gaji bersih)
 
  HIERARKI ORGANISASI:
- ┌────────────┐
- │ Departemen │ (contoh: IT, Finance)
- │  ├── Jabatan 1 (Staff → gaji 5jt)
- │  ├── Jabatan 2 (Supervisor → gaji 8jt)
- │  └── Jabatan 3 (Manager → gaji 12jt)
- └────────────┘
-       │
-       └──→ Karyawan → Absensi → Penggajian
+ â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+ â”‚ Departemen â”‚ (contoh: IT, Finance)
+ â”‚  â”œâ”€â”€ Jabatan 1 (Staff â†’ gaji 5jt)
+ â”‚  â”œâ”€â”€ Jabatan 2 (Supervisor â†’ gaji 8jt)
+ â”‚  â””â”€â”€ Jabatan 3 (Manager â†’ gaji 12jt)
+ â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+       â”‚
+       â””â”€â”€â†’ Karyawan â†’ Absensi â†’ Penggajian
 
  Koneksi:
- - django.contrib.auth.models.User → Karyawan bisa terhubung ke akun user
- - apps/hr/views.py → View CRUD untuk semua model HR
- - apps/dashboard/views.py → Statistik karyawan di dashboard
+ - django.contrib.auth.models.User â†’ Karyawan bisa terhubung ke akun user
+ - apps/hr/views.py â†’ View CRUD untuk semua model HR
+ - apps/dashboard/views.py â†’ Statistik karyawan di dashboard
 ==========================================================================
 """
 
-from django.db import models                # Django ORM — framework untuk mendefinisikan tabel database sebagai class Python
-from django.contrib.auth.models import User  # Model User bawaan Django — menyimpan data akun login (username, password, email)
-from decimal import Decimal                  # Tipe data Decimal — untuk perhitungan uang yang presisi (tidak ada pembulatan float)
+from django.db import models                # Django ORM â€” framework untuk mendefinisikan tabel database sebagai class Python
+from django.contrib.auth.models import User  # Model User bawaan Django â€” menyimpan data akun login (username, password, email)
+from decimal import Decimal                  # Tipe data Decimal â€” untuk perhitungan uang yang presisi (tidak ada pembulatan float)
+from apps.core.validators import validate_image_file
 
 
-# ╔══════════════════════════════════════════════════════════════╗
-# ║                     DEPARTEMEN                                ║
-# ╚══════════════════════════════════════════════════════════════╝
+# â•”â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â•—
+# â•‘                     DEPARTEMEN                                â•‘
+# â•šâ• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• 
 
 class Departemen(models.Model):
     """
@@ -46,9 +47,9 @@ class Departemen(models.Model):
     Contoh departemen: IT, Finance, Marketing, Warehouse, HR, dll.
 
     Relasi:
-    - Departemen (1) → (N) Jabatan — satu departemen punya banyak jabatan
-    - Departemen (1) → (N) Karyawan — satu departemen punya banyak karyawan
-    - Departemen → Kepala (FK ke Karyawan) — setiap departemen punya 1 kepala
+    - Departemen (1) â†’ (N) Jabatan â€” satu departemen punya banyak jabatan
+    - Departemen (1) â†’ (N) Karyawan â€” satu departemen punya banyak karyawan
+    - Departemen â†’ Kepala (FK ke Karyawan) â€” setiap departemen punya 1 kepala
 
     Contoh data:
     | kode  | nama      | kepala_departemen |
@@ -58,21 +59,21 @@ class Departemen(models.Model):
     | MKT   | Marketing | None (kosong)     |
     """
 
-    # Kode unik departemen — digunakan sebagai identifier pendek
+    # Kode unik departemen â€” digunakan sebagai identifier pendek
     # unique=True berarti tidak boleh ada 2 departemen dengan kode yang sama
     kode = models.CharField(max_length=20, unique=True, verbose_name="Kode Departemen")
 
-    # Nama lengkap departemen — ditampilkan di UI dan laporan
+    # Nama lengkap departemen â€” ditampilkan di UI dan laporan
     nama = models.CharField(max_length=100, verbose_name="Nama Departemen")
 
-    # Deskripsi tugas/fungsi departemen — opsional (blank=True, null=True)
+    # Deskripsi tugas/fungsi departemen â€” opsional (blank=True, null=True)
     deskripsi = models.TextField(blank=True, null=True, verbose_name="Deskripsi")
 
-    # Kepala departemen — relasi ke model Karyawan
+    # Kepala departemen â€” relasi ke model Karyawan
     # Menggunakan string 'Karyawan' (bukan class langsung) karena model Karyawan
     # didefinisikan SETELAH Departemen di file ini (forward reference)
-    # on_delete=SET_NULL → jika karyawan dihapus, field ini jadi NULL (bukan error)
-    # related_name='departemen_dipimpin' → akses balik: karyawan.departemen_dipimpin.all()
+    # on_delete=SET_NULL â†’ jika karyawan dihapus, field ini jadi NULL (bukan error)
+    # related_name='departemen_dipimpin' â†’ akses balik: karyawan.departemen_dipimpin.all()
     kepala_departemen = models.ForeignKey(
         'Karyawan',
         on_delete=models.SET_NULL,
@@ -82,10 +83,10 @@ class Departemen(models.Model):
         verbose_name="Kepala Departemen"
     )
 
-    # Flag aktif/nonaktif — departemen nonaktif tidak muncul di dropdown
+    # Flag aktif/nonaktif â€” departemen nonaktif tidak muncul di dropdown
     aktif = models.BooleanField(default=True, verbose_name="Aktif")
 
-    # Timestamp otomatis — auto_now_add=True: diisi saat pertama kali dibuat
+    # Timestamp otomatis â€” auto_now_add=True: diisi saat pertama kali dibuat
     dibuat_pada = models.DateTimeField(auto_now_add=True)
     # auto_now=True: diupdate otomatis setiap kali record disimpan
     diupdate_pada = models.DateTimeField(auto_now=True)
@@ -98,7 +99,7 @@ class Departemen(models.Model):
 
     def __str__(self):
         """
-        Representasi string — dipanggil saat print() atau ditampilkan di dropdown.
+        Representasi string â€” dipanggil saat print() atau ditampilkan di dropdown.
         Format: 'IT - Information Technology'
         """
         return f"{self.kode} - {self.nama}"
@@ -109,33 +110,33 @@ class Departemen(models.Model):
         Property untuk menghitung jumlah karyawan AKTIF di departemen ini.
 
         Cara kerja:
-        - self.karyawan_set → reverse relation dari FK Karyawan.departemen
-        - .filter(aktif=True) → hanya karyawan yang masih aktif
-        - .count() → hitung jumlahnya (SQL COUNT)
+        - self.karyawan_set â†’ reverse relation dari FK Karyawan.departemen
+        - .filter(aktif=True) â†’ hanya karyawan yang masih aktif
+        - .count() â†’ hitung jumlahnya (SQL COUNT)
 
         Digunakan di: template list departemen untuk menampilkan badge jumlah karyawan
 
-        Return: Integer — jumlah karyawan aktif (contoh: 15)
+        Return: Integer â€” jumlah karyawan aktif (contoh: 15)
         """
         return self.karyawan_set.filter(aktif=True).count()
 
 
-# ╔══════════════════════════════════════════════════════════════╗
-# ║                      JABATAN                                  ║
-# ╚══════════════════════════════════════════════════════════════╝
+# â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+# â•‘                      JABATAN                                  â•‘
+# â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class Jabatan(models.Model):
     """
     Model untuk JABATAN / posisi karyawan dalam organisasi.
 
     Jabatan menentukan:
-    - Posisi karyawan dalam hierarki (Staff → Supervisor → Manager → Director → Executive)
+    - Posisi karyawan dalam hierarki (Staff â†’ Supervisor â†’ Manager â†’ Director â†’ Executive)
     - Gaji pokok default yang diberikan saat karyawan baru ditambahkan
     - Tunjangan jabatan yang melekat pada posisi tersebut
 
     Relasi:
-    - Jabatan (N) → (1) Departemen — setiap jabatan milik 1 departemen
-    - Jabatan (1) → (N) Karyawan — 1 jabatan bisa dipegang banyak karyawan
+    - Jabatan (N) â†’ (1) Departemen â€” setiap jabatan milik 1 departemen
+    - Jabatan (1) â†’ (N) Karyawan â€” 1 jabatan bisa dipegang banyak karyawan
 
     Contoh data:
     | kode     | nama              | departemen | level      | gaji_pokok |
@@ -145,49 +146,49 @@ class Jabatan(models.Model):
     | FIN-MGR  | Manager Finance   | Finance    | manager    | 12,000,000 |
     """
 
-    # Level jabatan — menentukan hierarki posisi dalam organisasi
+    # Level jabatan â€” menentukan hierarki posisi dalam organisasi
     # Digunakan untuk urutan tampilan dan laporan organisasi
     LEVEL_CHOICES = [
-        ('staff', 'Staff'),              # Level terendah — pelaksana tugas harian
+        ('staff', 'Staff'),              # Level terendah â€” pelaksana tugas harian
         ('supervisor', 'Supervisor'),    # Mengawasi staff di bawahnya
         ('manager', 'Manager'),          # Mengelola tim dan departemen
         ('director', 'Director'),        # Pengambil keputusan strategis divisi
-        ('executive', 'Executive'),      # Level tertinggi — C-level (CEO, CFO, dll)
+        ('executive', 'Executive'),      # Level tertinggi â€” C-level (CEO, CFO, dll)
     ]
 
-    # Kode unik jabatan — contoh: 'IT-STF', 'FIN-MGR'
+    # Kode unik jabatan â€” contoh: 'IT-STF', 'FIN-MGR'
     kode = models.CharField(max_length=20, unique=True, verbose_name="Kode Jabatan")
 
-    # Nama lengkap jabatan — contoh: 'Staff IT', 'Manager Finance'
+    # Nama lengkap jabatan â€” contoh: 'Staff IT', 'Manager Finance'
     nama = models.CharField(max_length=100, verbose_name="Nama Jabatan")
 
-    # Relasi ke Departemen — setiap jabatan harus terikat ke 1 departemen
-    # on_delete=PROTECT → departemen TIDAK BISA dihapus selama masih punya jabatan
+    # Relasi ke Departemen â€” setiap jabatan harus terikat ke 1 departemen
+    # on_delete=PROTECT â†’ departemen TIDAK BISA dihapus selama masih punya jabatan
     # Ini mencegah kehilangan data jabatan secara tidak sengaja
     departemen = models.ForeignKey(
         Departemen,
         on_delete=models.PROTECT,
-        related_name='jabatan_set',       # departemen.jabatan_set.all() → semua jabatan di departemen
+        related_name='jabatan_set',       # departemen.jabatan_set.all() â†’ semua jabatan di departemen
         verbose_name="Departemen"
     )
 
-    # Level hierarki — menggunakan choices agar hanya bisa pilih dari daftar valid
+    # Level hierarki â€” menggunakan choices agar hanya bisa pilih dari daftar valid
     level = models.CharField(max_length=20, choices=LEVEL_CHOICES, default='staff', verbose_name="Level")
 
-    # Gaji pokok default — otomatis dipakai saat karyawan baru ditambahkan ke jabatan ini
-    # max_digits=15, decimal_places=2 → mendukung hingga 9,999,999,999,999.99
+    # Gaji pokok default â€” otomatis dipakai saat karyawan baru ditambahkan ke jabatan ini
+    # max_digits=15, decimal_places=2 â†’ mendukung hingga 9,999,999,999,999.99
     gaji_pokok = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name="Gaji Pokok")
 
-    # Tunjangan jabatan — kompensasi tambahan berdasarkan posisi
+    # Tunjangan jabatan â€” kompensasi tambahan berdasarkan posisi
     tunjangan_jabatan = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name="Tunjangan Jabatan")
 
-    # Deskripsi tugas dan tanggung jawab jabatan — opsional
+    # Deskripsi tugas dan tanggung jawab jabatan â€” opsional
     deskripsi = models.TextField(blank=True, null=True, verbose_name="Deskripsi Tugas")
 
-    # Flag aktif — jabatan nonaktif tidak muncul di dropdown saat tambah karyawan
+    # Flag aktif â€” jabatan nonaktif tidak muncul di dropdown saat tambah karyawan
     aktif = models.BooleanField(default=True, verbose_name="Aktif")
 
-    # Timestamp tracking — kapan record dibuat dan terakhir diubah
+    # Timestamp tracking â€” kapan record dibuat dan terakhir diubah
     dibuat_pada = models.DateTimeField(auto_now_add=True)   # Otomatis saat pertama kali dibuat
     diupdate_pada = models.DateTimeField(auto_now=True)     # Otomatis setiap kali disimpan
 
@@ -195,7 +196,7 @@ class Jabatan(models.Model):
         """Konfigurasi metadata model Jabatan."""
         verbose_name = "Jabatan"                              # Nama singular
         verbose_name_plural = "Jabatan"                       # Nama plural
-        ordering = ['departemen', 'level', 'nama']            # Urutan: departemen → level → nama
+        ordering = ['departemen', 'level', 'nama']            # Urutan: departemen â†’ level â†’ nama
 
     def __str__(self):
         """
@@ -213,18 +214,18 @@ class Jabatan(models.Model):
         Cara kerja: Query reverse relation karyawan_set, filter aktif=True, hitung total.
         Digunakan di template list jabatan untuk badge jumlah.
 
-        Return: Integer — jumlah karyawan aktif
+        Return: Integer â€” jumlah karyawan aktif
         """
         return self.karyawan_set.filter(aktif=True).count()
 
 
-# ╔══════════════════════════════════════════════════════════════╗
-# ║                     KARYAWAN                                   ║
-# ╚══════════════════════════════════════════════════════════════╝
+# â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+# â•‘                     KARYAWAN                                   â•‘
+# â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class Karyawan(models.Model):
     """
-    Model master KARYAWAN — entitas utama modul HR.
+    Model master KARYAWAN â€” entitas utama modul HR.
 
     Setiap karyawan memiliki:
     - NIK unik (auto-generate: EMP20240001)
@@ -234,7 +235,7 @@ class Karyawan(models.Model):
     - Gaji pokok (default dari jabatan)
     - Link ke akun User Django (opsional)
 
-    Status karyawan: aktif → cuti → resign/phk
+    Status karyawan: aktif â†’ cuti â†’ resign/phk
     """
 
     STATUS_CHOICES = [
@@ -258,7 +259,7 @@ class Karyawan(models.Model):
     tempat_lahir = models.CharField(max_length=100, blank=True, null=True, verbose_name="Tempat Lahir")
     tanggal_lahir = models.DateField(blank=True, null=True, verbose_name="Tanggal Lahir")
     jenis_kelamin = models.CharField(max_length=1, choices=JENIS_KELAMIN_CHOICES, default='L', verbose_name="Jenis Kelamin")
-    foto = models.ImageField(upload_to='hr/karyawan/', blank=True, null=True, verbose_name="Foto Karyawan")
+    foto = models.ImageField(upload_to='hr/karyawan/', blank=True, null=True, verbose_name="Foto Karyawan", validators=[validate_image_file])
 
     # ===== ORGANISASI =====
     jabatan = models.ForeignKey(
@@ -275,7 +276,7 @@ class Karyawan(models.Model):
     )
 
     # ===== CABANG =====
-    # FK ke Gudang (cabang) — menentukan di cabang mana karyawan bekerja
+    # FK ke Gudang (cabang) â€” menentukan di cabang mana karyawan bekerja
     # Digunakan untuk menentukan pengaturan absensi yang berlaku (lokasi, jam kerja, radius)
     cabang = models.ForeignKey(
         'produk.Gudang',
@@ -301,7 +302,7 @@ class Karyawan(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='karyawan',           # user.karyawan → data karyawan user ini
+        related_name='karyawan',           # user.karyawan â†’ data karyawan user ini
         verbose_name="Akun User"
     )
 
@@ -313,26 +314,32 @@ class Karyawan(models.Model):
     diupdate_pada = models.DateTimeField(auto_now=True)
 
     class Meta:
-        """Konfigurasi metadata model Karyawan — urutan default A-Z berdasarkan nama."""
+        """Konfigurasi metadata model Karyawan â€” urutan default A-Z berdasarkan nama."""
         verbose_name = "Karyawan"
         verbose_name_plural = "Karyawan"
         ordering = ['nama']
+        indexes = [
+            models.Index(fields=['aktif', 'status'], name='hr_emp_aktif_status_idx'),
+            models.Index(fields=['departemen', 'aktif'], name='hr_emp_dept_aktif_idx'),
+            models.Index(fields=['jabatan', 'aktif'], name='hr_emp_jabatan_aktif_idx'),
+            models.Index(fields=['cabang', 'aktif'], name='hr_emp_cabang_aktif_idx'),
+        ]
 
     def __str__(self):
-        """Representasi string karyawan: 'EMP20240001 - Budi Santoso' — untuk admin dan dropdown."""
+        """Representasi string karyawan: 'EMP20240001 - Budi Santoso' â€” untuk admin dan dropdown."""
         return f"{self.nik} - {self.nama}"
 
     def save(self, *args, **kwargs):
         """
-        Override method save() Django — dipanggil setiap kali record karyawan disimpan.
+        Override method save() Django â€” dipanggil setiap kali record karyawan disimpan.
 
         Langkah-langkah:
-        1. Cek apakah NIK sudah diisi → jika belum, generate otomatis
-        2. Cek apakah gaji_pokok sudah diisi → jika belum, ambil default dari jabatan
-        3. Panggil super().save() → simpan ke database
+        1. Cek apakah NIK sudah diisi â†’ jika belum, generate otomatis
+        2. Cek apakah gaji_pokok sudah diisi â†’ jika belum, ambil default dari jabatan
+        3. Panggil super().save() â†’ simpan ke database
 
         DIPERBAIKI: Dibungkus transaction.atomic() agar generate_nik() + save()
-        berjalan dalam satu transaksi — mencegah race condition NIK duplikat.
+        berjalan dalam satu transaksi â€” mencegah race condition NIK duplikat.
         """
         from django.db import transaction
         with transaction.atomic():
@@ -355,12 +362,12 @@ class Karyawan(models.Model):
         Contoh: EMP20240001, EMP20240002, EMP20250001
 
         Algoritma:
-        1. Buat prefix berdasarkan tahun sekarang → 'EMP2024'
+        1. Buat prefix berdasarkan tahun sekarang â†’ 'EMP2024'
         2. Cari karyawan terakhir dengan prefix yang sama
-        3. Ambil 4 digit terakhir dari NIK terakhir → increment + 1
-        4. Jika belum ada karyawan → mulai dari 0001
+        3. Ambil 4 digit terakhir dari NIK terakhir â†’ increment + 1
+        4. Jika belum ada karyawan â†’ mulai dari 0001
 
-        Return: String NIK — contoh 'EMP20240001'
+        Return: String NIK â€” contoh 'EMP20240001'
         """
         from datetime import datetime
         today = datetime.now()
@@ -378,53 +385,53 @@ class Karyawan(models.Model):
                 last_number = int(last_karyawan.nik[-4:])
                 new_number = last_number + 1
             except (ValueError, IndexError):
-                # DIPERBAIKI: bare except → except spesifik
+                # DIPERBAIKI: bare except â†’ except spesifik
                 # Jika format NIK tidak standar (gagal parse), mulai dari 1
                 new_number = 1
         else:
-            # Belum ada karyawan di tahun ini → mulai dari 1
+            # Belum ada karyawan di tahun ini â†’ mulai dari 1
             new_number = 1
 
-        # Format dengan zero-padding 4 digit: 1 → '0001', 42 → '0042'
+        # Format dengan zero-padding 4 digit: 1 â†’ '0001', 42 â†’ '0042'
         return f"{prefix}{new_number:04d}"
 
 
-# ╔══════════════════════════════════════════════════════════════╗
-# ║                   FOTO WAJAH (FACE RECOGNITION)               ║
-# ╚══════════════════════════════════════════════════════════════╝
+# â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+# â•‘                   FOTO WAJAH (FACE RECOGNITION)               â•‘
+# â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class FotoWajah(models.Model):
     """
-    Model untuk FOTO WAJAH karyawan — digunakan untuk absensi face recognition.
+    Model untuk FOTO WAJAH karyawan â€” digunakan untuk absensi face recognition.
 
     Setiap karyawan bisa punya beberapa foto wajah dari sudut berbeda.
     Field 'encoding' menyimpan vector face encoding untuk perbandingan.
     """
     karyawan = models.ForeignKey(
         Karyawan,
-        on_delete=models.CASCADE,          # Karyawan dihapus → foto ikut terhapus
+        on_delete=models.CASCADE,          # Karyawan dihapus â†’ foto ikut terhapus
         related_name='foto_wajah_set',
         verbose_name="Karyawan"
     )
-    foto = models.ImageField(upload_to='hr/wajah/', verbose_name="Foto Wajah")
+    foto = models.ImageField(upload_to='hr/wajah/', verbose_name="Foto Wajah", validators=[validate_image_file])
     encoding = models.TextField(blank=True, null=True, verbose_name="Face Encoding")  # Vector encoding
     aktif = models.BooleanField(default=True, verbose_name="Aktif")
     dibuat_pada = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        """Konfigurasi metadata model FotoWajah — terbaru di atas."""
+        """Konfigurasi metadata model FotoWajah â€” terbaru di atas."""
         verbose_name = "Foto Wajah"
         verbose_name_plural = "Foto Wajah"
         ordering = ['-dibuat_pada']
 
     def __str__(self):
-        """Representasi string: 'Foto Budi Santoso - 2024-01-15 08:00:00' — untuk admin."""
+        """Representasi string: 'Foto Budi Santoso - 2024-01-15 08:00:00' â€” untuk admin."""
         return f"Foto {self.karyawan.nama} - {self.dibuat_pada}"
 
 
-# ╔══════════════════════════════════════════════════════════════╗
-# ║                  PENGATURAN ABSENSI                           ║
-# ╚══════════════════════════════════════════════════════════════╝
+# â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+# â•‘                  PENGATURAN ABSENSI                           â•‘
+# â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class PengaturanAbsensi(models.Model):
     """
@@ -438,7 +445,7 @@ class PengaturanAbsensi(models.Model):
     - Fitur wajib (foto, lokasi, face recognition)
     - Jam lembur
 
-    ⚠ PENTING: Hanya 1 pengaturan yang aktif di satu waktu!
+    âš  PENTING: Hanya 1 pengaturan yang aktif di satu waktu!
     Saat mengaktifkan satu, yang lain otomatis dinonaktifkan (singleton-like).
     """
 
@@ -458,8 +465,8 @@ class PengaturanAbsensi(models.Model):
     aktif = models.BooleanField(default=True, verbose_name="Aktif (Gunakan Pengaturan Ini)")
 
     # ===== CABANG =====
-    # FK ke Gudang (cabang) — pengaturan absensi per cabang
-    # Jika null → pengaturan default (berlaku untuk karyawan tanpa cabang)
+    # FK ke Gudang (cabang) â€” pengaturan absensi per cabang
+    # Jika null â†’ pengaturan default (berlaku untuk karyawan tanpa cabang)
     cabang = models.ForeignKey(
         'produk.Gudang',
         on_delete=models.SET_NULL,
@@ -513,19 +520,19 @@ class PengaturanAbsensi(models.Model):
     diupdate_pada = models.DateTimeField(auto_now=True)
 
     class Meta:
-        """Konfigurasi metadata — pengaturan aktif ditampilkan paling atas."""
+        """Konfigurasi metadata â€” pengaturan aktif ditampilkan paling atas."""
         verbose_name = "Pengaturan Absensi"
         verbose_name_plural = "Pengaturan Absensi"
         ordering = ['-aktif', '-diupdate_pada']
 
     def __str__(self):
-        """Representasi string: 'Pengaturan Default (✓ Aktif)' — menampilkan status aktif/nonaktif."""
-        status = "✓ Aktif" if self.aktif else "Nonaktif"
+        """Representasi string: 'Pengaturan Default (âœ“ Aktif)' â€” menampilkan status aktif/nonaktif."""
+        status = "âœ“ Aktif" if self.aktif else "Nonaktif"
         return f"{self.nama} ({status})"
 
     def save(self, *args, **kwargs):
         """
-        Override save() — implementasi singleton-per-cabang behavior.
+        Override save() â€” implementasi singleton-per-cabang behavior.
 
         Logika:
         - Jika record ini diaktifkan (self.aktif = True)
@@ -537,32 +544,35 @@ class PengaturanAbsensi(models.Model):
         - Cabang B bisa punya pengaturan aktif sendiri
         - Pengaturan default (cabang=None) berlaku untuk karyawan tanpa cabang
         """
-        if self.aktif:
+        from django.db import transaction
+
+        with transaction.atomic():
+            if self.aktif:
             # Nonaktifkan pengaturan lain UNTUK CABANG YANG SAMA saja
-            # Jika cabang=None → nonaktifkan yang cabang=None juga
-            PengaturanAbsensi.objects.filter(
-                cabang=self.cabang
-            ).exclude(pk=self.pk).update(aktif=False)
-        super().save(*args, **kwargs)  # Simpan record ini ke database
+            # Jika cabang=None â†’ nonaktifkan yang cabang=None juga
+                PengaturanAbsensi.objects.filter(
+                    cabang=self.cabang
+                ).exclude(pk=self.pk).update(aktif=False)
+            super().save(*args, **kwargs)  # Simpan record ini ke database
 
     @property
     def hari_kerja_list(self):
         """
         Konversi string hari kerja dari database ke list integer Python.
 
-        Contoh: '0,1,2,3,4' → [0, 1, 2, 3, 4]
+        Contoh: '0,1,2,3,4' â†’ [0, 1, 2, 3, 4]
         Mapping: 0=Senin, 1=Selasa, 2=Rabu, 3=Kamis, 4=Jumat, 5=Sabtu, 6=Minggu
 
         Kenapa disimpan sebagai string?
         - Django tidak punya field array untuk database sederhana (SQLite)
         - String CSV adalah cara paling sederhana menyimpan list angka
 
-        Return: List of integers — contoh [0, 1, 2, 3, 4]
+        Return: List of integers â€” contoh [0, 1, 2, 3, 4]
         """
         if self.hari_kerja:
-            # split(',') → pecah string menjadi list: ['0','1','2','3','4']
-            # isdigit() → filter hanya yang berupa angka (keamanan)
-            # int(h) → konversi string ke integer
+            # split(',') â†’ pecah string menjadi list: ['0','1','2','3','4']
+            # isdigit() â†’ filter hanya yang berupa angka (keamanan)
+            # int(h) â†’ konversi string ke integer
             return [int(h) for h in self.hari_kerja.split(',') if h.isdigit()]
         return []  # Kembalikan list kosong jika field kosong
 
@@ -571,9 +581,9 @@ class PengaturanAbsensi(models.Model):
         """
         Konversi nomor hari ke nama hari untuk ditampilkan di UI.
 
-        Contoh: [0, 1, 2, 3, 4] → ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat']
+        Contoh: [0, 1, 2, 3, 4] â†’ ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat']
 
-        Return: List of strings — nama-nama hari kerja
+        Return: List of strings â€” nama-nama hari kerja
         """
         hari_names = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']
         # List comprehension: untuk setiap nomor hari, ambil nama dari daftar
@@ -586,9 +596,9 @@ class PengaturanAbsensi(models.Model):
         Class method untuk mendapatkan pengaturan absensi yang sedang AKTIF.
 
         Multi-cabang:
-        1. Jika cabang diberikan → cari pengaturan khusus cabang tersebut
-        2. Jika tidak ditemukan → fallback ke pengaturan default (cabang=None)
-        3. Jika cabang=None → langsung ambil pengaturan default
+        1. Jika cabang diberikan â†’ cari pengaturan khusus cabang tersebut
+        2. Jika tidak ditemukan â†’ fallback ke pengaturan default (cabang=None)
+        3. Jika cabang=None â†’ langsung ambil pengaturan default
 
         Dipanggil dari views saat karyawan melakukan absensi:
             pengaturan = PengaturanAbsensi.get_active(cabang=karyawan.cabang)
@@ -604,9 +614,9 @@ class PengaturanAbsensi(models.Model):
         return cls.objects.filter(aktif=True, cabang__isnull=True).first()
 
 
-# ╔══════════════════════════════════════════════════════════════╗
-# ║                      ABSENSI                                  ║
-# ╚══════════════════════════════════════════════════════════════╝
+# â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+# â•‘                      ABSENSI                                  â•‘
+# â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class Absensi(models.Model):
     """
@@ -642,12 +652,12 @@ class Absensi(models.Model):
     jam_keluar = models.TimeField(blank=True, null=True, verbose_name="Jam Keluar")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='hadir', verbose_name="Status")
 
-    # Face recognition — persentase kemiripan wajah
+    # Face recognition â€” persentase kemiripan wajah
     persentase_kemiripan = models.DecimalField(max_digits=5, decimal_places=1, blank=True, null=True, verbose_name="Persentase Kemiripan")
 
     # Foto absensi (bukti kehadiran)
-    foto_masuk = models.ImageField(upload_to='hr/absensi/', blank=True, null=True, verbose_name="Foto Masuk")
-    foto_keluar = models.ImageField(upload_to='hr/absensi/', blank=True, null=True, verbose_name="Foto Keluar")
+    foto_masuk = models.ImageField(upload_to='hr/absensi/', blank=True, null=True, verbose_name="Foto Masuk", validators=[validate_image_file])
+    foto_keluar = models.ImageField(upload_to='hr/absensi/', blank=True, null=True, verbose_name="Foto Keluar", validators=[validate_image_file])
 
     # Lokasi GPS
     lokasi_masuk = models.CharField(max_length=255, blank=True, null=True, verbose_name="Lokasi Masuk")
@@ -682,14 +692,18 @@ class Absensi(models.Model):
     diupdate_pada = models.DateTimeField(auto_now=True)
 
     class Meta:
-        """Konfigurasi metadata — 1 record per karyawan per hari, diurutkan terbaru dulu."""
+        """Konfigurasi metadata â€” 1 record per karyawan per hari, diurutkan terbaru dulu."""
         verbose_name = "Absensi"
         verbose_name_plural = "Absensi"
         ordering = ['-tanggal', 'karyawan']
         unique_together = ['karyawan', 'tanggal']  # 1 record per karyawan per hari
+        indexes = [
+            models.Index(fields=['tanggal', 'status'], name='hr_abs_tgl_status_idx'),
+            models.Index(fields=['cabang', 'tanggal'], name='hr_abs_cabang_tgl_idx'),
+        ]
 
     def __str__(self):
-        """Representasi string: 'Budi Santoso - 2024-01-15 (hadir)' — untuk admin dan log."""
+        """Representasi string: 'Budi Santoso - 2024-01-15 (hadir)' â€” untuk admin dan log."""
         return f"{self.karyawan.nama} - {self.tanggal} ({self.status})"
 
     @property
@@ -700,10 +714,10 @@ class Absensi(models.Model):
         DIPERBAIKI: Menangani shift malam (jam_keluar < jam_masuk)
         dengan menambahkan 1 hari ke jam_keluar.
 
-        Contoh normal: masuk 08:00, keluar 17:00 → durasi = 9.0 jam
-        Contoh shift malam: masuk 22:00, keluar 06:00 → durasi = 8.0 jam
+        Contoh normal: masuk 08:00, keluar 17:00 â†’ durasi = 9.0 jam
+        Contoh shift malam: masuk 22:00, keluar 06:00 â†’ durasi = 8.0 jam
 
-        Return: Float — durasi kerja dalam jam, atau 0 jika data tidak lengkap
+        Return: Float â€” durasi kerja dalam jam, atau 0 jika data tidak lengkap
         """
         if self.jam_masuk and self.jam_keluar:
             from datetime import datetime, timedelta
@@ -711,7 +725,7 @@ class Absensi(models.Model):
             masuk = datetime.combine(self.tanggal, self.jam_masuk)
             keluar = datetime.combine(self.tanggal, self.jam_keluar)
 
-            # DIPERBAIKI: Handle shift malam — jika keluar lebih awal dari masuk,
+            # DIPERBAIKI: Handle shift malam â€” jika keluar lebih awal dari masuk,
             # artinya karyawan pulang keesokan harinya
             if keluar < masuk:
                 keluar += timedelta(days=1)
@@ -721,9 +735,9 @@ class Absensi(models.Model):
         return 0  # Kembalikan 0 jika jam masuk/keluar belum diisi
 
 
-# ╔══════════════════════════════════════════════════════════════╗
-# ║                     PENGGAJIAN                                ║
-# ╚══════════════════════════════════════════════════════════════╝
+# â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+# â•‘                     PENGGAJIAN                                â•‘
+# â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class Penggajian(models.Model):
     """
@@ -734,8 +748,8 @@ class Penggajian(models.Model):
     Total Potongan = BPJS Kesehatan + BPJS TK + PPh 21 + Potongan Lainnya
     Gaji Bersih = Total Pendapatan - Total Potongan
 
-    ⚠ PENTING: unique_together = ['karyawan', 'periode_bulan', 'periode_tahun']
-    → 1 karyawan hanya bisa punya 1 slip gaji per bulan per tahun
+    âš  PENTING: unique_together = ['karyawan', 'periode_bulan', 'periode_tahun']
+    â†’ 1 karyawan hanya bisa punya 1 slip gaji per bulan per tahun
     """
 
     STATUS_CHOICES = [
@@ -747,7 +761,7 @@ class Penggajian(models.Model):
 
     karyawan = models.ForeignKey(
         Karyawan,
-        on_delete=models.PROTECT,          # Karyawan tidak bisa dihapus jika ada slip gaji
+        on_delete=models.PROTECT,
         related_name='penggajian_set',
         verbose_name="Karyawan"
     )
@@ -777,34 +791,88 @@ class Penggajian(models.Model):
     # ===== STATUS & TRACKING =====
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft', verbose_name="Status")
     tanggal_bayar = models.DateField(blank=True, null=True, verbose_name="Tanggal Bayar")
+
+    # ===== CABANG & METODE PEMBAYARAN =====
+    cabang = models.ForeignKey(
+        'produk.Gudang',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='penggajian_set',
+        verbose_name="Cabang",
+        help_text="Otomatis dari cabang karyawan jika tidak diisi"
+    )
+    metode_pembayaran = models.ForeignKey(
+        'pos.MetodePembayaran',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='penggajian_set',
+        verbose_name="Metode Pembayaran",
+        help_text="Metode pembayaran gaji (Kas/Transfer Bank)"
+    )
+
     catatan = models.TextField(blank=True, null=True, verbose_name="Catatan")
     dibuat_oleh = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='penggajian_dibuat')
     dibuat_pada = models.DateTimeField(auto_now_add=True)
     diupdate_pada = models.DateTimeField(auto_now=True)
 
     class Meta:
-        """Konfigurasi metadata — 1 slip gaji per karyawan per bulan, urutan terbaru dulu."""
+        """Konfigurasi metadata â€” 1 slip gaji per karyawan per bulan, urutan terbaru dulu."""
         verbose_name = "Penggajian"
         verbose_name_plural = "Penggajian"
         ordering = ['-periode_tahun', '-periode_bulan', 'karyawan']
         unique_together = ['karyawan', 'periode_bulan', 'periode_tahun']
+        indexes = [
+            models.Index(fields=['periode_tahun', 'periode_bulan', 'status'], name='hr_pay_period_status_idx'),
+            models.Index(fields=['status', 'tanggal_bayar'], name='hr_pay_status_tgl_idx'),
+        ]
+
+    # ===== STATE MACHINE =====
+    # Transisi status yang valid — digunakan oleh transition_status()
+    VALID_TRANSITIONS = {
+        'draft': ['diproses', 'batal'],
+        'diproses': ['dibayar', 'batal'],
+        'dibayar': ['batal'],
+        'batal': [],
+    }
+
+    def transition_status(self, new_status, user=None):
+        """
+        Validasi dan set transisi status.
+        TIDAK memanggil save() — caller harus save dalam transaction.atomic().
+        Raises ValidationError jika transisi tidak valid.
+        """
+        from django.core.exceptions import ValidationError
+        valid_targets = self.VALID_TRANSITIONS.get(self.status, [])
+        if new_status not in valid_targets:
+            raise ValidationError(
+                f"Transisi status tidak valid: '{self.get_status_display()}' → '{new_status}'. "
+                f"Transisi yang diizinkan dari status '{self.status}': {valid_targets}"
+            )
+        self.status = new_status
+        return self
+
 
     def __str__(self):
-        """Representasi string: 'Budi Santoso - 1/2024' — untuk admin dan laporan slip gaji."""
+        """Representasi string: 'Budi Santoso - 1/2024' â€” untuk admin dan laporan slip gaji."""
         return f"{self.karyawan.nama} - {self.periode_bulan}/{self.periode_tahun}"
 
     def save(self, *args, **kwargs):
         """
-        Override save() — otomatis hitung total sebelum menyimpan ke database.
+        Override save() â€” otomatis hitung total sebelum menyimpan ke database.
 
         Alur:
-        1. Panggil calculate_total() → hitung total_pendapatan, total_potongan, gaji_bersih
-        2. Panggil super().save() → simpan semua field ke database
+        1. Panggil calculate_total() â†’ hitung total_pendapatan, total_potongan, gaji_bersih
+        2. Panggil super().save() â†’ simpan semua field ke database
 
         Kenapa hitung di save() bukan di form?
         - Agar konsisten: total SELALU dihitung ulang setiap kali disimpan
         - Meskipun data diubah langsung via admin/script, total tetap benar
         """
+        # Auto-set cabang dari karyawan jika belum diisi
+        if not self.cabang_id and self.karyawan_id:
+            self.cabang = self.karyawan.cabang
         self.calculate_total()     # Hitung ulang semua total
         super().save(*args, **kwargs)  # Simpan ke database
 
@@ -813,40 +881,40 @@ class Penggajian(models.Model):
         Menghitung total pendapatan, potongan, dan gaji bersih.
 
         Formula perhitungan:
-        ┌─────────────────────────────────────────────────────────────────┐
-        │ Total Pendapatan = Gaji Pokok                                  │
-        │                  + Tunjangan Jabatan                           │
-        │                  + Tunjangan Makan                             │
-        │                  + Tunjangan Transport                         │
-        │                  + Tunjangan Lainnya                           │
-        │                  + Lembur                                      │
-        │                  + Bonus                                       │
-        ├─────────────────────────────────────────────────────────────────┤
-        │ Total Potongan   = BPJS Kesehatan                              │
-        │                  + BPJS Ketenagakerjaan                        │
-        │                  + PPh 21 (Pajak Penghasilan)                   │
-        │                  + Potongan Lainnya                             │
-        ├─────────────────────────────────────────────────────────────────┤
-        │ Gaji Bersih      = Total Pendapatan - Total Potongan           │
-        └─────────────────────────────────────────────────────────────────┘
+        â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+        â”‚ Total Pendapatan = Gaji Pokok                                  â”‚
+        â”‚                  + Tunjangan Jabatan                           â”‚
+        â”‚                  + Tunjangan Makan                             â”‚
+        â”‚                  + Tunjangan Transport                         â”‚
+        â”‚                  + Tunjangan Lainnya                           â”‚
+        â”‚                  + Lembur                                      â”‚
+        â”‚                  + Bonus                                       â”‚
+        â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+        â”‚ Total Potongan   = BPJS Kesehatan                              â”‚
+        â”‚                  + BPJS Ketenagakerjaan                        â”‚
+        â”‚                  + PPh 21 (Pajak Penghasilan)                   â”‚
+        â”‚                  + Potongan Lainnya                             â”‚
+        â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+        â”‚ Gaji Bersih      = Total Pendapatan - Total Potongan           â”‚
+        â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 
         Contoh:
         Pendapatan: 5jt + 500rb + 300rb + 200rb + 0 + 100rb + 0 = 6.1jt
         Potongan: 100rb + 50rb + 150rb + 0 = 300rb
         Gaji Bersih: 6.1jt - 300rb = 5.8jt
         """
-        # KOMPONEN PENDAPATAN — semua sumber penghasilan karyawan
+        # KOMPONEN PENDAPATAN â€” semua sumber penghasilan karyawan
         self.total_pendapatan = (
             self.gaji_pokok +              # Gaji pokok bulanan
             self.tunjangan_jabatan +       # Tunjangan berdasarkan posisi/jabatan
-            self.tunjangan_makan +         # Uang makan harian × hari kerja
+            self.tunjangan_makan +         # Uang makan harian Ã— hari kerja
             self.tunjangan_transport +     # Uang transport/bensin
             self.tunjangan_lainnya +       # Tunjangan lain (kesehatan, komunikasi, dll)
-            self.lembur +                  # Upah lembur (jam lembur × tarif per jam)
+            self.lembur +                  # Upah lembur (jam lembur Ã— tarif per jam)
             self.bonus                     # Bonus kinerja/prestasi (opsional)
         )
 
-        # KOMPONEN POTONGAN — semua pengurangan dari gaji bruto
+        # KOMPONEN POTONGAN â€” semua pengurangan dari gaji bruto
         self.total_potongan = (
             self.potongan_bpjs_kesehatan +         # Iuran BPJS Kesehatan (wajib)
             self.potongan_bpjs_ketenagakerjaan +   # Iuran BPJS Ketenagakerjaan (wajib)
@@ -854,7 +922,7 @@ class Penggajian(models.Model):
             self.potongan_lainnya                  # Potongan lain (pinjaman, dll)
         )
 
-        # GAJI BERSIH — yang diterima karyawan (take-home pay)
+        # GAJI BERSIH â€” yang diterima karyawan (take-home pay)
         self.gaji_bersih = self.total_pendapatan - self.total_potongan
 
     @property
@@ -862,12 +930,12 @@ class Penggajian(models.Model):
         """
         Property untuk mendapatkan nama periode gaji dalam format yang mudah dibaca.
 
-        Konversi: bulan=1, tahun=2024 → 'Januari 2024'
+        Konversi: bulan=1, tahun=2024 â†’ 'Januari 2024'
         Mapping: Index 0 dikosongkan karena bulan dimulai dari 1 (bukan 0)
 
         Digunakan di: template slip gaji dan laporan penggajian
 
-        Return: String — contoh 'Januari 2024', 'Desember 2025'
+        Return: String â€” contoh 'Januari 2024', 'Desember 2025'
         """
         # Index 0 dikosongkan ('') karena bulan dimulai dari 1
         bulan_names = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -882,7 +950,7 @@ class Penggajian(models.Model):
         Total = Tunjangan Jabatan + Tunjangan Makan + Tunjangan Transport
                 + Tunjangan Lainnya + Lembur + Bonus
 
-        Return: Decimal — total tunjangan
+        Return: Decimal â€” total tunjangan
         """
         return (
             self.tunjangan_jabatan +

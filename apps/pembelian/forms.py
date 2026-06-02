@@ -69,7 +69,7 @@ class PurchaseOrderForm(forms.ModelForm):
     class Meta:
         """Konfigurasi form PurchaseOrder — field utama PO termasuk pajak dan metode bayar."""
         model = PurchaseOrder
-        fields = ['nomor_po', 'tanggal', 'supplier', 'gudang', 'metode_pembayaran', 'status', 'catatan', 'pajak']
+        fields = ['nomor_po', 'tanggal', 'supplier', 'gudang', 'metode_pembayaran', 'status', 'catatan', 'pajak', 'biaya_pengiriman']
         # Widget HTML untuk setiap field form (class CSS, placeholder, dll)
         widgets = {
             'nomor_po': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Auto-generate jika kosong'}),
@@ -79,6 +79,7 @@ class PurchaseOrderForm(forms.ModelForm):
             'status': forms.Select(attrs={'class': 'form-select'}),
             'catatan': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'pajak': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0'}),
+            'biaya_pengiriman': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0'}),
         }
     
     def __init__(self, *args, **kwargs):
@@ -109,11 +110,12 @@ class PurchaseOrderForm(forms.ModelForm):
         self.fields['catatan'].label = 'Catatan'
         # Set label field pajak dalam Bahasa Indonesia
         self.fields['pajak'].label = 'Pajak (Rp)'
+        self.fields['biaya_pengiriman'].label = 'Biaya Pengiriman/Ongkir (Rp)'
         
         # Set placeholder pada dropdown kosong
         self.fields['supplier'].empty_label = 'Pilih Supplier'
         self.fields['gudang'].empty_label = 'Pilih Gudang'
-        self.fields['metode_pembayaran'].empty_label = 'Pilih Metode Pembayaran (Opsional)'
+        self.fields['metode_pembayaran'].empty_label = 'Kredit/Tempo (default jika kosong)'
         
         # Format tanggal untuk edit mode (datetime-local format)
         if self.instance and self.instance.pk and self.instance.tanggal:

@@ -43,7 +43,7 @@ urlpatterns = [
     # URL: /laporan/pembelian/<int:pk>/ — pembelian-detail
     path('pembelian/<int:pk>/', views.LaporanPembelianDetailView.as_view(), name='pembelian-detail'),
 
-    # ── Laporan Keuangan ─────────────────────────────────────────
+    # ── Laporan Keuangan ─────────────────────────────────────
     path('keuangan/', views.LaporanKeuanganView.as_view(), name='keuangan'),
 
     # ── Laporan Service ──────────────────────────────────────────

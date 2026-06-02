@@ -132,6 +132,26 @@
                                 <small class="text-muted">Kode unik untuk identifikasi (huruf kapital)</small>
                             </div>
 
+                            <!-- Tipe Pembayaran -->
+                            <div class="col-md-6">
+                                <label class="form-label" for="id_tipe">
+                                    Tipe Pembayaran <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group input-group-merge">
+                                    <span class="input-group-text"><i class="ri-exchange-line"></i></span>
+                                    <select class="form-select {% if form.tipe.errors %}is-invalid{% endif %}" id="id_tipe" name="tipe" required>
+                                        <option value="tunai" {% if form.tipe.value == 'tunai' or form.tipe.value is None %}selected{% endif %}>💵 Tunai (Cash/Langsung)</option>
+                                        <option value="non_tunai" {% if form.tipe.value == 'non_tunai' %}selected{% endif %}>🏦 Non-Tunai (Bank/Digital)</option>
+                                    </select>
+                                </div>
+                                {% if form.tipe.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.tipe.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <small class="text-muted">Menentukan kategori dropdown di halaman POS</small>
+                            </div>
+
                             <!-- Status Aktif -->
                             <div class="col-md-6">
                                 <label class="form-label d-block">Status</label>
@@ -170,6 +190,38 @@
                                 </div>
                                 {% endif %}
                                 <small class="text-muted">Saldo awal untuk metode pembayaran ini (opsional)</small>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label" for="id_kas_bank_account">
+                                    Akun Kas/Bank Treasury
+                                </label>
+                                <select class="form-select {% if form.kas_bank_account.errors %}is-invalid{% endif %}" id="id_kas_bank_account" name="kas_bank_account">
+                                    <option value="">Belum dipetakan</option>
+                                    {% for choice in form.kas_bank_account.field.queryset %}
+                                    <option value="{{ choice.pk }}" {% if form.kas_bank_account.value|stringformat:'s' == choice.pk|stringformat:'s' %}selected{% endif %}>{{ choice.kode }} - {{ choice.nama }}</option>
+                                    {% endfor %}
+                                </select>
+                                {% if form.kas_bank_account.errors %}
+                                <div class="invalid-feedback d-block">{{ form.kas_bank_account.errors.0 }}</div>
+                                {% endif %}
+                                <small class="text-muted">Dipakai untuk mutasi treasury dan rekonsiliasi kas/bank.</small>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label" for="id_akun_kas_bank">
+                                    Akun CoA Kas/Bank
+                                </label>
+                                <select class="form-select {% if form.akun_kas_bank.errors %}is-invalid{% endif %}" id="id_akun_kas_bank" name="akun_kas_bank">
+                                    <option value="">Belum dipetakan</option>
+                                    {% for choice in form.akun_kas_bank.field.queryset %}
+                                    <option value="{{ choice.pk }}" {% if form.akun_kas_bank.value|stringformat:'s' == choice.pk|stringformat:'s' %}selected{% endif %}>{{ choice.kode }} - {{ choice.nama }}</option>
+                                    {% endfor %}
+                                </select>
+                                {% if form.akun_kas_bank.errors %}
+                                <div class="invalid-feedback d-block">{{ form.akun_kas_bank.errors.0 }}</div>
+                                {% endif %}
+                                <small class="text-muted">Dipakai oleh jurnal otomatis sebagai akun debit/kredit kas-bank.</small>
                             </div>
 
                             <!-- Info Box -->

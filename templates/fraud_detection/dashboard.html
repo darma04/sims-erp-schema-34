@@ -66,7 +66,7 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
                         </div>
                         <div>
                             <span class="d-block text-muted small">Total Alert</span>
-                            <h5 class="mb-0 fw-bold" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Jumlah seluruh FraudAlert yang tercatat di sistem.<br><br><b>Sumber:</b> Tabel FraudAlert (semua status).">{{ total_alerts }}</h5>
+                            <h5 class="mb-0 fw-bold">{{ total_alerts }}</h5>
                             <small class="text-muted">Semua anomali</small>
                         </div>
                     </div>
@@ -84,7 +84,7 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
                         </div>
                         <div>
                             <span class="d-block text-muted small">Menunggu Review</span>
-                            <h5 class="mb-0 fw-bold" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Jumlah FraudAlert dengan status 'pending'.<br><br><b>Sumber:</b> Tabel FraudAlert WHERE status = pending.">{{ pending_alerts }}</h5>
+                            <h5 class="mb-0 fw-bold">{{ pending_alerts }}</h5>
                             <small class="text-muted">Belum dikonfirmasi</small>
                         </div>
                     </div>
@@ -102,7 +102,7 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
                         </div>
                         <div>
                             <span class="d-block text-muted small">High / Kritis</span>
-                            <h5 class="mb-0 fw-bold" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Jumlah FraudAlert severity 'high' atau 'critical' yang masih pending.<br><br><b>Sumber:</b> Tabel FraudAlert WHERE severity IN (high, critical) AND status = pending.">{{ high_critical_alerts }}</h5>
+                            <h5 class="mb-0 fw-bold">{{ high_critical_alerts }}</h5>
                             <small class="text-muted">Perlu perhatian segera</small>
                         </div>
                     </div>
@@ -120,7 +120,7 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
                         </div>
                         <div>
                             <span class="d-block text-muted small">Potensi Kerugian</span>
-                            <h5 class="mb-0 fw-bold text-danger" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>SUM(nominal) dari FraudAlert yang belum diselesaikan (status pending/investigated).<br><br><b>Sumber:</b> Tabel FraudAlert WHERE status IN (pending, investigated).">Rp {{ total_potensi_kerugian|floatformat:0 }}</h5>
+                            <h5 class="mb-0 fw-bold text-danger">Rp {{ total_potensi_kerugian|floatformat:0 }}</h5>
                             <small class="text-muted">Belum diverifikasi</small>
                         </div>
                     </div>
@@ -132,16 +132,16 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
     <!-- Row 2: Total Aset Asli -->
     <div class="row mb-6">
         <div class="col-12">
-            <div class="card bg-label-success">
+            <div class="card" style="background: linear-gradient(135deg, #696cff 0%, #8592ff 100%);">
                 <div class="card-body d-flex align-items-center justify-content-between py-4">
                     <div>
-                        <h6 class="text-dark mb-1 fw-semibold">Total Aset Asli Keseluruhan</h6>
-                        <h3 class="text-dark mb-1 fw-bold">Rp {{ total_aset_asli|floatformat:0 }}</h3>
-                        <small class="text-muted">Σ (stok + terjual + adjustment) × harga beli — termasuk data belum
+                        <h6 class="text-white mb-1 fw-semibold">Total Aset Asli Keseluruhan</h6>
+                        <h3 class="text-white mb-1 fw-bold">Rp {{ total_aset_asli|floatformat:0 }}</h3>
+                        <small class="text-white-50">Σ (stok + terjual + adjustment) × harga beli — termasuk data belum
                             dikonfirmasi</small>
                     </div>
                     <div class="d-none d-sm-block">
-                        <i class="ri-safe-2-line" style="font-size: 4rem; color: rgba(0,0,0,0.1);"></i>
+                        <i class="ri-safe-2-line" style="font-size: 4rem; color: rgba(255,255,255,0.2);"></i>
                     </div>
                 </div>
             </div>
@@ -163,8 +163,8 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
                         </div>
                         <div class="flex-grow-1">
                             <span class="d-block text-muted small">Total Pemasukan</span>
-                            <h5 class="mb-0 fw-bold text-success" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>POS (paid) + Sales Order (confirmed/delivered/completed) + Service Center (lunas).<br><br><b>Sumber:</b> Tabel POSTransaction + SalesOrder + OrderService.">Rp {{ total_pemasukan|floatformat:0 }}</h5>
-                            <small class="text-muted">POS + SO + Service Center</small>
+                            <h5 class="mb-0 fw-bold text-success" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>POS paid + Sales Order confirmed/delivered/completed.<br>SO dihitung dari subtotal setelah diskon + ongkir; POS dari subtotal setelah diskon; PPN tidak dihitung sebagai pendapatan.">Rp {{ total_pemasukan|floatformat:0 }}</h5>
+                            <small class="text-muted">Net tanpa PPN</small>
                         </div>
                     </div>
                 </div>
@@ -187,8 +187,8 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
                         </div>
                         <div class="flex-grow-1">
                             <span class="d-block text-muted small">Total Pengeluaran</span>
-                            <h5 class="mb-0 fw-bold text-danger" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Purchase Order (confirmed/received/completed) + Transaksi Biaya (approved).<br><br><b>Sumber:</b> Tabel PurchaseOrder + TransaksiBiaya.">Rp {{ total_pengeluaran|floatformat:0 }}</h5>
-                            <small class="text-muted">PO + Biaya</small>
+                            <h5 class="mb-0 fw-bold text-danger" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Purchase Order approved/received + Biaya approved.<br>PO dihitung dari DPP/subtotal termasuk ongkir; PPN Masukan dipisahkan dari beban operasional.">Rp {{ total_pengeluaran|floatformat:0 }}</h5>
+                            <small class="text-muted">DPP + biaya</small>
                         </div>
                     </div>
                 </div>
@@ -212,8 +212,8 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
                         </div>
                         <div class="flex-grow-1">
                             <span class="d-block text-muted small">Selisih Keuangan</span>
-                            <h5 style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Total Pemasukan (POS + SO + Service) dikurangi Total Pengeluaran (PO + Biaya).<br><br><b>Sumber:</b> Kalkulasi view. Positif = laba, negatif = rugi."
-                                class="mb-0 fw-bold {% if selisih_keuangan >= 0 %}text-info{% else %}text-warning{% endif %}">
+                            <h5
+                                class="mb-0 fw-bold {% if selisih_keuangan >= 0 %}text-info{% else %}text-warning{% endif %}" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Rumus:</b><br>Total Pemasukan - Total Pengeluaran.<br>Diskon sudah mengurangi pemasukan, ongkir masuk sesuai sumber SO/PO, dan PPN dipisahkan dari laba/rugi operasional.">
                                 Rp {{ selisih_keuangan|floatformat:0 }}
                             </h5>
                             <small class="text-muted">Pemasukan - Pengeluaran</small>
@@ -240,7 +240,7 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
                         </div>
                         <div class="flex-grow-1">
                             <span class="d-block text-muted small">Selisih Kas Kasir</span>
-                            <h5 style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>SUM(discrepancy) dari semua CashReconciliation. Discrepancy = uang fisik - uang yang seharusnya (dari POS cash).<br><br><b>Sumber:</b> Tabel CashReconciliation."
+                            <h5
                                 class="mb-0 fw-bold {% if total_selisih_kas < 0 %}text-danger{% else %}text-success{% endif %}">
                                 Rp {{ total_selisih_kas|floatformat:0 }}
                             </h5>
@@ -412,6 +412,9 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
 {{ block.super }}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]')).forEach(function (el) {
+            new bootstrap.Tooltip(el);
+        });
         // ═══ DETEKSI DARK MODE ═══
         var isDark = typeof isDarkStyle !== 'undefined' ? isDarkStyle :
             (document.documentElement.classList.contains('dark-style') ||
@@ -565,14 +568,5 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
         donutChart.render();
     }
 });
-</script>
-<script>
-    // Inisialisasi Bootstrap Tooltip
-    document.addEventListener('DOMContentLoaded', function() {
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        tooltipTriggerList.forEach(function(el) {
-            new bootstrap.Tooltip(el, { trigger: 'hover focus click' });
-        });
-    });
 </script>
 {% endblock page_js %}

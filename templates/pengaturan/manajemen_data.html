@@ -399,7 +399,7 @@
         </div>
         <div class="card-body">
             <div class="row g-3">
-                <div class="col-lg-3">
+                <div class="col-xl-3 col-lg-6">
                     <h6 class="text-muted mb-3"><i class="ri-archive-line me-1"></i> Data Produk & Inventori</h6>
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered mb-0">
@@ -417,7 +417,7 @@
                         </table>
                     </div>
                 </div>
-                <div class="col-lg-3">
+                <div class="col-xl-3 col-lg-6">
                     <h6 class="text-muted mb-3"><i class="ri-exchange-line me-1"></i> Data Transaksi</h6>
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered mb-0">
@@ -436,24 +436,26 @@
                         </table>
                     </div>
                 </div>
-                <div class="col-lg-3">
-                    <h6 class="text-muted mb-3"><i class="ri-tools-line me-1"></i> Service Center & Sparepart</h6>
+                <div class="col-xl-3 col-lg-6">
+                    <h6 class="text-muted mb-3"><i class="ri-bank-card-line me-1"></i> Kas, Bank & Accounting</h6>
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered mb-0">
                             <tbody>
-                                <tr><td class="w-50">Order Service</td><td class="fw-bold">{{ stats.order_service }}</td></tr>
-                                <tr><td>Item Service</td><td class="fw-bold">{{ stats.item_service }}</td></tr>
-                                <tr><td>Pelanggan Service</td><td class="fw-bold">{{ stats.pelanggan_service }}</td></tr>
-                                <tr><td>Perangkat</td><td class="fw-bold">{{ stats.perangkat_service }}</td></tr>
-                                <tr><td>Kategori Service</td><td class="fw-bold">{{ stats.kategori_service }}</td></tr>
-                                <tr><td>Jenis Service</td><td class="fw-bold">{{ stats.jenis_service }}</td></tr>
-                                <tr><td>Riwayat Status</td><td class="fw-bold">{{ stats.riwayat_status }}</td></tr>
-                                <tr><td>Penggunaan Sparepart</td><td class="fw-bold">{{ stats.penggunaan_sparepart }}</td></tr>
+                                <tr><td class="w-50">Akun Kas/Bank</td><td class="fw-bold">{{ stats.kas_bank_account }}</td></tr>
+                                <tr><td>Transaksi Kas/Bank</td><td class="fw-bold">{{ stats.kas_bank_transaction }}</td></tr>
+                                <tr><td>Transfer Kas/Bank</td><td class="fw-bold">{{ stats.kas_bank_transfer }}</td></tr>
+                                <tr><td>Rekonsiliasi Kas/Bank</td><td class="fw-bold">{{ stats.kas_bank_reconciliation }}</td></tr>
+                                <tr><td>COA</td><td class="fw-bold">{{ stats.akun }}</td></tr>
+                                <tr><td>Jurnal</td><td class="fw-bold">{{ stats.jurnal_entry }}</td></tr>
+                                <tr><td>Piutang</td><td class="fw-bold">{{ stats.piutang }}</td></tr>
+                                <tr><td>Hutang</td><td class="fw-bold">{{ stats.hutang }}</td></tr>
+                                <tr><td>Aset Tetap</td><td class="fw-bold">{{ stats.aset_tetap }}</td></tr>
+                                <tr><td>Faktur Pajak</td><td class="fw-bold">{{ stats.faktur_pajak }}</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-                <div class="col-lg-3">
+                <div class="col-xl-3 col-lg-6">
                     <h6 class="text-muted mb-3"><i class="ri-team-line me-1"></i> HR, User & Sistem</h6>
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered mb-0">
@@ -675,7 +677,7 @@
                     </div>
                     <p><strong class="text-danger">SEMUA data berikut akan DIHAPUS PERMANEN:</strong></p>
                     <div class="row mb-3">
-                        <div class="col-4">
+                        <div class="col-6">
                             <ul class="list-unstyled mb-0">
                                 <li><i class="ri-close-circle-line text-danger me-1"></i> Produk & Kategori</li>
                                 <li><i class="ri-close-circle-line text-danger me-1"></i> Transaksi POS</li>
@@ -683,26 +685,20 @@
                                 <li><i class="ri-close-circle-line text-danger me-1"></i> Purchase Order</li>
                                 <li><i class="ri-close-circle-line text-danger me-1"></i> Transaksi Biaya</li>
                                 <li><i class="ri-close-circle-line text-danger me-1"></i> Transfer & Stok</li>
+                                <li><i class="ri-close-circle-line text-danger me-1"></i> Jurnal & Akuntansi</li>
+                                <li><i class="ri-close-circle-line text-danger me-1"></i> Kas & Bank (Treasury)</li>
                             </ul>
                         </div>
-                        <div class="col-4">
+                        <div class="col-6">
                             <ul class="list-unstyled mb-0">
-                                <li><i class="ri-close-circle-line text-danger me-1"></i> Order Service</li>
-                                <li><i class="ri-close-circle-line text-danger me-1"></i> Penggunaan Sparepart</li>
-                                <li><i class="ri-close-circle-line text-danger me-1"></i> Pelanggan Service</li>
-                                <li><i class="ri-close-circle-line text-danger me-1"></i> Perangkat Service</li>
+                                <li><i class="ri-close-circle-line text-danger me-1"></i> Piutang & Hutang</li>
+                                <li><i class="ri-close-circle-line text-danger me-1"></i> Aset Tetap & Pajak</li>
                                 <li><i class="ri-close-circle-line text-danger me-1"></i> Customer & Supplier</li>
                                 <li><i class="ri-close-circle-line text-danger me-1"></i> Karyawan & HR</li>
-                            </ul>
-                        </div>
-                        <div class="col-4">
-                            <ul class="list-unstyled mb-0">
                                 <li><i class="ri-close-circle-line text-danger me-1"></i> Pengaturan Sistem</li>
                                 <li><i class="ri-close-circle-line text-danger me-1"></i> Log & Notifikasi</li>
-                                <li><i class="ri-close-circle-line text-danger me-1"></i> User lain</li>
-                                <li><i class="ri-close-circle-line text-danger me-1"></i> Data AI Assistant</li>
                                 <li><i class="ri-close-circle-line text-danger me-1"></i> Fraud Detection</li>
-                                <li><i class="ri-close-circle-line text-danger me-1"></i> File Media</li>
+                                <li><i class="ri-close-circle-line text-danger me-1"></i> User lain & AI</li>
                             </ul>
                         </div>
                     </div>

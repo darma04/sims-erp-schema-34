@@ -101,7 +101,6 @@ class PengaturanTelegramView(ReadPermissionMixin, TemplateView):
         pengaturan.notif_purchase_order = request.POST.get('notif_purchase_order') == 'on'
         pengaturan.notif_biaya = request.POST.get('notif_biaya') == 'on'
         pengaturan.notif_penggajian = request.POST.get('notif_penggajian') == 'on'
-        pengaturan.notif_service_order = request.POST.get('notif_service_order') == 'on'
         pengaturan.kirim_pdf = request.POST.get('kirim_pdf') == 'on'
         pengaturan.system_prompt_bot = request.POST.get('system_prompt_bot', '').strip()
         pengaturan.save()
@@ -375,7 +374,7 @@ def deteksi_chat_id(request):
         try:
             error_data = json.loads(error_body)
             error_msg = error_data.get('description', str(e))
-        except:
+        except Exception:
             error_msg = f"HTTP {e.code}: {error_body[:200]}"
 
         if e.code == 401:

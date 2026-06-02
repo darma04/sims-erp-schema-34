@@ -1,0 +1,81 @@
+{% extends 'layout/layout_vertical.html' %}
+{% load static %}
+{% load currency_filters %}
+
+{% block title %}{{ aset.kode }} - Detail Aset{% endblock title %}
+{% block vendor_js %}{{ block.super }}<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>{% endblock vendor_js %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <h4 class="py-3 mb-4"><span class="text-muted fw-light">Akuntansi / <a href="{% url 'aset:list' %}">Aset</a> /</span> {{ aset.kode }}</h4>
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="ri-building-2-line me-2"></i>{{ aset.nama }}</h5>
+            <div class="d-flex gap-2">
+                {% if aset.status == 'aktif' and rbac_can_edit %}<a href="{% url 'aset:edit' aset.pk %}" class="btn btn-warning btn-sm"><i class="ri-pencil-line me-1"></i>Edit</a>{% endif %}
+                <a href="{% url 'aset:list' %}" class="btn btn-outline-secondary btn-sm"><i class="ri-arrow-left-line me-1"></i>Kembali</a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr><td class="text-muted" style="width:180px;">Kode</td><td class="fw-semibold">{{ aset.kode }}</td></tr>
+                        <tr><td class="text-muted">Kategori</td><td><span class="badge bg-label-info">{{ aset.get_kategori_display }}</span></td></tr>
+                        <tr><td class="text-muted">Tanggal Perolehan</td><td>{{ aset.tanggal_perolehan|date:"d F Y" }}</td></tr>
+                        <tr><td class="text-muted">Supplier</td><td>{{ aset.supplier.nama|default:"-" }}</td></tr>
+                        <tr><td class="text-muted">Cabang</td><td>{{ aset.cabang.nama|default:"Pusat" }}</td></tr>
+                        <tr><td class="text-muted">Metode</td><td>{{ aset.get_metode_penyusutan_display }}</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr><td class="text-muted" style="width:180px;">Harga Perolehan</td><td class="fw-bold fs-5">{{ aset.harga_perolehan|rupiah }}</td></tr>
+                        <tr><td class="text-muted">Nilai Residu</td><td>{{ aset.nilai_residu|rupiah }}</td></tr>
+                        <tr><td class="text-muted">Umur Ekonomis</td><td>{{ aset.umur_ekonomis }} bln ({{ aset.sisa_umur_bulan }} sisa)</td></tr>
+                        <tr><td class="text-muted">Akum. Penyusutan</td><td class="text-warning fw-semibold">{{ aset.akumulasi_penyusutan|rupiah }}</td></tr>
+                        <tr><td class="text-muted">Nilai Buku</td><td class="fw-bold fs-5 text-info">{{ aset.nilai_buku|rupiah }}</td></tr>
+                        <tr><td class="text-muted">Status</td><td>{% if aset.status == 'aktif' %}<span class="badge bg-success fs-6">Aktif</span>{% elif aset.status == 'dijual' %}<span class="badge bg-info fs-6">Dijual</span>{% elif aset.status == 'dihapuskan' %}<span class="badge bg-dark fs-6">Dihapuskan</span>{% else %}<span class="badge bg-danger fs-6">Rusak</span>{% endif %}</td></tr>
+                    </table>
+                </div>
+            </div>
+            {% if aset.harga_perolehan > 0 %}
+            <div class="mt-3">
+                <div class="d-flex justify-content-between mb-1"><small class="text-muted">Penyusutan: {{ aset.persentase_penyusutan }}%</small><small class="fw-semibold">{{ aset.penyusutan_per_bulan|rupiah }}/bln</small></div>
+                <div class="progress" style="height:10px;"><div class="progress-bar bg-warning" style="width:{{ aset.persentase_penyusutan }}%"></div></div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% if chart_labels %}<div class="card mb-4"><div class="card-header"><h5 class="mb-0"><i class="ri-line-chart-line me-2"></i>Grafik Penyusutan</h5></div><div class="card-body"><canvas id="depChart" height="80"></canvas></div></div>{% endif %}
+    <div class="row">
+        <div class="col-md-{% if aset.status == 'aktif' %}7{% else %}12{% endif %}">
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0"><i class="ri-history-line me-2"></i>Riwayat Penyusutan</h5></div>
+                <div class="table-responsive"><table class="table table-hover"><thead class="table-light"><tr><th>#</th><th>Periode</th><th class="text-end">Jumlah</th><th class="text-end">Akumulasi</th><th>Jurnal</th></tr></thead><tbody>
+                    {% for p in penyusutan_list %}<tr><td>{{ forloop.counter }}</td><td>{{ p.bulan|stringformat:"02d" }}/{{ p.tahun }}</td><td class="text-end">{{ p.jumlah|rupiah }}</td><td class="text-end text-warning">{{ p.akumulasi|rupiah }}</td><td>{% if p.jurnal %}<a href="{% url 'akuntansi:jurnal_detail' p.jurnal.pk %}" class="text-primary">{{ p.jurnal.nomor }}</a>{% else %}-{% endif %}</td></tr>{% empty %}<tr><td colspan="5" class="text-center py-4 text-muted">Belum ada</td></tr>{% endfor %}
+                </tbody></table></div>
+            </div>
+            {% if disposal_list %}<div class="card mb-4"><div class="card-header"><h5 class="mb-0"><i class="ri-delete-bin-line me-2"></i>Disposal</h5></div><div class="table-responsive"><table class="table"><thead class="table-light"><tr><th>Tanggal</th><th>Tipe</th><th class="text-end">Harga Jual</th><th class="text-end">Laba/Rugi</th><th>Jurnal</th></tr></thead><tbody>{% for d in disposal_list %}<tr><td>{{ d.tanggal|date:"d/m/Y" }}</td><td>{{ d.get_tipe_display }}</td><td class="text-end">{{ d.harga_jual|rupiah }}</td><td class="text-end fw-bold {% if d.laba_rugi >= 0 %}text-success{% else %}text-danger{% endif %}">{{ d.laba_rugi|rupiah }}</td><td>{% if d.jurnal %}<a href="{% url 'akuntansi:jurnal_detail' d.jurnal.pk %}">{{ d.jurnal.nomor }}</a>{% else %}-{% endif %}</td></tr>{% endfor %}</tbody></table></div></div>{% endif %}
+        </div>
+        {% if aset.status == 'aktif' and rbac_can_edit %}
+        <div class="col-md-5">
+            <div class="card mb-4"><div class="card-header bg-warning"><h5 class="mb-0 text-white"><i class="ri-arrow-down-circle-line me-2"></i>Proses Penyusutan</h5></div><div class="card-body">
+                <div class="alert alert-info py-2 mb-3"><small>Per bulan: <strong>{{ aset.penyusutan_per_bulan|rupiah }}</strong> | Sisa: {{ aset.sisa_umur_bulan }} bln</small></div>
+                <form id="penyForm">{% csrf_token %}<div class="row mb-3"><div class="col-6"><label class="form-label">Bulan</label><select class="form-select" name="bulan" id="blnP">{% for m in "123456789"|make_list %}<option value="{{ m }}">{{ m }}</option>{% endfor %}<option value="10">10</option><option value="11">11</option><option value="12">12</option></select></div><div class="col-6"><label class="form-label">Tahun</label><input type="number" class="form-control" name="tahun" id="thnP" value="2026"></div></div>
+                <button type="button" class="btn btn-warning w-100" onclick="prosesPeny()"><i class="ri-arrow-down-circle-line me-1"></i>Proses</button></form></div></div>
+            <div class="card mb-4"><div class="card-header bg-danger"><h5 class="mb-0 text-white"><i class="ri-delete-bin-line me-2"></i>Disposal</h5></div><form method="post" action="{% url 'aset:disposal' aset.pk %}">{% csrf_token %}<div class="card-body">
+                <div class="alert alert-warning py-2 mb-3"><small>Nilai buku: <strong>{{ aset.nilai_buku|rupiah }}</strong></small></div>
+                <div class="mb-3"><label class="form-label">Tipe</label>{{ disposal_form.tipe }}</div><div class="mb-3"><label class="form-label">Tanggal</label>{{ disposal_form.tanggal }}</div><div class="mb-3"><label class="form-label">Harga Jual</label>{{ disposal_form.harga_jual }}</div><div class="mb-3"><label class="form-label">Keterangan</label>{{ disposal_form.keterangan }}</div>
+                <button type="submit" class="btn btn-danger w-100" onclick="return confirm('Yakin disposal?')"><i class="ri-delete-bin-line me-1"></i>Proses Disposal</button></div></form></div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock content %}
+{% block page_js %}
+<script>
+{% if chart_labels %}new Chart(document.getElementById('depChart').getContext('2d'),{type:'line',data:{labels:{{ chart_labels|safe }},datasets:[{label:'Akumulasi',data:{{ chart_akumulasi|safe }},borderColor:'#FFAB00',fill:true,tension:.3},{label:'Nilai Buku',data:{{ chart_nilai_buku|safe }},borderColor:'#03C3EC',fill:true,tension:.3}]},options:{responsive:true,scales:{y:{ticks:{callback:v=>'Rp '+v.toLocaleString('id-ID')}}}}});{% endif %}
+function prosesPeny(){const b=$('#blnP').val(),t=$('#thnP').val();if(!confirm('Proses penyusutan '+b+'/'+t+'?'))return;const fd=new FormData();fd.append('bulan',b);fd.append('tahun',t);fd.append('csrfmiddlewaretoken',document.querySelector('[name=csrfmiddlewaretoken]').value);fetch('{% url "aset:susutkan" aset.pk %}',{method:'POST',body:fd}).then(r=>r.json()).then(d=>{alert(d.message);if(d.success)location.reload();}).catch(()=>alert('Gagal'));}
+</script>
+{% endblock page_js %}

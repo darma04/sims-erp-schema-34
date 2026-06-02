@@ -45,15 +45,11 @@ class ProdukForm(forms.ModelForm):
         """Konfigurasi form Produk — field dan widget termasuk Select2 dropdown."""
         model = Produk  # Form berdasarkan model Produk
         # Field yang ditampilkan di form (urutan sesuai tampilan)
-        fields = ['tipe', 'sku', 'barcode', 'nama', 'kategori', 'satuan', 'cabang',
-                  'harga_beli', 'harga_jual', 'deskripsi', 'gambar', 'aktif', 'metode_pembayaran']
+        fields = ['sku', 'barcode', 'nama', 'kategori', 'satuan', 'cabang',
+                  'harga_beli', 'harga_jual', 'deskripsi', 'gambar', 'aktif', 'kena_ppn', 'metode_pembayaran']
 
         # Kustomisasi widget HTML untuk setiap field
         widgets = {
-            'tipe': forms.Select(attrs={
-                'class': 'form-select',
-                'id': 'productTipe'
-            }),
             'sku': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'SKU (Auto-generated jika kosong)',
@@ -114,6 +110,10 @@ class ProdukForm(forms.ModelForm):
                 'class': 'form-check-input',
                 'id': 'productActive'
             }),
+            'kena_ppn': forms.CheckboxInput(attrs={
+                'class': 'form-check-input',
+                'id': 'productKenaPPN'
+            }),
             'metode_pembayaran': forms.Select(attrs={
                 'class': 'form-select',
                 'id': 'productMetodePembayaran'
@@ -163,9 +163,8 @@ class ProdukForm(forms.ModelForm):
         self.fields['gambar'].label = 'Gambar Produk'
         # Set label field aktif dalam Bahasa Indonesia
         self.fields['aktif'].label = 'Produk Aktif'
-        # Set label field tipe dalam Bahasa Indonesia
-        self.fields['tipe'].label = 'Tipe'
-        self.fields['tipe'].help_text = 'Pilih Produk untuk barang penjualan, Sparepart untuk service center'
+        # Set label field kena_ppn
+        self.fields['kena_ppn'].label = 'Kena PPN'
         # Set field metode_pembayaran sebagai opsional
         self.fields['metode_pembayaran'].required = False
         self.fields['metode_pembayaran'].label = 'Metode Pembayaran'

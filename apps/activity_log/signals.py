@@ -78,7 +78,7 @@ def log_user_login(sender, request, user, **kwargs):
             ip_address=get_client_ip(req),
             user_agent=req.META.get('HTTP_USER_AGENT', '')[:500]
         )
-    except:
+    except Exception:
         pass
 
 
@@ -105,7 +105,7 @@ def log_user_logout(sender, request, user, **kwargs):
                 ip_address=get_client_ip(req),
                 user_agent=req.META.get('HTTP_USER_AGENT', '')[:500]
             )
-    except:
+    except Exception:
         pass
 
 
@@ -149,11 +149,11 @@ def get_field_diff(instance, old_instance):
                     try:
                         old_val = str(old_val)
                         new_val = str(new_val)
-                    except:
+                    except Exception:
                         pass
                         
                 diff[field_name] = {'old': old_val, 'new': new_val}
-        except:
+        except Exception:
             continue
             
     return diff
@@ -282,7 +282,7 @@ def capture_old_state(sender, instance, **kwargs):
                 instance._old_state = None
         else:
             instance._old_state = None
-    except:
+    except Exception:
         pass
 
 

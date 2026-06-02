@@ -30,6 +30,7 @@ urlpatterns = [
     
     # Metode Pembayaran
     path('pembayaran/', views.MetodePembayaranListView.as_view(), name='metode_pembayaran_list'),
+    path('pembayaran/seed/', views.SeedMetodePembayaranView.as_view(), name='metode_pembayaran_seed'),
     # URL: /pengaturan/pembayaran/tambah/ — metode_pembayaran_create
     path('pembayaran/tambah/', views.MetodePembayaranCreateView.as_view(), name='metode_pembayaran_create'),
     # URL: /pengaturan/pembayaran/<int:pk>/ — metode_pembayaran_detail

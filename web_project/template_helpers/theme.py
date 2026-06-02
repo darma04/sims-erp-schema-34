@@ -354,7 +354,8 @@ class TemplateHelper:
     # ──────────────────────────────────────────────────────────
     def import_class(fromModule, import_className):
         # Debug: cetak modul dan class yang sedang dimuat ke terminal
-        pprint(f"Loading {import_className} from {fromModule}")
+        if settings.DEBUG:
+            pprint(f"Loading {import_className} from {fromModule}")
 
         # import_module() → import module secara dinamis berdasarkan string nama
         # Contoh: import_module("templates.layout.bootstrap.master")

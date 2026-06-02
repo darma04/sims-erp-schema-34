@@ -289,7 +289,7 @@ Fitur: filter, export Excel & PDF, delete modal.
                     {% endfor %}
                     {% else %}
                     <tr>
-                        <td colspan="10" class="text-center py-5">
+                        <td colspan="9" class="text-center py-5">
                             <i class="ri-money-dollar-circle-line ri-3x text-muted mb-3 d-block"></i>
                             <p class="text-muted mb-0">Belum ada transaksi biaya</p>
                         </td>
@@ -839,60 +839,9 @@ Fitur: filter, export Excel & PDF, delete modal.
         window.open(`/biaya/transaksi/${id}/print/`, '_blank');
     }
 
-    // Tangani Hapus Transaksi Biaya
-    let deleteId = null;
-function confirmDelete(id, name) {
-    deleteId = id;
-    $('#deleteTransaksiName').text(name);
-    $('#deleteTransaksiModal .delete-error-msg').remove();
-    new bootstrap.Modal(document.getElementById('deleteTransaksiModal')).show();
-}
-
-$('#confirmDeleteBtn').on('click', function() {
-    if (!deleteId) return;
-    var btn = $(this);
-    var originalText = btn.html();
-    btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Menghapus...');
-    $('#deleteTransaksiModal .delete-error-msg').remove();
-    var csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    $.ajax({
-        url: `/biaya/transaksi/${deleteId}/delete/`,
-        type: 'POST',
-        headers: {'X-CSRFToken': csrftoken},
-        success: function(response) {
-            if (response.success) {
-                $('#deleteTransaksiModal').modal('hide');
-                location.reload();
-            } else {
-                $('#deleteTransaksiModal .modal-body').append('<div class="delete-error-msg alert alert-danger d-flex align-items-start mt-3 mb-0" role="alert"><i class="ri-error-warning-line me-2 fs-5"></i><div>' + (response.message || 'Gagal menghapus data.') + '</div></div>');
-                btn.prop('disabled', false).html(originalText);
-            }
-        },
-        error: function(xhr) {
-            var msg = 'Terjadi kesalahan pada server. Silakan coba lagi.';
-            try { var r = JSON.parse(xhr.responseText); msg = r.message || msg; } catch(e) {}
-            $('#deleteTransaksiModal .modal-body').append('<div class="delete-error-msg alert alert-danger d-flex align-items-start mt-3 mb-0" role="alert"><i class="ri-error-warning-line me-2 fs-5"></i><div>' + msg + '</div></div>');
-            btn.prop('disabled', false).html(originalText);
-        }
-    });
-});
-
-    function showDeleteError(message) {
-        $('#deleteTransaksiModal').modal('hide');
-        const alertHtml = `
-            <div class="alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3"
-                 style="z-index: 9999; min-width: 300px;" role="alert">
-                <i class="ri-error-warning-line me-2"></i>${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        `;
-        $('body').append(alertHtml);
-        setTimeout(() => {
-            $('.alert-dismissible').alert('close');
-        }, 5000);
-    }
-
+    // ═══════════════════════════════════════════════════
     // APPROVE / REJECT TRANSAKSI BIAYA — AJAX
+    // ═══════════════════════════════════════════════════
     let approveId = null;
     let rejectId = null;
 
@@ -964,5 +913,57 @@ $('#confirmDeleteBtn').on('click', function() {
         });
     });
 
+    // Tangani Hapus Transaksi Biaya
+    let deleteId = null;
+function confirmDelete(id, name) {
+    deleteId = id;
+    $('#deleteTransaksiName').text(name);
+    $('#deleteTransaksiModal .delete-error-msg').remove();
+    new bootstrap.Modal(document.getElementById('deleteTransaksiModal')).show();
+}
+
+$('#confirmDeleteBtn').on('click', function() {
+    if (!deleteId) return;
+    var btn = $(this);
+    var originalText = btn.html();
+    btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Menghapus...');
+    $('#deleteTransaksiModal .delete-error-msg').remove();
+    var csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    $.ajax({
+        url: `/biaya/transaksi/${deleteId}/delete/`,
+        type: 'POST',
+        headers: {'X-CSRFToken': csrftoken},
+        success: function(response) {
+            if (response.success) {
+                $('#deleteTransaksiModal').modal('hide');
+                location.reload();
+            } else {
+                $('#deleteTransaksiModal .modal-body').append('<div class="delete-error-msg alert alert-danger d-flex align-items-start mt-3 mb-0" role="alert"><i class="ri-error-warning-line me-2 fs-5"></i><div>' + (response.message || 'Gagal menghapus data.') + '</div></div>');
+                btn.prop('disabled', false).html(originalText);
+            }
+        },
+        error: function(xhr) {
+            var msg = 'Terjadi kesalahan pada server. Silakan coba lagi.';
+            try { var r = JSON.parse(xhr.responseText); msg = r.message || msg; } catch(e) {}
+            $('#deleteTransaksiModal .modal-body').append('<div class="delete-error-msg alert alert-danger d-flex align-items-start mt-3 mb-0" role="alert"><i class="ri-error-warning-line me-2 fs-5"></i><div>' + msg + '</div></div>');
+            btn.prop('disabled', false).html(originalText);
+        }
+    });
+});
+
+    function showDeleteError(message) {
+        $('#deleteTransaksiModal').modal('hide');
+        const alertHtml = `
+            <div class="alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3"
+                 style="z-index: 9999; min-width: 300px;" role="alert">
+                <i class="ri-error-warning-line me-2"></i>${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+        $('body').append(alertHtml);
+        setTimeout(() => {
+            $('.alert-dismissible').alert('close');
+        }, 5000);
+    }
 </script>
 {% endblock page_js %}

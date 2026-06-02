@@ -10,3 +10,7 @@ class HrConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'apps.hr'
     verbose_name = 'Manajemen HR'
+
+    def ready(self):
+        """Import signals saat aplikasi ready — auto-jurnal penggajian."""
+        import apps.hr.signals  # noqa: F401

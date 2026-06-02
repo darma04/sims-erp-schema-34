@@ -43,8 +43,48 @@ from django.shortcuts import redirect                   # Fungsi redirect
 from django.contrib import messages                      # Framework pesan flash
 # Import dari framework Django
 from django.core.exceptions import PermissionDenied      # Exception 403 Forbidden
+from django.core.cache import cache
 # Import dari modul internal proyek
-from apps.core.permissions import has_permission         # Fungsi cek permission
+from apps.core.cache_utils import build_scoped_cache_key
+from apps.core.permissions import has_permission, is_superuser_role  # Fungsi cek permission
+
+
+class TenantScopedResponseCacheMixin:
+    """Cache response GET per tenant/schema, user, query string, dan versi permission."""
+    cache_timeout = 0
+
+    def dispatch(self, request, *args, **kwargs):
+        timeout = getattr(self, 'cache_timeout', 0) or 0
+        user = getattr(request, 'user', None)
+        cacheable = (
+            timeout > 0
+            and request.method in ('GET', 'HEAD')
+            and user is not None
+            and getattr(user, 'is_authenticated', False)
+            and request.headers.get('x-requested-with') != 'XMLHttpRequest'
+        )
+        if not cacheable:
+            return super().dispatch(request, *args, **kwargs)
+
+        cache_key = build_scoped_cache_key(
+            'view_response',
+            self.__class__.__module__,
+            self.__class__.__name__,
+            request.GET.urlencode(),
+            request=request,
+        )
+        cached_response = cache.get(cache_key)
+        if cached_response is not None:
+            cached_response['X-SERPTECH-Cache'] = 'HIT'
+            return cached_response
+
+        response = super().dispatch(request, *args, **kwargs)
+        if hasattr(response, 'render') and not getattr(response, 'is_rendered', True):
+            response = response.render()
+        if getattr(response, 'status_code', None) == 200 and not getattr(response, 'streaming', False):
+            response['X-SERPTECH-Cache'] = 'MISS'
+            cache.set(cache_key, response, timeout)
+        return response
 
 
 class SubModulePermissionMixin:
@@ -92,7 +132,7 @@ class SubModulePermissionMixin:
         5. Jika False → raise PermissionDenied (halaman 403)
         """
         # Superuser bypass semua pengecekan
-        if request.user.is_superuser:
+        if is_superuser_role(request.user):
             return super().dispatch(request, *args, **kwargs)
 
         # Validasi: permission_module WAJIB diisi
@@ -127,7 +167,7 @@ class SubModulePermissionMixin:
         context['rbac_current_sub_module'] = self.permission_sub_module
         
         user = getattr(self.request, 'user', None)
-        if user and not user.is_superuser:
+        if user and not is_superuser_role(user):
             context['rbac_can_read'] = has_permission(user, 'read', self.permission_module, self.permission_sub_module)
             context['rbac_can_create'] = has_permission(user, 'create', self.permission_module, self.permission_sub_module)
             context['rbac_can_edit'] = has_permission(user, 'write', self.permission_module, self.permission_sub_module)
@@ -180,7 +220,7 @@ class ModulePermissionMixin:
     def dispatch(self, request, *args, **kwargs):
         """Cek permission level modul sebelum view dijalankan."""
         # Superuser bypass
-        if request.user.is_superuser:
+        if is_superuser_role(request.user):
             return super().dispatch(request, *args, **kwargs)
 
         # Validasi
@@ -211,7 +251,7 @@ class ModulePermissionMixin:
         context['rbac_current_sub_module'] = None
         
         user = getattr(self.request, 'user', None)
-        if user and not user.is_superuser:
+        if user and not is_superuser_role(user):
             context['rbac_can_read'] = has_permission(user, 'read', self.permission_module)
             context['rbac_can_create'] = has_permission(user, 'create', self.permission_module)
             context['rbac_can_edit'] = has_permission(user, 'write', self.permission_module)
@@ -233,7 +273,7 @@ class AdminOrSuperuserMixin:
     """
     def dispatch(self, request,  *args, **kwargs):
         """Dipanggil sebelum view dijalankan — cek permission."""
-        if not (request.user.is_superuser or request.user.is_staff):
+        if not (is_superuser_role(request.user) or request.user.is_staff):
             # Tampilkan pesan error ke user
             messages.error(request, 'Akses ditolak. Hanya admin yang dapat mengakses halaman ini.')
             # Redirect ke halaman tujuan
@@ -248,7 +288,7 @@ class SuperuserRequiredMixin:
     """
     def dispatch(self, request, *args, **kwargs):
         """Dipanggil sebelum view dijalankan — cek permission."""
-        if not request.user.is_superuser:
+        if not is_superuser_role(request.user):
             # Tampilkan pesan error ke user
             messages.error(request, 'Akses ditolak. Hanya superuser yang dapat mengakses halaman ini.')
             # Redirect ke halaman tujuan
@@ -291,7 +331,7 @@ class ReadPermissionMixin:
 
     def dispatch(self, request, *args, **kwargs):
         """Dipanggil sebelum view dijalankan — cek permission."""
-        if request.user.is_superuser:
+        if is_superuser_role(request.user):
             return super().dispatch(request, *args, **kwargs)
 
         if not self.permission_module:
@@ -313,7 +353,7 @@ class ReadPermissionMixin:
         context['rbac_current_sub_module'] = self.permission_sub_module
         
         user = getattr(self.request, 'user', None)
-        if user and not user.is_superuser:
+        if user and not is_superuser_role(user):
             context['rbac_can_read'] = has_permission(user, 'read', self.permission_module, self.permission_sub_module)
             context['rbac_can_create'] = has_permission(user, 'create', self.permission_module, self.permission_sub_module)
             
@@ -340,7 +380,7 @@ class CreatePermissionMixin:
 
     def dispatch(self, request, *args, **kwargs):
         """Dipanggil sebelum view dijalankan — cek permission."""
-        if request.user.is_superuser:
+        if is_superuser_role(request.user):
             return super().dispatch(request, *args, **kwargs)
 
         if not self.permission_module:
@@ -365,7 +405,7 @@ class UpdatePermissionMixin:
 
     def dispatch(self, request, *args, **kwargs):
         """Dipanggil sebelum view dijalankan — cek permission."""
-        if request.user.is_superuser:
+        if is_superuser_role(request.user):
             return super().dispatch(request, *args, **kwargs)
 
         if not self.permission_module:
@@ -385,7 +425,7 @@ class UpdatePermissionMixin:
             context = super().get_context_data(**kwargs)
         
         # Inject is_readonly_mode = True jika user tidak punya izin edit
-        if getattr(self.request, 'user', None) and self.request.user.is_superuser:
+        if getattr(self.request, 'user', None) and is_superuser_role(self.request.user):
             context['is_readonly_mode'] = False
         else:
             context['is_readonly_mode'] = not has_permission(self.request.user, 'write', self.permission_module, self.permission_sub_module)
@@ -393,7 +433,7 @@ class UpdatePermissionMixin:
 
     def post(self, request, *args, **kwargs):
         """Validasi akses saat mencoba menyimpan data (POST)."""
-        if not request.user.is_superuser:
+        if not is_superuser_role(request.user):
             if not has_permission(request.user, 'write', self.permission_module, self.permission_sub_module):
                 messages.error(request, 'Anda tidak memiliki akses untuk mengubah data ini. Mode Cuma-baca aktif.')
                 # Fallback redirect ke current URL / success_url / referer
@@ -416,7 +456,7 @@ class DeletePermissionMixin:
 
     def dispatch(self, request, *args, **kwargs):
         """Dipanggil sebelum view dijalankan — cek permission."""
-        if request.user.is_superuser:
+        if is_superuser_role(request.user):
             return super().dispatch(request, *args, **kwargs)
 
         if not self.permission_module:

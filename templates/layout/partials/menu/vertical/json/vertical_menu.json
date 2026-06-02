@@ -58,14 +58,24 @@
       ]
     },
     {
-      "menu_header": "PRODUK & INVENTARIS",
-      "permission": "produk:view,inventory:view,sparepart:view"
+      "menu_header": "MASTER DATA",
+      "permission": "produk:view,inventory:view"
     },
     {
       "name": "Produk",
-      "icon": "menu-icon tf-icons ri-shopping-bag-line",
+      "icon": "menu-icon tf-icons ri-box-3-line",
       "slug": "produk",
       "submenu": [
+        {
+          "url": "produk:kategori",
+          "name": "Kategori",
+          "slug": "produk-kategori"
+        },
+        {
+          "url": "produk:satuan",
+          "name": "Satuan",
+          "slug": "produk-satuan"
+        },
         {
           "url": "produk:list",
           "name": "Daftar Produk",
@@ -75,16 +85,6 @@
           "url": "produk:tambah",
           "name": "Tambah Produk",
           "slug": "produk-tambah"
-        },
-        {
-          "url": "produk:kategori",
-          "name": "Kategori Produk",
-          "slug": "produk-kategori"
-        },
-        {
-          "url": "produk:satuan",
-          "name": "Satuan",
-          "slug": "produk-satuan"
         }
       ]
     },
@@ -102,16 +102,6 @@
           "url": "produk:sparepart_tambah",
           "name": "Tambah Sparepart",
           "slug": "sparepart-tambah_sparepart"
-        },
-        {
-          "url": "produk:kategori",
-          "name": "Kategori Sparepart",
-          "slug": "sparepart-kategori"
-        },
-        {
-          "url": "produk:satuan",
-          "name": "Satuan",
-          "slug": "sparepart-satuan"
         }
       ]
     },
@@ -198,6 +188,38 @@
       "slug": "invoice"
     },
     {
+      "name": "Kas & Bank",
+      "icon": "menu-icon tf-icons ri-bank-card-line",
+      "slug": "kas-bank",
+      "submenu": [
+        {
+          "url": "kas_bank:dashboard",
+          "name": "Dashboard Treasury",
+          "slug": "kas-bank-dashboard"
+        },
+        {
+          "url": "kas_bank:account_list",
+          "name": "Akun Kas & Bank",
+          "slug": "kas-bank-akun"
+        },
+        {
+          "url": "kas_bank:transaction_list",
+          "name": "Mutasi Kas & Bank",
+          "slug": "kas-bank-mutasi"
+        },
+        {
+          "url": "kas_bank:transfer_list",
+          "name": "Transfer",
+          "slug": "kas-bank-transfer"
+        },
+        {
+          "url": "kas_bank:reconciliation_list",
+          "name": "Rekonsiliasi",
+          "slug": "kas-bank-rekonsiliasi"
+        }
+      ]
+    },
+    {
       "name": "Biaya",
       "icon": "menu-icon tf-icons ri-wallet-line",
       "slug": "biaya",
@@ -211,6 +233,148 @@
           "url": "biaya:transaksi",
           "name": "Transaksi Biaya",
           "slug": "biaya-transaksi"
+        }
+      ]
+    },
+    {
+      "menu_header": "AKUNTANSI",
+      "permission": "akuntansi:view"
+    },
+    {
+      "name": "Akuntansi",
+      "icon": "menu-icon tf-icons ri-book-2-line",
+      "slug": "akuntansi",
+      "submenu": [
+        {
+          "url": "akuntansi:coa",
+          "name": "Chart of Accounts",
+          "slug": "akuntansi-coa"
+        },
+        {
+          "url": "akuntansi:jurnal",
+          "name": "Jurnal Entry",
+          "slug": "akuntansi-jurnal"
+        },
+        {
+          "url": "akuntansi:buku_besar",
+          "name": "Buku Besar",
+          "slug": "akuntansi-buku-besar"
+        },
+        {
+          "url": "akuntansi:periode",
+          "name": "Periode Akuntansi",
+          "slug": "akuntansi-periode"
+        },
+        {
+          "url": "akuntansi:panduan",
+          "name": "Panduan Akuntansi",
+          "slug": "akuntansi-panduan"
+        }
+      ]
+    },
+    {
+      "name": "Laporan Keuangan",
+      "icon": "menu-icon tf-icons ri-bar-chart-horizontal-line",
+      "slug": "laporan-keuangan",
+      "submenu": [
+        {
+          "url": "akuntansi:neraca",
+          "name": "Neraca",
+          "slug": "laporan-keuangan-neraca"
+        },
+        {
+          "url": "akuntansi:laba_rugi",
+          "name": "Laba Rugi",
+          "slug": "laporan-keuangan-laba-rugi"
+        },
+        {
+          "url": "akuntansi:arus_kas",
+          "name": "Arus Kas",
+          "slug": "laporan-keuangan-arus-kas"
+        },
+        {
+          "url": "akuntansi:trial_balance",
+          "name": "Trial Balance",
+          "slug": "laporan-keuangan-trial-balance"
+        }
+      ]
+    },
+    {
+      "url": "akuntansi:rekonsiliasi_keuangan",
+      "name": "Rekonsiliasi Keuangan",
+      "icon": "menu-icon tf-icons ri-git-merge-line",
+      "slug": "rekonsiliasi-keuangan"
+    },
+    {
+      "name": "Piutang (AR)",
+      "icon": "menu-icon tf-icons ri-money-dollar-circle-line",
+      "slug": "piutang",
+      "submenu": [
+        {
+          "url": "piutang:list",
+          "name": "Daftar Piutang",
+          "slug": "piutang-list"
+        },
+        {
+          "url": "piutang:aging",
+          "name": "Aging Report",
+          "slug": "piutang-aging"
+        }
+      ]
+    },
+    {
+      "name": "Hutang (AP)",
+      "icon": "menu-icon tf-icons ri-hand-coin-line",
+      "slug": "hutang",
+      "submenu": [
+        {
+          "url": "hutang:list",
+          "name": "Daftar Hutang",
+          "slug": "hutang-list"
+        },
+        {
+          "url": "hutang:aging",
+          "name": "Aging Report",
+          "slug": "hutang-aging"
+        }
+      ]
+    },
+    {
+      "name": "Aset Tetap",
+      "icon": "menu-icon tf-icons ri-building-2-line",
+      "slug": "aset",
+      "submenu": [
+        {
+          "url": "aset:list",
+          "name": "Daftar Aset",
+          "slug": "aset-list"
+        },
+        {
+          "url": "aset:penyusutan",
+          "name": "Dashboard Penyusutan",
+          "slug": "aset-penyusutan"
+        }
+      ]
+    },
+    {
+      "name": "Pajak (PPN)",
+      "icon": "menu-icon tf-icons ri-file-text-line",
+      "slug": "pajak",
+      "submenu": [
+        {
+          "url": "pajak:list",
+          "name": "Faktur Pajak",
+          "slug": "pajak-list"
+        },
+        {
+          "url": "pajak:rekap",
+          "name": "Rekap PPN",
+          "slug": "pajak-rekap"
+        },
+        {
+          "url": "pajak:setting",
+          "name": "Setting PPN",
+          "slug": "pajak-setting"
         }
       ]
     },

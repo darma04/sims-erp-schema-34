@@ -373,6 +373,13 @@ class OrderService(models.Model):
         default=0,
         verbose_name="DP / Uang Muka"
     )
+    # PPN yang dikenakan — dihitung otomatis dari cabang/gudang
+    pajak = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        verbose_name="PPN / Pajak (Rp)"
+    )
     status_bayar = models.CharField(
         max_length=15,
         choices=STATUS_BAYAR_CHOICES,
@@ -447,6 +454,13 @@ class OrderService(models.Model):
         verbose_name = "Order Service"
         verbose_name_plural = "Order Service"
         ordering = ['-dibuat_pada']
+        indexes = [
+            models.Index(fields=['status', 'tanggal_masuk'], name='svc_order_status_tgl_idx'),
+            models.Index(fields=['status_bayar', 'tanggal_masuk'], name='svc_order_bayar_tgl_idx'),
+            models.Index(fields=['cabang', 'tanggal_masuk'], name='svc_order_cabang_tgl_idx'),
+            models.Index(fields=['teknisi', 'status'], name='svc_order_teknisi_st_idx'),
+            models.Index(fields=['pelanggan', 'tanggal_masuk'], name='svc_order_plg_tgl_idx'),
+        ]
 
     def __str__(self):
         return f"{self.nomor_service} - {self.pelanggan.nama} ({self.merek})"
@@ -490,7 +504,7 @@ class OrderService(models.Model):
             total_sparepart = sum(
                 sp.jumlah * sp.harga_satuan for sp in self.penggunaan_sparepart.all()
             )
-            total = total_layanan + total_sparepart
+            total = total_layanan + total_sparepart + self.pajak
             if total > 0:
                 self.biaya_akhir = total
 
@@ -534,12 +548,12 @@ class OrderService(models.Model):
 
     @property
     def total_biaya(self):
-        """Hitung total biaya DINAMIS dari layanan + sparepart (selalu dari DB)."""
+        """Hitung total biaya DINAMIS dari layanan + sparepart + pajak."""
         total_layanan = sum(item.biaya for item in self.items.all())
         total_sparepart = sum(
             sp.jumlah * sp.harga_satuan for sp in self.penggunaan_sparepart.all()
         )
-        return total_layanan + total_sparepart
+        return total_layanan + total_sparepart + self.pajak
 
     @property
     def sisa_bayar(self):
@@ -744,6 +758,10 @@ class PenggunaanSparepart(models.Model):
         verbose_name = "Penggunaan Sparepart"
         verbose_name_plural = "Penggunaan Sparepart"
         ordering = ['-dibuat_pada']
+        indexes = [
+            models.Index(fields=['produk', 'gudang'], name='svc_sp_prod_gdg_idx'),
+            models.Index(fields=['order_service', 'produk'], name='svc_sp_order_prod_idx'),
+        ]
 
     def __str__(self):
         return f"{self.produk.nama} x{self.jumlah} - {self.order_service.nomor_service}"

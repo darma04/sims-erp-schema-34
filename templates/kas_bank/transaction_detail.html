@@ -1,0 +1,152 @@
+{% extends 'layout/layout_vertical.html' %}
+{% load currency_filters %}
+
+{% block title %}{{ transaction.nomor }} - Detail Mutasi Kas & Bank{% endblock title %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <h4 class="py-3 mb-4">
+        <span class="text-muted fw-light">Kas & Bank / <a href="{% url 'kas_bank:transaction_list' %}">Mutasi</a> /</span> {{ transaction.nomor }}
+    </h4>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="ri-exchange-dollar-line me-2"></i>{{ transaction.nomor }}</h5>
+            <div class="d-flex gap-2">
+                {% if not transaction.jurnal_entry_id %}
+                <a href="{% url 'kas_bank:transaction_edit' transaction.pk %}" class="btn btn-primary">
+                    <i class="ri-edit-line me-1"></i>Edit
+                </a>
+                {% endif %}
+                <a href="{% url 'kas_bank:transaction_list' %}" class="btn btn-outline-secondary">
+                    <i class="ri-arrow-left-line me-1"></i>Kembali
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-4 mb-4">
+                <div class="col-md-4">
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted d-block mb-1">Jumlah</small>
+                        <h4 class="mb-0 {% if transaction.is_debit_kas %}text-success{% else %}text-danger{% endif %}">{{ transaction.jumlah|rupiah }}</h4>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted d-block mb-1">Tipe</small>
+                        <span class="badge bg-label-info">{{ transaction.get_tipe_display }}</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted d-block mb-1">Status</small>
+                        <span class="badge bg-label-{% if transaction.status == 'posted' %}success{% elif transaction.status == 'cancelled' %}danger{% else %}secondary{% endif %}">{{ transaction.get_status_display }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr><td class="text-muted" style="width:170px;">Tanggal</td><td>{{ transaction.tanggal|date:"d F Y H:i" }}</td></tr>
+                        <tr><td class="text-muted">Akun Kas/Bank</td><td><a href="{% url 'kas_bank:account_detail' transaction.akun_kas_bank.pk %}">{{ transaction.akun_kas_bank.kode }} - {{ transaction.akun_kas_bank.nama }}</a></td></tr>
+                        <tr><td class="text-muted">Akun Lawan</td><td>{% if transaction.akun_lawan %}{{ transaction.akun_lawan.kode }} - {{ transaction.akun_lawan.nama }}{% else %}-{% endif %}</td></tr>
+                        <tr><td class="text-muted">Cabang</td><td>{{ transaction.cabang.nama|default:"-" }}</td></tr>
+                        <tr><td class="text-muted">Metode Pembayaran</td><td>{{ transaction.metode_pembayaran.nama|default:"-" }}</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr><td class="text-muted" style="width:170px;">Referensi</td><td>{{ transaction.sumber_ref|default:"-" }}</td></tr>
+                        <tr><td class="text-muted">Sumber</td><td>{{ transaction.sumber_app|default:"-" }}{% if transaction.sumber_model %} / {{ transaction.sumber_model }}{% endif %}{% if transaction.sumber_id %} #{{ transaction.sumber_id }}{% endif %}</td></tr>
+                        <tr><td class="text-muted">Jurnal</td><td>{% if transaction.jurnal_entry %}<a href="{% url 'akuntansi:jurnal_detail' transaction.jurnal_entry.pk %}">{{ transaction.jurnal_entry.nomor }}</a>{% else %}-{% endif %}</td></tr>
+                        <tr><td class="text-muted">Dibuat Oleh</td><td>{{ transaction.dibuat_oleh.username|default:"-" }} <small class="text-muted">{{ transaction.dibuat_pada|date:"d/m/Y H:i" }}</small></td></tr>
+                        <tr><td class="text-muted">Diubah Pada</td><td>{{ transaction.diubah_pada|date:"d/m/Y H:i" }}</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <small class="text-muted d-block mb-1">Deskripsi</small>
+                <p class="mb-0">{{ transaction.deskripsi }}</p>
+                {% if transaction.catatan %}
+                <hr>
+                <small class="text-muted d-block mb-1">Catatan</small>
+                <p class="mb-0">{{ transaction.catatan }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if jurnal_lines %}
+    <div class="card mt-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="ri-file-list-3-line me-2"></i>Detail Jurnal Akuntansi</h5>
+            {% if transaction.jurnal_entry %}
+            <a href="{% url 'akuntansi:jurnal_detail' transaction.jurnal_entry.pk %}" class="btn btn-sm btn-outline-primary">
+                <i class="ri-external-link-line me-1"></i>Buka Jurnal {{ transaction.jurnal_entry.nomor }}
+            </a>
+            {% endif %}
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Kode Akun</th>
+                        <th>Nama Akun</th>
+                        <th>Keterangan</th>
+                        <th class="text-end">Debit</th>
+                        <th class="text-end">Kredit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for line in jurnal_lines %}
+                    <tr>
+                        <td><span class="badge bg-label-primary">{{ line.akun.kode }}</span></td>
+                        <td>{{ line.akun.nama }}</td>
+                        <td><small class="text-muted">{{ line.keterangan|default:"-" }}</small></td>
+                        <td class="text-end">{% if line.debit > 0 %}<span class="text-success fw-semibold">{{ line.debit|rupiah }}</span>{% else %}-{% endif %}</td>
+                        <td class="text-end">{% if line.kredit > 0 %}<span class="text-danger fw-semibold">{{ line.kredit|rupiah }}</span>{% else %}-{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if related_transactions %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="ri-link me-2"></i>Mutasi Terkait (Pasangan Transfer)</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nomor</th>
+                        <th>Tanggal</th>
+                        <th>Akun Kas/Bank</th>
+                        <th>Tipe</th>
+                        <th class="text-end">Jumlah</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rtx in related_transactions %}
+                    <tr>
+                        <td><strong>{{ rtx.nomor }}</strong></td>
+                        <td>{{ rtx.tanggal|date:"d/m/Y H:i" }}</td>
+                        <td>{{ rtx.akun_kas_bank.kode }} - {{ rtx.akun_kas_bank.nama }}</td>
+                        <td><span class="badge bg-label-info">{{ rtx.get_tipe_display }}</span></td>
+                        <td class="text-end fw-semibold">{{ rtx.jumlah|rupiah }}</td>
+                        <td><a href="{% url 'kas_bank:transaction_detail' rtx.pk %}" class="btn btn-sm btn-icon btn-text-secondary"><i class="ri-eye-line"></i></a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock content %}

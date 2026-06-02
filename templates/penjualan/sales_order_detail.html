@@ -261,6 +261,11 @@
             <a href="{% url 'penjualan:sales-order-print' sales_order.pk %}" target="_blank" class="btn btn-primary">
                 <i class="ri-printer-line me-1"></i>Cetak
             </a>
+            {% if sales_order.status == 'confirmed' or sales_order.status == 'delivered' %}
+            <button type="button" class="btn btn-danger" onclick="cancelSO({{ sales_order.pk }})">
+                <i class="ri-close-circle-line me-1"></i>Batalkan
+            </button>
+            {% endif %}
         </div>
     </div>
 
@@ -296,6 +301,16 @@
                                     <td class="fw-medium">Gudang:</td>
                                     <td><span class="badge bg-label-info">{{ sales_order.gudang.nama }}</span></td>
                                 </tr>
+                                <tr>
+                                    <td class="fw-medium">Metode Bayar:</td>
+                                    <td>
+                                        {% if sales_order.metode_pembayaran %}
+                                        {{ sales_order.metode_pembayaran.nama }}
+                                        {% else %}
+                                        <span class="badge bg-label-warning">Tempo/Kredit</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
                             </table>
                         </div>
                         <div class="col-md-6">
@@ -318,7 +333,21 @@
                                 </tr>
                                 <tr>
                                     <td class="fw-medium">Pajak:</td>
-                                    <td>{{ sales_order.pajak }}%</td>
+                                    <td>{{ sales_order.pajak|rupiah }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-medium">Piutang/Jatuh Tempo:</td>
+                                    <td>
+                                        {% if is_credit_tempo %}
+                                            {% if piutang_so %}
+                                            {{ piutang_so.jatuh_tempo|date:"d F Y" }} · {{ piutang_so.get_status_display }}
+                                            {% else %}
+                                            Akan dibuat saat SO dikonfirmasi
+                                            {% endif %}
+                                        {% else %}
+                                        Tunai/Bank
+                                        {% endif %}
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td class="fw-medium">Catatan:</td>
@@ -361,7 +390,7 @@
                                         </div>
                                     </td>
                                     <td class="text-center">{{ item.jumlah }}</td>
-                                    <td class="text-end">{{ item.harga|rupiah }}</td>
+                                    <td class="text-end">{{ item.harga_satuan|rupiah }}</td>
                                     <td class="text-end fw-medium">{{ item.subtotal|rupiah }}</td>
                                 </tr>
                                 {% empty %}
@@ -380,7 +409,15 @@
                                     <td class="text-end">{{ sales_order.subtotal|rupiah }}</td>
                                 </tr>
                                 <tr>
-                                    <td colspan="4" class="text-end fw-medium">Pajak ({{ sales_order.pajak }}%):</td>
+                                    <td colspan="4" class="text-end fw-medium">Diskon:</td>
+                                    <td class="text-end text-danger">-{{ sales_order.diskon|rupiah }}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="4" class="text-end fw-medium">Ongkir:</td>
+                                    <td class="text-end">{{ sales_order.biaya_pengiriman|rupiah }}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="4" class="text-end fw-medium">Pajak:</td>
                                     <td class="text-end">{{ sales_order.nilai_pajak|rupiah }}</td>
                                 </tr>
                                 <tr class="fw-bold">
@@ -397,3 +434,39 @@
     </div>
 </div>
 {% endblock content %}
+
+{% block page_js %}
+<script>
+function cancelSO(pk) {
+    Swal.fire({
+        title: 'Batalkan Sales Order?',
+        text: 'Jurnal pembalik akan dibuat, stok dikembalikan. Aksi ini tidak dapat dibatalkan.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Ya, Batalkan',
+        cancelButtonText: 'Tidak'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/penjualan/sales-order/${pk}/cancel/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('Dibatalkan!', data.message, 'success').then(() => location.reload());
+                } else {
+                    Swal.fire('Gagal', data.message, 'error');
+                }
+            })
+            .catch(err => Swal.fire('Error', 'Terjadi kesalahan jaringan', 'error'));
+        }
+    });
+}
+</script>
+{% endblock page_js %}

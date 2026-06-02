@@ -16,12 +16,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView
 from apps.core.mixins import ReadPermissionMixin, CreatePermissionMixin, UpdatePermissionMixin, DeletePermissionMixin
-from apps.core.permissions import has_permission
+from apps.core.permissions import has_permission, permission_required
 from django.utils.decorators import method_decorator
 from django.contrib import messages
 from django.http import JsonResponse
 from django.db.models import Sum, Count, Q, F
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 from datetime import timedelta
 from decimal import Decimal
@@ -36,6 +36,23 @@ from .forms import (
     PelangganForm, PerangkatForm, KategoriServiceForm, JenisServiceForm,
     OrderServiceForm, ItemServiceFormSet, UpdateStatusForm, PembayaranForm
 )
+
+
+def sync_order_biaya_akhir(order):
+    """Simpan biaya_akhir konsisten dengan total_biaya dinamis."""
+    order.biaya_akhir = order.total_biaya
+    order.save(update_fields=['biaya_akhir'])
+
+
+SERVICE_STATUS_TRANSITIONS = {
+    'diterima': {'diagnosa', 'dibatalkan'},
+    'diagnosa': {'menunggu_konfirmasi', 'dikerjakan', 'dibatalkan'},
+    'menunggu_konfirmasi': {'dikerjakan', 'dibatalkan'},
+    'dikerjakan': {'selesai', 'dibatalkan'},
+    'selesai': {'diambil'},
+    'diambil': set(),
+    'dibatalkan': {'diterima'},
+}
 
 
 # ==========================================================================
@@ -196,6 +213,7 @@ class PelangganUpdateView(UpdatePermissionMixin, TemplateView):
 
 
 @login_required
+@permission_required('delete', 'service_center')
 def pelanggan_delete(request, pk):
     """Hapus pelanggan (AJAX DELETE atau POST)."""
     if not request.user.is_superuser and not has_permission(request.user, 'delete', 'service_center', 'pelanggan_service'):
@@ -291,6 +309,7 @@ class PerangkatUpdateView(UpdatePermissionMixin, TemplateView):
 
 
 @login_required
+@permission_required('delete', 'service_center')
 def perangkat_delete(request, pk):
     """Hapus perangkat (AJAX DELETE atau POST)."""
     if not request.user.is_superuser and not has_permission(request.user, 'delete', 'service_center', 'perangkat'):
@@ -384,6 +403,7 @@ class KategoriServiceUpdateView(UpdatePermissionMixin, TemplateView):
 
 
 @login_required
+@permission_required('delete', 'service_center')
 def kategori_delete(request, pk):
     """Hapus kategori service."""
     if not request.user.is_superuser and not has_permission(request.user, 'delete', 'service_center', 'kategori_service'):
@@ -482,6 +502,7 @@ class JenisServiceUpdateView(UpdatePermissionMixin, TemplateView):
 
 
 @login_required
+@permission_required('delete', 'service_center')
 def jenis_delete(request, pk):
     """Hapus jenis service."""
     if not request.user.is_superuser and not has_permission(request.user, 'delete', 'service_center', 'jenis_service'):
@@ -569,11 +590,7 @@ class OrderServiceCreateView(CreatePermissionMixin, TemplateView):
                         # Formset invalid → raise agar atomic rollback order
                         raise ValueError('FORMSET_INVALID')
 
-                    # Hitung biaya akhir dari items
-                    total_items = order.items.aggregate(total=Sum('biaya'))['total'] or Decimal('0')
-                    if total_items > 0:
-                        order.biaya_akhir = total_items
-                        order.save(update_fields=['biaya_akhir'])
+                    sync_order_biaya_akhir(order)
 
                     # Buat riwayat status awal
                     RiwayatStatus.objects.create(
@@ -678,13 +695,9 @@ class OrderServiceUpdateView(UpdatePermissionMixin, TemplateView):
             order = form.save()
             item_formset.save()
 
-            # Recalculate biaya_akhir = total layanan + total sparepart
-            total_items = order.items.aggregate(total=Sum('biaya'))['total'] or Decimal('0')
-            total_sparepart = order.penggunaan_sparepart.aggregate(
-                total=Sum(models.F('jumlah') * models.F('harga_satuan'))
-            )['total'] or Decimal('0')
-            order.biaya_akhir = total_items + total_sparepart
-            order.save(update_fields=['biaya_akhir'])
+            sync_order_biaya_akhir(order)
+            from apps.service_center.services import sync_service_payment_accounting
+            sync_service_payment_accounting(order, user=request.user)
 
             messages.success(request, f'Order {order.nomor_service} berhasil diperbarui!')
             return redirect('service_center:order_detail', pk=order.pk)
@@ -696,6 +709,7 @@ class OrderServiceUpdateView(UpdatePermissionMixin, TemplateView):
 
 
 @login_required
+@permission_required('update', 'service_center')
 def update_status(request, pk):
     """Update status order service."""
     if not request.user.is_superuser and not has_permission(request.user, 'update', 'service_center', 'order_service'):
@@ -710,6 +724,13 @@ def update_status(request, pk):
             new_status = form.cleaned_data['status']
 
             if old_status != new_status:
+                allowed_next = SERVICE_STATUS_TRANSITIONS.get(old_status, set())
+                if new_status not in allowed_next:
+                    old_display = dict(OrderService.STATUS_CHOICES).get(old_status, old_status)
+                    new_display = dict(OrderService.STATUS_CHOICES).get(new_status, new_status)
+                    messages.error(request, f'Perubahan status dari "{old_display}" ke "{new_display}" tidak diizinkan.')
+                    return redirect('service_center:order_detail', pk=order.pk)
+
                 order.status = new_status
 
                 catatan_teknisi = form.cleaned_data.get('catatan_teknisi', '')
@@ -731,9 +752,13 @@ def update_status(request, pk):
                             log_service_stock_return(sp, request.user, request)
                         except Exception:
                             pass
-                    # DIPERBAIKI #8: Reset biaya_akhir ke 0 saat dibatalkan
+                    # DIPERBAIKI #8: Reset biaya_akhir dan pembayaran saat dibatalkan
                     order.biaya_akhir = Decimal('0')
-                    order.save(update_fields=['biaya_akhir'])
+                    order.dp_bayar = Decimal('0')
+                    order.status_bayar = 'belum_bayar'
+                    order.save(update_fields=['biaya_akhir', 'dp_bayar', 'status_bayar'])
+                    from apps.service_center.services import sync_service_payment_accounting
+                    sync_service_payment_accounting(order, user=request.user)
 
                 # DIPERBAIKI #15: Re-activate dari dibatalkan → kurangi stok ulang
                 elif old_status == 'dibatalkan' and new_status != 'dibatalkan':
@@ -768,6 +793,7 @@ def update_status(request, pk):
 
 
 @login_required
+@permission_required('update', 'service_center')
 def update_pembayaran(request, pk):
     """Update status pembayaran order service."""
     if not request.user.is_superuser and not has_permission(request.user, 'update', 'service_center', 'order_service'):
@@ -785,19 +811,50 @@ def update_pembayaran(request, pk):
                 messages.error(request, f'Tidak dapat melunasi order {order.nomor_service} karena biaya akhir masih Rp 0. Tambahkan layanan atau sparepart terlebih dahulu.')
                 return redirect('service_center:order_detail', pk=order.pk)
 
-            order.status_bayar = new_status_bayar
             dp = form.cleaned_data.get('dp_bayar')
-            if dp is not None:
-                order.dp_bayar = dp
             metode = form.cleaned_data.get('metode_pembayaran')
-            order.metode_pembayaran = metode
-            order.save()
+            total_tagihan = order.biaya_akhir or order.total_biaya
+
+            if order.status == 'dibatalkan' and new_status_bayar != 'belum_bayar':
+                messages.error(request, 'Order dibatalkan tidak dapat diberi status pembayaran DP atau lunas.')
+                return redirect('service_center:order_detail', pk=order.pk)
+
+            if new_status_bayar in ['dp', 'lunas'] and not metode:
+                messages.error(request, 'Metode pembayaran wajib dipilih untuk pembayaran DP atau lunas.')
+                return redirect('service_center:order_detail', pk=order.pk)
+
+            if dp is not None and dp < 0:
+                messages.error(request, 'Nominal DP tidak boleh negatif.')
+                return redirect('service_center:order_detail', pk=order.pk)
+
+            if dp is not None and total_tagihan and dp > total_tagihan:
+                messages.error(request, 'Nominal DP tidak boleh melebihi total tagihan service.')
+                return redirect('service_center:order_detail', pk=order.pk)
+
+            if new_status_bayar == 'dp' and (dp is None or dp <= 0):
+                messages.error(request, 'Nominal DP harus lebih dari 0 untuk status pembayaran DP.')
+                return redirect('service_center:order_detail', pk=order.pk)
+
+            try:
+                with transaction.atomic():
+                    order = OrderService.objects.select_for_update().get(pk=order.pk)
+                    order.status_bayar = new_status_bayar
+                    if dp is not None:
+                        order.dp_bayar = dp
+                    order.metode_pembayaran = metode
+                    order.save()
+                    from apps.service_center.services import sync_service_payment_accounting
+                    sync_service_payment_accounting(order, user=request.user)
+            except Exception as exc:
+                messages.error(request, f'Gagal memperbarui pembayaran service: {exc}')
+                return redirect('service_center:order_detail', pk=order.pk)
             messages.success(request, f'Pembayaran order {order.nomor_service} berhasil diperbarui!')
 
     return redirect('service_center:order_detail', pk=order.pk)
 
 
 @login_required
+@permission_required('update', 'service_center')
 def update_items(request, pk):
     """Update item service untuk order tertentu."""
     if not request.user.is_superuser and not has_permission(request.user, 'update', 'service_center', 'order_service'):
@@ -810,13 +867,9 @@ def update_items(request, pk):
         if formset.is_valid():
             formset.save()
 
-            # Recalculate: biaya_akhir = total layanan + total sparepart
-            total_items = order.items.aggregate(total=Sum('biaya'))['total'] or Decimal('0')
-            total_sparepart = order.penggunaan_sparepart.aggregate(
-                total=Sum(F('jumlah') * F('harga_satuan'))
-            )['total'] or Decimal('0')
-            order.biaya_akhir = total_items + total_sparepart
-            order.save(update_fields=['biaya_akhir'])
+            sync_order_biaya_akhir(order)
+            from apps.service_center.services import sync_service_payment_accounting
+            sync_service_payment_accounting(order, user=request.user)
 
             messages.success(request, 'Detail layanan berhasil diperbarui!')
         else:
@@ -826,6 +879,7 @@ def update_items(request, pk):
 
 
 @login_required
+@permission_required('delete', 'service_center')
 def order_delete(request, pk):
     """Hapus order service. Kembalikan stok sparepart sebelum menghapus."""
     if not request.user.is_superuser and not has_permission(request.user, 'delete', 'service_center', 'order_service'):
@@ -835,25 +889,29 @@ def order_delete(request, pk):
     if request.method == 'POST':
         nomor = order.nomor_service
 
-        # --- INTEGRASI INVENTORY: Kembalikan semua stok sparepart sebelum hapus ---
-        for sp in order.penggunaan_sparepart.all():
-            sp.kembalikan_stok()
-            try:
-                from apps.activity_log.stock_signals import log_service_stock_return
-                log_service_stock_return(sp, request.user, request)
-            except Exception:
-                pass
-        # --------------------------------------------------------------------------
-
-        # Set current user untuk fraud signal superuser exemption
         try:
-            from apps.fraud_detection.signals import set_current_delete_user, clear_current_delete_user
-            set_current_delete_user(request.user)
-        except Exception:
-            pass
+            with transaction.atomic():
+                # --- INTEGRASI INVENTORY: Kembalikan semua stok sparepart sebelum hapus ---
+                for sp in order.penggunaan_sparepart.select_related('produk', 'gudang'):
+                    sp.kembalikan_stok()
+                    try:
+                        from apps.activity_log.stock_signals import log_service_stock_return
+                        log_service_stock_return(sp, request.user, request)
+                    except Exception:
+                        pass
+                # --------------------------------------------------------------------------
 
-        try:
-            order.delete()
+                from apps.service_center.services import cancel_service_payment_accounting
+                cancel_service_payment_accounting(order, user=request.user, reason='Penghapusan order service')
+
+                # Set current user untuk fraud signal superuser exemption
+                try:
+                    from apps.fraud_detection.signals import set_current_delete_user, clear_current_delete_user
+                    set_current_delete_user(request.user)
+                except Exception:
+                    pass
+
+                order.delete()
             messages.success(request, f'Order {nomor} berhasil dihapus! Stok sparepart telah dikembalikan.')
         except Exception as e:
             if "FRAUD_BLOCK" in str(e):
@@ -1134,6 +1192,7 @@ class CetakBuktiPembayaranView(ReadPermissionMixin, TemplateView):
 # ==========================================================================
 
 @login_required
+@permission_required('create', 'sparepart')
 def tambah_sparepart(request, pk):
     """Tambah sparepart ke order service. Otomatis kurangi stok."""
     if request.method != 'POST':
@@ -1166,54 +1225,62 @@ def tambah_sparepart(request, pk):
         produk = get_object_or_404(Produk, pk=produk_id)
         gudang = get_object_or_404(Gudang, pk=gudang_id)
 
-        # Cek stok tersedia
-        stok = Stok.objects.filter(produk=produk, gudang=gudang).first()
-        stok_tersedia = stok.jumlah if stok else 0
+        with transaction.atomic():
+            order = OrderService.objects.select_for_update().get(pk=order.pk)
+            if order.status in ['diambil', 'dibatalkan']:
+                status_display = dict(OrderService.STATUS_CHOICES).get(order.status, order.status)
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Tidak dapat menambah sparepart. Order sudah berstatus "{status_display}".'
+                }, status=400)
 
-        if jumlah > stok_tersedia:
-            return JsonResponse({
-                'success': False,
-                'error': f'Stok tidak cukup. Tersedia: {stok_tersedia} {produk.satuan.singkatan}'
-            })
+            # Cek stok tersedia dengan lock supaya tidak terjadi race condition.
+            stok = Stok.objects.select_for_update().filter(produk=produk, gudang=gudang).first()
+            stok_tersedia = stok.jumlah if stok else 0
 
-        # Buat penggunaan sparepart
-        penggunaan = PenggunaanSparepart.objects.create(
-            order_service=order,
-            produk=produk,
-            gudang=gudang,
-            jumlah=jumlah,
-            harga_satuan=harga_satuan if harga_satuan > 0 else produk.harga_jual,
-            catatan=catatan,
-        )
-        # Kurangi stok
-        penggunaan.kurangi_stok()
+            if jumlah > stok_tersedia:
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Stok tidak cukup. Tersedia: {stok_tersedia} {produk.satuan.singkatan}'
+                })
 
-        # --- INTEGRASI: Stock Log (detail tracking stok) ---
-        try:
-            from apps.activity_log.stock_signals import log_service_stock_out
-            log_service_stock_out(penggunaan, request.user, request)
-        except Exception:
-            pass
-        # ---------------------------------------------------
+            # Buat penggunaan sparepart
+            penggunaan = PenggunaanSparepart.objects.create(
+                order_service=order,
+                produk=produk,
+                gudang=gudang,
+                jumlah=jumlah,
+                harga_satuan=harga_satuan if harga_satuan > 0 else produk.harga_jual,
+                catatan=catatan,
+            )
+            # Kurangi stok
+            penggunaan.kurangi_stok()
 
-        # Update biaya akhir order
-        total_items = order.items.aggregate(total=Sum('biaya'))['total'] or Decimal('0')
-        total_sparepart = order.penggunaan_sparepart.aggregate(
-            total=Sum(models.F('jumlah') * models.F('harga_satuan'))
-        )['total'] or Decimal('0')
-        order.biaya_akhir = total_items + total_sparepart
-        order.save(update_fields=['biaya_akhir'])
+            # --- INTEGRASI: Stock Log (detail tracking stok) ---
+            try:
+                from apps.activity_log.stock_signals import log_service_stock_out
+                log_service_stock_out(penggunaan, request.user, request)
+            except Exception:
+                pass
+            # ---------------------------------------------------
+
+            sync_order_biaya_akhir(order)
+            from apps.service_center.services import sync_service_payment_accounting
+            sync_service_payment_accounting(order, user=request.user)
 
         # --- INTEGRASI: Activity Log ---
-        from apps.activity_log.middleware import ActivityLogMiddleware
-        ActivityLogMiddleware.log_activity(
-            request,
-            action='create',
-            model_name='PenggunaanSparepart',
-            object_id=penggunaan.pk,
-            object_repr=f"{produk.nama} ({jumlah} {produk.satuan.singkatan})",
-            description=f"Menambahkan sparepart {produk.nama} x{jumlah} ke Order {order.nomor_service}"
-        )
+        try:
+            from apps.activity_log.middleware import ActivityLogMiddleware
+            ActivityLogMiddleware.log_activity(
+                request,
+                action='create',
+                model_name='PenggunaanSparepart',
+                object_id=penggunaan.pk,
+                object_repr=f"{produk.nama} ({jumlah} {produk.satuan.singkatan})",
+                description=f"Menambahkan sparepart {produk.nama} x{jumlah} ke Order {order.nomor_service}"
+            )
+        except Exception:
+            pass
         # -------------------------------
 
         return JsonResponse({
@@ -1235,6 +1302,7 @@ def tambah_sparepart(request, pk):
 
 
 @login_required
+@permission_required('delete', 'sparepart')
 def hapus_sparepart(request, pk, sparepart_id):
     """Hapus sparepart dari order service. Kembalikan stok."""
     if request.method != 'POST':
@@ -1248,37 +1316,43 @@ def hapus_sparepart(request, pk, sparepart_id):
     penggunaan = get_object_or_404(PenggunaanSparepart, pk=sparepart_id, order_service=order)
 
     try:
-        # Kembalikan stok
-        penggunaan.kembalikan_stok()
+        with transaction.atomic():
+            order = OrderService.objects.select_for_update().get(pk=order.pk)
+            penggunaan = PenggunaanSparepart.objects.select_for_update().get(
+                pk=penggunaan.pk,
+                order_service=order
+            )
 
-        # --- INTEGRASI: Stock Log (detail tracking stok) ---
-        try:
-            from apps.activity_log.stock_signals import log_service_stock_return
-            log_service_stock_return(penggunaan, request.user, request)
-        except Exception:
-            pass
-        # ---------------------------------------------------
+            # Kembalikan stok
+            penggunaan.kembalikan_stok()
 
-        penggunaan.delete()
+            # --- INTEGRASI: Stock Log (detail tracking stok) ---
+            try:
+                from apps.activity_log.stock_signals import log_service_stock_return
+                log_service_stock_return(penggunaan, request.user, request)
+            except Exception:
+                pass
+            # ---------------------------------------------------
 
-        # Update biaya akhir order
-        total_items = order.items.aggregate(total=Sum('biaya'))['total'] or Decimal('0')
-        total_sparepart = order.penggunaan_sparepart.aggregate(
-            total=Sum(models.F('jumlah') * models.F('harga_satuan'))
-        )['total'] or Decimal('0')
-        order.biaya_akhir = total_items + total_sparepart
-        order.save(update_fields=['biaya_akhir'])
+            penggunaan.delete()
+
+            sync_order_biaya_akhir(order)
+            from apps.service_center.services import sync_service_payment_accounting
+            sync_service_payment_accounting(order, user=request.user)
 
         # --- INTEGRASI: Activity Log ---
-        from apps.activity_log.middleware import ActivityLogMiddleware
-        ActivityLogMiddleware.log_activity(
-            request,
-            action='delete',
-            model_name='PenggunaanSparepart',
-            object_id=sparepart_id,
-            object_repr=f"Sparepart ID {sparepart_id} (Dihapus)",
-            description=f"Menghapus sparepart dari Order {order.nomor_service} dan mengembalikan stok"
-        )
+        try:
+            from apps.activity_log.middleware import ActivityLogMiddleware
+            ActivityLogMiddleware.log_activity(
+                request,
+                action='delete',
+                model_name='PenggunaanSparepart',
+                object_id=sparepart_id,
+                object_repr=f"Sparepart ID {sparepart_id} (Dihapus)",
+                description=f"Menghapus sparepart dari Order {order.nomor_service} dan mengembalikan stok"
+            )
+        except Exception:
+            pass
         # -------------------------------
 
         return JsonResponse({
@@ -1290,6 +1364,7 @@ def hapus_sparepart(request, pk, sparepart_id):
 
 
 @login_required
+@permission_required('update', 'sparepart')
 def edit_sparepart(request, pk, sparepart_id):
     """
     Edit penggunaan sparepart pada order service.
@@ -1320,79 +1395,88 @@ def edit_sparepart(request, pk, sparepart_id):
 
         new_gudang = get_object_or_404(Gudang, pk=new_gudang_id)
 
-        # Simpan data lama untuk perbandingan
-        old_jumlah = penggunaan.jumlah
-        old_gudang = penggunaan.gudang
-        old_stok_dikurangi = penggunaan.stok_dikurangi
+        with transaction.atomic():
+            order = OrderService.objects.select_for_update().get(pk=order.pk)
+            penggunaan = PenggunaanSparepart.objects.select_for_update().get(
+                pk=penggunaan.pk,
+                order_service=order
+            )
 
-        # LANGKAH 1: Kembalikan stok lama
-        penggunaan.kembalikan_stok()
+            # Simpan data lama untuk perbandingan
+            old_jumlah = penggunaan.jumlah
+            old_gudang = penggunaan.gudang
+            old_stok_dikurangi = penggunaan.stok_dikurangi
 
-        # --- INTEGRASI: Stock Log (stok dikembalikan dari edit) ---
-        try:
-            from apps.activity_log.stock_signals import log_service_stock_return, log_service_stock_out
-            log_service_stock_return(penggunaan, request.user, request)
-        except Exception:
-            pass
-        # -----------------------------------------------------------
+            # LANGKAH 1: Kembalikan stok lama
+            penggunaan.kembalikan_stok()
 
-        # LANGKAH 2: Cek stok baru tersedia
-        stok_baru = StokModel.objects.filter(produk=penggunaan.produk, gudang=new_gudang).first()
-        stok_tersedia = stok_baru.jumlah if stok_baru else 0
+            # --- INTEGRASI: Stock Log (stok dikembalikan dari edit) ---
+            try:
+                from apps.activity_log.stock_signals import log_service_stock_return, log_service_stock_out
+                log_service_stock_return(penggunaan, request.user, request)
+            except Exception:
+                pass
+            # -----------------------------------------------------------
 
-        if new_jumlah > stok_tersedia:
-            # Rollback: kurangi stok lama kembali karena sudah dikembalikan
-            penggunaan.gudang = old_gudang
-            penggunaan.jumlah = old_jumlah
+            # LANGKAH 2: Cek stok baru tersedia
+            stok_baru = StokModel.objects.select_for_update().filter(
+                produk=penggunaan.produk,
+                gudang=new_gudang
+            ).first()
+            stok_tersedia = stok_baru.jumlah if stok_baru else 0
+
+            if new_jumlah > stok_tersedia:
+                # Rollback: kurangi stok lama kembali karena sudah dikembalikan
+                penggunaan.gudang = old_gudang
+                penggunaan.jumlah = old_jumlah
+                penggunaan.stok_dikurangi = False
+                penggunaan.save(update_fields=['gudang', 'jumlah', 'stok_dikurangi'])
+                penggunaan.kurangi_stok()
+                satuan = penggunaan.produk.satuan.singkatan if penggunaan.produk.satuan else 'pcs'
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Stok tidak cukup di gudang {new_gudang.nama}. Tersedia: {stok_tersedia} {satuan}'
+                })
+
+            # LANGKAH 3: Update data penggunaan
+            penggunaan.jumlah = new_jumlah
+            penggunaan.harga_satuan = new_harga
+            penggunaan.gudang = new_gudang
+            penggunaan.catatan = new_catatan
             penggunaan.stok_dikurangi = False
-            penggunaan.save(update_fields=['gudang', 'jumlah', 'stok_dikurangi'])
+            penggunaan.save()
+
+            # LANGKAH 4: Kurangi stok baru
             penggunaan.kurangi_stok()
-            satuan = penggunaan.produk.satuan.singkatan if penggunaan.produk.satuan else 'pcs'
-            return JsonResponse({
-                'success': False,
-                'error': f'Stok tidak cukup di gudang {new_gudang.nama}. Tersedia: {stok_tersedia} {satuan}'
-            })
 
-        # LANGKAH 3: Update data penggunaan
-        penggunaan.jumlah = new_jumlah
-        penggunaan.harga_satuan = new_harga
-        penggunaan.gudang = new_gudang
-        penggunaan.catatan = new_catatan
-        penggunaan.stok_dikurangi = False
-        penggunaan.save()
+            # --- INTEGRASI: Stock Log (stok dikurangi setelah edit) ---
+            try:
+                log_service_stock_out(penggunaan, request.user, request)
+            except Exception:
+                pass
+            # -----------------------------------------------------------
 
-        # LANGKAH 4: Kurangi stok baru
-        penggunaan.kurangi_stok()
-
-        # --- INTEGRASI: Stock Log (stok dikurangi setelah edit) ---
-        try:
-            log_service_stock_out(penggunaan, request.user, request)
-        except Exception:
-            pass
-        # -----------------------------------------------------------
-
-        # LANGKAH 5: Recalculate biaya_akhir order
-        total_items = order.items.aggregate(total=Sum('biaya'))['total'] or Decimal('0')
-        total_sparepart = order.penggunaan_sparepart.aggregate(
-            total=Sum(models.F('jumlah') * models.F('harga_satuan'))
-        )['total'] or Decimal('0')
-        order.biaya_akhir = total_items + total_sparepart
-        order.save(update_fields=['biaya_akhir'])
+            sync_order_biaya_akhir(order)
+            from apps.service_center.services import sync_service_payment_accounting
+            sync_service_payment_accounting(order, user=request.user)
 
         # --- INTEGRASI: Activity Log ---
-        from apps.activity_log.middleware import ActivityLogMiddleware
-        ActivityLogMiddleware.log_activity(
-            request,
-            action='update',
-            model_name='PenggunaanSparepart',
-            object_id=penggunaan.pk,
-            object_repr=f"{penggunaan.produk.nama} ({new_jumlah})",
-            description=(
+        try:
+            from apps.activity_log.middleware import ActivityLogMiddleware
+            ActivityLogMiddleware.log_activity(
+                request,
+                action='update',
+                model_name='PenggunaanSparepart',
+                object_id=penggunaan.pk,
+                object_repr=f"{penggunaan.produk.nama} ({new_jumlah})",
+                description=(
                 f"Edit sparepart pada Order {order.nomor_service}: "
                 f"jumlah {old_jumlah}→{new_jumlah}, "
                 f"gudang {old_gudang.nama}→{new_gudang.nama}"
+                )
             )
-        )
+        except Exception:
+            pass
         # -------------------------------
 
         return JsonResponse({
@@ -1413,6 +1497,7 @@ def edit_sparepart(request, pk, sparepart_id):
 
 
 @login_required
+@permission_required('read', 'sparepart')
 def api_search_sparepart(request):
     """API untuk search sparepart by name/SKU, termasuk info stok per gudang."""
     q = request.GET.get('q', '').strip()

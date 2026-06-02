@@ -1,0 +1,471 @@
+{% extends 'layout/layout_vertical.html' %}
+{% load static %}
+{% load currency_filters %}
+
+{% block title %}Rekap PPN - Akuntansi ERP{% endblock title %}
+
+
+{% block vendor_css %}{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/apex-charts/apex-charts.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div><h4 class="mb-1"><i class="ri-bar-chart-box-line me-2"></i>Rekap PPN — {{ selected_tahun }}</h4><p class="text-muted mb-0">PPN Masukan vs Keluaran (setor/kurang bayar)</p></div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'pajak:setor_list' %}" class="btn btn-success"><i class="ri-bank-line me-1"></i>Setor PPN</a>
+            <a href="{% url 'pajak:list' %}" class="btn btn-outline-secondary"><i class="ri-arrow-left-line me-1"></i>Kembali</a>
+        </div>
+    </div>
+    <!-- Filter Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get">
+                <!-- Baris 1: field filter -->
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Tahun</label>
+                        <select name="tahun" class="form-select">
+                            {% for y in tahun_list %}
+                            <option value="{{ y }}" {% if y == selected_tahun %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Filter Bulan</label>
+                        <select name="bulan" class="form-select">
+                            <option value="">Semua Bulan</option>
+                            <option value="1" {% if request.GET.bulan == '1' %}selected{% endif %}>Januari</option>
+                            <option value="2" {% if request.GET.bulan == '2' %}selected{% endif %}>Februari</option>
+                            <option value="3" {% if request.GET.bulan == '3' %}selected{% endif %}>Maret</option>
+                            <option value="4" {% if request.GET.bulan == '4' %}selected{% endif %}>April</option>
+                            <option value="5" {% if request.GET.bulan == '5' %}selected{% endif %}>Mei</option>
+                            <option value="6" {% if request.GET.bulan == '6' %}selected{% endif %}>Juni</option>
+                            <option value="7" {% if request.GET.bulan == '7' %}selected{% endif %}>Juli</option>
+                            <option value="8" {% if request.GET.bulan == '8' %}selected{% endif %}>Agustus</option>
+                            <option value="9" {% if request.GET.bulan == '9' %}selected{% endif %}>September</option>
+                            <option value="10" {% if request.GET.bulan == '10' %}selected{% endif %}>Oktober</option>
+                            <option value="11" {% if request.GET.bulan == '11' %}selected{% endif %}>November</option>
+                            <option value="12" {% if request.GET.bulan == '12' %}selected{% endif %}>Desember</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Tipe PPN</label>
+                        <select name="tipe" class="form-select">
+                            <option value="">Masukan & Keluaran</option>
+                            <option value="masukan" {% if request.GET.tipe == 'masukan' %}selected{% endif %}>PPN Masukan</option>
+                            <option value="keluaran" {% if request.GET.tipe == 'keluaran' %}selected{% endif %}>PPN Keluaran</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- Baris 2: Filter Kolom (kiri) + spacer + Tombol Filter (kanan) — standar 3+6+3 -->
+                <div class="row g-3 mt-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Pilih Kolom yang Ditampilkan</label>
+                        <div class="dropdown">
+                            <button class="btn btn-label-secondary dropdown-toggle waves-effect w-100" type="button"
+                                id="columnFilterDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                                aria-expanded="false">
+                                <i class="ri-layout-column-line me-1"></i>
+                                Pilih Kolom yang Ditampilkan
+                            </button>
+                            <div class="dropdown-menu p-3" aria-labelledby="columnFilterDropdown" style="min-width: 280px;">
+                                <h6 class="dropdown-header px-0 mb-2">Kolom Tabel</h6>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="0" id="col-bulan" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-bulan">Bulan</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="1" id="col-dpp-masukan" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-dpp-masukan">DPP Masukan</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="2" id="col-ppn-masukan" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-ppn-masukan">PPN Masukan</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="3" id="col-dpp-keluaran" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-dpp-keluaran">DPP Keluaran</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="4" id="col-ppn-keluaran" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-ppn-keluaran">PPN Keluaran</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input column-checkbox" type="checkbox" value="5" id="col-setor" checked onchange="toggleColumns()">
+                                    <label class="form-check-label" for="col-setor">Setor/Restitusi</label>
+                                </div>
+                                <div class="dropdown-divider my-2"></div>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-primary flex-fill" onclick="selectAllColumns()">
+                                        <i class="ri-checkbox-multiple-line ri-16px"></i> Semua
+                                    </button>
+                                    <button class="btn btn-sm btn-label-secondary flex-fill" onclick="deselectAllColumns()">
+                                        <i class="ri-checkbox-blank-line ri-16px"></i> Kosongkan
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <small class="text-muted d-block mt-1">Klik untuk memilih kolom</small>
+                    </div>
+                    <div class="col-md-6"></div>
+                    <div class="col-md-3">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="ri-filter-3-line me-1"></i>Terapkan Filter
+                            </button>
+                            <a href="{% url 'pajak:rekap' %}" class="btn btn-label-secondary">
+                                <i class="ri-refresh-line me-1"></i>Reset
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-success"><i class="ri-arrow-up-circle-line ri-24px"></i></span></div>
+                        <div>
+                            <h5 class="mb-0 text-success">{{ total_keluaran|rupiah }}</h5>
+                            <small class="text-muted">PPN Keluaran (Penjualan)</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-warning"><i class="ri-arrow-down-circle-line ri-24px"></i></span></div>
+                        <div>
+                            <h5 class="mb-0 text-warning">{{ total_masukan|rupiah }}</h5>
+                            <small class="text-muted">PPN Masukan (Pembelian)</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-12 col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3">
+                            <span class="avatar-initial rounded {% if total_setor > 0 %}bg-label-danger{% else %}bg-label-info{% endif %}">
+                                <i class="{% if total_setor > 0 %}ri-error-warning-line{% else %}ri-refund-2-line{% endif %} ri-24px"></i>
+                            </span>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 {% if total_setor > 0 %}text-danger{% else %}text-info{% endif %}">{{ total_setor|rupiah }}</h5>
+                            <small class="text-muted">{% if total_setor > 0 %}PPN Kurang Bayar (Setor){% else %}PPN Lebih Bayar (Restitusi){% endif %}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card mb-4" id="sec-grafik-ppn"><div class="card-header"><h5 class="mb-0"><i class="ri-bar-chart-2-line me-2"></i>Grafik PPN Bulanan</h5></div><div class="card-body"><div id="ppnChart" style="min-height:300px;"></div></div></div>
+    <div class="card" id="sec-rekap-ppn">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="ri-list-check me-2"></i>Rekap Bulanan {{ selected_tahun }}</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+            </div>
+        </div>
+        <div class="card-datatable table-responsive"><table class="accounting-data-table table table-hover" id="rekapTable" data-accounting-primary="true" data-export-title="Rekap PPN" data-search-placeholder="Cari rekap PPN..."><thead class="table-light"><tr><th>Bulan</th><th class="text-end">DPP Masukan</th><th class="text-end">PPN Masukan</th><th class="text-end">DPP Keluaran</th><th class="text-end">PPN Keluaran</th><th class="text-end">Setor/Restitusi</th></tr></thead><tbody>
+            {% for m in months %}<tr>
+                <td>{{ m.bulan }}</td>
+                <td class="text-end">{{ m.dpp_masukan|rupiah }}</td><td class="text-end text-warning">{{ m.ppn_masukan|rupiah }}</td>
+                <td class="text-end">{{ m.dpp_keluaran|rupiah }}</td><td class="text-end text-success">{{ m.ppn_keluaran|rupiah }}</td>
+                <td class="text-end fw-bold {% if m.setor > 0 %}text-danger{% elif m.setor < 0 %}text-info{% endif %}">{{ m.setor|rupiah }}</td>
+            </tr>{% endfor %}
+        </tbody><tfoot class="table-footer-summary"><tr><td class="text-start ps-4 py-3"><div class="d-flex align-items-center justify-content-start"><i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i><div class="text-start"><strong class="d-block" style="font-size: 0.875rem;">RINGKASAN</strong><small class="text-muted">{{ selected_tahun }}</small></div></div></td><td class="text-end py-3">-</td><td class="text-end py-3"><span class="badge bg-label-warning">{{ total_masukan|rupiah }}</span></td><td class="text-end py-3">-</td><td class="text-end py-3"><span class="badge bg-label-success">{{ total_keluaran|rupiah }}</span></td><td class="text-end py-3"><span class="badge bg-label-{% if total_setor > 0 %}danger{% else %}info{% endif %}">{{ total_setor|rupiah }}</span></td></tr></tfoot></table></div>
+    </div>
+</div>
+{% endblock content %}
+{% block vendor_js %}{{ block.super }}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="{% static 'vendor/libs/apex-charts/apexcharts.js' %}"></script>
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+{% endblock vendor_js %}
+{% block page_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var el = document.getElementById('ppnChart');
+    if (!el) return;
+    var seriesData = [{name:'PPN Masukan', data: {{ chart_masukan|safe }}},{name:'PPN Keluaran', data: {{ chart_keluaran|safe }}},{name:'Setor/Restitusi', data: {{ chart_setor|safe }}}];
+    var hasData = seriesData.some(function(s){ return s.data && s.data.some(function(v){return v>0;}); });
+    if (!hasData) {
+        el.innerHTML = '<div class="text-center text-muted py-5"><i class="ri-bar-chart-2-line ri-3x d-block mb-2" style="opacity:0.3"></i><small>Belum ada data untuk ditampilkan</small></div>';
+        return;
+    }
+    var isDark = typeof isDarkStyle !== 'undefined' ? isDarkStyle : document.documentElement.classList.contains('dark-style');
+    var gridColor  = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+    var labelColor = isDark ? '#b4b5ba' : '#a5a3ae';
+    var chartColors = ['#ff9f43','#28c76f','#ea5455'];
+    new ApexCharts(el, {
+        chart: {
+            type: 'area', height: 300,
+            fontFamily: 'Inter, -apple-system, sans-serif', background: 'transparent',
+            toolbar: { show: true, tools: { download: '<i class="ri-download-2-line" style="font-size:16px"></i>', selection:false,zoom:false,zoomin:false,zoomout:false,pan:false,reset:false } },
+            animations: { enabled:true, easing:'easeinout', speed:800, dynamicAnimation:{enabled:true,speed:350} },
+            dropShadow: { enabled:true, top:6, left:0, blur:6, opacity:isDark?0.15:0.08, color:chartColors }
+        },
+        colors: chartColors,
+        dataLabels: { enabled:false },
+        stroke: { curve:'smooth', width:3, lineCap:'round' },
+        fill: { type:'gradient', gradient:{ shade:isDark?'dark':'light', type:'vertical', shadeIntensity:0.3, opacityFrom:isDark?0.25:0.4, opacityTo:0.02, stops:[0,95,100] } },
+        series: seriesData,
+        xaxis: {
+            categories: {{ chart_labels|safe }},
+            labels: { style:{ colors:labelColor, fontSize:'13px', fontWeight:400 } },
+            axisBorder:{show:false}, axisTicks:{show:false},
+            crosshairs:{ stroke:{ color:isDark?'#555':'#ddd', dashArray:4 } }
+        },
+        yaxis: { labels: { style:{colors:labelColor,fontSize:'13px'}, formatter:function(val){ return 'Rp '+val.toLocaleString('id-ID'); } } },
+        tooltip: {
+            theme:isDark?'dark':'light', shared:true, intersect:false,
+            style:{fontSize:'13px'}, x:{show:true},
+            y:{ formatter:function(val){ return 'Rp '+val.toLocaleString('id-ID'); } },
+            marker:{show:true}
+        },
+        legend: { position:'top', horizontalAlign:'left', fontSize:'13px', fontWeight:500, labels:{colors:isDark?'#ccc':'#555'}, markers:{size:5,strokeWidth:0,offsetX:-3}, itemMargin:{horizontal:12,vertical:4} },
+        markers: { size:0, hover:{size:6,sizeOffset:3}, strokeWidth:2, strokeColors:isDark?'#2b2c40':'#fff' },
+        grid: { borderColor:gridColor, strokeDashArray:4, padding:{top:-10,left:10,right:10,bottom:0}, xaxis:{lines:{show:false}}, yaxis:{lines:{show:true}} },
+        responsive: [{ breakpoint:768, options:{ chart:{height:240}, legend:{fontSize:'11px'}, stroke:{width:2} } }]
+    }).render();
+});
+
+
+// Template Data for Independent Headers/Footers
+const EXCEL_INFO = {
+    name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
+    address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
+    phone: "{{ export_excel_template.header_telepon|escapejs|default:'No Telp' }}",
+    email: "{{ export_excel_template.header_email|escapejs|default:'email@domain.com' }}",
+    copyright: "{{ export_excel_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
+};
+
+const PDF_INFO = {
+    name: "{{ export_pdf_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
+    address: "{{ export_pdf_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
+    phone: "{{ export_pdf_template.header_telepon|escapejs|default:'No Telp' }}",
+    email: "{{ export_pdf_template.header_email|escapejs|default:'email@domain.com' }}",
+    copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
+};
+
+function exportExcel() {
+    const tbl = document.getElementById('rekapTable');
+    if (!tbl) { alert('Tabel tidak ditemukan!'); return; }
+    
+    let visibleColumns = [];
+    const firstRow = tbl.querySelector('thead tr');
+    if (firstRow) {
+        firstRow.querySelectorAll('th').forEach((th, index) => {
+            if (th.style.display !== 'none') {
+                visibleColumns.push({ index: index, text: th.textContent.trim() });
+            }
+        });
+    }
+    
+    let colCount = visibleColumns.length || 2;
+    let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+    html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
+    html += '<body>';
+    
+    // --- ADD EXCEL HEADER (Company Info) ---
+    html += '<table border="0">';
+    if (typeof EXCEL_INFO !== 'undefined') {
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
+        html += `<tr><td colspan="${colCount}"></td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:14px; font-weight:bold;">REKAP PPN</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">Tahun {{ selected_tahun }}</td></tr>`;
+        html += `<tr><td colspan="${colCount}"></td></tr>`;
+    }
+    html += '</table>';
+    
+    html += '<table border="1"><thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;">';
+    visibleColumns.forEach(col => { html += `<th>${col.text}</th>`; });
+    html += '</tr></thead><tbody>';
+    
+    tbl.querySelectorAll('tbody tr, tfoot tr').forEach(function(tr) {
+        if (tr.style.display === 'none') return;
+        html += '<tr>';
+        visibleColumns.forEach(col => {
+            const cells = tr.querySelectorAll('th, td');
+            const cell = cells[col.index];
+            let style = '';
+            if (cell && (cell.tagName === 'TH' || cell.classList.contains('fw-bold'))) {
+                style = ' style="font-weight: bold; background-color: #f8f9fa;"';
+            }
+            html += `<td${style}>${cell ? cell.textContent.trim() : ''}</td>`;
+        });
+        html += '</tr>';
+    });
+    html += '</tbody></table>';
+    
+    // --- ADD EXCEL FOOTER ---
+    html += '<table border="0">';
+    html += `<tr><td colspan="${colCount}"></td></tr>`;
+    if (typeof EXCEL_INFO !== 'undefined') {
+        html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</td></tr>`;
+        html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">${EXCEL_INFO.copyright}</td></tr>`;
+    }
+    html += '</table></body></html>';
+    
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'Rekap_PPN_{{ selected_tahun }}.xls';
+    link.click();
+}
+
+function exportPDF() {
+    if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
+    
+    const tbl = document.getElementById('rekapTable');
+    if (!tbl) { alert('Tabel tidak ditemukan!'); return; }
+    
+    const headers = [];
+    let visibleColumns = [];
+    const firstRow = tbl.querySelector('thead tr');
+    if (firstRow) {
+        firstRow.querySelectorAll('th').forEach((th, index) => {
+            if (th.style.display !== 'none') {
+                headers.push({
+                    text: th.textContent.trim(),
+                    style: 'tableHeader',
+                    fillColor: '#696CFF',
+                    color: '#FFFFFF',
+                    bold: true
+                });
+                visibleColumns.push({ index: index });
+            }
+        });
+    }
+    
+    const body = [headers];
+    tbl.querySelectorAll('tbody tr, tfoot tr').forEach(function(tr) {
+        if (tr.style.display === 'none') return;
+        const row = [];
+        let isBold = false;
+        visibleColumns.forEach(col => {
+            const cells = tr.querySelectorAll('th, td');
+            const cell = cells[col.index];
+            if (cell && (cell.tagName === 'TH' || cell.classList.contains('fw-bold'))) {
+                isBold = true;
+            }
+            row.push(cell ? cell.textContent.trim() : '');
+        });
+        if (row.length > 0) {
+            if (isBold) {
+                body.push(row.map(text => ({ text: String(text), bold: true, fillColor: '#f8f9fa' })));
+            } else {
+                body.push(row);
+            }
+        }
+    });
+    
+    let companyInfoExists = typeof PDF_INFO !== 'undefined';
+    
+    const docDefinition = {
+        pageOrientation: 'landscape',
+        pageMargins: [40, 100, 40, 60],
+        header: function (currentPage) {
+            if (companyInfoExists) {
+                return {
+                    margin: [40, 20, 40, 10],
+                    columns: [
+                        {
+                            width: '*',
+                            stack: [
+                                { text: PDF_INFO.name, style: 'companyName' },
+                                { text: PDF_INFO.address, style: 'companyInfo' },
+                                { text: PDF_INFO.phone + ' | ' + PDF_INFO.email, style: 'companyInfo' }
+                            ]
+                        },
+                        { width: 'auto', stack: [{ text: 'Halaman ' + currentPage, style: 'pageNumber', alignment: 'right' }] }
+                    ]
+                };
+            }
+            return { text: 'Halaman ' + currentPage, margin: [40, 20, 40, 10], alignment: 'right', style: 'pageNumber' };
+        },
+        content: [
+            { text: 'REKAP PPN', style: 'documentTitle', margin: [0, 0, 0, 5] },
+            { text: 'Tahun {{ selected_tahun }}', style: 'dateText', margin: [0, 0, 0, 20] },
+            {
+                table: { headerRows: 1, widths: Array(headers.length).fill('auto'), body: body },
+                layout: {
+                    fillColor: (rowIndex) => (rowIndex === 0) ? '#696CFF' : ((rowIndex % 2 === 0) ? '#F5F5F9' : null),
+                    hLineWidth: () => 0.5,
+                    vLineWidth: () => 0.5,
+                    hLineColor: () => '#DBDADE',
+                    vLineColor: () => '#DBDADE'
+                }
+            }
+        ],
+        footer: function (currentPage, pageCount) {
+            if (companyInfoExists) {
+                return {
+                    margin: [40, 10, 40, 10],
+                    columns: [
+                        { text: 'Dicetak pada: ' + new Date().toLocaleString('id-ID'), style: 'footerText' },
+                        { text: PDF_INFO.copyright, style: 'footerText', alignment: 'right' }
+                    ]
+                };
+            }
+            return { text: 'Dicetak pada: ' + new Date().toLocaleString('id-ID'), margin: [40, 10, 40, 10], style: 'footerText' };
+        },
+        styles: {
+            companyName: { fontSize: 14, bold: true, color: '#5F61E6' },
+            companyInfo: { fontSize: 9, color: '#697A8D' },
+            pageNumber: { fontSize: 9, color: '#697A8D' },
+            documentTitle: { fontSize: 18, bold: true, color: '#5F61E6' },
+            dateText: { fontSize: 10, color: '#697A8D' },
+            tableHeader: { bold: true, fontSize: 10, color: '#FFFFFF' },
+            footerText: { fontSize: 8, color: '#697A8D' }
+        },
+        defaultStyle: { fontSize: 9 }
+    };
+    
+    pdfMake.createPdf(docDefinition).download('Rekap_PPN_{{ selected_tahun }}.pdf');
+}
+
+function toggleColumns() {
+    var checkboxes = document.querySelectorAll('.column-checkbox');
+    var table = document.getElementById('rekapTable');
+    if (!table) return;
+    checkboxes.forEach(function(cb) {
+        var colIdx = parseInt(cb.value);
+        var rows = table.querySelectorAll('tr');
+        rows.forEach(function(row) {
+            var cells = row.querySelectorAll('th, td');
+            if (cells[colIdx]) cells[colIdx].style.display = cb.checked ? '' : 'none';
+        });
+    });
+}
+function selectAllColumns() {
+    document.querySelectorAll('.column-checkbox').forEach(function(cb) { cb.checked = true; });
+    toggleColumns();
+}
+function deselectAllColumns() {
+    document.querySelectorAll('.column-checkbox').forEach(function(cb) { cb.checked = false; });
+    toggleColumns();
+}
+</script>
+{% include 'accounting/partials/table_tools.html' %}
+{% endblock page_js %}

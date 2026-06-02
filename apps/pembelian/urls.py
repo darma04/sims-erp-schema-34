@@ -52,4 +52,6 @@ urlpatterns = [
     path('purchase-order/<int:pk>/receive/', views.purchase_order_receive, name='purchase-order-receive'),
     # URL: /pembelian/purchase-order/<int:pk>/delete/ — purchase-order-delete
     path('purchase-order/<int:pk>/delete/', views.PurchaseOrderDeleteView.as_view(), name='purchase-order-delete'),
+    # URL: /pembelian/purchase-order/<int:pk>/cancel/ — purchase-order-cancel (POST AJAX)
+    path('purchase-order/<int:pk>/cancel/', views.cancel_purchase_order, name='purchase-order-cancel'),
 ]

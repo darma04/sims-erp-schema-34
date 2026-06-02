@@ -36,7 +36,7 @@
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
     {# ─── HEADER HALAMAN ─── #}
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-1">
         <div>
             <h4 class="mb-1">
                 <i class="ri-safe-2-line me-2"></i>Rekonsiliasi Kas (Blind Cash Closing)
@@ -51,6 +51,15 @@
             </a>
             {% endif %}
         </div>
+    </div>
+    <!-- Label Sumber Data -->
+    <div class="mb-4">
+        <span class="badge bg-label-danger rounded-pill px-3 py-2">
+            <i class="ri-shield-check-line me-1"></i>Rekonsiliasi Kas Kasir (Harian)
+        </span>
+        <small class="text-muted ms-2" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="right" title="Verifikasi uang tunai fisik di laci kasir vs expected dari sistem POS. Dilakukan setiap tutup shift untuk mendeteksi kecurangan (shortage/overage). Berbeda dengan Rekonsiliasi Bank yang membandingkan saldo rekening.">
+            <i class="ri-information-line"></i> Apa artinya?
+        </small>
     </div>
 
     {# ─── SUMMARY CARDS — 4 kartu ringkasan rekonsiliasi kas ─── #}

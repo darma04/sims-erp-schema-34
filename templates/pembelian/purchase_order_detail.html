@@ -262,6 +262,11 @@
                 class="btn btn-primary">
                 <i class="ri-printer-line me-1"></i>Cetak
             </a>
+            {% if purchase_order.status == 'submitted' or purchase_order.status == 'approved' or purchase_order.status == 'received' %}
+            <button type="button" class="btn btn-danger" onclick="cancelPO({{ purchase_order.pk }})">
+                <i class="ri-close-circle-line me-1"></i>Batalkan
+            </button>
+            {% endif %}
         </div>
     </div>
 
@@ -297,6 +302,16 @@
                                     <td class="fw-medium">Gudang:</td>
                                     <td><span class="badge bg-label-info">{{ purchase_order.gudang.nama }}</span></td>
                                 </tr>
+                                <tr>
+                                    <td class="fw-medium">Metode Bayar:</td>
+                                    <td>
+                                        {% if purchase_order.metode_pembayaran %}
+                                        {{ purchase_order.metode_pembayaran.nama }}
+                                        {% else %}
+                                        <span class="badge bg-label-warning">Tempo/Kredit</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
                             </table>
                         </div>
                         <div class="col-md-6">
@@ -319,7 +334,21 @@
                                 </tr>
                                 <tr>
                                     <td class="fw-medium">Pajak:</td>
-                                    <td>{{ purchase_order.pajak }}%</td>
+                                    <td>{{ purchase_order.pajak|rupiah }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-medium">Hutang/Jatuh Tempo:</td>
+                                    <td>
+                                        {% if is_credit_tempo %}
+                                            {% if hutang_po %}
+                                            {{ hutang_po.jatuh_tempo|date:"d F Y" }} · {{ hutang_po.get_status_display }}
+                                            {% else %}
+                                            Akan dibuat saat PO diterima
+                                            {% endif %}
+                                        {% else %}
+                                        Tunai/Bank
+                                        {% endif %}
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td class="fw-medium">Catatan:</td>
@@ -381,7 +410,11 @@
                                     <td class="text-end">{{ purchase_order.subtotal|rupiah }}</td>
                                 </tr>
                                 <tr>
-                                    <td colspan="4" class="text-end fw-medium">Pajak ({{ purchase_order.pajak }}%):</td>
+                                    <td colspan="4" class="text-end fw-medium">Ongkir:</td>
+                                    <td class="text-end">{{ purchase_order.biaya_pengiriman|rupiah }}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="4" class="text-end fw-medium">Pajak:</td>
                                     <td class="text-end">{{ purchase_order.nilai_pajak|rupiah }}</td>
                                 </tr>
                                 <tr class="fw-bold">
@@ -398,3 +431,39 @@
     </div>
 </div>
 {% endblock content %}
+
+{% block page_js %}
+<script>
+function cancelPO(pk) {
+    Swal.fire({
+        title: 'Batalkan Purchase Order?',
+        text: 'Jurnal pembalik akan dibuat, stok dikurangi. Aksi ini tidak dapat dibatalkan.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Ya, Batalkan',
+        cancelButtonText: 'Tidak'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/pembelian/purchase-order/${pk}/cancel/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('Dibatalkan!', data.message, 'success').then(() => location.reload());
+                } else {
+                    Swal.fire('Gagal', data.message, 'error');
+                }
+            })
+            .catch(err => Swal.fire('Error', 'Terjadi kesalahan jaringan', 'error'));
+        }
+    });
+}
+</script>
+{% endblock page_js %}

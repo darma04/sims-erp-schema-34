@@ -15,3 +15,7 @@ class InventoryConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'  # Auto-increment BigInt untuk PK
     name = 'apps.inventory'                                # Path modul Python
     verbose_name = 'Inventory'                             # Nama tampilan di Admin
+
+    def ready(self):
+        """Import signals agar receiver terdaftar saat app dimuat."""
+        import apps.inventory.signals  # noqa: F401

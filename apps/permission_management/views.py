@@ -50,6 +50,7 @@ from django.http import JsonResponse
 from apps.core.models import RolePermission
 # Import dari modul internal proyek
 from apps.core.mixins import SuperuserRequiredMixin
+from apps.core.cache_utils import invalidate_role_permissions_cache
 from django.db import transaction
 
 @method_decorator(login_required, name='dispatch')
@@ -103,7 +104,7 @@ class RolePermissionCreateView(SuperuserRequiredMixin, CreateView):
     template_name = 'permission_management/role_permission_form.html'
     fields = ['role', 'module', 'can_view', 'can_create', 'can_edit', 'can_delete', 'description']
     # URL redirect setelah operasi berhasil
-    success_url = reverse_lazy('permission_management:list')
+    success_url = reverse_lazy('permission_management:permission_list')
     
     def get_context_data(self, **kwargs):
         """Menambahkan data konteks tambahan ke template."""
@@ -123,7 +124,9 @@ class RolePermissionCreateView(SuperuserRequiredMixin, CreateView):
 
 
         messages.success(self.request, f'Permission untuk {form.instance.get_role_display()} - {form.instance.get_module_display()} berhasil ditambahkan!')
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        invalidate_role_permissions_cache(self.object.role)
+        return response
 
 
 @method_decorator(login_required, name='dispatch')
@@ -142,7 +145,7 @@ class RolePermissionUpdateView(SuperuserRequiredMixin, UpdateView):
     template_name = 'permission_management/role_permission_form.html'
     fields = ['can_view', 'can_create', 'can_edit', 'can_delete', 'description']
     # URL redirect setelah operasi berhasil
-    success_url = reverse_lazy('permission_management:list')
+    success_url = reverse_lazy('permission_management:permission_list')
     pk_url_kwarg = 'pk'
 
     def get_context_data(self, **kwargs):
@@ -163,7 +166,10 @@ class RolePermissionUpdateView(SuperuserRequiredMixin, UpdateView):
 
 
         messages.success(self.request, f'Permission untuk {form.instance} berhasil diupdate!')
-        return super().form_valid(form)
+        role = self.object.role
+        response = super().form_valid(form)
+        invalidate_role_permissions_cache(role)
+        return response
 
 
 @method_decorator(login_required, name='dispatch')
@@ -180,7 +186,7 @@ class RolePermissionDeleteView(SuperuserRequiredMixin, DeleteView):
     """
     model = RolePermission
     # URL redirect setelah operasi berhasil
-    success_url = reverse_lazy('permission_management:list')
+    success_url = reverse_lazy('permission_management:permission_list')
     pk_url_kwarg = 'pk'
 
 
@@ -193,10 +199,12 @@ class RolePermissionDeleteView(SuperuserRequiredMixin, DeleteView):
         """Hapus data - return JSON response untuk AJAX."""
         permission = self.get_object()
         perm_name = str(permission)
+        role = permission.role
 
         # Blok penanganan error - coba jalankan kode di bawah
         try:
             permission.delete()
+            invalidate_role_permissions_cache(role)
             return JsonResponse({
                 'success': True,
                 'message': f'Permission {perm_name} berhasil dihapus'
@@ -253,6 +261,7 @@ class PermissionCreateAjaxView(SuperuserRequiredMixin, View):
                         can_delete=request.POST.get('can_delete') == 'on',
                         description=request.POST.get('description', '')
                     )
+                    invalidate_role_permissions_cache(role)
 
                     return JsonResponse({
                         'success': True,
@@ -295,6 +304,7 @@ class PermissionUpdateAjaxView(SuperuserRequiredMixin, View):
             permission.can_delete = request.POST.get('can_delete') == 'on'
             permission.description = request.POST.get('description', '')
             permission.save()
+            invalidate_role_permissions_cache(permission.role)
 
             return JsonResponse({
                 'success': True,

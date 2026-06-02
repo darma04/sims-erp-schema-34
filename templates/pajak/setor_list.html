@@ -1,0 +1,148 @@
+{% extends 'layout/layout_vertical.html' %}
+{% load static %}
+{% load currency_filters %}
+
+{% block title %}Setor / Restitusi PPN - Akuntansi ERP{% endblock title %}
+
+{% block vendor_css %}{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="ri-bank-line me-2"></i>Setor / Restitusi PPN</h4>
+            <p class="text-muted mb-0">Daftar settlement PPN bulanan ke kas negara</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'pajak:rekap' %}" class="btn btn-outline-secondary"><i class="ri-bar-chart-box-line me-1"></i>Rekap PPN</a>
+            <a href="{% url 'pajak:setor_add' %}" class="btn btn-primary"><i class="ri-add-line me-1"></i>Buat Setor PPN</a>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Tahun</label>
+                        <select name="tahun" class="form-select">
+                            <option value="">Semua Tahun</option>
+                            {% for y in tahun_list %}
+                            <option value="{{ y }}" {% if request.GET.tahun == y|stringformat:"s" %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Tipe</label>
+                        <select name="tipe" class="form-select">
+                            <option value="">Semua Tipe</option>
+                            {% for code, label in tipe_choices %}
+                            <option value="{{ code }}" {% if request.GET.tipe == code %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="row g-3 mt-2 align-items-end">
+                    <div class="col-md-9"></div>
+                    <div class="col-md-3">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary"><i class="ri-filter-3-line me-1"></i>Terapkan Filter</button>
+                            <a href="{% url 'pajak:setor_list' %}" class="btn btn-label-secondary"><i class="ri-refresh-line me-1"></i>Reset</a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card"><div class="card-body"><div class="d-flex align-items-center">
+                <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-primary"><i class="ri-file-list-3-line ri-24px"></i></span></div>
+                <div><h5 class="mb-0">{{ count_total }}</h5><small class="text-muted">Total Settlement</small></div>
+            </div></div></div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card"><div class="card-body"><div class="d-flex align-items-center">
+                <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-success"><i class="ri-arrow-up-circle-line ri-24px"></i></span></div>
+                <div><h5 class="mb-0 text-success">{{ total_keluaran|rupiah }}</h5><small class="text-muted">Total PPN Keluaran</small></div>
+            </div></div></div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card"><div class="card-body"><div class="d-flex align-items-center">
+                <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-warning"><i class="ri-arrow-down-circle-line ri-24px"></i></span></div>
+                <div><h5 class="mb-0 text-warning">{{ total_masukan|rupiah }}</h5><small class="text-muted">Total PPN Masukan</small></div>
+            </div></div></div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card"><div class="card-body"><div class="d-flex align-items-center">
+                <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-danger"><i class="ri-bank-line ri-24px"></i></span></div>
+                <div><h5 class="mb-0 text-danger">{{ total_setor|rupiah }}</h5><small class="text-muted">Total Disetor / Restitusi</small></div>
+            </div></div></div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="ri-list-check me-2"></i>Daftar Settlement PPN</h5>
+        </div>
+        <div class="card-datatable table-responsive">
+            <table class="table table-hover" id="setorTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nomor</th>
+                        <th>Masa Pajak</th>
+                        <th>Tipe</th>
+                        <th class="text-end">PPN Keluaran</th>
+                        <th class="text-end">PPN Masukan</th>
+                        <th class="text-end">Setor / Restitusi</th>
+                        <th>Tgl. Setor</th>
+                        <th>Jurnal</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in setor_list %}
+                    <tr>
+                        <td><strong>{{ s.nomor }}</strong></td>
+                        <td>{{ s.masa_bulan|stringformat:"02d" }}/{{ s.masa_tahun }}</td>
+                        <td>
+                            {% if s.tipe == 'setor' %}
+                            <span class="badge bg-label-danger">{{ s.get_tipe_display }}</span>
+                            {% else %}
+                            <span class="badge bg-label-info">{{ s.get_tipe_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end text-success">{{ s.total_ppn_keluaran|rupiah }}</td>
+                        <td class="text-end text-warning">{{ s.total_ppn_masukan|rupiah }}</td>
+                        <td class="text-end fw-bold {% if s.tipe == 'setor' %}text-danger{% else %}text-info{% endif %}">{{ s.jumlah_setor|rupiah }}</td>
+                        <td>{{ s.tanggal_setor|date:"d/m/Y" }}</td>
+                        <td>
+                            {% if s.jurnal %}
+                            <a href="{% url 'akuntansi:jurnal_detail' s.jurnal.pk %}" class="text-primary">{{ s.jurnal.nomor }}</a>
+                            {% else %}-{% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'pajak:setor_detail' s.pk %}" class="btn btn-sm btn-icon btn-text-secondary"><i class="ri-eye-line"></i></a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="9" class="text-center text-muted py-4">Belum ada settlement PPN.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block vendor_js %}{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+{% endblock vendor_js %}

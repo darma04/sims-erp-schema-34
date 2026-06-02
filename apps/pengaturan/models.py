@@ -28,13 +28,14 @@
 ==========================================================================
 """
 from django.db import models
+from apps.core.validators import validate_image_file
 
 
 class PengaturanPerusahaan(models.Model):
     """Model untuk pengaturan perusahaan (singleton)"""
     nama_perusahaan = models.CharField(max_length=200, verbose_name="Nama Perusahaan")
     # logo — File upload
-    logo = models.ImageField(upload_to='perusahaan/', blank=True, null=True, verbose_name="Logo")
+    logo = models.ImageField(upload_to='perusahaan/', blank=True, null=True, verbose_name="Logo", validators=[validate_image_file])
     # alamat — Teks panjang
     alamat = models.TextField(blank=True, null=True, verbose_name="Alamat")
     # telepon — Teks pendek
@@ -66,7 +67,8 @@ class PengaturanPerusahaan(models.Model):
         blank=True, 
         null=True, 
         verbose_name="Logo Sistem",
-        help_text="Logo yang ditampilkan di sidebar & login page"
+        help_text="Logo yang ditampilkan di sidebar & login page",
+        validators=[validate_image_file]
     )
     # system_favicon — File upload
     system_favicon = models.ImageField(
@@ -74,7 +76,8 @@ class PengaturanPerusahaan(models.Model):
         blank=True, 
         null=True, 
         verbose_name="Favicon",
-        help_text="Icon yang tampil di tab browser (.ico atau .png 32x32)"
+        help_text="Icon yang tampil di tab browser (.ico atau .png 32x32)",
+        validators=[validate_image_file]
     )
     
     # Auth Pages Configuration (Kiri = Ilustrasi, Kanan/Full = Background Mask)
@@ -83,14 +86,16 @@ class PengaturanPerusahaan(models.Model):
         blank=True,
         null=True,
         verbose_name="Gambar Ilustrasi Autentikasi (Kiri)",
-        help_text="Gambar utama pada halaman Login/Register (rekomendasi: PNG transparan)"
+        help_text="Gambar utama pada halaman Login/Register (rekomendasi: PNG transparan)",
+        validators=[validate_image_file]
     )
     auth_background_image = models.ImageField(
         upload_to='system/auth/',
         blank=True,
         null=True,
         verbose_name="Background Mask Autentikasi",
-        help_text="Gambar shape abstract atau background (rekomendasi: SVG atau PNG transparan)"
+        help_text="Gambar shape abstract atau background (rekomendasi: SVG atau PNG transparan)",
+        validators=[validate_image_file]
     )
 
     # maintenance_mode — Boolean (True/False)
@@ -112,14 +117,16 @@ class PengaturanPerusahaan(models.Model):
         blank=True,
         null=True,
         verbose_name="Gambar Ilustrasi Halaman Error & Maintenance",
-        help_text="Gambar utama pada halaman Error & Maintenance (rekomendasi: PNG transparan)"
+        help_text="Gambar utama pada halaman Error & Maintenance (rekomendasi: PNG transparan)",
+        validators=[validate_image_file]
     )
     misc_background_image = models.ImageField(
         upload_to='system/misc/',
         blank=True,
         null=True,
         verbose_name="Background Halaman Error & Maintenance",
-        help_text="Gambar latar belakang untuk halaman rupa-rupa (rekomendasi: SVG atau PNG transparan)"
+        help_text="Gambar latar belakang untuk halaman rupa-rupa (rekomendasi: SVG atau PNG transparan)",
+        validators=[validate_image_file]
     )
     
     # Email/SMTP Settings for sending emails (forgot password, register verification)
@@ -207,12 +214,11 @@ class TemplateCetak(models.Model):
     """Model untuk mengatur template cetak dokumen"""
     JENIS_TEMPLATE = (
         ('invoice', 'Invoice'),
+        ('pos_invoice', 'Invoice POS'),
         ('purchase_order', 'Purchase Order'),
         ('sales_order', 'Sales Order'),
         ('expense', 'Transaksi Biaya'),
         ('slip_gaji', 'Slip Gaji'),
-        ('nota_service', 'Nota Service'),
-        ('bukti_bayar_service', 'Bukti Bayar Service'),
         ('export_excel', 'Export Excel'),
         ('export_pdf', 'Export PDF'),
     )
@@ -330,20 +336,6 @@ class TemplateCetak(models.Model):
                 'nama': 'Template POS Invoice Default',
                 'signature_kiri_label': 'Kasir',
                 'signature_kanan_label': 'Customer',
-            },
-            'nota_service': {
-                'nama': 'Template Nota Service Default',
-                'signature_kiri_label': 'Teknisi',
-                'signature_kanan_label': 'Pelanggan',
-                'footer_ucapan': 'Terima kasih telah mempercayakan perangkat Anda kepada kami!',
-                'footer_keterangan': 'Nota ini merupakan bukti penerimaan dan penyelesaian service.',
-            },
-            'bukti_bayar_service': {
-                'nama': 'Template Bukti Bayar Service Default',
-                'signature_kiri_label': 'Kasir',
-                'signature_kanan_label': 'Pelanggan',
-                'footer_ucapan': 'Terima kasih atas pembayaran Anda!',
-                'footer_keterangan': 'Bukti pembayaran ini sah sebagai tanda lunas.',
             },
         }
         

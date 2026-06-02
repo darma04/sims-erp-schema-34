@@ -20,9 +20,20 @@
             <p class="text-muted mb-0">{{ slip.periode }}</p>
         </div>
         <div class="d-flex gap-2">
+            {% if slip.status != 'dibayar' %}
+            <button type="button" class="btn btn-success" id="btnUpdateStatusDetail"
+                onclick="openStatusModalDetail({{ slip.pk }}, '{{ slip.status }}', '{{ slip.karyawan.nama|escapejs }} - {{ slip.periode }}')">
+                <i class="ri-exchange-line me-1"></i>Update Status
+            </button>
+            {% endif %}
             <a href="{% url 'hr:penggajian-print' slip.pk %}" target="_blank" class="btn btn-label-primary">
                 <i class="ri-printer-line me-1"></i>Cetak
             </a>
+            {% if slip.status == 'draft' or slip.status == 'diproses' or slip.status == 'dibayar' %}
+            <button type="button" class="btn btn-danger" onclick="cancelPenggajian({{ slip.pk }})">
+                <i class="ri-close-circle-line me-1"></i>Batalkan
+            </button>
+            {% endif %}
             <a href="{% url 'hr:penggajian' %}" class="btn btn-label-secondary">
                 <i class="ri-arrow-left-line me-1"></i>Kembali
             </a>
@@ -251,7 +262,158 @@
         </div>
     </div>
 </div>
+
+<!-- ===== MODAL UPDATE STATUS PENGGAJIAN - DETAIL PAGE ===== -->
+<div class="modal fade" id="statusModalDetail" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success align-items-center py-3">
+                <h5 class="modal-title text-white mb-0">
+                    <i class="ri-exchange-line me-2"></i>Update Status Slip Gaji
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-4">
+                <p class="mb-3">Slip: <strong id="detailStatusSlipName"></strong></p>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Status Saat Ini</label>
+                    <div id="detailStatusCurrentBadge"></div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Ubah Status Ke <span class="text-danger">*</span></label>
+                    <select class="form-select" id="detailStatusSelectNew">
+                        <option value="draft">Draft</option>
+                        <option value="diproses">Diproses</option>
+                        <option value="dibayar">Dibayar</option>
+                        <option value="batal">Batal</option>
+                    </select>
+                </div>
+                <div class="alert alert-info d-flex align-items-start py-2 mb-0" id="detailStatusInfoBox">
+                    <i class="ri-information-line me-2 mt-1 flex-shrink-0"></i>
+                    <small id="detailStatusInfoText">Pilih status untuk melihat informasi.</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-success" id="btnSimpanStatusDetail">
+                    <i class="ri-save-line me-1"></i>Simpan Status
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% csrf_token %}
 {% endblock content %}
+
+{% block page_js %}
+<script>
+// Update Status — Slip Gaji Detail Page
+var STATUS_INFO_DETAIL = {
+    'draft'   : { badge: 'secondary', info: 'Status awal. Slip belum diproses.' },
+    'diproses': { badge: 'warning',   info: 'Slip sedang diproses oleh tim HR/keuangan.' },
+    'dibayar' : { badge: 'success',   info: 'Slip telah dibayar. Jurnal akuntansi akan dibuat otomatis.' },
+    'batal'   : { badge: 'danger',    info: 'Slip dibatalkan dan tidak akan diproses.' }
+};
+var detailStatusSlipId = null;
+
+function openStatusModalDetail(slipId, currentStatus, slipName) {
+    detailStatusSlipId = slipId;
+    document.getElementById('detailStatusSlipName').textContent = slipName;
+    var info = STATUS_INFO_DETAIL[currentStatus] || { badge: 'secondary', info: '-' };
+    var label = currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1);
+    document.getElementById('detailStatusCurrentBadge').innerHTML =
+        '<span class="badge bg-label-' + info.badge + '">' + label + '</span>';
+    var nextStatus = { 'draft': 'diproses', 'diproses': 'dibayar' }[currentStatus] || 'diproses';
+    var sel = document.getElementById('detailStatusSelectNew');
+    sel.value = nextStatus;
+    updateDetailStatusInfo(nextStatus);
+    new bootstrap.Modal(document.getElementById('statusModalDetail')).show();
+}
+
+function updateDetailStatusInfo(status) {
+    var info = STATUS_INFO_DETAIL[status] || { badge: 'secondary', info: '' };
+    document.getElementById('detailStatusInfoText').textContent = info.info;
+    var box = document.getElementById('detailStatusInfoBox');
+    box.className = 'alert d-flex align-items-start py-2 mb-0 alert-' +
+        ({ 'success': 'success', 'danger': 'danger', 'warning': 'warning' }[info.badge] || 'info');
+}
+
+document.getElementById('detailStatusSelectNew').addEventListener('change', function() {
+    updateDetailStatusInfo(this.value);
+});
+
+document.getElementById('btnSimpanStatusDetail').addEventListener('click', function() {
+    if (!detailStatusSlipId) return;
+    var btn = this;
+    var newStatus = document.getElementById('detailStatusSelectNew').value;
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...';
+    var formData = new FormData();
+    formData.append('status', newStatus);
+    formData.append('csrfmiddlewaretoken', csrfToken);
+    fetch('/hr/penggajian/' + detailStatusSlipId + '/update-status-ajax/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+        body: formData
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('statusModalDetail')).hide();
+            setTimeout(function() { location.reload(); }, 800);
+        } else {
+            alert(data.message || 'Gagal mengubah status.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ri-save-line me-1"></i>Simpan Status';
+        }
+    })
+    .catch(function() {
+        alert('Terjadi kesalahan pada server.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ri-save-line me-1"></i>Simpan Status';
+    });
+});
+
+function cancelPenggajian(pk) {
+    Swal.fire({
+        title: 'Batalkan Penggajian?',
+        text: 'Jurnal pembalik akan dibuat. Aksi ini tidak dapat dibatalkan.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Ya, Batalkan',
+        cancelButtonText: 'Tidak'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (!csrfToken) {
+                Swal.fire('Error', 'CSRF token tidak ditemukan. Refresh halaman.', 'error');
+                return;
+            }
+            fetch(`/hr/penggajian/${pk}/cancel/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken.value,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('Dibatalkan!', data.message, 'success').then(() => location.reload());
+                } else {
+                    Swal.fire('Gagal', data.message, 'error');
+                }
+            })
+            .catch(err => Swal.fire('Error', 'Terjadi kesalahan jaringan', 'error'));
+        }
+    });
+}
+</script>
+{% endblock page_js %}
 
 {% block page_css %}
 <style>

@@ -73,10 +73,10 @@ _BYPASS_FRAUD_SIGNALS = False
 # FRAUD_BLOCK, sesuai deskripsi UI: "tidak bisa dihapus kecuali superuser".
 #
 # Penggunaan dari views.py sebelum delete:
-#   from apps.fraud_detection import signals as fraud_signals
-#   fraud_signals.set_current_delete_user(request.user)
+#   from apps.fraud_detection.signals import set_current_delete_user, clear_current_delete_user
+#   set_current_delete_user(request.user)
 #   instance.delete()
-#   fraud_signals.clear_current_delete_user()
+#   clear_current_delete_user()
 import threading
 _thread_locals = threading.local()
 
@@ -94,6 +94,7 @@ def clear_current_delete_user():
 def _get_current_delete_user():
     """Ambil user yang sedang melakukan delete (internal)."""
     return getattr(_thread_locals, 'current_delete_user', None)
+
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -572,4 +573,3 @@ def detect_biaya_service_anomali(sender, instance, created, **kwargs):
                 )
         except Exception as e:
             logger.error(f"Error in detect_biaya_service_anomali: {e}")
-

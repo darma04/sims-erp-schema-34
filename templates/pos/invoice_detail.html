@@ -30,6 +30,11 @@
             <h4 class="mb-1">Detail Invoice</h4>
         </div>
         <div class="d-flex gap-2">
+            {% if transaction.status == 'paid' or transaction.status == 'unpaid' %}
+            <button type="button" class="btn btn-danger" onclick="cancelPOS({{ transaction.pk }})">
+                <i class="ri-close-circle-line me-1"></i>Batalkan
+            </button>
+            {% endif %}
             <a href="{% url 'pos:invoice_list' %}" class="btn btn-label-secondary">
                 <i class="ri-arrow-left-line me-1"></i>Kembali
             </a>
@@ -317,5 +322,37 @@
             } else { alert('Link invoice telah disalin!'); }
         } catch(e) { alert('Tidak dapat menyalin link. Salin manual: ' + text); }
     }
+
+function cancelPOS(pk) {
+    Swal.fire({
+        title: 'Batalkan Transaksi POS?',
+        text: 'Jurnal pembalik akan dibuat, stok dikembalikan. Aksi ini tidak dapat dibatalkan.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Ya, Batalkan',
+        cancelButtonText: 'Tidak'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/pos/invoice/${pk}/cancel/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('Dibatalkan!', data.message, 'success').then(() => location.reload());
+                } else {
+                    Swal.fire('Gagal', data.message, 'error');
+                }
+            })
+            .catch(err => Swal.fire('Error', 'Terjadi kesalahan jaringan', 'error'));
+        }
+    });
+}
 </script>
 {% endblock page_js %}
