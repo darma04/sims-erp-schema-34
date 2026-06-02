@@ -192,17 +192,38 @@ def sync_service_payment_accounting(order, user=None):
         tanggal = order.tanggal_diambil or order.tanggal_selesai or order.tanggal_masuk
         tanggal_jurnal = tanggal.date() if hasattr(tanggal, "date") else tanggal
 
-        journal = create_jurnal(
-            tanggal=tanggal_jurnal,
-            deskripsi=f"Pendapatan Service - {order.nomor_service}",
-            lines_data=lines_data,
-            sumber=SERVICE_JOURNAL_SOURCE,
-            sumber_id=order.pk,
-            sumber_ref=_payment_ref(order),
-            cabang=order.cabang,
-            user=user or order.diterima_oleh,
-            auto_post=True,
-        )
+        try:
+            journal = create_jurnal(
+                tanggal=tanggal_jurnal,
+                deskripsi=f"Pendapatan Service - {order.nomor_service}",
+                lines_data=lines_data,
+                sumber=SERVICE_JOURNAL_SOURCE,
+                sumber_id=order.pk,
+                sumber_ref=_payment_ref(order),
+                cabang=order.cabang,
+                user=user or order.diterima_oleh,
+                auto_post=True,
+            )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f'[Service Center] Gagal create_jurnal untuk {order.nomor_service}: {e}', exc_info=True)
+            try:
+                from apps.activity_log.models import UserActivity
+                UserActivity.objects.create(
+                    user=user or order.diterima_oleh,
+                    action='create',
+                    model_name='JurnalEntry',
+                    object_id=str(order.pk),
+                    object_repr=f'GAGAL: Jurnal Service {order.nomor_service}',
+                    description=f'[JURNAL GAGAL] Auto-jurnal untuk Service Center {order.nomor_service} gagal dibuat. Error: {str(e)[:200]}',
+                    source_type='service_center',
+                    source_id=str(order.pk),
+                    source_repr=order.nomor_service,
+                )
+            except Exception:
+                pass
+            raise
 
         create_operational_mutation(
             akun_kas_bank=kas_bank_account,

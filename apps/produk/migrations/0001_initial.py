@@ -10,15 +10,6 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    replaces = [
-        ('produk', '0001_initial'),
-        ('produk', '0002_produk_cabang'),
-        ('produk', '0003_add_pajak_to_gudang'),
-        ('produk', '0004_gudang_metode_pembayaran_default'),
-        ('produk', '0005_konversisatuan'),
-        ('produk', '0006_add_tipe_to_produk'),
-        ('produk', '0007_produk_metode_pembayaran'),
-    ]
 
     dependencies = [
         ('pos', '0001_initial'),

@@ -15,3 +15,7 @@ class ServiceCenterConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'apps.service_center'
     verbose_name = 'Service Center'
+
+    def ready(self):
+        """Import signals saat aplikasi ready."""
+        import apps.service_center.signals  # noqa: F401

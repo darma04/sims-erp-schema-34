@@ -9,15 +9,6 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    replaces = [
-        ('pos', '0001_initial'),
-        ('pos', '0002_postransaction_jatuh_tempo_postransaction_status_and_more'),
-        ('pos', '0003_add_gambar_deskripsi_to_metode'),
-        ('pos', '0004_add_saldo_to_metode'),
-        ('pos', '0005_add_nama_pemilik'),
-        ('pos', '0006_add_customer_fk'),
-        ('pos', '0007_postransactionitem_jumlah_konversi_and_more'),
-    ]
 
     dependencies = [
         ('akuntansi', '0001_initial'),
