@@ -12,7 +12,6 @@ class Migration(migrations.Migration):
 
 
     dependencies = [
-        ('pos', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -41,7 +40,7 @@ class Migration(migrations.Migration):
                 ('pajak_persen', models.DecimalField(decimal_places=2, default=0, max_digits=5, verbose_name='Pajak (%)')),
                 ('aktif', models.BooleanField(default=True, verbose_name='Aktif')),
                 ('dibuat_pada', models.DateTimeField(auto_now_add=True)),
-                ('metode_pembayaran_default', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='gudang_default', to='pos.metodepembayaran', verbose_name='Metode Pembayaran Default')),
+                ('metode_pembayaran_default', models.ForeignKey(blank=True, db_constraint=False, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='gudang_default', to='pos.metodepembayaran', verbose_name='Metode Pembayaran Default')),
             ],
             options={
                 'verbose_name': 'Gudang',
@@ -84,7 +83,7 @@ class Migration(migrations.Migration):
                 ('cabang', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='produk_cabang', to='produk.gudang', verbose_name='Cabang')),
                 ('dibuat_oleh', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='produk_dibuat', to=settings.AUTH_USER_MODEL)),
                 ('kategori', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='produk', to='produk.kategori', verbose_name='Kategori')),
-                ('metode_pembayaran', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='produk_set', to='pos.metodepembayaran', verbose_name='Metode Pembayaran')),
+                ('metode_pembayaran', models.ForeignKey(blank=True, db_constraint=False, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='produk_set', to='pos.metodepembayaran', verbose_name='Metode Pembayaran')),
                 ('satuan', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='produk', to='produk.satuan', verbose_name='Satuan')),
             ],
             options={
