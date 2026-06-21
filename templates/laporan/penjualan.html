@@ -611,7 +611,7 @@
             dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
         };
 
-        {% if sales_order_list %}
+        {% if sales_order_list or pos_transaction_list %}
         window.soTable = $('#salesTable').DataTable(dtConfig);
         {% endif %}
 
