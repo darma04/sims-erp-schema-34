@@ -411,6 +411,7 @@ Fitur: filter tipe akun, export Excel & PDF, cards ringkasan, seed CoA.
 $(document).ready(function() {
     {% if akun_list %}
     if (!$.fn.dataTable.isDataTable('#coaTable')) {
+    {% if akun_list %}
     $('#coaTable').DataTable({
         language: {
             "sEmptyTable": "Tidak ada data", "sProcessing": "Memproses...",
@@ -427,6 +428,7 @@ $(document).ready(function() {
         dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
         initComplete: function() { $('.dataTables_filter input').attr('placeholder', 'Cari kode/nama akun...'); }
     });
+    {% endif %}
     }
     {% endif %}
 });
