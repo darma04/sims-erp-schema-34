@@ -267,7 +267,21 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
                             {% for stok in produk.stok_set.all %}
                             {% if stok.jumlah > 0 %}
                             <span
-                                class="badge bg-label-{% if stok.jumlah > 10 %}success{% elif stok.jumlah > 5 %}info{% else %}warning{% endif %} me-1 mb-1"
+                                class="badge bg-label-{% if stok.jumlah > 10 %}success{% elif stok.jumlah > 5 %}info{% else %}
+                                <div class="card-body">
+                                    <div class="text-center py-4 py-md-5 px-3 px-md-4">
+                                        <div class="mb-4">
+                                            <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                                                 style="width: 88px; height: 88px;">
+                                                <i class="ri-inbox-line" style="font-size: 2.8rem;"></i>
+                                            </div>
+                                        </div>
+                                        <h5 class="mb-3">Belum Ada Data</h5>
+                                        <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+                                            Daftar data masih kosong.
+                                        </p>
+                                    </div>
+                                </div>warning{% endif %} me-1 mb-1"
                                 title="{{ stok.gudang.nama }}">
                                 {{ stok.gudang.kode }}: {{ stok.jumlah|floatformat:0 }}
                             </span>
