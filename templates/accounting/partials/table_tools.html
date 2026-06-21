@@ -221,6 +221,7 @@ var kasBankDataTable = window.kasBankDataTable || null;
         }
 
         var dataTable = $(table).DataTable({
+            scrollX: true,
             language: {
                 sEmptyTable: 'Tidak ada data yang tersedia pada tabel ini',
                 sProcessing: 'Sedang memproses...',
@@ -244,7 +245,7 @@ var kasBankDataTable = window.kasBankDataTable || null;
             lengthMenu: [[10, 25, 50, 75, 100, -1], ['10', '25', '50', '75', '100', 'Semua']],
             responsive: false,
             columnDefs: columnDefs,
-            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             initComplete: function () {
                 $(table).closest('.dataTables_wrapper').find('.dataTables_filter input').attr('placeholder', table.dataset.searchPlaceholder || 'Cari data...');
             }
