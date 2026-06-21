@@ -1,0 +1,122 @@
+{% extends 'layout/layout_blank.html' %}
+{% load static %}
+
+{% comment %}
+   ==========================================================================
+   LICENSE - Error Lisensi
+   Halaman error ketika lisensi tidak valid, expired,
+   atau tidak bisa terhubung ke License Server.
+   Menggunakan layout_blank agar konsisten dengan halaman login/aktivasi.
+   ==========================================================================
+{% endcomment %}
+
+{% block title %}Lisensi Tidak Terjangkau — {{ product_code|default:"SERPTECH" }}{% endblock %}
+
+{% block page_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/css/pages/page-auth.css' %}" />
+<style>
+  .license-error-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+  }
+  .license-error-icon.warning {
+    background: rgba(var(--bs-warning-rgb), 0.12);
+    color: var(--bs-warning);
+  }
+  .license-error-info {
+    background: rgba(var(--bs-primary-rgb), 0.06);
+    border-left: 4px solid var(--bs-primary);
+    border-radius: 0 0.5rem 0.5rem 0;
+    padding: 1rem 1.25rem;
+  }
+  .license-error-info strong {
+    color: var(--bs-primary);
+  }
+  .license-error-list li {
+    padding: 0.35rem 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .license-error-list li i {
+    color: var(--bs-warning);
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+</style>
+{% endblock page_css %}
+
+{% block content %}
+<div class="container-xxl">
+  <div class="authentication-wrapper authentication-basic container-p-y">
+    <div class="authentication-inner py-4">
+      <div class="card" style="max-width: 550px; margin: 0 auto;">
+        <div class="card-body p-4 p-sm-5">
+
+          <div class="text-center mb-4">
+            <div class="mb-3">
+              <div class="license-error-icon warning mx-auto">
+                <i class="ri-server-line"></i>
+              </div>
+            </div>
+            <h4 class="mb-1 fw-bold">Server Lisensi Tidak Terjangkau</h4>
+            <p class="text-muted mb-0">
+              Sistem tidak dapat terhubung ke server lisensi untuk memverifikasi kunci aktivasi Anda.
+            </p>
+          </div>
+
+          <div class="license-error-info mb-4">
+            <p class="mb-2" style="font-size: 0.9rem;">
+              <strong><i class="ri-information-line me-1"></i>Untuk Admin:</strong>
+            </p>
+            <ul class="license-error-list list-unstyled mb-0" style="font-size: 0.875rem;">
+              <li>
+                <i class="ri-error-warning-fill"></i>
+                <span>Server lisensi (<code>{{ cls_url }}</code>) sedang offline atau maintenance.</span>
+              </li>
+              <li>
+                <i class="ri-error-warning-fill"></i>
+                <span>Koneksi internet perangkat ini terputus.</span>
+              </li>
+              <li>
+                <i class="ri-error-warning-fill"></i>
+                <span>Firewall atau proxy memblokir akses ke server lisensi.</span>
+              </li>
+            </ul>
+          </div>
+
+          <p class="text-muted small mb-4">
+            Pastikan server CLS aktif dan perangkat ini memiliki akses jaringan ke sana. Jika sudah yakin koneksi normal, coba muat ulang halaman ini.
+          </p>
+
+          <div class="d-grid gap-2 mb-3">
+            <a href="{{ request.path }}" class="btn btn-primary btn-lg">
+              <i class="ri-refresh-line me-2"></i>Muat Ulang Halaman
+            </a>
+            <a href="{% url 'license_activation' %}" class="btn btn-label-secondary">
+              <i class="ri-arrow-left-line me-2"></i>Kembali ke Aktivasi
+            </a>
+          </div>
+
+          {% if hardware_id %}
+          <div class="mt-3 p-3 rounded" style="background: rgba(var(--bs-secondary-rgb), 0.06); font-size: 0.8rem;">
+            <p class="text-muted mb-1"><i class="ri-fingerprint-line me-1"></i>Hardware ID:</p>
+            <code class="d-block text-break">{{ hardware_id }}</code>
+          </div>
+          {% endif %}
+
+        </div>
+      </div>
+      <p class="text-center text-muted mt-3 small">
+        {{ product_code|default:"SERPTECH" }} &mdash; Hubungi dukungan teknis jika masalah berlanjut.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
