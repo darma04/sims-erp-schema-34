@@ -401,7 +401,7 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
                 </p>
                 <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
                     {% if can_create.hr %}
-                    <a href="{% url 'hr:penggajian_generate' %}" class="btn btn-primary btn-lg">
+                    <a href="{% url 'hr:penggajian-generate' %}" class="btn btn-primary btn-lg">
                         <i class="ri-calculator-line me-1"></i>Generate Penggajian
                     </a>
                     {% endif %}

@@ -341,11 +341,11 @@ Fitur: export Excel & PDF, filter.
                 </p>
                 <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
                     {% if can_create.pembelian %}
-                    <a href="{% url 'pembelian:purchase_order_add' %}" class="btn btn-primary btn-lg">
+                    <a href="{% url 'pembelian:purchase-order-add' %}" class="btn btn-primary btn-lg">
                         <i class="ri-add-line me-1"></i>Tambah Purchase Order
                     </a>
                     {% endif %}
-                    <a href="{% url 'pembelian:purchase_order_import' %}" class="btn btn-label-success btn-lg">
+                    <a href="{% url 'pembelian:purchase-order-import' %}" class="btn btn-label-success btn-lg">
                         <i class="ri-upload-2-line me-1"></i>Import PO
                     </a>
                 </div>
