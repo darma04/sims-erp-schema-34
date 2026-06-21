@@ -238,6 +238,11 @@
                 <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
                     Daftar transaction masih kosong.
                 </p>
+                                <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
+                                    <a href="{% url 'kas_bank:transaction_add' %}" class="btn btn-primary btn-lg">
+                                        <i class="ri-add-line me-1"></i>Tambah Transaksi
+                                    </a>
+                                </div>
             </div>
         </div>
         {% endif %}
