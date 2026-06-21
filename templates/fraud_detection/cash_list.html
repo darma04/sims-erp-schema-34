@@ -277,6 +277,8 @@
                 </button>
             </div>
         </div>
+        {% if reconciliation_list %}
+
         <div class="card-datatable table-responsive">
             <table class="datatables-rekon table table-hover" id="tabelRekon">
                 <thead>
@@ -354,13 +356,6 @@
                             {% endif %}
                         </td>
                     </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="9" class="text-center py-4">
-                            <i class="ri-safe-2-line ri-48px text-muted d-block mb-2"></i>
-                            <p class="text-muted mb-0">Belum ada data rekonsiliasi kas.</p>
-                        </td>
-                    </tr>
                     {% endfor %}
                 </tbody>
                 {# ─── TFOOT RINGKASAN ─── #}
@@ -411,6 +406,38 @@
                 </tfoot>
             </table>
         </div>
+
+        {% else %}
+
+        <div class="card-body">
+
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                <div class="mb-4">
+
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                         style="width: 88px; height: 88px;">
+
+                        <i class="ri-cash-line" style="font-size: 2.8rem;"></i>
+
+                    </div>
+
+                </div>
+
+                <h5 class="mb-3">Belum Ada Data Kas</h5>
+
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                    Data kas masih kosong.
+
+                </p>
+
+            </div>
+
+        </div>
+
+        {% endif %}
     </div>
     {# ═══ MODAL DETAIL REKONSILIASI ═══ #}
     <div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">

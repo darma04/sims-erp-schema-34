@@ -237,6 +237,8 @@
                 <button class="btn btn-sm btn-label-danger" onclick="exportPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
+        {% if top_sparepart %}
+
         <div class="card-datatable table-responsive">
             <table class="table table-hover" id="sparepartTable">
                 <thead>
@@ -260,12 +262,6 @@
                         <td>{{ sp.jumlah }}</td>
                         <td>{{ sp.harga_satuan|rupiah }}</td>
                         <td class="text-danger fw-medium">{{ sp.subtotal|rupiah }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7" class="text-center py-5">
-                            <p class="text-muted">Belum ada data penggunaan sparepart</p>
-                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -305,6 +301,38 @@
                 </tfoot>
             </table>
         </div>
+
+        {% else %}
+
+        <div class="card-body">
+
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                <div class="mb-4">
+
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                         style="width: 88px; height: 88px;">
+
+                        <i class="ri-tools-line" style="font-size: 2.8rem;"></i>
+
+                    </div>
+
+                </div>
+
+                <h5 class="mb-3">Belum Ada Sparepart</h5>
+
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                    Daftar sparepart masih kosong.
+
+                </p>
+
+            </div>
+
+        </div>
+
+        {% endif %}
     </div>
 </div>
 {% endblock content %}

@@ -137,6 +137,8 @@
                 </button>
             </div>
         </div>
+        {% if departemen_list %}
+
         <div class="card-datatable table-responsive">
             <table class="datatables-departemen table table-hover" id="departemenTable">
                 <thead>
@@ -194,15 +196,6 @@
                             {% endif %}
                         </td>
                     </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="text-center py-5">
-                            <div class="d-inline-flex align-items-center justify-content-center bg-label-primary rounded-circle mb-3" style="width: 64px; height: 64px;">
-                                <i class="ri-building-line" style="font-size: 2rem;"></i>
-                            </div>
-                            <p class="text-muted mb-0 d-block">Belum ada data departemen</p>
-                        </td>
-                    </tr>
                     {% endfor %}
                 </tbody>
                 <tfoot class="table-footer-summary">
@@ -229,6 +222,38 @@
                 </tfoot>
             </table>
         </div>
+
+        {% else %}
+
+        <div class="card-body">
+
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                <div class="mb-4">
+
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                         style="width: 88px; height: 88px;">
+
+                        <i class="ri-building-line" style="font-size: 2.8rem;"></i>
+
+                    </div>
+
+                </div>
+
+                <h5 class="mb-3">Belum Ada Departemen</h5>
+
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                    Daftar departemen masih kosong. Tambahkan departemen untuk struktur organisasi.
+
+                </p>
+
+            </div>
+
+        </div>
+
+        {% endif %}
     </div>
 
     <!-- Delete Modal -->

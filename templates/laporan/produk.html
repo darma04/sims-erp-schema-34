@@ -240,6 +240,8 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
                         class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
+        {% if kategori_list %}
+
         <div class="card-datatable table-responsive">
             <table class="datatables-produk table table-hover" id="produkTable">
                 <thead>
@@ -301,13 +303,6 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
                             </div>
                         </td>
                     </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="9" class="text-center py-5"><i
-                                class="ri-box-3-line ri-3x text-muted mb-3 d-block"></i>
-                            <p class="text-muted mb-0">Belum ada produk</p>
-                        </td>
-                    </tr>
                     {% endfor %}
                 </tbody>
                 <tfoot class="table-footer-summary">
@@ -358,6 +353,38 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
                 </tfoot>
             </table>
         </div>
+
+        {% else %}
+
+        <div class="card-body">
+
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                <div class="mb-4">
+
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                         style="width: 88px; height: 88px;">
+
+                        <i class="ri-inbox-line" style="font-size: 2.8rem;"></i>
+
+                    </div>
+
+                </div>
+
+                <h5 class="mb-3">Belum Ada Data Produk</h5>
+
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                    Daftar produk masih kosong. Mulai tambahkan produk pertama Anda.
+
+                </p>
+
+            </div>
+
+        </div>
+
+        {% endif %}
     </div>
 </div>
 {% endblock content %}

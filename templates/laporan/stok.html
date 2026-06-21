@@ -223,6 +223,8 @@ Filter: gudang, kategori. Export Excel & PDF.
                         class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
+        {% if gudang_list %}
+
         <div class="card-datatable table-responsive">
             <table class="datatables-stok table table-hover" id="stokTable">
                 <thead>
@@ -266,13 +268,6 @@ Filter: gudang, kategori. Export Excel & PDF.
                             </div>
                         </td>
                     </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7" class="text-center py-5"><i
-                                class="ri-stack-line ri-3x text-muted mb-3 d-block"></i>
-                            <p class="text-muted mb-0">Belum ada data stok</p>
-                        </td>
-                    </tr>
                     {% endfor %}
                 </tbody>
                 <tfoot class="table-footer-summary">
@@ -303,6 +298,38 @@ Filter: gudang, kategori. Export Excel & PDF.
                 </tfoot>
             </table>
         </div>
+
+        {% else %}
+
+        <div class="card-body">
+
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                <div class="mb-4">
+
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                         style="width: 88px; height: 88px;">
+
+                        <i class="ri-stack-line" style="font-size: 2.8rem;"></i>
+
+                    </div>
+
+                </div>
+
+                <h5 class="mb-3">Belum Ada Data Stok</h5>
+
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                    Data stok masih kosong.
+
+                </p>
+
+            </div>
+
+        </div>
+
+        {% endif %}
     </div>
 </div>
 {% endblock content %}

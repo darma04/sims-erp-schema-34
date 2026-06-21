@@ -164,6 +164,8 @@
                 </button>
             </div>
         </div>
+        {% if departemen_struktur %}
+
         <div class="card-datatable table-responsive">
             <table class="datatables-karyawan table table-hover" id="karyawanTable">
                 <thead>
@@ -258,13 +260,6 @@
                             {% endif %}
                         </td>
                     </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7" class="text-center py-5">
-                            <i class="ri-team-line ri-3x text-muted mb-3 d-block"></i>
-                            <p class="text-muted mb-0">Belum ada data karyawan</p>
-                        </td>
-                    </tr>
                     {% endfor %}
                 </tbody>
                 <tfoot class="table-footer-summary">
@@ -293,6 +288,38 @@
                 </tfoot>
             </table>
         </div>
+
+        {% else %}
+
+        <div class="card-body">
+
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                <div class="mb-4">
+
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                         style="width: 88px; height: 88px;">
+
+                        <i class="ri-team-line" style="font-size: 2.8rem;"></i>
+
+                    </div>
+
+                </div>
+
+                <h5 class="mb-3">Belum Ada Karyawan</h5>
+
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                    Daftar karyawan masih kosong. Tambahkan data karyawan untuk pengelolaan HR.
+
+                </p>
+
+            </div>
+
+        </div>
+
+        {% endif %}
     </div>
 
     <!-- Delete Modal -->

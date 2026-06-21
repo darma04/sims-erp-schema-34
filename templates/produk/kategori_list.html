@@ -123,6 +123,8 @@ Fitur: tambah, edit, hapus kategori. Filter dan pencarian.
                 </button>
             </div>
         </div>
+        {% if kategori_list %}
+
         <div class="card-datatable table-responsive">
             <table class="datatables-kategori table table-hover" id="kategoriTable">
                 <thead>
@@ -145,13 +147,6 @@ Fitur: tambah, edit, hapus kategori. Filter dan pencarian.
                             {% include 'shared/action_column.html' with module='produk' item=kategori edit_url=edit_url_val delete_url=delete_url_val item_id=kategori.pk %}
                         </td>
                     </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="4" class="text-center py-5">
-                            <i class="ri-folder-line ri-3x text-muted mb-3 d-block"></i>
-                            <p class="text-muted mb-0">Belum ada kategori</p>
-                        </td>
-                    </tr>
                     {% endfor %}
                 </tbody>
                 <tfoot class="table-footer-summary">
@@ -171,6 +166,38 @@ Fitur: tambah, edit, hapus kategori. Filter dan pencarian.
                 </tfoot>
             </table>
         </div>
+
+        {% else %}
+
+        <div class="card-body">
+
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                <div class="mb-4">
+
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                         style="width: 88px; height: 88px;">
+
+                        <i class="ri-price-tag-3-line" style="font-size: 2.8rem;"></i>
+
+                    </div>
+
+                </div>
+
+                <h5 class="mb-3">Belum Ada Kategori</h5>
+
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                    Daftar kategori masih kosong. Tambahkan kategori untuk mengelompokkan data.
+
+                </p>
+
+            </div>
+
+        </div>
+
+        {% endif %}
     </div>
 
     <!-- Delete Confirmation Modal -->

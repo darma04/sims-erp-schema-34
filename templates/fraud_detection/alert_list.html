@@ -246,6 +246,8 @@
                 </button>
             </div>
         </div>
+        {% if users %}
+
         <div class="card-datatable table-responsive">
             <table class="datatables-anomali table table-hover" id="tabelAnomali">
                 <thead>
@@ -352,13 +354,6 @@
                             {% endif %}
                         </td>
                     </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="9" class="text-center py-4">
-                            <i class="ri-shield-check-line ri-48px text-success d-block mb-2"></i>
-                            <p class="text-muted mb-0">Tidak ada anomali ditemukan. Sistem aman!</p>
-                        </td>
-                    </tr>
                     {% endfor %}
                 </tbody>
                 {# ─── TFOOT RINGKASAN — identik dengan produk_list.html ─── #}
@@ -399,6 +394,38 @@
                 </tfoot>
             </table>
         </div>
+
+        {% else %}
+
+        <div class="card-body">
+
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                <div class="mb-4">
+
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                         style="width: 88px; height: 88px;">
+
+                        <i class="ri-alarm-warning-line" style="font-size: 2.8rem;"></i>
+
+                    </div>
+
+                </div>
+
+                <h5 class="mb-3">Belum Ada Alert</h5>
+
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                    Daftar alert fraud detection masih kosong.
+
+                </p>
+
+            </div>
+
+        </div>
+
+        {% endif %}
     </div>
 
     {# ─── MODAL KONFIRMASI HAPUS ─── #}

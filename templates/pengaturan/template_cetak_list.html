@@ -210,6 +210,8 @@
             </div>
         </div>
         <div class="card-body">
+            {% if templates %}
+
             <div class="card-datatable table-responsive">
                 <table class="table table-hover" id="templateTable">
                     <thead class="table-light">
@@ -275,15 +277,6 @@
                                 {% endif %}
                             </td>
                         </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="8" class="text-center text-muted py-4">
-                                Belum ada template cetak. 
-                                {% if can_create.pengaturan %}
-                                <a href="{% url 'pengaturan:template_cetak_create' %}">Tambah template</a>
-                                {% endif %}
-                            </td>
-                        </tr>
                         {% endfor %}
                     </tbody>
                     <tfoot class="table-footer-summary">
@@ -323,6 +316,38 @@
                     </tfoot>
                 </table>
             </div>
+
+            {% else %}
+
+            <div class="card-body">
+
+                <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                    <div class="mb-4">
+
+                        <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                             style="width: 88px; height: 88px;">
+
+                            <i class="ri-printer-line" style="font-size: 2.8rem;"></i>
+
+                        </div>
+
+                    </div>
+
+                    <h5 class="mb-3">Belum Ada Template Cetak</h5>
+
+                    <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                        Daftar template cetak masih kosong.
+
+                    </p>
+
+                </div>
+
+            </div>
+
+            {% endif %}
         </div>
     </div>
 </div>
