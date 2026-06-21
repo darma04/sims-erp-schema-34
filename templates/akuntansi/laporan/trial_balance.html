@@ -215,7 +215,7 @@
                 </button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="accounting-data-table table table-hover" id="tbTable" data-accounting-primary="true" data-export-title="Neraca Saldo" data-search-placeholder="Cari neraca saldo...">
                 <thead>
                     <tr>
@@ -263,6 +263,7 @@
 $(document).ready(function () {
     if (!$.fn.dataTable.isDataTable('#tbTable')) {
     const table = $('#tbTable').DataTable({
+            scrollX: true,
         language: {
             "sEmptyTable": "Tidak ada data yang tersedia",
             "sProcessing": "Sedang memproses...",

@@ -219,7 +219,7 @@
                         class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="table table-hover" id="poTable">
                 <thead>
                     <tr>
@@ -299,6 +299,7 @@
     $(document).ready(function () {
         {% if purchase_order_list %}
         $('#poTable').DataTable({
+            scrollX: true,
             language: { "sEmptyTable": "Tidak ada data", "sLengthMenu": "Tampilkan _MENU_ data", "sInfo": "_START_ - _END_ dari _TOTAL_ data", "sSearch": "Cari:", "oPaginate": { "sPrevious": "Sebelumnya", "sNext": "Selanjutnya" } },
             order: [[1, 'desc']],
             pageLength: 25,

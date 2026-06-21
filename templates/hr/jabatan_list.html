@@ -152,7 +152,7 @@
                 </button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="datatables-jabatan table table-hover" id="jabatanTable" style="width:100%">
                 <thead>
                     <tr>
@@ -279,6 +279,7 @@ let dataTable;
 $(document).ready(function() {
     {% if jabatan_list %}
     dataTable = $('#jabatanTable').DataTable({
+            scrollX: true,
         language: {
             "sEmptyTable": "Tidak ada data", "sLengthMenu": "Tampilkan _MENU_ data",
             "sZeroRecords": "Tidak ditemukan data yang sesuai", "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",

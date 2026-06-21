@@ -235,7 +235,7 @@
                 </button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="datatables-anomali table table-hover" id="tabelAnomali" style="width:100%">
                 <thead>
                     <tr>
@@ -584,6 +584,7 @@
         
         if ($('#tabelAnomali tbody tr').length > 0 && !$('#tabelAnomali tbody tr td[colspan]').length) {
             const table = $('#tabelAnomali').DataTable({
+            scrollX: true,
                 language: {
                     "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini",
                     "sProcessing": "Sedang memproses...",

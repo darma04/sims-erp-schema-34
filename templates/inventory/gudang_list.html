@@ -131,7 +131,7 @@
                         class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="datatables-gudang table table-hover" id="gudangTable" style="width:100%">
                 <thead>
                     <tr>
@@ -320,6 +320,7 @@
     $(document).ready(function () {
         {% if gudang_list %}
         $('#gudangTable').DataTable({
+            scrollX: true,
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini",
                 "sProcessing": "Sedang memproses...",

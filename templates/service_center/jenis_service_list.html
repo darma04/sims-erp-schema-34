@@ -74,7 +74,7 @@
     
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center"><h5 class="mb-0">Daftar Jenis Service</h5><div class="d-flex gap-2"><button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button><button class="btn btn-sm btn-label-danger" onclick="exportToPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button></div></div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="table table-hover" id="dataTable">
                 <thead><tr><th style="width:70px">Foto</th><th>Kategori</th><th>Nama Layanan</th><th>Harga Standar</th><th>Estimasi Waktu</th><th>Digunakan</th><th>Status</th><th>Aksi</th></tr></thead>
                 <tbody>
@@ -127,7 +127,8 @@
 <script>
 $(document).ready(function(){
     {% if jenis_list %}
-    var dt=$('#dataTable').DataTable({language:{"sEmptyTable":"Tidak ada data","sLengthMenu":"Tampilkan _MENU_ data","sZeroRecords":"Tidak ditemukan","sInfo":"Menampilkan _START_-_END_ dari _TOTAL_","sInfoEmpty":"0 data","sSearch":"Cari:","oPaginate":{"sPrevious":"Sebelumnya","sNext":"Selanjutnya"}},order:[[1,'asc'],[2,'asc']],pageLength:25,lengthMenu:[[10,25,50,100,-1],['10','25','50','100','Semua']],responsive:false,columnDefs:[{orderable:false,targets:[0,7]}],dom:'<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'});
+    var dt=$('#dataTable').DataTable({
+            scrollX: true,language:{"sEmptyTable":"Tidak ada data","sLengthMenu":"Tampilkan _MENU_ data","sZeroRecords":"Tidak ditemukan","sInfo":"Menampilkan _START_-_END_ dari _TOTAL_","sInfoEmpty":"0 data","sSearch":"Cari:","oPaginate":{"sPrevious":"Sebelumnya","sNext":"Selanjutnya"}},order:[[1,'asc'],[2,'asc']],pageLength:25,lengthMenu:[[10,25,50,100,-1],['10','25','50','100','Semua']],responsive:false,columnDefs:[{orderable:false,targets:[0,7]}],dom:'<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'});
     $('#searchInput').on('keyup',function(){dt.search(this.value).draw()});
     $('#filterKategori').on('change',function(){dt.column(1).search(this.value).draw()});
     {% endif %}

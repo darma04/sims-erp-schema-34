@@ -240,7 +240,7 @@ Fitur: filter tipe akun, export Excel & PDF, cards ringkasan, seed CoA.
                 </button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="datatables-coa {% if akun_list %}accounting-data-table {% endif %}table table-hover" id="coaTable" {% if akun_list %}data-accounting-primary="true" {% endif %}data-export-title="Chart of Accounts" data-export-filename="Chart_of_Accounts" data-search-placeholder="Cari akun..." style="width:100%">
                 <thead>
                     <tr>
@@ -395,6 +395,7 @@ $(document).ready(function() {
     {% if akun_list %}
     if (!$.fn.dataTable.isDataTable('#coaTable')) {
     $('#coaTable').DataTable({
+            scrollX: true,
         language: {
             "sEmptyTable": "Tidak ada data", "sProcessing": "Memproses...",
             "sLengthMenu": "Tampilkan _MENU_ data", "sZeroRecords": "Tidak ditemukan",

@@ -115,7 +115,7 @@
 
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center"><h5 class="mb-0">Detail Order</h5><div class="d-flex gap-2"><button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button><button class="btn btn-sm btn-label-danger" onclick="exportToPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button></div></div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="table table-hover" id="laporanTable">
                 <thead><tr><th>No. Service</th><th>Pelanggan</th><th>Perangkat</th><th>Status</th><th>Biaya</th><th>Tanggal</th></tr></thead>
                 <tbody>
@@ -201,7 +201,8 @@ document.addEventListener('DOMContentLoaded',function(){
         }
     }
     
-    {% if order_list %}$('#laporanTable').DataTable({language:{"sLengthMenu":"Tampilkan _MENU_","sSearch":"Cari:","sInfo":"_START_-_END_ dari _TOTAL_","oPaginate":{"sPrevious":"Sebelumnya","sNext":"Selanjutnya"}},order:[[5,'desc']],pageLength:25,dom:'<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'});{% endif %}
+    {% if order_list %}$('#laporanTable').DataTable({
+            scrollX: true,language:{"sLengthMenu":"Tampilkan _MENU_","sSearch":"Cari:","sInfo":"_START_-_END_ dari _TOTAL_","oPaginate":{"sPrevious":"Sebelumnya","sNext":"Selanjutnya"}},order:[[5,'desc']],pageLength:25,dom:'<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'});{% endif %}
 });
     function toggleColumns() {
         {% if order_list %}

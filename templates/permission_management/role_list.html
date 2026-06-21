@@ -215,7 +215,7 @@
     </div>
 
     <div class="card">
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="datatables-users table" style="width:100%">
                 <thead>
                     <tr>
@@ -327,6 +327,7 @@
     var usersTable;
     $(function () {
         usersTable = $('.datatables-users').DataTable({
+            scrollX: true,
             order: [[0, 'asc']],
             pageLength: 25,
             lengthMenu: [[10, 25, 50, 75, 100, -1], ['10', '25', '50', '75', '100', 'Semua']],

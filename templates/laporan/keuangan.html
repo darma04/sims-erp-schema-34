@@ -466,7 +466,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="table table-hover" id="tabelPemasukan">
                 <thead>
                     <tr>
@@ -564,7 +564,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="table table-hover" id="tabelPengeluaran">
                 <thead>
                     <tr>
@@ -691,6 +691,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
     $(document).ready(function () {
         if ($('#tabelPemasukan tbody tr').length > 0 && !$('#tabelPemasukan tbody tr td[colspan]').length) {
             dtPemasukan = $('#tabelPemasukan').DataTable({
+            scrollX: true,
                 language: {
                     "sEmptyTable": "Tidak ada data", "sLengthMenu": "Tampilkan _MENU_ data", "sSearch": "Cari:",
                     "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
@@ -706,6 +707,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
         }
         if ($('#tabelPengeluaran tbody tr').length > 0 && !$('#tabelPengeluaran tbody tr td[colspan]').length) {
             dtPengeluaran = $('#tabelPengeluaran').DataTable({
+            scrollX: true,
                 language: {
                     "sEmptyTable": "Tidak ada data", "sLengthMenu": "Tampilkan _MENU_ data", "sSearch": "Cari:",
                     "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",

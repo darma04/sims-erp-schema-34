@@ -160,7 +160,7 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
                 </button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="datatables-adjustment table table-hover" id="adjustmentTable" style="width:100%">
                 <thead>
                     <tr>
@@ -382,6 +382,7 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
 
         {% if adjustment_list %}
         const table = $('#adjustmentTable').DataTable({
+            scrollX: true,
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini",
                 "sProcessing": "Sedang memproses...",

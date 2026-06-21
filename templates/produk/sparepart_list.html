@@ -202,7 +202,7 @@
                 </button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="datatables-produk table table-hover" id="produkTable" style="width:100%">
                 <thead>
                     <tr>
@@ -533,6 +533,7 @@
 
         {% if produk_list %}
         const table = $('#produkTable').DataTable({
+            scrollX: true,
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini",
                 "sProcessing": "Sedang memproses...",

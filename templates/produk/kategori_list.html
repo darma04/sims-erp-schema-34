@@ -120,7 +120,7 @@ Fitur: tambah, edit, hapus kategori. Filter dan pencarian.
                 </button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="datatables-kategori table table-hover" id="kategoriTable" style="width:100%">
                 <thead>
                     <tr>
@@ -286,6 +286,7 @@ Fitur: tambah, edit, hapus kategori. Filter dan pencarian.
     $(document).ready(function () {
         {% if kategori_list %}
         $('#kategoriTable').DataTable({
+            scrollX: true,
             language: { "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini", "sProcessing": "Sedang memproses...", "sLengthMenu": "Tampilkan _MENU_ data", "sZeroRecords": "Tidak ditemukan data yang sesuai", "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data", "sInfoEmpty": "Menampilkan 0 sampai 0 dari 0 data", "sInfoFiltered": "(disaring dari _MAX_ total data)", "sSearch": "Cari:", "oPaginate": { "sFirst": "Pertama", "sPrevious": "Sebelumnya", "sNext": "Selanjutnya", "sLast": "Terakhir" } },
             order: [[0, 'asc']],
             pageLength: 25,

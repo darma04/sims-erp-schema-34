@@ -111,7 +111,7 @@
     </div>
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center"><h5 class="mb-0">Daftar Faktur</h5><div class="d-flex gap-2"><button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button><button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button></div></div>
-        <div class="card-datatable table-responsive"><table class="{% if faktur_list %}accounting-data-table {% endif %}table table-hover" id="fakturTable" {% if faktur_list %}data-accounting-primary="true" {% endif %}data-export-title="Daftar Faktur Pajak" data-search-placeholder="Cari faktur..."><thead><tr><th>No. Seri</th><th>Tipe</th><th>Tanggal</th><th>Lawan Transaksi</th><th class="text-end">DPP</th><th class="text-end">PPN</th><th class="text-end">Total</th><th>Status</th><th data-export-ignore="true" data-action-icon="ri-more-2-line">Aksi</th></tr></thead><tbody>
+        <div class="card-datatable"><table class="{% if faktur_list %}accounting-data-table {% endif %}table table-hover" id="fakturTable" {% if faktur_list %}data-accounting-primary="true" {% endif %}data-export-title="Daftar Faktur Pajak" data-search-placeholder="Cari faktur..."><thead><tr><th>No. Seri</th><th>Tipe</th><th>Tanggal</th><th>Lawan Transaksi</th><th class="text-end">DPP</th><th class="text-end">PPN</th><th class="text-end">Total</th><th>Status</th><th data-export-ignore="true" data-action-icon="ri-more-2-line">Aksi</th></tr></thead><tbody>
             {% for f in faktur_list %}<tr>
                 <td class="fw-semibold">{{ f.nomor_seri }}</td>
                 <td>{% if f.tipe == 'masukan' %}<span class="badge bg-label-warning">Masukan</span>{% else %}<span class="badge bg-label-success">Keluaran</span>{% endif %}</td>
@@ -150,6 +150,7 @@ $(document).ready(function(){
     {% if faktur_list %}
     if (!$.fn.dataTable.isDataTable('#fakturTable')) {
     $('#fakturTable').DataTable({
+            scrollX: true,
         language:{"sEmptyTable":"Belum ada faktur pajak","sLengthMenu":"Tampilkan _MENU_ data","sZeroRecords":"Tidak ditemukan data yang sesuai","sInfo":"Menampilkan _START_ sampai _END_ dari _TOTAL_ data","sInfoEmpty":"0 data","sSearch":"Cari:","oPaginate":{"sPrevious":"Sebelumnya","sNext":"Selanjutnya"}},
         order:[[2,'desc']],
         pageLength:25,

@@ -247,7 +247,7 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
                 </button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="datatables-penggajian table table-hover" id="penggajianTable" style="width:100%">
                 <thead>
                     <tr>
@@ -500,6 +500,7 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
     $(document).ready(function () {
         {% if penggajian_list %}
         dataTable = $('#penggajianTable').DataTable({
+            scrollX: true,
             language: {
                 "sEmptyTable": "Tidak ada data", "sLengthMenu": "Tampilkan _MENU_ data", "sSearch": "Cari:",
                 "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",

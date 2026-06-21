@@ -165,7 +165,7 @@ Fitur: filter, search, export, detail.
                 </button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="datatables-invoice table table-hover" id="invoiceTable" style="width:100%">
                 <thead>
                     <tr>
@@ -393,6 +393,7 @@ Fitur: filter, search, export, detail.
         
         {% if metode_pembayaran %}
         const table = $('#invoiceTable').DataTable({
+            scrollX: true,
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini",
                 "sProcessing": "Sedang memproses...",

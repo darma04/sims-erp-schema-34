@@ -831,6 +831,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (document.getElementById('riwayatTable') && typeof $.fn.DataTable !== 'undefined') {
         $('#riwayatTable').DataTable({
+            scrollX: true,
             responsive: false,
             ordering: true,
             order: [[1, 'desc']],

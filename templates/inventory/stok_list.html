@@ -149,7 +149,7 @@ Tabel: produk, gudang, jumlah stok, satuan.
                 </button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="datatables-stok table table-hover" id="stokTable" style="width:100%">
                 <thead>
                     <tr>
@@ -285,6 +285,7 @@ Tabel: produk, gudang, jumlah stok, satuan.
         {% if stok_list %}
         if (!$.fn.dataTable.isDataTable('#stokTable')) {
         const table = $('#stokTable').DataTable({
+            scrollX: true,
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini",
                 "sProcessing": "Sedang memproses...",

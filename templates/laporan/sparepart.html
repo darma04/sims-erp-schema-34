@@ -191,7 +191,7 @@
                 <button class="btn btn-sm btn-label-danger" onclick="exportPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="table table-hover" id="sparepartTable">
                 <thead>
                     <tr>
@@ -252,6 +252,7 @@
     $(document).ready(function () {
         {% if sparepart_list %}
         window.sparepartTable = $('#sparepartTable').DataTable({
+            scrollX: true,
             language: { "sEmptyTable": "Tidak ada data", "sLengthMenu": "Tampilkan _MENU_ data", "sInfo": "_START_ - _END_ dari _TOTAL_ data", "sInfoEmpty": "0 data", "sInfoFiltered": "(dari _MAX_ total)", "sSearch": "Cari:", "oPaginate": { "sPrevious": "Sebelumnya", "sNext": "Selanjutnya" } },
             order: [[1, 'desc']],
             pageLength: 25,

@@ -91,7 +91,7 @@
                 <button class="btn btn-sm btn-label-danger" onclick="exportToPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="datatables-pelanggan table table-hover" id="pelangganTable" style="width:100%">
                 <thead>
                     <tr>
@@ -204,6 +204,7 @@
     $(document).ready(function() {
         {% if pelanggan_list %}
         $('#pelangganTable').DataTable({
+            scrollX: true,
             language: { "sEmptyTable": "Tidak ada data", "sProcessing": "Memproses...", "sLengthMenu": "Tampilkan _MENU_ data", "sZeroRecords": "Tidak ditemukan", "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data", "sInfoEmpty": "0 data", "sInfoFiltered": "(disaring dari _MAX_ total)", "sSearch": "Cari:", "oPaginate": { "sFirst": "Pertama", "sPrevious": "Sebelumnya", "sNext": "Selanjutnya", "sLast": "Terakhir" } },
             order: [[0, 'asc']], pageLength: 25, lengthMenu: [[10,25,50,100,-1],['10','25','50','100','Semua']],
             responsive: false, columnDefs: [{ orderable: false, targets: [6] }],

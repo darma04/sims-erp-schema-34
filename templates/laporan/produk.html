@@ -237,7 +237,7 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
                         class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="datatables-produk table table-hover" id="produkTable" style="width:100%">
                 <thead>
                     <tr>
@@ -338,6 +338,7 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
     $(document).ready(function () {
         {% if produk_list %}
         $('#produkTable').DataTable({
+            scrollX: true,
             language: { "sEmptyTable": "Tidak ada data", "sLengthMenu": "Tampilkan _MENU_ data", "sInfo": "_START_ - _END_ dari _TOTAL_ data", "sSearch": "Cari:", "oPaginate": { "sPrevious": "Sebelumnya", "sNext": "Selanjutnya" } },
             order: [[1, 'asc']],
             pageLength: 25,

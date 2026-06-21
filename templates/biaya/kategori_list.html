@@ -101,7 +101,7 @@ Fitur: tambah, edit, hapus kategori biaya.
                         class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="datatables-kategori table table-hover" id="kategoriTable" style="width:100%">
                 <thead>
                     <tr>
@@ -276,6 +276,7 @@ Fitur: tambah, edit, hapus kategori biaya.
     $(document).ready(function () {
         {% if kategori_list %}
         $('#kategoriTable').DataTable({
+            scrollX: true,
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini",
                 "sProcessing": "Sedang memproses...",

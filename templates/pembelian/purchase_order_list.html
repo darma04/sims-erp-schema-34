@@ -173,7 +173,7 @@ Fitur: export Excel & PDF, filter.
                 </button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="datatables-po table table-hover" id="poTable" style="width:100%">
                 <thead>
                     <tr>
@@ -349,6 +349,7 @@ Fitur: export Excel & PDF, filter.
         {% if purchase_order_list %}
         
         const table = $('#poTable').DataTable({
+            scrollX: true,
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia",
                 "sProcessing": "Sedang memproses...",

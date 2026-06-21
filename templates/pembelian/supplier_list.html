@@ -138,7 +138,7 @@
                         class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="datatables-supplier table table-hover" id="supplierTable" style="width:100%">
                 <thead>
                     <tr>
@@ -326,6 +326,7 @@
     $(document).ready(function () {
         {% if supplier_list %}
         $('#supplierTable').DataTable({
+            scrollX: true,
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini",
                 "sProcessing": "Sedang memproses...",

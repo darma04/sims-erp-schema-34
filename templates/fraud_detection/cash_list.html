@@ -270,7 +270,7 @@
                 </button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="datatables-rekon table table-hover" id="tabelRekon" style="width:100%">
                 <thead>
                     <tr>
@@ -594,6 +594,7 @@
         
         if ($('#tabelRekon tbody tr').length > 0 && !$('#tabelRekon tbody tr td[colspan]').length) {
             const table = $('#tabelRekon').DataTable({
+            scrollX: true,
                 language: {
                     "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini",
                     "sProcessing": "Sedang memproses...",

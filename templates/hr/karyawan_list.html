@@ -162,7 +162,7 @@
                 </button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="datatables-karyawan table table-hover" id="karyawanTable" style="width:100%">
                 <thead>
                     <tr>
@@ -400,6 +400,7 @@
         
         {% if departemen_struktur %}
         dataTable = $('#karyawanTable').DataTable({
+            scrollX: true,
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini",
                 "sProcessing": "Sedang memproses...",

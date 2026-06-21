@@ -137,7 +137,7 @@
                 <button class="btn btn-sm btn-label-danger" onclick="exportPenyebabPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="table table-hover datatables-penyebab" id="tabelPenyebab" style="width:100%">
                 <thead>
                     <tr>
@@ -171,7 +171,7 @@
                 <button class="btn btn-sm btn-label-danger" onclick="exportDetailPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="table table-hover datatables-detail" id="tabelDetail" style="width:100%">
                 <thead>
                     <tr>
@@ -223,7 +223,7 @@
                 <button class="btn btn-sm btn-label-danger" onclick="exportTreasuryPDF()"><i class="ri-file-pdf-line me-1"></i>PDF</button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="table table-hover" id="tabelTreasury">
                 <thead>
                     <tr>
@@ -362,7 +362,7 @@
                 <button class="btn btn-sm btn-label-danger" onclick="exportOrphanJurnalPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="table table-hover datatables-orphan-jurnal" id="tabelOrphanJurnal" style="width:100%">
                 <thead><tr><th>Nomor</th><th>Tanggal</th><th>Deskripsi</th><th>Sumber</th><th>Dibuat Oleh</th></tr></thead>
                 <tbody>
@@ -482,6 +482,7 @@ $(document).ready(function() {
     var $tr = $('#tabelTreasury tbody tr:first');
     if ($tr.length && $tr.children('td').length > 1) {
         $('#tabelTreasury').DataTable({
+            scrollX: true,
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia",
                 "sLengthMenu": "Tampilkan _MENU_ data",
@@ -503,6 +504,7 @@ $(document).ready(function() {
 
     if ($('#tabelPenyebab tbody tr:first td').length > 1) {
         $('#tabelPenyebab').DataTable({
+            scrollX: true,
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia",
                 "sLengthMenu": "Tampilkan _MENU_ data",
@@ -524,6 +526,7 @@ $(document).ready(function() {
 
     if ($('#tabelDetail tbody tr:first td').length > 1) {
         $('#tabelDetail').DataTable({
+            scrollX: true,
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia",
                 "sLengthMenu": "Tampilkan _MENU_ data",
@@ -545,6 +548,7 @@ $(document).ready(function() {
 
     if ($('#tabelOrphanJurnal tbody tr:first td').length > 1) {
         $('#tabelOrphanJurnal').DataTable({
+            scrollX: true,
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia",
                 "sLengthMenu": "Tampilkan _MENU_ data",

@@ -324,6 +324,7 @@ $(document).ready(function() {
     {% if templates %}
     if (!$.fn.dataTable.isDataTable('#templateTable')) {
     templateTable = $('#templateTable').DataTable({
+            scrollX: true,
         responsive: false,
         ordering: true,
         order: [[2, 'asc']],

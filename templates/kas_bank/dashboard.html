@@ -189,7 +189,7 @@
                         Lihat Semua
                     </a>
                 </div>
-                <div class="card-datatable table-responsive">
+                <div class="card-datatable">
                     <table id="accountBalanceTable" class="table table-hover mb-0 dashboard-datatable">
                         <thead>
                             <tr>
@@ -223,7 +223,7 @@
                         Lihat Semua
                     </a>
                 </div>
-                <div class="card-datatable table-responsive">
+                <div class="card-datatable">
                     <table id="recentTransactionTable" class="table table-hover mb-0 dashboard-datatable">
                         <thead>
                             <tr>
@@ -309,6 +309,7 @@ document.addEventListener('DOMContentLoaded', function () {
         ['#accountBalanceTable', '#recentTransactionTable'].forEach(function (selector) {
             if ($(selector).length && !$.fn.dataTable.isDataTable(selector)) {
                 $(selector).DataTable({
+            scrollX: true,
                     language: {
                         sEmptyTable: 'Tidak ada data yang tersedia',
                         sProcessing: 'Sedang memproses...',
