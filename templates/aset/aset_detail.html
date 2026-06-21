@@ -19,6 +19,8 @@
         <div class="card-body">
             <div class="row">
                 <div class="col-md-6">
+                    {% if penyusutan_list %}
+
                     <table class="table table-borderless">
                         <tr><td class="text-muted" style="width:180px;">Kode</td><td class="fw-semibold">{{ aset.kode }}</td></tr>
                         <tr><td class="text-muted">Kategori</td><td><span class="badge bg-label-info">{{ aset.get_kategori_display }}</span></td></tr>
@@ -27,6 +29,38 @@
                         <tr><td class="text-muted">Cabang</td><td>{{ aset.cabang.nama|default:"Pusat" }}</td></tr>
                         <tr><td class="text-muted">Metode</td><td>{{ aset.get_metode_penyusutan_display }}</td></tr>
                     </table>
+
+                    {% else %}
+
+                    <div class="card-body">
+
+                        <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                            <div class="mb-4">
+
+                                <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                                     style="width: 88px; height: 88px;">
+
+                                    <i class="ri-building-2-line" style="font-size: 2.8rem;"></i>
+
+                                </div>
+
+                            </div>
+
+                            <h5 class="mb-3">Belum Ada Aset</h5>
+
+                            <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                                Daftar data masih kosong.
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                    {% endif %}
                 </div>
                 <div class="col-md-6">
                     <table class="table table-borderless">
@@ -53,7 +87,8 @@
             <div class="card mb-4">
                 <div class="card-header"><h5 class="mb-0"><i class="ri-history-line me-2"></i>Riwayat Penyusutan</h5></div>
                 <div class="table-responsive"><table class="table table-hover"><thead class="table-light"><tr><th>#</th><th>Periode</th><th class="text-end">Jumlah</th><th class="text-end">Akumulasi</th><th>Jurnal</th></tr></thead><tbody>
-                    {% for p in penyusutan_list %}<tr><td>{{ forloop.counter }}</td><td>{{ p.bulan|stringformat:"02d" }}/{{ p.tahun }}</td><td class="text-end">{{ p.jumlah|rupiah }}</td><td class="text-end text-warning">{{ p.akumulasi|rupiah }}</td><td>{% if p.jurnal %}<a href="{% url 'akuntansi:jurnal_detail' p.jurnal.pk %}" class="text-primary">{{ p.jurnal.nomor }}</a>{% else %}-{% endif %}</td></tr>{% empty %}<tr><td colspan="5" class="text-center py-4 text-muted">Belum ada</td></tr>{% endfor %}
+                    {% for p in penyusutan_list %}<tr><td>{{ forloop.counter }}</td><td>{{ p.bulan|stringformat:"02d" }}/{{ p.tahun }}</td><td class="text-end">{{ p.jumlah|rupiah }}</td><td class="text-end text-warning">{{ p.akumulasi|rupiah }}</td><td>{% if p.jurnal %}<a href="{% url 'akuntansi:jurnal_detail' p.jurnal.pk %}" class="text-primary">{{ p.jurnal.nomor }}</a>{% else %}-{% endif %}</td></tr>
+                    {% endfor %}
                 </tbody></table></div>
             </div>
             {% if disposal_list %}<div class="card mb-4"><div class="card-header"><h5 class="mb-0"><i class="ri-delete-bin-line me-2"></i>Disposal</h5></div><div class="table-responsive"><table class="table"><thead class="table-light"><tr><th>Tanggal</th><th>Tipe</th><th class="text-end">Harga Jual</th><th class="text-end">Laba/Rugi</th><th>Jurnal</th></tr></thead><tbody>{% for d in disposal_list %}<tr><td>{{ d.tanggal|date:"d/m/Y" }}</td><td>{{ d.get_tipe_display }}</td><td class="text-end">{{ d.harga_jual|rupiah }}</td><td class="text-end fw-bold {% if d.laba_rugi >= 0 %}text-success{% else %}text-danger{% endif %}">{{ d.laba_rugi|rupiah }}</td><td>{% if d.jurnal %}<a href="{% url 'akuntansi:jurnal_detail' d.jurnal.pk %}">{{ d.jurnal.nomor }}</a>{% else %}-{% endif %}</td></tr>{% endfor %}</tbody></table></div></div>{% endif %}

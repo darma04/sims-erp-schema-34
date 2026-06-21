@@ -56,12 +56,46 @@
 
             <div class="row mt-4">
                 <div class="col-md-6">
+                    {% if recent_transactions %}
+
                     <table class="table table-borderless">
                         <tr><td class="text-muted" style="width:160px;">Kode</td><td class="fw-semibold">{{ account.kode }}</td></tr>
                         <tr><td class="text-muted">Nama</td><td>{{ account.nama }}</td></tr>
                         <tr><td class="text-muted">Tipe</td><td><span class="badge bg-label-info">{{ account.get_tipe_display }}</span></td></tr>
                         <tr><td class="text-muted">Akun CoA</td><td>{{ account.akun.kode }} - {{ account.akun.nama }}</td></tr>
                     </table>
+
+                    {% else %}
+
+                    <div class="card-body">
+
+                        <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                            <div class="mb-4">
+
+                                <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                                     style="width: 88px; height: 88px;">
+
+                                    <i class="ri-bank-card-line" style="font-size: 2.8rem;"></i>
+
+                                </div>
+
+                            </div>
+
+                            <h5 class="mb-3">Belum Ada Akun</h5>
+
+                            <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                                Daftar data masih kosong.
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                    {% endif %}
                 </div>
                 <div class="col-md-6">
                     <table class="table table-borderless">
@@ -101,8 +135,6 @@
                         <td><span class="badge bg-label-{% if item.status == 'posted' %}success{% elif item.status == 'cancelled' %}danger{% else %}secondary{% endif %}">{{ item.get_status_display }}</span></td>
                         <td>{% if item.jurnal_entry %}<a href="{% url 'akuntansi:jurnal_detail' item.jurnal_entry.pk %}">{{ item.jurnal_entry.nomor }}</a>{% else %}-{% endif %}</td>
                     </tr>
-                    {% empty %}
-                    <tr><td colspan="6" class="text-center text-muted py-4">Belum ada mutasi.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

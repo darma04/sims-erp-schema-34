@@ -48,11 +48,45 @@
 
             <div class="row">
                 <div class="col-md-6">
+                    {% if jurnal_lines %}
+
                     <table class="table table-borderless">
                         <tr><td class="text-muted" style="width:170px;">PPN Keluaran</td><td class="text-end text-success">{{ pembayaran.total_ppn_keluaran|rupiah }}</td></tr>
                         <tr><td class="text-muted">PPN Masukan</td><td class="text-end text-warning">{{ pembayaran.total_ppn_masukan|rupiah }}</td></tr>
                         <tr><td class="text-muted fw-bold">Selisih</td><td class="text-end fw-bold {% if pembayaran.tipe == 'setor' %}text-danger{% else %}text-info{% endif %}">{{ pembayaran.jumlah_setor|rupiah }}</td></tr>
                     </table>
+
+                    {% else %}
+
+                    <div class="card-body">
+
+                        <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                            <div class="mb-4">
+
+                                <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                                     style="width: 88px; height: 88px;">
+
+                                    <i class="ri-file-text-line" style="font-size: 2.8rem;"></i>
+
+                                </div>
+
+                            </div>
+
+                            <h5 class="mb-3">Belum Ada Data Pajak</h5>
+
+                            <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                                Daftar data masih kosong.
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                    {% endif %}
                 </div>
                 <div class="col-md-6">
                     <table class="table table-borderless">
@@ -118,9 +152,7 @@
                                 <td class="text-end">{{ f.dpp|rupiah }}</td>
                                 <td class="text-end text-success">{{ f.ppn|rupiah }}</td>
                             </tr>
-                            {% empty %}
-                            <tr><td colspan="5" class="text-center text-muted py-3">Tidak ada</td></tr>
-                            {% endfor %}
+                    {% endfor %}
                         </tbody>
                     </table>
                 </div>

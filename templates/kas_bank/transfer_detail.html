@@ -47,12 +47,46 @@
 
             <div class="row">
                 <div class="col-md-6">
+                    {% if mutasi_list %}
+
                     <table class="table table-borderless">
                         <tr><td class="text-muted" style="width:170px;">Tanggal</td><td>{{ transfer.tanggal|date:"d F Y H:i" }}</td></tr>
                         <tr><td class="text-muted">Dari Akun</td><td><a href="{% url 'kas_bank:account_detail' transfer.dari_akun.pk %}">{{ transfer.dari_akun.kode }} - {{ transfer.dari_akun.nama }}</a></td></tr>
                         <tr><td class="text-muted">Ke Akun</td><td><a href="{% url 'kas_bank:account_detail' transfer.ke_akun.pk %}">{{ transfer.ke_akun.kode }} - {{ transfer.ke_akun.nama }}</a></td></tr>
                         <tr><td class="text-muted">Cabang</td><td>{{ transfer.cabang.nama|default:"-" }}</td></tr>
                     </table>
+
+                    {% else %}
+
+                    <div class="card-body">
+
+                        <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                            <div class="mb-4">
+
+                                <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                                     style="width: 88px; height: 88px;">
+
+                                    <i class="ri-arrow-left-right-line" style="font-size: 2.8rem;"></i>
+
+                                </div>
+
+                            </div>
+
+                            <h5 class="mb-3">Belum Ada Transfer Stok</h5>
+
+                            <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                                Daftar data masih kosong.
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                    {% endif %}
                 </div>
                 <div class="col-md-6">
                     <table class="table table-borderless">
@@ -96,8 +130,6 @@
                         <td class="text-end {% if item.is_debit_kas %}text-success{% else %}text-danger{% endif %} fw-semibold">{{ item.jumlah|rupiah }}</td>
                         <td><span class="badge bg-label-{% if item.status == 'posted' %}success{% elif item.status == 'cancelled' %}danger{% else %}secondary{% endif %}">{{ item.get_status_display }}</span></td>
                     </tr>
-                    {% empty %}
-                    <tr><td colspan="5" class="text-center text-muted py-4">Belum ada mutasi yang terbentuk.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

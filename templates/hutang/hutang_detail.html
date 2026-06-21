@@ -19,12 +19,46 @@
         <div class="card-body">
             <div class="row">
                 <div class="col-md-6">
+                    {% if pembayaran_list %}
+
                     <table class="table table-borderless">
                         <tr><td class="text-muted" style="width:150px;">Supplier</td><td class="fw-semibold">{{ hutang.supplier.nama }}</td></tr>
                         <tr><td class="text-muted">Sumber</td><td>{{ hutang.get_sumber_display }} {% if hutang.sumber_ref %}<small>({{ hutang.sumber_ref }})</small>{% endif %}</td></tr>
                         <tr><td class="text-muted">Tanggal</td><td>{{ hutang.tanggal|date:"d F Y" }}</td></tr>
                         <tr><td class="text-muted">Jatuh Tempo</td><td>{% if hutang.jatuh_tempo %}<span class="{% if hutang.is_overdue %}text-danger fw-bold{% endif %}">{{ hutang.jatuh_tempo|date:"d F Y" }}</span>{% if hutang.is_overdue %} <span class="badge bg-danger">Telat {{ hutang.hari_overdue }} hari</span>{% endif %}{% else %}-{% endif %}</td></tr>
                     </table>
+
+                    {% else %}
+
+                    <div class="card-body">
+
+                        <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                            <div class="mb-4">
+
+                                <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                                     style="width: 88px; height: 88px;">
+
+                                    <i class="ri-bill-line" style="font-size: 2.8rem;"></i>
+
+                                </div>
+
+                            </div>
+
+                            <h5 class="mb-3">Belum Ada Hutang</h5>
+
+                            <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                                Daftar data masih kosong.
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                    {% endif %}
                 </div>
                 <div class="col-md-6">
                     <table class="table table-borderless">
@@ -75,9 +109,7 @@
                                 <td>{% if pb.jurnal %}<a href="{% url 'akuntansi:jurnal_detail' pb.jurnal.pk %}" class="text-primary">{{ pb.jurnal.nomor }}</a>{% else %}-{% endif %}</td>
                                 <td><small>{{ pb.keterangan|default:"-" }}</small></td>
                             </tr>
-                            {% empty %}
-                            <tr><td colspan="6" class="text-center py-4 text-muted">Belum ada pembayaran</td></tr>
-                            {% endfor %}
+                    {% endfor %}
                         </tbody>
                     </table>
                 </div>

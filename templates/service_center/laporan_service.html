@@ -44,6 +44,8 @@
     <!-- Tabel Data -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center"><h5 class="mb-0">Detail Order</h5><div class="d-flex gap-2"><button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button><button class="btn btn-sm btn-label-danger" onclick="exportToPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button></div></div>
+        {% if order_list %}
+
         <div class="card-datatable table-responsive">
             <table class="table table-hover" id="laporanTable">
                 <thead><tr><th>No. Service</th><th>Pelanggan</th><th>Perangkat</th><th>Status</th><th>Biaya</th><th>Tanggal</th></tr></thead>
@@ -57,7 +59,7 @@
                         <td>{{ order.biaya_akhir|rupiah }}</td>
                         <td>{{ order.tanggal_masuk|date:"d/m/Y" }}</td>
                     </tr>
-                    {% empty %}<tr><td colspan="6" class="text-center py-5 text-muted">Tidak ada data</td></tr>{% endfor %}
+                    {% endfor %}
                 </tbody>
                 <tfoot class="table-footer-summary">
                     <tr>
@@ -85,6 +87,38 @@
                 </tfoot>
             </table>
         </div>
+
+        {% else %}
+
+        <div class="card-body">
+
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                <div class="mb-4">
+
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                         style="width: 88px; height: 88px;">
+
+                        <i class="ri-customer-service-2-line" style="font-size: 2.8rem;"></i>
+
+                    </div>
+
+                </div>
+
+                <h5 class="mb-3">Belum Ada Data Service</h5>
+
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                    Daftar data masih kosong.
+
+                </p>
+
+            </div>
+
+        </div>
+
+        {% endif %}
     </div>
 </div>
 {% endblock %}

@@ -18,6 +18,8 @@
             <h5 class="mb-0">Daftar Kategori</h5>
             <div class="d-flex gap-2"><button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button><button class="btn btn-sm btn-label-danger" onclick="exportToPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button></div>
         </div>
+        {% if kategori_list %}
+
         <div class="card-datatable table-responsive">
             <table class="table table-hover" id="dataTable">
                 <thead><tr><th>Icon</th><th>Nama Kategori</th><th>Deskripsi</th><th>Jenis Service</th><th>Status</th><th>Aksi</th></tr></thead>
@@ -37,11 +39,43 @@
                             {% endif %}
                         </td>
                     </tr>
-                    {% empty %}<tr><td colspan="6" class="text-center py-5"><i class="ri-folder-settings-line ri-3x text-muted d-block mb-2"></i><p class="text-muted">Belum ada kategori</p></td></tr>{% endfor %}
+                    {% endfor %}
                 </tbody>
                 <tfoot class="table-footer-summary"><tr><td colspan="4" class="text-start ps-4 py-3"><div class="d-flex align-items-center"><i class="ri-calculator-line me-2 text-primary" style="font-size:1.5rem"></i><div><strong>RINGKASAN</strong><br><small class="text-muted">{{ total_kategori }} Kategori Terdaftar</small></div></div></td><td colspan="2"></td></tr></tfoot>
             </table>
         </div>
+
+        {% else %}
+
+        <div class="card-body">
+
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                <div class="mb-4">
+
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                         style="width: 88px; height: 88px;">
+
+                        <i class="ri-price-tag-3-line" style="font-size: 2.8rem;"></i>
+
+                    </div>
+
+                </div>
+
+                <h5 class="mb-3">Belum Ada Kategori</h5>
+
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                    Daftar data masih kosong.
+
+                </p>
+
+            </div>
+
+        </div>
+
+        {% endif %}
     </div>
     <div class="modal fade" id="deleteModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header bg-danger py-3"><h5 class="modal-title text-white mb-0"><i class="ri-delete-bin-line me-2"></i>Konfirmasi Hapus</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body text-center py-4"><i class="ri-error-warning-line text-danger" style="font-size:4rem"></i><h4 class="mt-3">Hapus kategori ini?</h4><p class="text-muted">Kategori: <strong id="deleteName"></strong></p><p class="text-danger small">Tidak dapat dibatalkan!</p></div><div class="modal-footer"><button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Batal</button><button type="button" class="btn btn-danger" id="confirmDeleteBtn">Ya, Hapus</button></div></div></div></div>
 </div>{% csrf_token %}

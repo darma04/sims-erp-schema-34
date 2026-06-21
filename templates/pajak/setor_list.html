@@ -93,6 +93,8 @@
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="ri-list-check me-2"></i>Daftar Settlement PPN</h5>
         </div>
+        {% if tahun_list %}
+
         <div class="card-datatable table-responsive">
             <table class="table table-hover" id="setorTable">
                 <thead class="table-light">
@@ -133,12 +135,42 @@
                             <a href="{% url 'pajak:setor_detail' s.pk %}" class="btn btn-sm btn-icon btn-text-secondary"><i class="ri-eye-line"></i></a>
                         </td>
                     </tr>
-                    {% empty %}
-                    <tr><td colspan="9" class="text-center text-muted py-4">Belum ada settlement PPN.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+
+        {% else %}
+
+        <div class="card-body">
+
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                <div class="mb-4">
+
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                         style="width: 88px; height: 88px;">
+
+                        <i class="ri-file-text-line" style="font-size: 2.8rem;"></i>
+
+                    </div>
+
+                </div>
+
+                <h5 class="mb-3">Belum Ada Data Pajak</h5>
+
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                    Daftar data masih kosong.
+
+                </p>
+
+            </div>
+
+        </div>
+
+        {% endif %}
     </div>
 </div>
 {% endblock content %}
