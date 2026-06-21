@@ -36,7 +36,7 @@
         </div>
         {% if can_create.pengaturan %}
         <div class="d-flex gap-2">
-            <form method="post" action="{% url 'pengaturan:metode_pembayaran_seed' %}" class="d-inline">
+            <form method="post" action="{% url 'pengaturan:metode_pembayaran_create' %}" class="d-inline">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-label-success"
                     onclick="return confirm('Seed metode pembayaran default? Data yang sudah ada tidak ditimpa.');">
@@ -335,7 +335,7 @@
                     <a href="{% url 'pengaturan:metode_pembayaran_create' %}" class="btn btn-primary btn-lg">
                         <i class="ri-add-line me-1"></i>Tambah Metode
                     </a>
-                    <a href="{% url 'pengaturan:metode_pembayaran_seed' %}" class="btn btn-label-success btn-lg">
+                    <a href="{% url 'pengaturan:metode_pembayaran_create' %}" class="btn btn-label-success btn-lg">
                         <i class="ri-database-2-line me-1"></i>Seed Default
                     </a>
                 </div>
