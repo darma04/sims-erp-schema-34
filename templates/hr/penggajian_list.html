@@ -25,7 +25,7 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    <!-- Header -->
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -48,7 +48,6 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
         {% endif %}
     </div>
 
-    <!-- Summary Cards -->
     <div class="row g-3 mb-4">
         <div class="col-lg-3 col-sm-6">
             <div class="card">
@@ -120,7 +119,6 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
         </div>
     </div>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -161,7 +159,7 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
                     </select>
                 </div>
             </div>
-            <!-- Baris kedua: Pilih Kolom (kiri) dan Tombol Filter (kanan) -->
+            
             <div class="row g-3 mt-2 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
@@ -237,7 +235,6 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
         </div>
     </div>
 
-    <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Data Slip Gaji</h5>
@@ -347,7 +344,7 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
                 </tbody>
                 <tfoot class="table-footer-summary">
                     <tr>
-                        <td colspan="2" class="text-start ps-4 py-3">
+                        <td colspan="3" class="text-start ps-4 py-3">
                             <div class="d-flex align-items-center">
                                 <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
                                 <div>
@@ -355,7 +352,7 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
                                     <br><small class="text-muted">{{ total_slip|default:0 }} Slip Gaji</small>
                                 </div>
                             </div>
-                        </td>
+                        </td><td class="py-3"></td><td class="py-3"></td>
                         <td class="py-3 text-center">
                             <strong class="text-primary">Rp {{ total_gaji_pokok|floatformat:0|default:"0" }}</strong>
                             <br><small class="text-muted">Total Gaji Pokok</small>
@@ -373,14 +370,12 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
                             <br><small class="text-muted">Total Gaji Bersih</small>
                         </td>
                         <td></td>
-                        <td></td>
                     </tr>
                 </tfoot>
             </table>
         </div>
     </div>
 
-    <!-- Delete Modal -->
     <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -401,7 +396,6 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
         </div>
     </div>
 
-    <!-- ===== MODAL UPDATE STATUS PENGGAJIAN ===== -->
     <div class="modal fade" id="statusModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -592,7 +586,6 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
         }
     }
 
-    // Company Information (from Template Cetak settings)
     const EXCEL_INFO = {
         name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
         address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -611,14 +604,12 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
         copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
     };
 
-
-    // === FOOTER DATA: Explicit summary values per column index ===
     const FOOTER_DATA = { 2: "Rp {{ total_gaji_pokok|floatformat:0|default:'0' }}", 3: "Rp {{ total_tunjangan|floatformat:0|default:'0' }}", 4: "Rp {{ total_potongan|floatformat:0|default:'0' }}", 5: "Rp {{ grand_total|floatformat:0|default:'0' }}" };
     const FOOTER_LABEL = 'RINGKASAN';
 
     function exportToExcel() {
         const table = document.getElementById('penggajianTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#penggajianTable');
 
@@ -638,7 +629,6 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
         html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
         html += '<body>';
 
-        // --- ADD EXCEL HEADER (Company Info) ---
         html += '<table border="0">';
         if (typeof EXCEL_INFO !== 'undefined') {
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
@@ -657,7 +647,7 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
 
         html += '</tr></thead><tbody>';
 
-        tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
+          tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
             html += '<tr>';
             visibleColumns.forEach(col => {
                 let cellNode = tableObj.cell(rowIdx, col.index).node();
@@ -667,7 +657,6 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
             html += '</tr>';
         });
 
-        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
             let ri = 0;
@@ -708,7 +697,7 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('penggajianTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#penggajianTable');
 
@@ -742,7 +731,6 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
             if (row.length > 0) body.push(row);
         });
 
-        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             const summaryRow = [];
             let ri = 0;
@@ -867,9 +855,6 @@ $('#confirmDeleteBtn').on('click', function() {
 </script>
 
 <script>
-// ═══════════════════════════════════════════════════════════════
-// UPDATE STATUS SLIP GAJI — AJAX MODAL
-// ═══════════════════════════════════════════════════════════════
 
 var statusSlipId = null;
 
@@ -884,12 +869,10 @@ function openStatusModal(slipId, currentStatus, slipName) {
     statusSlipId = slipId;
     document.getElementById('statusSlipName').textContent = slipName;
 
-    // Set badge status saat ini
     var info = STATUS_INFO[currentStatus] || { badge: 'secondary', info: '-' };
     document.getElementById('statusCurrentBadge').innerHTML =
         '<span class="badge bg-label-' + info.badge + '">' + (currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1)) + '</span>';
 
-    // Pre-select next logical status
     var nextStatus = { 'draft': 'diproses', 'diproses': 'dibayar' }[currentStatus] || 'diproses';
     var sel = document.getElementById('statusSelectNew');
     sel.value = nextStatus;
@@ -932,7 +915,7 @@ document.getElementById('btnSimpanStatus').addEventListener('click', function() 
     .then(function(data) {
         if (data.success) {
             bootstrap.Modal.getInstance(document.getElementById('statusModal')).hide();
-            // Tampilkan toast sukses
+            
             var toastHtml = '<div class="bs-toast toast align-items-center text-bg-success border-0 show" style="position:fixed;top:20px;right:20px;z-index:9999" role="alert">' +
                 '<div class="d-flex"><div class="toast-body"><i class="ri-check-circle-line me-2"></i>' + data.message + '</div>' +
                 '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>';
@@ -953,4 +936,42 @@ document.getElementById('btnSimpanStatus').addEventListener('click', function() 
     });
 });
 </script>
+
+<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning align-items-center py-3">
+                <h5 class="modal-title text-dark mb-0">
+                    <i class="ri-error-warning-line me-2"></i>Export Gagal
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center py-3">
+                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
+                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
+                    <i class="ri-close-line me-1"></i>Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+function showExportError() {
+    var modal = document.getElementById('exportErrorModal');
+    if (modal) {
+        new bootstrap.Modal(modal).show();
+    } else {
+        alert('Tabel tidak ditemukan!');
+    }
+}
+</script>
+
 {% endblock page_js %}

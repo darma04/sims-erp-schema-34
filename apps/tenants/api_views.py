@@ -26,6 +26,11 @@ from django.contrib.auth.models import User
 
 from .models import TenantClient, TenantDomain
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 
 # ==========================================================================
 #  API KEY AUTHENTICATION
@@ -177,8 +182,8 @@ def tenant_list_create(request):
         # Pastikan selalu reset ke public meskipun terjadi error
         try:
             connection.set_schema_to_public()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
         return JsonResponse(
             {"status": "error", "message": f"Gagal membuat tenant: {str(e)}"},
             status=500
@@ -237,14 +242,14 @@ def tenant_detail_delete(request, schema_name):
                 }
                 for su in su_list
             ]
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
         finally:
             # PENTING: Selalu reset ke public schema setelah query tenant
             try:
                 connection.set_schema_to_public()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Error tidak terduga: %s", e)
 
         return JsonResponse({
             "status": "success",

@@ -1,5 +1,6 @@
 import logging
 
+from django.db import IntegrityError
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -18,6 +19,12 @@ def create_biaya_journal(sender, instance, **kwargs):
 
     try:
         ensure_biaya_accounting(instance, user=instance.disetujui_oleh)
+    except IntegrityError as exc:
+        logger.warning(
+            "[BIAYA] Duplicate jurnal untuk %s: %s",
+            instance.nomor_transaksi,
+            exc,
+        )
     except Exception as exc:
         logger.error(
             "[BIAYA] Failed to create auto-jurnal for %s: %s",
@@ -42,5 +49,6 @@ def create_biaya_journal(sender, instance, **kwargs):
                 source_id=str(instance.pk),
                 source_repr=instance.nomor_transaksi,
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Gagal mencatat activity log: %s", e)
+        # raise  # Disabled: transaksi tetap tersimpan meskipun jurnal gagal

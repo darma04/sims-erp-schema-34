@@ -2,6 +2,29 @@
 {% load static %}
 {% load currency_filters %}
 
+{% comment %}
+  ==========================================================================
+  PIUTANG - Detail Piutang
+  ==========================================================================
+  Menampilkan informasi lengkap satu piutang termasuk data relasi.
+  Detail page biasanya menampilkan data read-only (tidak bisa diedit langsung).
+
+  FLOW DATA:
+  - URL: /piutang/piutang/<pk>/- View: DetailView mengambil 1 object berdasarkan primary key- Context: object + data relasi (items, history, dll)- Template: Render semua informasi ke HTML
+
+  RELASI KE MODUL LAIN:
+  - apps/piutang/views.py -> PiutangDetailView- apps/piutang/models.py -> Model Piutang- get_context_data(): Menambahkan data relasi ke context
+
+  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
+  - BOLEH diubah: Layout detail, urutan informasi- BOLEH ditambah: Informasi baru dari relasi- JANGAN diubah: {% extends %} dan {% block %} structure
+
+  TIPS & DEBUGGING:
+  - Error 'DoesNotExist'? Primary key tidak ditemukan di database- Data relasi kosong? Cek get_context_data() di views.py
+
+  ==========================================================================
+{% endcomment %}
+
+
 {% block title %}{{ piutang.nomor }} - Detail Piutang{% endblock title %}
 
 {% block content %}
@@ -10,7 +33,6 @@
         <span class="text-muted fw-light">Akuntansi / <a href="{% url 'piutang:list' %}">Piutang</a> /</span> {{ piutang.nomor }}
     </h4>
 
-    <!-- Header -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="ri-money-dollar-circle-line me-2"></i>{{ piutang.nomor }}</h5>
@@ -46,7 +68,7 @@
                     </table>
                 </div>
             </div>
-            <!-- Progress Bar -->
+            
             {% if piutang.jumlah_total > 0 %}
             {% widthratio piutang.jumlah_dibayar piutang.jumlah_total 100 as persen_bayar %}
             <div class="mt-3">
@@ -63,7 +85,7 @@
     </div>
 
     <div class="row">
-        <!-- Riwayat Pembayaran -->
+        
         <div class="col-md-7">
             <div class="card mb-4">
                 <div class="card-header"><h5 class="mb-0"><i class="ri-history-line me-2"></i>Riwayat Pembayaran</h5></div>
@@ -91,13 +113,13 @@
             </div>
         </div>
 
-        <!-- Form Pembayaran -->
         {% if piutang.status != 'lunas' and piutang.status != 'dihapuskan' and rbac_can_create %}
         <div class="col-md-5">
             <div class="card mb-4">
                 <div class="card-header bg-primary">
                     <h5 class="mb-0 text-white"><i class="ri-hand-coin-line me-2"></i>Catat Pembayaran</h5>
                 </div>
+                
                 <form method="post" action="{% url 'piutang:bayar' piutang.pk %}">
                     {% csrf_token %}
                     <div class="card-body">

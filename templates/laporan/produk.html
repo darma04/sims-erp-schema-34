@@ -34,7 +34,6 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
         </div>
     </div>
 
-    <!-- Summary Cards (4 cards) -->
     <div class="row g-2 g-md-3 mb-4">
         <div class="col-6 col-lg-3">
             <div class="card">
@@ -44,7 +43,7 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
                             <p class="card-text text-muted">Total Keseluruhan Aset</p>
                             <h4 class="mb-0 text-primary summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
-                                title="<b>Alur Data:</b><br>╬ú (harga_beli ├ù qty_total_pernah_masuk)<br><br><b>Sumber:</b> Semua produk yang pernah masuk ke sistem (stok + terjual + adjustment).<br>Bersifat kumulatif historis.">
+                                title="<b>Alur Data:</b><br>Σ harga_beli x (stok saat ini + qty terjual SO + qty terjual POS + qty adjustment keluar + qty sparepart terpakai di Service Center) dari semua Produk &amp; Sparepart.<br><br><b>Sumber:</b> Semua item yang pernah masuk ke sistem.<br>Bersifat kumulatif historis.">
                                 {{ total_keseluruhan_aset|rupiah }}</h4>
                             <small class="text-muted">Semua produk masuk</small>
                         </div>
@@ -65,7 +64,7 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
                             <p class="card-text text-muted">Total Harga Beli</p>
                             <h4 class="mb-0 text-danger summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
-                                title="<b>Alur Data:</b><br>╬ú (harga_beli ├ù stok_saat_ini)<br><br><b>Sumber:</b> Hanya produk yang stoknya > 0 (ready).<br>Dari tabel Produk ├ù Stok.">
+                                title="<b>Alur Data:</b><br>Σ (harga_beli x stok_saat_ini) untuk semua item (Produk &amp; Sparepart).<br><br><b>Sumber:</b> Hanya item yang stoknya &gt; 0 (ready) di seluruh gudang.<br>Dari tabel Produk x Stok.">
                                 {{ total_harga_beli_ready|rupiah }}</h4>
                             <small class="text-muted">Produk ready (stok > 0)</small>
                         </div>
@@ -86,7 +85,7 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
                             <p class="card-text text-muted">Total Harga Jual</p>
                             <h4 class="mb-0 text-success summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
-                                title="<b>Alur Data:</b><br>╬ú (harga_jual ├ù stok_saat_ini)<br><br><b>Sumber:</b> Hanya produk yang stoknya > 0 (ready).<br>Dari tabel Produk ├ù Stok.">
+                                title="<b>Alur Data:</b><br>Σ (harga_jual x stok_saat_ini) untuk semua item (Produk &amp; Sparepart).<br><br><b>Sumber:</b> Hanya item yang stoknya &gt; 0 (ready) di seluruh gudang.<br>Dari tabel Produk x Stok.">
                                 {{ total_harga_jual_ready|rupiah }}</h4>
                             <small class="text-muted">Produk ready (stok > 0)</small>
                         </div>
@@ -108,7 +107,7 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
                             <h4 class="mb-0 {% if estimasi_keuntungan >= 0 %}text-success{% else %}text-danger{% endif %} summary-nominal"
                                 style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom"
                                 data-bs-html="true"
-                                title="<b>Alur Data:</b><br>Total Harga Jual (Ready) ÔêÆ Total Harga Beli (Ready)<br><br><b>Sumber:</b> Selisih harga jual dan harga beli dari produk yang masih punya stok > 0.<br>Potensi keuntungan jika semua stok terjual.">
+                                title="<b>Alur Data:</b><br>Total Harga Jual (Ready) - Total Harga Beli (Ready).<br><br><b>Sumber:</b> Selisih harga jual dan harga beli dari item (Produk &amp; Sparepart) yang masih punya stok &gt; 0.<br>Potensi keuntungan jika semua stok terjual.">
                                 {{ estimasi_keuntungan|rupiah }}</h4>
                             <small class="text-muted">Produk ready (stok > 0)</small>
                         </div>
@@ -123,10 +122,9 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
         </div>
     </div>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
-            <!-- Baris 1: Filter Inputs -->
+            
             <div class="row g-3">
                 <div class="col-md-3">
                     <label class="form-label">Tanggal Mulai</label>
@@ -154,7 +152,6 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
                 </div>
             </div>
 
-            <!-- Baris 2: Pilih Kolom (kiri) dan Tombol Filter (kanan) -->
             <div class="row g-3 mt-2 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
@@ -294,7 +291,7 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
                                     <i class="ri-more-2-line"></i>
                                 </button>
                                 <div class="dropdown-menu">
-                                    <a class="dropdown-item" href="{% url 'laporan:produk-detail' produk.id %}">
+                                    <a class="dropdown-item" href="{% url 'laporan:produk-detail' produk.pk %}">
                                         <i class="ri-eye-line me-2"></i>Lihat Detail
                                     </a>
                                 </div>
@@ -303,7 +300,7 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="text-center py-5"><i
+                        <td colspan="9" class="text-center py-5"><i
                                 class="ri-box-3-line ri-3x text-muted mb-3 d-block"></i>
                             <p class="text-muted mb-0">Belum ada produk</p>
                         </td>
@@ -321,7 +318,7 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
                                         Terdaftar</small>
                                 </div>
                             </div>
-                        </td>
+                        </td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td>
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-success d-flex align-items-center gap-1 mb-2"
@@ -396,7 +393,7 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
         });
         {% endif %}
     });
-    // Template Data for Independent Headers/Footers
+    
     const EXCEL_INFO = {
         name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
         address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -415,13 +412,12 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
         copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
     };
 
-    // === FOOTER DATA: Explicit summary values per column index ===
     const FOOTER_DATA = { 4: "{{ total_nilai_beli|rupiah }}", 5: "{{ total_nilai_jual|rupiah }}", 6: "{{ total_stok|floatformat:0 }}" };
     const FOOTER_LABEL = 'RINGKASAN';
 
     function exportToExcel() {
         const table = document.getElementById('produkTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#produkTable');
 
@@ -441,13 +437,12 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
         html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
         html += '<body>';
 
-        // --- ADD EXCEL HEADER (Company Info) ---
         html += '<table border="0">';
         if (typeof EXCEL_INFO !== 'undefined') {
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
-            html += `<tr><td colspan="${colCount}"></td></tr>`; // empty row for spacing
+            html += `<tr><td colspan="${colCount}"></td></tr>`; 
         }
         html += '</table>';
 
@@ -470,7 +465,6 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
             html += '</tr>';
         });
 
-        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
             let ri = 0;
@@ -507,12 +501,11 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
         link.click();
     }
 
-    // Company Information (from Template Cetak settings)
     function exportToPDF() {
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('produkTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#produkTable');
 
@@ -546,7 +539,6 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
             if (row.length > 0) body.push(row);
         });
 
-        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             const summaryRow = [];
             let ri = 0;
@@ -655,7 +647,7 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
     }
 </script>
 <script>
-    // Inisialisasi Bootstrap Tooltip
+    
     document.addEventListener('DOMContentLoaded', function () {
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         tooltipTriggerList.forEach(function (el) {
@@ -713,4 +705,42 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
     }
 }
 </style>
+
+<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning align-items-center py-3">
+                <h5 class="modal-title text-dark mb-0">
+                    <i class="ri-error-warning-line me-2"></i>Export Gagal
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center py-3">
+                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
+                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
+                    <i class="ri-close-line me-1"></i>Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+function showExportError() {
+    var modal = document.getElementById('exportErrorModal');
+    if (modal) {
+        new bootstrap.Modal(modal).show();
+    } else {
+        alert('Tabel tidak ditemukan!');
+    }
+}
+</script>
+
 {% endblock page_js %}

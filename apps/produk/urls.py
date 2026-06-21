@@ -70,12 +70,8 @@ urlpatterns = [
 
     # Sparepart URLs
     path('sparepart/', views.SparepartListView.as_view(), name='sparepart_list'),
-    # URL: /produk/sparepart/import/ — sparepart_import
     path('sparepart/import/', views.SparepartImportView.as_view(), name='sparepart_import'),
-    # URL: /produk/sparepart/tambah/ — sparepart_tambah
     path('sparepart/tambah/', views.SparepartCreateView.as_view(), name='sparepart_tambah'),
-    # URL: /produk/sparepart/<int:pk>/edit/ — sparepart_edit
     path('sparepart/<int:pk>/edit/', views.SparepartUpdateView.as_view(), name='sparepart_edit'),
-    # URL: /produk/sparepart/<int:pk>/delete/ — sparepart_delete
     path('sparepart/<int:pk>/delete/', views.SparepartDeleteView.as_view(), name='sparepart_delete'),
 ]

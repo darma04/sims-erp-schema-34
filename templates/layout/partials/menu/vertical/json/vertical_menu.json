@@ -59,7 +59,7 @@
     },
     {
       "menu_header": "MASTER DATA",
-      "permission": "produk:view,inventory:view"
+      "permission": "produk:view,inventory:view,sparepart:view"
     },
     {
       "name": "Produk",
@@ -102,6 +102,16 @@
           "url": "produk:sparepart_tambah",
           "name": "Tambah Sparepart",
           "slug": "sparepart-tambah_sparepart"
+        },
+        {
+          "url": "produk:kategori",
+          "name": "Kategori Sparepart",
+          "slug": "sparepart-kategori"
+        },
+        {
+          "url": "produk:satuan",
+          "name": "Satuan",
+          "slug": "sparepart-satuan"
         }
       ]
     },

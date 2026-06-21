@@ -39,7 +39,6 @@ Fitur: tambah, edit, hapus kategori biaya.
         </div>
     </div>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3 align-items-end">
@@ -167,7 +166,7 @@ Fitur: tambah, edit, hapus kategori biaya.
                                         Biaya</small>
                                 </div>
                             </div>
-                        </td>
+                        </td><td class="py-3"></td>
                         <td class="py-3"></td>
                     </tr>
                 </tfoot>
@@ -175,7 +174,6 @@ Fitur: tambah, edit, hapus kategori biaya.
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
     <div class="modal fade" id="deleteKategoriBiayaModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -277,11 +275,11 @@ Fitur: tambah, edit, hapus kategori biaya.
             max-width: 100%
         }
 
-        .datatables-kategori {
+        {% if kategori_list %}.datatables-kategori {
             min-width: 800px !important;
             width: 800px !important;
             table-layout: auto !important
-        }
+        }{% endif %}
 
         .dataTables_wrapper {
             overflow-x: hidden !important;
@@ -344,15 +342,13 @@ Fitur: tambah, edit, hapus kategori biaya.
     }
 
     function applyFilter() {
-        // DataTables search sudah otomatis via search box bawaan
-        // Fungsi ini tersedia untuk konsistensi dengan halaman lain
+        
     }
 
     function resetFilter() {
         window.location.href = '{% url "biaya:kategori" %}';
     }
 
-    // Company Information (from Template Cetak settings)
     const EXCEL_INFO = {
         name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
         address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -371,14 +367,13 @@ Fitur: tambah, edit, hapus kategori biaya.
         copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
     };
 
-
-    // === FOOTER DATA: Explicit summary values per column index ===
     const FOOTER_DATA = {};
     const FOOTER_LABEL = 'RINGKASAN';
 
     function exportToExcel() {
+        if (typeof $ === "undefined" || typeof $.fn.dataTable === "undefined" || !$.fn.dataTable.isDataTable('#kategoriTable')) { alert('Tidak ada data untuk di-export. Silakan tambahkan data terlebih dahulu.'); return; }
         const table = document.getElementById('kategoriTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#kategoriTable');
 
@@ -398,12 +393,11 @@ Fitur: tambah, edit, hapus kategori biaya.
         html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
         html += '<body>';
 
-        // --- ADD EXCEL HEADER (Company Info) ---
         html += '<table border="0">';
         if (typeof EXCEL_INFO !== 'undefined') {
-            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
-            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
-            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
+            html += `<tr><td colspan="${colCount}">${EXCEL_INFO.name}</td></tr>`;
+            html += `<tr><td colspan="${colCount}">${EXCEL_INFO.address}</td></tr>`;
+            html += `<tr><td colspan="${colCount}">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
             html += `<tr><td colspan="${colCount}"></td></tr>`;
         }
         html += '</table>';
@@ -417,7 +411,7 @@ Fitur: tambah, edit, hapus kategori biaya.
 
         html += '</tr></thead><tbody>';
 
-        tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
+          tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
             html += '<tr>';
             visibleColumns.forEach(col => {
                 let cellNode = tableObj.cell(rowIdx, col.index).node();
@@ -427,7 +421,6 @@ Fitur: tambah, edit, hapus kategori biaya.
             html += '</tr>';
         });
 
-        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
             let ri = 0;
@@ -465,10 +458,11 @@ Fitur: tambah, edit, hapus kategori biaya.
     }
 
     function exportToPDF() {
+        if (typeof $ === "undefined" || typeof $.fn.dataTable === "undefined" || !$.fn.dataTable.isDataTable('#kategoriTable')) { alert('Tidak ada data untuk di-export. Silakan tambahkan data terlebih dahulu.'); return; }
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('kategoriTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#kategoriTable');
 
@@ -502,7 +496,6 @@ Fitur: tambah, edit, hapus kategori biaya.
             if (row.length > 0) body.push(row);
         });
 
-        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             const summaryRow = [];
             let ri = 0;
@@ -588,7 +581,6 @@ Fitur: tambah, edit, hapus kategori biaya.
         pdfMake.createPdf(docDefinition).download('Kategori_Biaya_' + new Date().toISOString().slice(0, 10) + '.pdf');
     }
 
-    // Tangani Hapus Kategori Biaya
     let deleteId = null;
 function confirmDelete(id, name) {
     deleteId = id;
@@ -635,4 +627,42 @@ $('#confirmDeleteBtn').on('click', function() {
         setTimeout(function() { $('.alert').fadeOut(function() { $(this).remove(); }); }, 5000);
     }
 </script>
+
+<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning align-items-center py-3">
+                <h5 class="modal-title text-dark mb-0">
+                    <i class="ri-error-warning-line me-2"></i>Export Gagal
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center py-3">
+                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
+                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
+                    <i class="ri-close-line me-1"></i>Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+function showExportError() {
+    var modal = document.getElementById('exportErrorModal');
+    if (modal) {
+        new bootstrap.Modal(modal).show();
+    } else {
+        alert('Tabel tidak ditemukan!');
+    }
+}
+</script>
+
 {% endblock page_js %}

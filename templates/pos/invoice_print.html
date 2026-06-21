@@ -227,7 +227,6 @@
             padding-top: 5px;
         }
 
-        /* Mobile Responsive */
         @media screen and (max-width: 768px) {
             body { padding: 10px; }
             .invoice-container { padding: 15px; }
@@ -240,7 +239,6 @@
             .signature-line { margin-top: 40px; }
         }
 
-        /* Print Styles */
         @media print {
             .invoice-status, .order-status, .po-status, .slip-status {
                 -webkit-print-color-adjust: exact !important;
@@ -269,7 +267,7 @@
 
 <body>
     <div class="invoice-container">
-        <!-- Header (TABLE layout untuk kompatibilitas xhtml2pdf) -->
+        
         <table class="header-table" cellpadding="0" cellspacing="0" style="width: 100%;">
             <tr>
                 <td style="vertical-align: top; width: 50%;">
@@ -298,7 +296,6 @@
             </tr>
         </table>
 
-        <!-- Invoice Info (TABLE layout) -->
         <table class="info-table" cellpadding="0" cellspacing="0">
             <tr>
                 <td style="vertical-align: top; width: 50%;" class="info-section">
@@ -330,7 +327,6 @@
             </tr>
         </table>
 
-        <!-- Items Table -->
         <table class="items-table">
             <thead>
                 <tr>
@@ -359,7 +355,6 @@
             </tbody>
         </table>
 
-        <!-- Totals (TABLE layout) -->
         <table class="totals-table">
             {% if transaction.diskon > 0 %}
             <tr>
@@ -379,7 +374,6 @@
             </tr>
         </table>
 
-        <!-- Notes -->
         {% if transaction.catatan %}
         <div class="notes">
             <h4>Catatan:</h4>
@@ -387,7 +381,6 @@
         </div>
         {% endif %}
 
-        <!-- Signature (TABLE layout) -->
         <table class="signature-table" cellpadding="0" cellspacing="0">
             <tr>
                 <td style="text-align: center; width: 200px;">
@@ -404,7 +397,6 @@
             </tr>
         </table>
 
-        <!-- Footer (TABLE layout untuk konsistensi xhtml2pdf) -->
         <table class="footer-table" cellpadding="0" cellspacing="0">
             <tr>
                 <td>
@@ -418,7 +410,6 @@
         </table>
     </div>
 
-    <!-- Tombol Kembali (ditampilkan setelah native Android print dialog) -->
     <div id="backBtnWrap" class="no-print" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:9999;">
         <a id="backBtn" href="javascript:void(0)" style="display:inline-block; padding:12px 32px; background:#696cff; color:#fff; text-decoration:none; border-radius:8px; font-size:14px; font-weight:bold; box-shadow:0 4px 12px rgba(0,0,0,0.2);">
             ← Kembali
@@ -426,7 +417,7 @@
     </div>
 
     <script>
-        // Smart Print Handler — Universal: Browser + Capacitor Android (SerpApp.triggerPrint)
+        
         (function() {
             var printed = false;
 
@@ -447,13 +438,13 @@
             function doPrint() {
                 if (printed) return;
                 printed = true;
-                // Capacitor Android: gunakan native print via JavascriptInterface
+                
                 if (typeof window.SerpApp !== 'undefined' && typeof window.SerpApp.triggerPrint === 'function') {
                     window.SerpApp.triggerPrint();
-                    // afterprint tidak fire dari native dialog, tampilkan tombol kembali
+                    
                     setTimeout(showBackButton, 500);
                 } else {
-                    // Browser/Mobile: langsung window.print(), kembali via afterprint
+                    
                     if (typeof window.print === 'function') {
                         try { window.print(); } catch(e) { goBack(); }
                     }
@@ -463,7 +454,6 @@
             if (document.readyState === 'complete') { setTimeout(doPrint, 400); }
             else { window.addEventListener('load', function() { setTimeout(doPrint, 400); }); }
 
-            // afterprint fire di browser/WebView standar saat cetak selesai/batal
             window.addEventListener('afterprint', function() { setTimeout(goBack, 200); });
         })();
     </script>

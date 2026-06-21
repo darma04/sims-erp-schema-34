@@ -11,9 +11,9 @@
 {% endblock page_css %}
 
 {% block content %}
-<!-- Not Authorized -->
+
 <div class="misc-wrapper">
-  <h1 class="mb-2 mx-2" style="font-size: 6rem;">401</h1>
+  <h1 class="mb-2 mx-2" style="font-size: 6rem;">{{ status|default:403 }}</h1>
   <h4 class="mb-2">You are not authorized! 🔐</h4>
   <p class="mb-2 mx-2">You don’t have permission to access this page. Go Home!</p>
   <div class="d-flex justify-content-center mt-5">
@@ -41,5 +41,5 @@
     </div>
   </div>
 </div>
-<!-- /Not Authorized -->
+
 {% endblock %}

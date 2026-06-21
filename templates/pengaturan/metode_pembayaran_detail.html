@@ -14,7 +14,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    <!-- Header -->
+    
     <div class="mb-4">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb breadcrumb-style1">
@@ -43,16 +43,16 @@
     </div>
 
     <div class="row">
-        <!-- Kolom Kiri: Informasi Utama -->
+        
         <div class="col-xl-8 col-lg-7">
-            <!-- Card Utama -->
+            
             <div class="card mb-4">
                 <div class="card-header pb-0">
                     <h5 class="mb-0">Informasi Metode Pembayaran</h5>
                 </div>
                 <div class="card-body pt-4">
                     <div class="row g-4">
-                        <!-- Logo/Gambar — kolom kiri -->
+                        
                         <div class="col-12 col-md-4 text-center">
                             {% if metode.gambar %}
                             <img src="{{ metode.gambar.url }}" alt="{{ metode.nama }}" 
@@ -67,7 +67,6 @@
                             {% endif %}
                         </div>
                         
-                        <!-- Info Detail — kolom kanan, menggunakan list-group agar sejajar -->
                         <div class="col-12 col-md-8">
                             <ul class="list-group list-group-flush">
                                 <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-3">
@@ -111,14 +110,13 @@
                 </div>
             </div>
 
-            <!-- Card Keuangan -->
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0"><i class="ri-money-dollar-circle-line me-2"></i>Informasi Keuangan</h5>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
-                        <!-- Saldo Saat Ini -->
+                        
                         <div class="col-md-4">
                             <div class="d-flex align-items-center p-3 rounded-3 {% if saldo_terhitung >= 0 %}bg-label-primary{% else %}bg-label-danger{% endif %}">
                                 <div class="d-flex justify-content-center align-items-center rounded-circle {% if saldo_terhitung >= 0 %}bg-primary{% else %}bg-danger{% endif %} me-3" 
@@ -132,7 +130,7 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- Total Pendapatan -->
+                        
                         <div class="col-md-4">
                             <div class="d-flex align-items-center p-3 rounded-3 bg-label-success">
                                 <div class="d-flex justify-content-center align-items-center rounded-circle bg-success me-3" 
@@ -146,7 +144,7 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- Total Pengeluaran -->
+                        
                         <div class="col-md-4">
                             <div class="d-flex align-items-center p-3 rounded-3 bg-label-danger">
                                 <div class="d-flex justify-content-center align-items-center rounded-circle bg-danger me-3" 
@@ -164,7 +162,6 @@
                 </div>
             </div>
 
-            <!-- Card Statistik Transaksi -->
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0"><i class="ri-bar-chart-box-line me-2"></i>Statistik Penggunaan</h5>
@@ -201,7 +198,6 @@
                 </div>
             </div>
 
-            <!-- Card Riwayat -->
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0"><i class="ri-history-line me-2"></i>Riwayat</h5>
@@ -237,9 +233,8 @@
             </div>
         </div>
 
-        <!-- Kolom Kanan: Ringkasan -->
         <div class="col-xl-4 col-lg-5 mt-4 mt-lg-0">
-            <!-- Ringkasan Card -->
+            
             <div class="card mb-4" style="background: linear-gradient(135deg, #696cff 0%, #8385ff 100%);">
                 <div class="card-body">
                     <h5 class="text-white mb-4">
@@ -295,7 +290,6 @@
                 </div>
             </div>
 
-            <!-- Quick Actions -->
             <div class="card">
                 <div class="card-body">
                     <h6 class="mb-3"><i class="ri-settings-3-line me-2"></i>Aksi Cepat</h6>

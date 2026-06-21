@@ -72,10 +72,8 @@ def kirim_pesan_telegram(bot_token, chat_id, pesan, parse_mode='Markdown'):
 
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
 
-    # Buat SSL context yang permissive untuk menghindari certificate issues
+    # Buat SSL context yang aman dengan verifikasi sertifikat
     ssl_context = ssl.create_default_context()
-    ssl_context.check_hostname = False
-    ssl_context.verify_mode = ssl.CERT_NONE
 
     # Pertama coba dengan parse_mode, jika gagal karena formatting coba tanpa
     for attempt_parse_mode in [parse_mode, None]:
@@ -180,8 +178,6 @@ def kirim_dokumen_telegram(bot_token, chat_id, file_path, caption='', parse_mode
     url = f"https://api.telegram.org/bot{bot_token}/sendDocument"
 
     ssl_context = ssl.create_default_context()
-    ssl_context.check_hostname = False
-    ssl_context.verify_mode = ssl.CERT_NONE
 
     try:
         # Baca file untuk dikirim via multipart/form-data
@@ -376,8 +372,8 @@ def _kirim_dokumen_sync(jenis_transaksi, nomor_referensi, instance, pdf_generato
                 status='gagal',
                 error_message=str(e),
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Gagal mencatat activity log: %s", e)
 
 
 def format_angka(angka):
@@ -486,5 +482,5 @@ def _kirim_notifikasi_sync(jenis_transaksi, nomor_referensi, data_transaksi):
                 status='gagal',
                 error_message=str(e),
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Gagal mencatat activity log: %s", e)

@@ -11,7 +11,6 @@
 {% load permission_tags %}
 {% load perm_management_filters %}
 
-
 {% block head_title %}{{ title }}{% endblock %}
 
 {% block vendor_css %}
@@ -24,7 +23,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    <!-- Header -->
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -41,7 +40,6 @@
         {% endif %}
     </div>
 
-    <!-- Permission Matrix -->
     <div class="card">
         <div class="card-header pb-0">
             <h5 class="card-title mb-0">Permission Matrix</h5>
@@ -121,7 +119,6 @@
         </div>
     </div>
 
-    <!-- Legend -->
     <div class="card mt-3">
         <div class="card-body">
             <h6 class="card-title mb-3">
@@ -148,7 +145,6 @@
         </div>
     </div>
 
-    <!-- Detailed List -->
     <div class="card mt-3">
         <div class="card-header">
             <h5 class="card-title mb-0">Detailed Permission List</h5>
@@ -236,7 +232,6 @@
     </div>
 </div>
 
-<!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deletePermissionModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -262,7 +257,6 @@
     </div>
 </div>
 
-<!-- Include Modals -->
 {% include "permission_management/_modals/add_permission_modal.html" %}
 {% include "permission_management/_modals/edit_permission_modal.html" %}
 
@@ -290,11 +284,9 @@ function confirmDelete(id, name) {
 document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
     if (!deletePermissionId) return;
     
-    // Show loading
     this.disabled = true;
     this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menghapus...';
     
-    // Send delete request
     fetch(`/permission-management/${deletePermissionId}/delete/`, {
         method: 'POST',
         headers: {

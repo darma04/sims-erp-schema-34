@@ -89,67 +89,24 @@ class Command(BaseCommand):
             for p in hr_orphans[:5]:
                 self.stdout.write(f"    - {p.karyawan.nama} ({p.periode_bulan}/{p.periode_tahun})")
 
-        # 6. Service Center DP/lunas tanpa JurnalEntry atau mutasi Kas/Bank
-        from apps.service_center.models import OrderService
-        from apps.kas_bank.models import KasBankTransaction
-        service_paid = OrderService.objects.filter(
-            status_bayar__in=['dp', 'lunas']
-        ).exclude(status='dibatalkan')
-        service_journal_orphans = service_paid.exclude(
-            pk__in=JurnalEntry.objects.filter(
-                sumber='service',
-                is_reversed=False,
-            ).exclude(
-                sumber_ref__endswith='_reversal'
-            ).values_list('sumber_id', flat=True)
-        )
-        count = service_journal_orphans.count()
-        total_issues += count
-        self.stdout.write(f"  Service Center tanpa jurnal: {count}")
-        if count > 0:
-            for order in service_journal_orphans[:5]:
-                self.stdout.write(f"    - {order.nomor_service} (bayar: {order.status_bayar})")
-
-        service_mutation_orphans = service_paid.exclude(
-            pk__in=KasBankTransaction.objects.filter(
-                sumber_app='service_center',
-                sumber_model='OrderService',
-                status='posted',
-            ).values_list('sumber_id', flat=True)
-        )
-        count = service_mutation_orphans.count()
-        total_issues += count
-        self.stdout.write(f"  Service Center tanpa mutasi Kas/Bank: {count}")
-        if count > 0:
-            for order in service_mutation_orphans[:5]:
-                self.stdout.write(f"    - {order.nomor_service} (bayar: {order.status_bayar})")
-
-        # 7. JurnalEntry duplikat (same sumber + sumber_id + sumber_ref)
-        duplicates = JurnalEntry.objects.exclude(
-            sumber_ref__endswith='_reversal'
-        ).exclude(
-            sumber_ref__endswith='_hpp'
-        ).filter(
-            is_reversed=False
-        ).values('sumber', 'sumber_id', 'sumber_ref').annotate(
+        # 6. JurnalEntry duplikat (same sumber + sumber_id)
+        duplicates = JurnalEntry.objects.values('sumber', 'sumber_id').annotate(
             cnt=Count('id')
         ).filter(cnt__gt=1, sumber_id__isnull=False).exclude(
             sumber__in=['pembalik', 'kas_bank']
         )
+        # Exclude reversal entries (sumber_ref ends with _reversal or _hpp)
         dup_count = 0
         for dup in duplicates:
             actual_dups = JurnalEntry.objects.filter(
-                sumber=dup['sumber'],
-                sumber_id=dup['sumber_id'],
-                sumber_ref=dup['sumber_ref'],
-                is_reversed=False,
+                sumber=dup['sumber'], sumber_id=dup['sumber_id']
             ).exclude(sumber_ref__endswith='_reversal').exclude(sumber_ref__endswith='_hpp')
             if actual_dups.count() > 1:
                 dup_count += 1
         total_issues += dup_count
         self.stdout.write(f"  Jurnal duplikat: {dup_count}")
 
-        # 8. MetodePembayaran aktif tanpa mapping lengkap
+        # 7. MetodePembayaran aktif tanpa mapping lengkap
         from apps.pos.models import MetodePembayaran
         from apps.kas_bank.services import metode_is_credit
         incomplete = MetodePembayaran.objects.filter(aktif=True).filter(

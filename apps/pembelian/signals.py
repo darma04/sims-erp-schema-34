@@ -24,6 +24,7 @@
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from decimal import Decimal
+from django.db import IntegrityError
 import logging
 
 logger = logging.getLogger(__name__)
@@ -130,17 +131,19 @@ def create_po_journal_and_hutang(sender, instance, created, **kwargs):
     biaya_pengiriman = instance.biaya_pengiriman or Decimal('0')
     total = instance.total_harga or Decimal('0')
 
-    # Cek apakah sudah ada jurnal untuk PO ini
+    # Cek apakah sudah ada jurnal untuk PO ini (race-condition safe)
     from apps.akuntansi.models import JurnalEntry
-    existing = JurnalEntry.objects.filter(
-        sumber='po',
-        sumber_id=instance.pk
-    ).exists()
+    from django.db import transaction as db_transaction
+    with db_transaction.atomic():
+        existing = JurnalEntry.objects.select_for_update().filter(
+            sumber='po',
+            sumber_id=instance.pk
+        ).exists()
     
-    if existing:
-        ensure_po_faktur_pajak(instance, subtotal, pajak, biaya_pengiriman)
-        ensure_po_hutang(instance, total)
-        return
+        if existing:
+            ensure_po_faktur_pajak(instance, subtotal, pajak, biaya_pengiriman)
+            ensure_po_hutang(instance, total)
+            return
     
     # Validasi: total harus > 0
     if total <= 0:
@@ -183,7 +186,6 @@ def create_po_journal_and_hutang(sender, instance, created, **kwargs):
     # Create jurnal
     try:
         from apps.akuntansi.services import create_jurnal
-        from django.db import transaction as db_transaction
 
         with db_transaction.atomic():
             jurnal = create_jurnal(
@@ -224,6 +226,8 @@ def create_po_journal_and_hutang(sender, instance, created, **kwargs):
         
         logger.info(f'[PO] Auto-jurnal created for {instance.nomor_po}: {jurnal.nomor}')
         
+    except IntegrityError as e:
+        logger.warning(f"[PO] Duplicate jurnal untuk {instance.nomor_po}: {e}")
     except Exception as e:
         logger.error(f'[PO] Failed to create auto-jurnal for {instance.nomor_po}: {e}', exc_info=True)
         # Catat kegagalan ke activity log agar terdeteksi di Rekonsiliasi Keuangan
@@ -242,9 +246,9 @@ def create_po_journal_and_hutang(sender, instance, created, **kwargs):
                 source_id=str(instance.pk),
                 source_repr=instance.nomor_po,
             )
-        except Exception:
-            pass
-        raise
+        except Exception as e:
+            logger.warning("Gagal mencatat activity log: %s", e)
+        # raise  # Disabled: transaksi tetap tersimpan meskipun jurnal gagal
 
 
 @receiver(post_delete, sender='pembelian.PurchaseOrderItem')

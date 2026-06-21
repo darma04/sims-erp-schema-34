@@ -27,7 +27,6 @@
 <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="mb-4"><i class="ri-cpu-line me-2"></i>Laporan Penggunaan Sparepart</h4>
 
-    <!-- 4 Summary Cards -->
     <div class="row g-2 g-md-3 mb-4">
         <div class="col-6 col-lg-3">
             <div class="card">
@@ -99,19 +98,16 @@
         </div>
     </div>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3 align-items-end">
-                <div class="col-md-4">
+                <div class="col-12 col-md">
                     <label class="form-label">Tanggal Mulai</label>
                     <input type="date" class="form-control" id="startDate" value="{{ filter_start_date }}">
                 </div>
-                <div class="col-md-4">
+                <div class="col-12 col-md">
                     <label class="form-label">Tanggal Akhir</label>
                     <input type="date" class="form-control" id="endDate" value="{{ filter_end_date }}">
-                </div>
-                <div class="col-md-4">
                 </div>
             </div>
             <div class="row g-3 mt-2 align-items-end">
@@ -157,6 +153,11 @@
                                     onchange="toggleColumns()">
                                 <label class="form-check-label">Subtotal</label>
                             </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="7" checked
+                                    onchange="toggleColumns()">
+                                <label class="form-check-label">Aksi</label>
+                            </div>
                             <div class="dropdown-divider my-2"></div>
                             <div class="d-flex gap-2">
                                 <button class="btn btn-sm btn-primary flex-fill"
@@ -179,53 +180,6 @@
         </div>
     </div>
 
-    <!-- Breakdown Cards -->
-    <div class="row g-2 g-md-3 mb-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header"><h6 class="mb-0"><i class="ri-bar-chart-2-line me-2"></i>Top 10 Sparepart Terpakai</h6></div>
-                <div class="card-body">
-                    {% for sp in top_sparepart %}
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div>
-                            <span class="fw-medium">{{ sp.produk__nama }}</span>
-                            <small class="d-block text-muted">{{ sp.produk__sku|default:"-" }}</small>
-                        </div>
-                        <div class="text-end">
-                            <span class="badge bg-label-primary">{{ sp.total_qty }} unit</span>
-                            <small class="d-block text-muted">{{ sp.total_used }}x digunakan</small>
-                        </div>
-                    </div>
-                    {% empty %}
-                    <p class="text-muted text-center mb-0">Tidak ada data</p>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header"><h6 class="mb-0"><i class="ri-store-2-line me-2"></i>Impact per Gudang</h6></div>
-                <div class="card-body">
-                    {% for g in gudang_impact %}
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div>
-                            <span class="fw-medium">{{ g.gudang__nama }}</span>
-                            <small class="d-block text-muted">{{ g.total_items }} item diambil</small>
-                        </div>
-                        <div class="text-end">
-                            <span class="badge bg-label-danger">{{ g.total_qty }} unit</span>
-                            <small class="d-block text-muted">Rp {{ g.total_cost|floatformat:0 }}</small>
-                        </div>
-                    </div>
-                    {% empty %}
-                    <p class="text-muted text-center mb-0">Tidak ada data</p>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Sparepart Usage Table -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <div>
@@ -248,6 +202,7 @@
                         <th>Qty</th>
                         <th>Harga Satuan</th>
                         <th>Subtotal</th>
+                        <th style="min-width:80px">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -260,10 +215,22 @@
                         <td>{{ sp.jumlah }}</td>
                         <td>{{ sp.harga_satuan|rupiah }}</td>
                         <td class="text-danger fw-medium">{{ sp.subtotal|rupiah }}</td>
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                                    <i class="ri-more-2-line"></i>
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="{% url 'laporan:sparepart-detail' sp.produk.pk %}">
+                                        <i class="ri-eye-line me-1"></i>Detail Sparepart
+                                    </a>
+                                </div>
+                            </div>
+                        </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="text-center py-5">
+                        <td colspan="8" class="text-center py-5">
                             <p class="text-muted">Belum ada data penggunaan sparepart</p>
                         </td>
                     </tr>
@@ -271,7 +238,7 @@
                 </tbody>
                 <tfoot class="table-footer-summary">
                     <tr>
-                        <td colspan="4" class="text-start ps-4 py-3" style="vertical-align: middle;">
+                        <td colspan="5" class="text-start ps-4 py-3" style="vertical-align: middle;">
                             <div class="d-flex align-items-center justify-content-start">
                                 <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
                                 <div class="text-start">
@@ -279,7 +246,7 @@
                                     <small class="text-muted" style="font-size: 0.75rem;">{{ total_penggunaan }} penggunaan sparepart</small>
                                 </div>
                             </div>
-                        </td>
+                        </td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td>
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-info d-flex align-items-center gap-1 mb-1"
@@ -353,7 +320,6 @@
     function selectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(e => { e.checked = true }); toggleColumns(); }
     function deselectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(e => { e.checked = false }); toggleColumns(); }
 
-    // Template Data for Independent Headers/Footers
     const EXCEL_INFO = {
         name: "{{ export_pdf_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
         address: "{{ export_pdf_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -364,13 +330,12 @@
     };
     const PDF_INFO = EXCEL_INFO;
 
-    // === FOOTER DATA: Explicit summary values per column index ===
     const FOOTER_DATA = { 4: "{{ total_qty|floatformat:0 }}", 6: "{{ total_cogs|escapejs }}" };
     const FOOTER_LABEL = 'RINGKASAN';
 
     function exportExcel() {
         const table = document.getElementById('sparepartTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#sparepartTable');
 
@@ -390,7 +355,6 @@
         html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
         html += '<body>';
 
-        // --- ADD EXCEL HEADER (Company Info) ---
         html += '<table border="0">';
         if (typeof EXCEL_INFO !== 'undefined') {
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
@@ -419,7 +383,6 @@
             html += '</tr>';
         });
 
-        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
             let ri = 0;
@@ -447,7 +410,6 @@
         }
         html += '</tbody></table>';
 
-        // --- ADD EXCEL FOOTER ---
         html += '<table border="0">';
         html += `<tr><td colspan="${colCount}"></td></tr>`;
         if (typeof EXCEL_INFO !== 'undefined') {
@@ -468,7 +430,7 @@
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('sparepartTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#sparepartTable');
 
@@ -502,7 +464,6 @@
             if (row.length > 0) body.push(row);
         });
 
-        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             const summaryRow = [];
             let ri = 0;
@@ -613,4 +574,42 @@
     .summary-nominal { font-size: 1.05rem !important; }
 }
 </style>
+
+<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning align-items-center py-3">
+                <h5 class="modal-title text-dark mb-0">
+                    <i class="ri-error-warning-line me-2"></i>Export Gagal
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center py-3">
+                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
+                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
+                    <i class="ri-close-line me-1"></i>Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+function showExportError() {
+    var modal = document.getElementById('exportErrorModal');
+    if (modal) {
+        new bootstrap.Modal(modal).show();
+    } else {
+        alert('Tabel tidak ditemukan!');
+    }
+}
+</script>
+
 {% endblock page_js %}

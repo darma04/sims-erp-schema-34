@@ -335,7 +335,7 @@ class Produk(models.Model):
         validators=[validate_image_file]
     )
 
-    # ===== TIPE PRODUK (SIMS) =====
+    # ===== TIPE PRODUK =====
     TIPE_CHOICES = [
         ('produk', 'Produk'),
         ('sparepart', 'Sparepart'),
@@ -367,7 +367,6 @@ class Produk(models.Model):
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='produk_set',
-        db_constraint=False,
         verbose_name="Metode Pembayaran"
     )
 
@@ -544,7 +543,6 @@ class Gudang(models.Model):
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='gudang_default',
-        db_constraint=False,
         verbose_name="Metode Pembayaran Default"
     )
 

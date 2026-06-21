@@ -34,6 +34,53 @@ MANAJEMEN DATA (âš  KRITIS):
 ==========================================================================
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
+# ==========================================================================
+# PANDUAN DJANGO UNTUK DEVELOPER PEMULA (baca ini sebelum mempelajari views)
+# ==========================================================================
+#
+# APA ITU CLASS-BASED VIEW (CBV)?
+# - CBV = class Python yang menangani HTTP request dan return response
+# - Django menyediakan CBV bawaan: ListView, CreateView, UpdateView, DeleteView
+# - Setiap CBV punya "lifecycle" (siklus hidup) yang bisa di-customize
+#
+# SIKLUS HIDUP CBV (urutan method yang dipanggil):
+# 1. as_view()     → Entry point, dipanggil oleh URL router
+# 2. dispatch()    → Tentukan method (GET/POST) → panggil get() atau post()
+# 3. get()/post()  → Handle request, kumpulkan data
+# 4. get_queryset()→ Ambil data dari database (bisa di-filter/optimasi)
+# 5. get_context_data() → Siapkan data untuk template (variabel {{ }})
+# 6. render()      → Gabungkan template + context → HTML response
+#
+# METHOD PENTING YANG SERING DI-OVERRIDE:
+# - get_queryset()     → Optimasi query (prefetch_related, select_related)
+# - get_context_data() → Tambah variabel ke template (self.context)
+# - form_valid()       → Proses setelah form divalidasi (sebelum save)
+# - get_success_url()  → URL redirect setelah operasi berhasil
+#
+# DECORATOR YANG SERING DIGUNAKAN:
+# @login_required       → User HARUS login, jika tidak → redirect ke /login/
+# @permission_required  → User harus punya permission tertentu (RBAC)
+# @require_http_methods → Batasi method yang diterima (GET, POST, dll)
+# @never_cache          → Response tidak boleh di-cache oleh browser
+#
+# POLA UMUM VIEW DI PROYEK INI:
+# class MyListView(SubModulePermissionMixin, ListView):
+#     module_name = 'nama_modul'          # Untuk pengecekan RBAC
+#     sub_module_name = 'nama_sub_modul'  # Sub-modul yang diakses
+#     model = MyModel                      # Model database yang dipakai
+#     template_name = 'modul/page.html'    # File HTML template
+#
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         context = TemplateLayout.init(self, context)  # WAJIB: setup layout
+#         context['data_tambahan'] = ...    # Tambah data custom
+#         return context
+# ==========================================================================
+
+
 import os
 import json
 import shutil
@@ -529,55 +576,31 @@ class MetodePembayaranDetailView(ReadPermissionMixin, DetailView):
         # Statistik SO
         context['total_transaksi_so'] = SalesOrder.objects.filter(metode_pembayaran=self.object).count()
 
-        # Statistik Service Center
-        total_transaksi_sc = 0
-        try:
-            from apps.service_center.models import OrderService as SC_OrderMetode
-            total_transaksi_sc = SC_OrderMetode.objects.filter(metode_pembayaran=self.object).count()
-        except Exception:
-            pass
-        context['total_transaksi_sc'] = total_transaksi_sc
-
-        # Statistik Produk/Sparepart
-        from apps.produk.models import Produk
-        total_transaksi_produk = Produk.objects.filter(metode_pembayaran=self.object).count()
-        context['total_transaksi_produk'] = total_transaksi_produk
-
-        # Total transaksi keseluruhan (POS + SO + Biaya + PO + Service Center + Produk)
+        # Total transaksi keseluruhan (POS + SO + Biaya + PO)
         context['total_transaksi'] = (
-            context['total_transaksi_pos'] +
-            context['total_transaksi_so'] +
-            total_transaksi_sc +
-            total_transaksi_produk +
+            context['total_transaksi_pos'] + 
+            context['total_transaksi_so'] + 
             TransaksiBiaya.objects.filter(metode_pembayaran=self.object).count() +
             PurchaseOrder.objects.filter(metode_pembayaran=self.object).count()
         )
 
-        # Hitung total pendapatan dari POS + SO + Service Center (sudah include di model property)
+        # Hitung total pendapatan dari POS + SO (gunakan property model)
         context['total_pendapatan'] = self.object.total_pendapatan
 
         # Hitung total pengeluaran dari Biaya + PO (gunakan property model)
         context['total_pengeluaran'] = self.object.total_pengeluaran
 
-        # Saldo terhitung (dinamis) - menggunakan property model yang sudah include SC
+        # Saldo terhitung (dinamis) - bisa negatif
         context['saldo_terhitung'] = self.object.saldo_terhitung
 
-        # Pendapatan tertinggi (POS atau SO atau Service)
+        # Pendapatan tertinggi (POS atau SO)
         pos_max = POSTransaction.objects.filter(
             metode_pembayaran=self.object, status='paid'
         ).aggregate(max_val=Max('total_harga'))['max_val'] or 0
         so_max = SalesOrder.objects.filter(
             metode_pembayaran=self.object, status__in=['confirmed', 'delivered', 'completed']
         ).aggregate(max_val=Max('total_harga'))['max_val'] or 0
-        sc_max = 0
-        try:
-            from apps.service_center.models import OrderService as SC_OrderMax
-            sc_max = SC_OrderMax.objects.filter(
-                metode_pembayaran=self.object, status_bayar='lunas'
-            ).aggregate(max_val=Max('biaya_akhir'))['max_val'] or 0
-        except Exception:
-            pass
-        context['pendapatan_tertinggi'] = max(pos_max, so_max, sc_max)
+        context['pendapatan_tertinggi'] = max(pos_max, so_max)
 
         # Pengeluaran tertinggi (Biaya atau PO)
         biaya_max = TransaksiBiaya.objects.filter(
@@ -800,6 +823,11 @@ class ManajemenDataView(ReadPermissionMixin, TemplateView):
         from apps.hutang.models import Hutang, PembayaranHutang
         from apps.aset.models import AsetTetap, Penyusutan, DisposalAset
         from apps.pajak.models import SettingPajak, FakturPajak, PembayaranPPN
+        from apps.service_center.models import (
+            OrderService, ItemService, RiwayatStatus,
+            PenggunaanSparepart, Pelanggan, Perangkat,
+            KategoriService, JenisService
+        )
 
         # Statistik Database - SEMUA model
         context['stats'] = {
@@ -868,38 +896,26 @@ class ManajemenDataView(ReadPermissionMixin, TemplateView):
             'setting_pajak': SettingPajak.objects.count(),
             'faktur_pajak': FakturPajak.objects.count(),
             'pembayaran_ppn': PembayaranPPN.objects.count(),
+            # Service Center
+            'order_service': OrderService.objects.count(),
+            'item_service': ItemService.objects.count(),
+            'riwayat_status': RiwayatStatus.objects.count(),
+            'penggunaan_sparepart': PenggunaanSparepart.objects.count(),
+            'pelanggan_sc': Pelanggan.objects.count(),
+            'perangkat': Perangkat.objects.count(),
+            'kategori_service': KategoriService.objects.count(),
+            'jenis_service': JenisService.objects.count(),
             # Pengaturan
             'template_cetak': TemplateCetak.objects.count(),
             'backup_history': BackupHistory.objects.count(),
         }
 
-        # Service Center - order service & sparepart (safe import)
-        try:
-            from apps.service_center.models import (
-                OrderService as SC_Order, ItemService as SC_Item,
-                Pelanggan as SC_Pelanggan, Perangkat as SC_Perangkat,
-                KategoriService as SC_Kategori, JenisService as SC_Jenis,
-                RiwayatStatus as SC_Riwayat, PenggunaanSparepart as SC_Sparepart
-            )
-            context['stats'].update({
-                'order_service': SC_Order.objects.count(),
-                'item_service': SC_Item.objects.count(),
-                'pelanggan_service': SC_Pelanggan.objects.count(),
-                'perangkat_service': SC_Perangkat.objects.count(),
-                'kategori_service': SC_Kategori.objects.count(),
-                'jenis_service': SC_Jenis.objects.count(),
-                'riwayat_status': SC_Riwayat.objects.count(),
-                'penggunaan_sparepart': SC_Sparepart.objects.count(),
-            })
-        except Exception:
-            pass
-
         # Total seluruh record database
         context['total_record'] = sum(context['stats'].values())
 
-        # Total transaksi (termasuk order service)
+        # Total transaksi
         context['total_transaksi'] = (
-            context['stats']['pos'] + context['stats']['sales_order'] +
+            context['stats']['pos'] + context['stats']['sales_order'] + 
             context['stats']['purchase_order'] + context['stats']['biaya'] +
             context['stats']['transfer_stok'] + context['stats']['adjustment_stok'] +
             context['stats']['kas_bank_transaction'] + context['stats']['kas_bank_transfer'] +
@@ -909,19 +925,17 @@ class ManajemenDataView(ReadPermissionMixin, TemplateView):
             context['stats']['pembayaran_hutang'] + context['stats']['aset_tetap'] +
             context['stats']['penyusutan'] + context['stats']['disposal_aset'] +
             context['stats']['faktur_pajak'] + context['stats']['pembayaran_ppn'] +
-            context['stats'].get('order_service', 0)
+            context['stats']['order_service']
         )
 
         # Total master data
         context['total_master'] = (
-            context['stats']['produk'] + context['stats']['kategori'] +
+            context['stats']['produk'] + context['stats']['kategori'] + 
             context['stats']['satuan'] + context['stats']['gudang'] +
             context['stats']['customer'] + context['stats']['supplier'] +
             context['stats']['karyawan'] + context['stats']['departemen'] +
             context['stats']['akun'] + context['stats']['periode_akuntansi'] +
-            context['stats']['kas_bank_account'] + context['stats']['setting_pajak'] +
-            context['stats'].get('pelanggan_service', 0) + context['stats'].get('perangkat_service', 0) +
-            context['stats'].get('kategori_service', 0) + context['stats'].get('jenis_service', 0)
+            context['stats']['kas_bank_account'] + context['stats']['setting_pajak']
         )
 
         # Riwayat Backup
@@ -1083,8 +1097,6 @@ def restore_data(request):
     restore_atomic = None
 
     try:
-        import logging
-        logger = logging.getLogger(__name__)
         from django.db import connection
         from io import StringIO
 
@@ -1235,6 +1247,21 @@ def restore_data(request):
         from apps.hutang.models import Hutang, PembayaranHutang
         from apps.aset.models import AsetTetap, Penyusutan, DisposalAset
         from apps.pajak.models import SettingPajak, FakturPajak, PembayaranPPN
+        from apps.service_center.models import (
+            OrderService, ItemService, RiwayatStatus,
+            PenggunaanSparepart, Pelanggan, Perangkat,
+            KategoriService, JenisService
+        )
+
+        # Hapus data Service Center (sebelum Produk/Gudang/MetodePembayaran karena FK PROTECT)
+        PenggunaanSparepart.objects.all().delete()
+        RiwayatStatus.objects.all().delete()
+        ItemService.objects.all().delete()
+        OrderService.objects.all().delete()
+        JenisService.objects.all().delete()
+        KategoriService.objects.all().delete()
+        Perangkat.objects.all().delete()
+        Pelanggan.objects.all().delete()
 
         # Hapus transaksi finansial baru (child tables dulu, lalu parent)
         PembayaranPPN.objects.all().delete()
@@ -1255,25 +1282,6 @@ def restore_data(request):
         JurnalEntry.objects.all().delete()
         PeriodeAkuntansi.objects.all().delete()
         Akun.objects.all().delete()
-
-        # Hapus data Service Center (child tables dulu)
-        try:
-            from apps.service_center.models import (
-                PenggunaanSparepart as SC_SP_R, RiwayatStatus as SC_RW_R,
-                ItemService as SC_IS_R, OrderService as SC_OS_R,
-                JenisService as SC_JS_R, KategoriService as SC_KS_R,
-                Perangkat as SC_PR_R, Pelanggan as SC_PL_R
-            )
-            SC_SP_R.objects.all().delete()
-            SC_RW_R.objects.all().delete()
-            SC_IS_R.objects.all().delete()
-            SC_OS_R.objects.all().delete()
-            SC_JS_R.objects.all().delete()
-            SC_KS_R.objects.all().delete()
-            SC_PR_R.objects.all().delete()
-            SC_PL_R.objects.all().delete()
-        except Exception:
-            pass
 
         # Hapus transaksi operasional (child tables dulu, lalu parent)
         POSTransactionItem.objects.all().delete()
@@ -1309,8 +1317,8 @@ def restore_data(request):
         try:
             from apps.hr.models import FotoWajah
             FotoWajah.objects.all().delete()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
         Karyawan.objects.all().delete()
         Jabatan.objects.all().delete()
         Departemen.objects.all().delete()
@@ -1336,22 +1344,22 @@ def restore_data(request):
         try:
             from apps.automation.models import PengaturanTelegram
             PengaturanTelegram.objects.all().delete()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Gagal kirim notifikasi: %s", e)
         try:
             from apps.ai_assistant.models import AIAssistantConfig
             AIAssistantConfig.objects.all().delete()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Gagal memproses AI request: %s", e)
         try:
             from apps.hr.models import PengaturanAbsensi
             PengaturanAbsensi.objects.all().delete()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
         try:
             FraudRule.objects.all().delete()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
 
         logger.info("[RESTORE] Langkah 1 selesai: Semua data lama berhasil dihapus.")
 
@@ -1503,8 +1511,8 @@ def restore_data(request):
                 current_user.is_superuser = True
                 current_user.is_staff = True
                 current_user.save(update_fields=['is_superuser', 'is_staff'])
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
 
         restore_atomic = _commit_atomic(restore_atomic)
 
@@ -1523,16 +1531,14 @@ def restore_data(request):
                     catatan=f"Restore dari {backup_file.name} ({file_size / 1024:.1f} KB) - {len(filtered_data)} objek{media_info}. {load_error_msg}",
                     dibuat_oleh=current_user
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Error tidak terduga: %s", e)
             messages.success(request, f'Data berhasil di-restore dari "{backup_file.name}"! ({len(filtered_data)} objek dimuat{media_info}) {load_error_msg}')
     except ProtectedError as e:
         restore_atomic = _rollback_atomic(restore_atomic, e)
         messages.error(request, 'Data tidak dapat dihapus karena sedang digunakan atau terkait dengan data lain.')
     except Exception as e:
         restore_atomic = _rollback_atomic(restore_atomic, e)
-        import logging
-        logger = logging.getLogger(__name__)
         logger.error("[RESTORE] Error: %s", e, exc_info=True)
 
         try:
@@ -1544,8 +1550,8 @@ def restore_data(request):
                 catatan=f"Error: {str(e)}",
                 dibuat_oleh=request.user
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
         messages.error(request, f'Restore gagal: {str(e)}')
 
     finally:
@@ -1553,20 +1559,20 @@ def restore_data(request):
         try:
             from apps.fraud_detection import signals as fraud_signals
             fraud_signals._BYPASS_FRAUD_SIGNALS = False
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error pada signal handler: %s", e)
         # Selalu reconnect signal create_profile (safety net)
         try:
             from django.db.models.signals import post_save as _ps
             from auth.models import Profile as _P
             _ps.connect(_P.create_profile, sender=User)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Gagal mengirim email: %s", e)
         # Selalu pastikan FK constraints aktif
         try:
             _set_database_constraints(True)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Gagal memproses AI request: %s", e)
         # Hapus temp file
         if tmp_path and os.path.exists(tmp_path):
             try:
@@ -1638,6 +1644,11 @@ def reset_data(request):
         from apps.hutang.models import Hutang, PembayaranHutang
         from apps.aset.models import AsetTetap, Penyusutan, DisposalAset
         from apps.pajak.models import SettingPajak, FakturPajak, PembayaranPPN
+        from apps.service_center.models import (
+            OrderService, ItemService, RiwayatStatus,
+            PenggunaanSparepart, Pelanggan, Perangkat,
+            KategoriService, JenisService
+        )
 
         # Simpan info user yang sedang login
         current_user = request.user
@@ -1701,28 +1712,16 @@ def reset_data(request):
             'User Lain': User.objects.exclude(pk=current_user_pk).count(),
             'Role Permission': RolePermission.objects.count(),
             'Riwayat Backup': BackupHistory.objects.count(),
+            # Service Center
+            'Order Service': OrderService.objects.count(),
+            'Item Service': ItemService.objects.count(),
+            'Riwayat Status SC': RiwayatStatus.objects.count(),
+            'Penggunaan Sparepart': PenggunaanSparepart.objects.count(),
+            'Pelanggan SC': Pelanggan.objects.count(),
+            'Perangkat': Perangkat.objects.count(),
+            'Kategori Service': KategoriService.objects.count(),
+            'Jenis Service': JenisService.objects.count(),
         }
-
-        # Tambah counts Service Center (safe import)
-        try:
-            from apps.service_center.models import (
-                OrderService as SC_OC, ItemService as SC_IC,
-                Pelanggan as SC_PC, Perangkat as SC_PRC,
-                KategoriService as SC_KC, JenisService as SC_JC,
-                RiwayatStatus as SC_RC, PenggunaanSparepart as SC_SPC
-            )
-            counts.update({
-                'Order Service': SC_OC.objects.count(),
-                'Item Service': SC_IC.objects.count(),
-                'Pelanggan Service': SC_PC.objects.count(),
-                'Perangkat Service': SC_PRC.objects.count(),
-                'Kategori Service': SC_KC.objects.count(),
-                'Jenis Service': SC_JC.objects.count(),
-                'Riwayat Status': SC_RC.objects.count(),
-                'Penggunaan Sparepart': SC_SPC.objects.count(),
-            })
-        except Exception:
-            pass
 
         total_deleted = sum(counts.values())
 
@@ -1730,6 +1729,16 @@ def reset_data(request):
         reset_atomic.__enter__()
 
         # ===== HAPUS SEMUA DATA (urutan penting: child dulu, lalu parent) =====
+
+        # 0. Hapus data Service Center (sebelum Produk/Gudang/MetodePembayaran karena FK PROTECT)
+        PenggunaanSparepart.objects.all().delete()
+        RiwayatStatus.objects.all().delete()
+        ItemService.objects.all().delete()
+        OrderService.objects.all().delete()
+        JenisService.objects.all().delete()
+        KategoriService.objects.all().delete()
+        Perangkat.objects.all().delete()
+        Pelanggan.objects.all().delete()
 
         # 1. Hapus transaksi finansial baru (child dulu agar relasi PROTECT tidak menghalangi reset)
         PembayaranPPN.objects.all().delete()
@@ -1784,8 +1793,8 @@ def reset_data(request):
             # Import dari modul internal proyek
             from apps.hr.models import FotoWajah
             FotoWajah.objects.all().delete()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
         Karyawan.objects.all().delete()
         Jabatan.objects.all().delete()
         Departemen.objects.all().delete()
@@ -1793,25 +1802,6 @@ def reset_data(request):
         # 6. Hapus data Fraud Detection (sebelum AI dan log)
         FraudAlert.objects.all().delete()
         CashReconciliation.objects.all().delete()
-
-        # 6b. Hapus data Service Center (child tables dulu)
-        try:
-            from apps.service_center.models import (
-                PenggunaanSparepart as SC_SP_D, RiwayatStatus as SC_RW_D,
-                ItemService as SC_IS_D, OrderService as SC_OS_D,
-                JenisService as SC_JS_D, KategoriService as SC_KS_D,
-                Perangkat as SC_PR_D, Pelanggan as SC_PL_D
-            )
-            SC_SP_D.objects.all().delete()
-            SC_RW_D.objects.all().delete()
-            SC_IS_D.objects.all().delete()
-            SC_OS_D.objects.all().delete()
-            SC_JS_D.objects.all().delete()
-            SC_KS_D.objects.all().delete()
-            SC_PR_D.objects.all().delete()
-            SC_PL_D.objects.all().delete()
-        except Exception:
-            pass
 
         # 7. Hapus AI data
         ChatFeedback.objects.all().delete()
@@ -1835,23 +1825,23 @@ def reset_data(request):
         PengaturanPerusahaan.objects.all().delete()
         try:
             PengaturanTelegram.objects.all().delete()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Gagal kirim notifikasi: %s", e)
         try:
             AIAssistantConfig.objects.all().delete()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Gagal memproses AI request: %s", e)
         try:
             # Import dari modul internal proyek
             from apps.hr.models import PengaturanAbsensi
             PengaturanAbsensi.objects.all().delete()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
         try:
             # Reset singleton Fraud Detection - mengembalikan pengaturan fraud ke default
             FraudRule.objects.all().delete()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
 
         # 12. Hapus file media (gambar, foto, bukti, dll) KECUALI folder system/ untuk logo default
         media_deleted = 0
@@ -1911,16 +1901,16 @@ def reset_data(request):
                 catatan=f"Error: {str(e)}",
                 dibuat_oleh=request.user
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
         messages.error(request, f'Reset gagal: {str(e)}')
     finally:
         # Selalu kembalikan fraud signals ke aktif
         try:
             from apps.fraud_detection import signals as fraud_signals
             fraud_signals._BYPASS_FRAUD_SIGNALS = False
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error pada signal handler: %s", e)
 
     return redirect('pengaturan:manajemen_data')
 

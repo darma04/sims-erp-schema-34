@@ -31,6 +31,53 @@
 ==========================================================================
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
+# ==========================================================================
+# PANDUAN DJANGO UNTUK DEVELOPER PEMULA (baca ini sebelum mempelajari views)
+# ==========================================================================
+#
+# APA ITU CLASS-BASED VIEW (CBV)?
+# - CBV = class Python yang menangani HTTP request dan return response
+# - Django menyediakan CBV bawaan: ListView, CreateView, UpdateView, DeleteView
+# - Setiap CBV punya "lifecycle" (siklus hidup) yang bisa di-customize
+#
+# SIKLUS HIDUP CBV (urutan method yang dipanggil):
+# 1. as_view()     → Entry point, dipanggil oleh URL router
+# 2. dispatch()    → Tentukan method (GET/POST) → panggil get() atau post()
+# 3. get()/post()  → Handle request, kumpulkan data
+# 4. get_queryset()→ Ambil data dari database (bisa di-filter/optimasi)
+# 5. get_context_data() → Siapkan data untuk template (variabel {{ }})
+# 6. render()      → Gabungkan template + context → HTML response
+#
+# METHOD PENTING YANG SERING DI-OVERRIDE:
+# - get_queryset()     → Optimasi query (prefetch_related, select_related)
+# - get_context_data() → Tambah variabel ke template (self.context)
+# - form_valid()       → Proses setelah form divalidasi (sebelum save)
+# - get_success_url()  → URL redirect setelah operasi berhasil
+#
+# DECORATOR YANG SERING DIGUNAKAN:
+# @login_required       → User HARUS login, jika tidak → redirect ke /login/
+# @permission_required  → User harus punya permission tertentu (RBAC)
+# @require_http_methods → Batasi method yang diterima (GET, POST, dll)
+# @never_cache          → Response tidak boleh di-cache oleh browser
+#
+# POLA UMUM VIEW DI PROYEK INI:
+# class MyListView(SubModulePermissionMixin, ListView):
+#     module_name = 'nama_modul'          # Untuk pengecekan RBAC
+#     sub_module_name = 'nama_sub_modul'  # Sub-modul yang diakses
+#     model = MyModel                      # Model database yang dipakai
+#     template_name = 'modul/page.html'    # File HTML template
+#
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         context = TemplateLayout.init(self, context)  # WAJIB: setup layout
+#         context['data_tambahan'] = ...    # Tambah data custom
+#         return context
+# ==========================================================================
+
+
 from django.shortcuts import render
 from django.db.models import ProtectedError
 from django.shortcuts import redirect, get_object_or_404
@@ -383,8 +430,8 @@ class PurchaseOrderCreateView(CreatePermissionMixin, CreateView):
         try:
             from apps.automation.signals import kirim_notifikasi_purchase_order
             kirim_notifikasi_purchase_order(po)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Gagal kirim notifikasi: %s", e)
         
         # Log activity
         from apps.activity_log.middleware import ActivityLogMiddleware
@@ -397,8 +444,8 @@ class PurchaseOrderCreateView(CreatePermissionMixin, CreateView):
                 object_repr=str(po),
                 description=f'Membuat Purchase Order: {po.nomor_po} ke {po.supplier.nama} ({items_created} produk baru)'
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Gagal mencatat activity log: %s", e)
         
         # Tampilkan pesan sukses ke user
         messages.success(self.request, f'Purchase Order {po.nomor_po} berhasil dibuat dengan {items_created} produk baru')
@@ -547,8 +594,8 @@ class PurchaseOrderUpdateView(UpdatePermissionMixin, UpdateView):
                     object_repr=str(self.object),
                     description=f'Mengubah Purchase Order: {self.object.nomor_po} - Rp {self.object.total_harga:,.0f}'
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Gagal mencatat activity log: %s", e)
             
             # Tampilkan pesan sukses ke user
             messages.success(self.request, 'Purchase Order berhasil diupdate')
@@ -603,8 +650,8 @@ class PurchaseOrderDeleteView(DeletePermissionMixin, DeleteView):
                 object_repr=str(po),
                 description=f'Menghapus Purchase Order: {po.nomor_po}'
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Gagal mencatat activity log: %s", e)
         
         # Seluruh proses rollback + hapus dalam atomic transaction
         try:
@@ -715,8 +762,8 @@ def purchase_order_receive(request, pk):
                 object_repr=str(po),
                 description=f'Menerima barang untuk PO: {po.nomor_po} - stok diupdate'
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Gagal mencatat activity log: %s", e)
         
         # Tampilkan pesan sukses ke user
         messages.success(request, f'Barang untuk PO {po.nomor_po} berhasil diterima dan stok diupdate')
@@ -794,8 +841,6 @@ class PurchaseOrderImportView(CreatePermissionMixin, TemplateView):
         5. Return summary (jumlah PO berhasil/gagal)
         """
         from django.http import JsonResponse
-        import logging
-        logger = logging.getLogger(__name__)
 
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
@@ -1149,8 +1194,8 @@ class PurchaseOrderImportView(CreatePermissionMixin, TemplateView):
                             try:
                                 from apps.automation.signals import kirim_notifikasi_purchase_order
                                 kirim_notifikasi_purchase_order(po)
-                            except Exception:
-                                pass
+                            except Exception as e:
+                                logger.warning("Gagal kirim notifikasi: %s", e)
 
                             # Log activity (sama persis dengan manual PO create)
                             try:
@@ -1163,8 +1208,8 @@ class PurchaseOrderImportView(CreatePermissionMixin, TemplateView):
                                     object_repr=str(po),
                                     description=f'Import Purchase Order: {po.nomor_po} ke {po.supplier.nama} ({items_in_po} produk baru)'
                                 )
-                            except Exception:
-                                pass
+                            except Exception as e:
+                                logger.warning("Gagal mencatat activity log: %s", e)
                         else:
                             # Tidak ada item berhasil → hapus PO kosong
                             po.delete()

@@ -24,6 +24,17 @@ from dotenv import load_dotenv
 from .template import TEMPLATE_CONFIG, THEME_LAYOUT_DIR, THEME_VARIABLES
 
 load_dotenv()  # take environment variables from .env.
+# Sentry Error Monitoring (Production only)
+SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
+if SENTRY_DSN and os.environ.get("DEBUG", "True").lower() not in ["true", "yes", "1"]:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
+        send_default_pii=True,
+    )
 
 # Bangun path di dalam proyek seperti ini: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -31,26 +42,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
-
 # SECURITY WARNING: keep the secret key used in production secret!
 # Jika SECRET_KEY tidak diset di .env, generate random key (aman untuk development)
 # Untuk PRODUKSI: WAJIB set SECRET_KEY di .env agar konsisten antar restart!
 SECRET_KEY = os.environ.get("SECRET_KEY", default=secrets.token_urlsafe(50))
 
-
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", 'True').lower() in ['true', 'yes', '1']
-
+DEBUG = os.environ.get("DEBUG", 'False').lower() in ['true', 'yes', '1']
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = [host.strip() for host in os.environ.get("ALLOWED_HOSTS", "localhost,0.0.0.0,127.0.0.1").split(",")]
+ALLOWED_HOSTS = [host.strip() for host in os.environ.get("ALLOWED_HOSTS", "localhost,0.0.0.0,127.0.0.1").split(",") if host.strip()]
 
 # CSRF Trusted Origins (Required for HTTPS/PythonAnywhere)
 CSRF_TRUSTED_ORIGINS = [host.strip() for host in os.environ.get("CSRF_TRUSTED_ORIGINS", "http://127.0.0.1,http://localhost").split(",")]
 
 # Current DJANGO_ENVIRONMENT
 ENVIRONMENT = os.environ.get("DJANGO_ENVIRONMENT", default="local")
-
 
 # ==========================================================================
 #  MULTI-TENANT (ISOLATED SCHEMA) — django-tenants Configuration
@@ -60,7 +67,7 @@ ENVIRONMENT = os.environ.get("DJANGO_ENVIRONMENT", default="local")
 # ==========================================================================
 
 # Deteksi mode database
-_USE_MULTI_TENANT = os.environ.get("DATABASE_ENGINE") == "postgresql"
+_USE_MULTI_TENANT = os.environ.get("DB_ENGINE", "sqlite").lower() in {"postgres", "postgresql"}
 
 if _USE_MULTI_TENANT:
     # ── PRODUCTION: Multi-Tenant Mode (PostgreSQL) ──────────────────────
@@ -192,13 +199,40 @@ else:
     # Model tenant tetap didaftarkan meskipun django_tenants tidak aktif
     TENANT_MODEL = "tenants.TenantClient"
     TENANT_DOMAIN_MODEL = "tenants.TenantDomain"
+# ==========================================================================
+# MIDDLEWARE - Pipeline Request/Response (URUTAN PENTING!)
+# ==========================================================================
+# Middleware dijalankan dari ATAS ke BAWAH saat request masuk,
+# dan dari BAWAH ke ATAS saat response keluar.
+#
+# Request:  Security → CSP → GZip → ... → View
+# Response: View → ... → GZip → CSP → Security
+#
+# URUTAN WAJIB:
+# 1. SecurityMiddleware    - HARUS PERTAMA (set header keamanan)
+# 2. SessionMiddleware     - Sebelum AuthenticationMiddleware
+# 3. AuthenticationMiddleware - Setelah Session (butuh session data)
+# 4. CsrfViewMiddleware    - Setelah Session (butuh session)
+# 5. CommonMiddleware      - Setelah Locale (butuh bahasa)
+# 6. HTMLCommentStripper   - HARUS TERAKHIR (strip komentar dari response)
+#
+# Middleware custom proyek ini:
+# - CSPMiddleware          → Content Security Policy (cegah XSS)
+# - PreventDoubleSubmit    → Cegah form disubmit 2x (whitelist token)
+# - ActivityLogMiddleware  → Catat aktivitas user ke database
+# - LicenseMiddleware      → Validasi lisensi (Circuit Breaker pattern)
+# - MaintenanceMiddleware  → Blokir akses jika mode maintenance
+# - HTMLCommentStripper    → Hapus komentar developer dari HTML response
+# ==========================================================================
 
 MIDDLEWARE = [
     # TenantMainMiddleware hanya diperlukan saat multi-tenant mode (PostgreSQL)
-    *(["django_tenants.middleware.main.TenantMainMiddleware"] if _USE_MULTI_TENANT else []),
+    *(["django_tenants.middleware.main.TenantMainMiddleware"
+    'apps.core.clean_code_middleware.HTMLCommentStripperMiddleware',
+] if _USE_MULTI_TENANT else []),
     "django.middleware.security.SecurityMiddleware",
     "apps.core.csp_middleware.CSPMiddleware",
-    "django.middleware.gzip.GZipMiddleware",  # Compress responses for faster load
+    "django.middleware.gzip.GZipMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
@@ -256,7 +290,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 # Multi-tenant membutuhkan PostgreSQL. Fallback ke SQLite untuk dev tanpa multi-tenant.
@@ -265,11 +298,11 @@ if _USE_MULTI_TENANT:
     DATABASES = {
         "default": {
             "ENGINE": "django_tenants.postgresql_backend",
-            "NAME": os.environ.get("DATABASE_NAME", "sims_db"),
-            "USER": os.environ.get("DATABASE_USER", "postgres"),
-            "PASSWORD": os.environ.get("DATABASE_PASSWORD", ""),
-            "HOST": os.environ.get("DATABASE_HOST", "localhost"),
-            "PORT": os.environ.get("DATABASE_PORT", "5432"),
+            "NAME": os.environ.get("DB_NAME", "sims_db"),
+            "USER": os.environ.get("DB_USER", "postgres"),
+            "PASSWORD": os.environ.get("DB_PASSWORD", ""),
+            "HOST": os.environ.get("DB_HOST", "localhost"),
+            "PORT": os.environ.get("DB_PORT", "5432"),
             "CONN_MAX_AGE": int(os.environ.get("DB_CONN_MAX_AGE", "600")),
             "OPTIONS": {
                 "connect_timeout": 10,
@@ -285,7 +318,6 @@ else:
         }
     }
     DATABASE_ROUTERS = []
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -305,7 +337,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
@@ -321,8 +352,9 @@ LANGUAGES = [
 # Atur bahasa default
 # ! Make sure you have cleared the browser cache after changing the default language
 LANGUAGE_CODE = "en"
+FILE_CHARSET = 'utf-8'
 
-TIME_ZONE = "UTC"
+TIME_ZONE = "Asia/Jakarta"
 
 USE_I18N = True
 
@@ -337,7 +369,6 @@ LOCALE_PATHS = [
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-
 STATICFILES_DIRS = [
     BASE_DIR / "src" / "assets",
     BASE_DIR / "static",
@@ -345,7 +376,6 @@ STATICFILES_DIRS = [
 
 # Default URL on which Django application runs for specific environment
 BASE_URL = os.environ.get("BASE_URL", default="http://127.0.0.1:8000")
-
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -368,12 +398,16 @@ MEDIA_ROOT = BASE_DIR / "media"
 # Email Settings
 # ------------------------------------------------------------------------------
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+if DEBUG:
+    # Development: gunakan console backend agar email tidak terkirim sungguhan
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = ""
-EMAIL_HOST_PASSWORD = ""
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 
 # Login & Logout
 # ------------------------------------------------------------------------------
@@ -437,16 +471,8 @@ if not DEBUG:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True  # Berlaku juga untuk subdomain
     SECURE_HSTS_PRELOAD = True             # Daftarkan ke HSTS preload list browser
 
-    # ================================================================
-    # COOKIE SECURE FLAG — DINONAKTIFKAN untuk kompatibilitas Android WebView
-    # ================================================================
-    # Android WebView (Capacitor) memiliki bug di mana cookie dengan flag 'Secure'
-    # TIDAK disimpan saat proses redirect 302 setelah POST login.
-    # Akibatnya: POST login → 302 → session cookie hilang → kembali ke login.
-    # HSTS sudah memaksa semua koneksi menjadi HTTPS, jadi keamanan tetap terjaga
-    # meskipun flag Secure dinonaktifkan.
-    SESSION_COOKIE_SECURE = False
-    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE", "True").lower() in ['true', 'yes', '1']
+    CSRF_COOKIE_SECURE = os.environ.get("CSRF_COOKIE_SECURE", "True").lower() in ['true', 'yes', '1']
 
     SESSION_COOKIE_SAMESITE = "Lax"
     CSRF_COOKIE_SAMESITE = "Lax"

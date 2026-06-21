@@ -41,6 +41,7 @@
             <div class="card mb-4">
                 <h5 class="card-header">Upload File Purchase Order</h5>
                 <div class="card-body">
+                    
                     <form method="POST" enctype="multipart/form-data">
                         {% csrf_token %}
                         <div class="mb-3">
@@ -59,7 +60,6 @@
                 </div>
             </div>
 
-            <!-- Penjelasan Logika Import -->
             <div class="card mb-4">
                 <div class="card-body">
                     <h6 class="mb-3"><i class="ri-lightbulb-line me-1 text-warning"></i>Cara Kerja Import</h6>
@@ -116,7 +116,7 @@
 {{ block.super }}
 <script>
 function downloadTemplate(format) {
-    // Header sesuai kolom form PO — supplier, gudang, nama_produk, tipe, kategori, satuan, jumlah, harga_satuan, catatan, pajak, metode_pembayaran
+    
     const header = ['supplier', 'nama_produk', 'tipe', 'kategori', 'satuan', 'jumlah', 'harga_satuan', 'gudang', 'catatan', 'pajak', 'metode_pembayaran'];
     const sampleData = [
         ['PT Maju Jaya', 'Indomie Goreng', 'produk', 'Makanan', 'pcs', '100', '2800', 'Gudang Utama', 'Pembelian rutin', '0', 'Cash'],
@@ -127,7 +127,7 @@ function downloadTemplate(format) {
     let blob, filename;
     
     if (format === 'csv') {
-        // Generate CSV dengan Excel directive
+        
         let csvContent = 'sep=,\n';
         csvContent += header.join(',') + '\n';
         sampleData.forEach(row => {
@@ -138,7 +138,7 @@ function downloadTemplate(format) {
         blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8' });
         filename = 'template_import_purchase_order.csv';
     } else {
-        // Generate Excel HTML table
+        
         let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
         html += '<head>';
         html += '<meta charset="utf-8">';
@@ -150,12 +150,10 @@ function downloadTemplate(format) {
         html += '</head><body>';
         html += '<table border="1">';
         
-        // Header row
         html += '<thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;">';
         header.forEach(h => html += `<th>${h}</th>`);
         html += '</tr></thead>';
         
-        // Data rows
         html += '<tbody>';
         sampleData.forEach(row => {
             html += '<tr>';
@@ -170,7 +168,6 @@ function downloadTemplate(format) {
         filename = 'template_import_purchase_order.xls';
     }
     
-    // Download file
     if (typeof _downloadBlob === 'function') {
         _downloadBlob(blob, filename);
     } else {
@@ -194,7 +191,6 @@ function downloadTemplate(format) {
     }
 }
 
-// AJAX Import Handler with SweetAlert
 $(document).ready(function() {
     $('form[enctype="multipart/form-data"]').on('submit', function(e) {
         e.preventDefault();
@@ -203,7 +199,6 @@ $(document).ready(function() {
         const submitBtn = $(this).find('button[type="submit"]');
         const originalText = submitBtn.html();
        
-        // Nonaktifkan tombol dan tampilkan loading
         submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Uploading...');
         
         $.ajax({

@@ -122,6 +122,25 @@ class KasBankTransferForm(BootstrapModelForm):
 
 
 class KasBankReconciliationForm(BootstrapModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Auto-populate saldo_sistem from akun's saldo_terhitung
+        if self.instance and self.instance.akun_kas_bank_id:
+            if not self.instance.saldo_sistem or self.instance.saldo_sistem == 0:
+                try:
+                    self.instance.saldo_sistem = self.instance.akun_kas_bank.saldo_terhitung
+                    self.initial['saldo_sistem'] = self.instance.saldo_sistem
+                except Exception:
+                    pass
+        # Also handle when akun is selected via form data
+        akun_id = self.data.get('akun_kas_bank') or (self.instance.akun_kas_bank_id if self.instance else None)
+        if akun_id and (not self.instance.saldo_sistem or self.instance.saldo_sistem == 0):
+            try:
+                from apps.kas_bank.models import KasBankAccount
+                akun = KasBankAccount.objects.get(pk=akun_id)
+                self.initial['saldo_sistem'] = akun.saldo_terhitung
+            except Exception:
+                pass
     class Meta:
         model = KasBankReconciliation
         fields = [

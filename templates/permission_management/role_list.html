@@ -20,19 +20,18 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    <!-- Page Header -->
+    
     <h4 class="mb-1">
         <i class="ri-shield-user-line me-2"></i>Daftar Roles
     </h4>
     <p class="mb-6">Role memberikan akses ke menu dan fitur yang telah ditentukan, sehingga administrator dapat mengakses sesuai dengan kebutuhan user berdasarkan role yang diberikan.</p>
 
-    <!-- Role Cards -->
     <div class="row g-6">
         {% for role in roles %}
         <div class="col-xl-4 col-lg-6 col-md-6">
             <div class="card h-100">
                 <div class="card-body">
-                    <!-- User Count & Avatar Group -->
+                    
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <p class="mb-0 text-muted">Total {{ role.user_count }} user{{ role.user_count|pluralize }}</p>
                         <ul class="list-unstyled d-flex align-items-center avatar-group mb-0">
@@ -61,7 +60,6 @@
                         </ul>
                     </div>
 
-                    <!-- Role Name & Actions -->
                     <div class="d-flex justify-content-between align-items-end">
                         <div class="role-heading">
                             <h5 class="mb-1">{{ role.name }}</h5>
@@ -94,7 +92,6 @@
                         {% endif %}
                     </div>
 
-                    <!-- Permission Summary -->
                     <div class="mt-3">
                         <small class="text-muted">
                             {% if role.code == 'SUPERUSER' %}
@@ -109,7 +106,6 @@
         </div>
         {% endfor %}
 
-        <!-- Add New Role Card -->
         <div class="col-xl-4 col-lg-6 col-md-6">
             <div class="card h-100" style="border: 2px dashed rgba(var(--bs-primary-rgb), 0.2) !important;">
                 <div class="row h-100">
@@ -128,13 +124,11 @@
         </div>
     </div>
 
-    <!-- Users Table -->
     <h5 class="mt-6 mb-1">
         <i class="ri-team-line me-2"></i>Total User Berdasarkan Roles
     </h5>
     <p class="mb-4">Temukan semua akun administrator perusahaan Anda beserta role yang terkait.</p>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -312,13 +306,10 @@
     </div>
 </div>
 
-<!-- Add Role Modal -->
 {% include "permission_management/_modals/add_role_modal.html" %}
 
-<!-- Edit Role Modal -->
 {% include "permission_management/_modals/edit_role_modal.html" %}
 
-<!-- View User Details Modal -->
 {% include "permission_management/_modals/view_user_details_modal.html" %}
 
 {% endblock content %}
@@ -332,17 +323,17 @@
 {% block page_js %}
 {% load static %}
 <script>
-    // DataTables configuration for roles list
+    
     var usersTable;
     $(function () {
         usersTable = $('.datatables-users').DataTable({
             order: [[0, 'asc']],
             pageLength: 25,
             lengthMenu: [[10, 25, 50, 75, 100, -1], ['10', '25', '50', '75', '100', 'Semua']],
-            responsive: false, // Nonaktifkan responsive agar bisa scroll horizontal seperti Daftar Produk
+            responsive: false, 
             autoWidth: false,
             columnDefs: [
-                { orderable: false, targets: [4] } // Nonaktifkan sort untuk kolom aksi
+                { orderable: false, targets: [4] } 
             ],
             language: {
                 search: '',
@@ -362,25 +353,21 @@
             dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
         });
         
-        // Custom search
         $('#searchUser').on('keyup', function() {
             usersTable.search(this.value).draw();
         });
         
-        // Role filter
         $('#roleFilter').on('change', function() {
             var val = $(this).val();
             usersTable.column(1).search(val ? val : '', false, false).draw();
         });
         
-        // Status filter
         $('#statusFilter').on('change', function() {
             var val = $(this).val();
             usersTable.column(3).search(val ? val : '', false, false).draw();
         });
     });
     
-    // Toggle visibilitas kolom
     function toggleColumns() {
         $('.column-checkbox').each(function() {
             var columnIdx = parseInt($(this).val());
@@ -390,7 +377,7 @@
     }
 
     function applyFilter() {
-        // Filter is auto-applied on keyup/change, this is just for UI consistency
+        
     }
 
     function resetFilter() {
@@ -480,32 +467,30 @@
     }
 
     @media (max-width:768px) {
-        /* Scroll hanya di mobile */
+        
         .card-datatable {
             overflow-x: hidden !important;
             -webkit-overflow-scrolling: touch;
             max-width: 100%
         }
 
-        .datatables-users {
+        {% if roles %}.datatables-users {
             min-width: 800px !important;
             width: 800px !important;
             table-layout: auto !important
-        }
+        }{% endif %}
 
         .dataTables_wrapper {
             overflow-x: hidden !important;
             max-width: 100% !important
         }
         
-        /* Ensure all columns are visible */
         .datatables-users th,
         .datatables-users td {
             min-width: 80px;
             white-space: nowrap;
         }
         
-        /* Wider columns for text content */
         .datatables-users th:nth-child(1),
         .datatables-users td:nth-child(1) {
             min-width: 180px;
@@ -516,7 +501,6 @@
             min-width: 180px;
         }
         
-        /* Jarak atas untuk Show entries di mobile */
         .dataTables_wrapper .dataTables_length {
             margin-top: 1rem !important;
             padding-top: 0.75rem !important;
@@ -527,7 +511,6 @@
         }
     }
 
-    /* Desktop: tanpa scroll horizontal */
     @media (min-width:769px) {
         .card-datatable {
             overflow-x: visible;
@@ -539,17 +522,17 @@
         
         .datatables-users {
             width: 100% !important;
-            table-layout: auto !important;
+            
         }
     }
 </style>
 <script>
-// Ambil CSRF token dari cookie (lebih reliable)
+
 function getCsrfToken() {
-    // Coba dari hidden input dulu
+    
     const input = document.querySelector('[name=csrfmiddlewaretoken]');
     if (input) return input.value;
-    // Fallback: dari cookie
+    
     const cookies = document.cookie.split(';');
     for (let c of cookies) {
         c = c.trim();
@@ -573,7 +556,7 @@ function confirmDeleteRole(roleCode, roleName, userCount) {
     }
 
     if (userCount > 0) {
-        // Role masih digunakan — tampilkan opsi force delete
+        
         Swal.fire({
             icon: 'warning',
             title: 'Role Masih Digunakan',
@@ -591,13 +574,12 @@ function confirmDeleteRole(roleCode, roleName, userCount) {
             }
         }).then((result) => {
             if (result.isConfirmed) {
-                deleteRole(roleCode, true); // force = true
+                deleteRole(roleCode, true); 
             }
         });
         return;
     }
 
-    // Role tidak digunakan — konfirmasi normal
     Swal.fire({
         icon: 'warning',
         title: 'Konfirmasi Hapus',
@@ -618,7 +600,7 @@ function confirmDeleteRole(roleCode, roleName, userCount) {
 }
 
 function deleteRole(roleCode, force) {
-    // Tampilkan loading
+    
     Swal.fire({
         title: 'Menghapus role...',
         allowOutsideClick: false,
@@ -627,7 +609,6 @@ function deleteRole(roleCode, force) {
 
     const csrftoken = getCsrfToken();
 
-    // Send delete request
     fetch(`/access/roles/delete/${roleCode}/`, {
         method: 'POST',
         headers: {
@@ -654,10 +635,9 @@ function deleteRole(roleCode, force) {
                 window.location.reload();
             });
         } else {
-            // Server returned error — tampilkan pesan dari server
+            
             const msg = result.data.message || 'Gagal menghapus role.';
 
-            // Jika role punya user dan belum force — tawarkan force delete
             if (result.data.has_users && !force) {
                 Swal.fire({
                     icon: 'warning',
@@ -699,19 +679,13 @@ function deleteRole(roleCode, force) {
 }
 </script>
 
-<!-- <script src="{% static 'js/app-access-roles.js' %}"></script> -->
-<!-- Commented out: Double initialization conflict with inline script below -->
-<!-- modal-add-role.js dihapus — handler sudah di inline script add_role_modal.html -->
 <script src="{% static 'js/modal-edit-role.js' %}"></script>
 <script src="{% static 'js/modal-view-user-details.js' %}"></script>
 
 <script>
-// Cleanup: pastikan tidak ada double event handler
+
 console.log('[Roles] Page loaded — Bootstrap modal triggers active');
 
-// ═══════════════════════════════════════════════════════════════
-// TOGGLE USER STATUS — Aktifkan/Nonaktifkan user via AJAX
-// ═══════════════════════════════════════════════════════════════
 function toggleUserStatus(userId, username, isActive) {
     const action = isActive ? 'menonaktifkan' : 'mengaktifkan';
     Swal.fire({
@@ -768,9 +742,6 @@ function toggleUserStatus(userId, username, isActive) {
     });
 }
 
-// ═══════════════════════════════════════════════════════════════
-// DELETE USER — Hapus user via AJAX dengan konfirmasi SweetAlert
-// ═══════════════════════════════════════════════════════════════
 function confirmDeleteUser(userId, username) {
     Swal.fire({
         title: 'Hapus User?',

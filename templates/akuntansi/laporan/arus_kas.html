@@ -2,8 +2,30 @@
 {% load static %}
 {% load currency_filters %}
 
-{% block title %}Arus Kas (Cash Flow) - Akuntansi ERP{% endblock title %}
+{% comment %}
+  ==========================================================================
+  AKUNTANSI - Arus Kas
+  ==========================================================================
+  Halaman Arus Kas untuk modul Akuntansi.
+  Template ini merender data dari view ke HTML yang ditampilkan di browser.
 
+  FLOW DATA:
+  - URL: /akuntansi/ -> View di apps/akuntansi/views.py- View: Mengambil data, menyiapkan context, render template ini- Template: File ini (HTML + Django template tags)- Response: HTML yang ditampilkan di browser user
+
+  RELASI KE MODUL LAIN:
+  - apps/akuntansi/views.py -> View (handler untuk halaman ini)- apps/akuntansi/models.py -> Model (sumber data)- apps/akuntansi/urls.py -> URL routing- layout/ -> Template induk (sidebar, header, footer)
+
+  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
+  - BOLEH diubah: Tampilan HTML, CSS inline, JavaScript- JANGAN diubah: {% extends %} dan {% block %} structure- JANGAN dihapus: {% csrf_token %} di form
+
+  TIPS & DEBUGGING:
+  - Error 'TemplateDoesNotExist'? Cek template_name di views.py- Variabel {{ }} kosong? Cek get_context_data() di views.py- Layout rusak? Pastikan TemplateLayout.init() dipanggil di view
+
+  ==========================================================================
+{% endcomment %}
+
+
+{% block title %}Arus Kas (Cash Flow) - Akuntansi ERP{% endblock title %}
 
 {% block vendor_css %}{{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/libs/apex-charts/apex-charts.css' %}" />
@@ -24,7 +46,7 @@
     <div class="d-flex justify-content-between align-items-center mb-1">
         <div><h4 class="mb-1"><i class="ri-exchange-funds-line me-2"></i>Laporan Arus Kas (Cash Flow)</h4><p class="text-muted mb-0">{{ tanggal_mulai|date:"d F Y" }} — {{ tanggal_akhir|date:"d F Y" }}</p></div>
     </div>
-    <!-- Label Sumber Data -->
+    
     <div class="mb-4">
         <span class="badge bg-label-primary rounded-pill px-3 py-2">
             <i class="ri-book-2-line me-1"></i>Laporan Akuntansi Resmi
@@ -34,7 +56,6 @@
         </small>
     </div>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <form method="get">
@@ -107,7 +128,6 @@
         </div>
     </div>
 
-    <!-- Summary Cards -->
     <div class="row g-3 mb-4">
         <div class="col-sm-6 col-lg-3">
             <div class="card">
@@ -167,10 +187,15 @@
         </div>
     </div>
 
-    <!-- Chart -->
-    <div class="card mb-4"><div class="card-header"><h5 class="mb-0"><i class="ri-bar-chart-grouped-line me-2"></i>Kas Masuk vs Keluar per Aktivitas</h5></div><div class="card-body"><div id="arusKasChart" style="min-height:320px;"></div></div></div>
+    <div class="card mb-4"><div class="card-header d-flex flex-nowrap align-items-center justify-content-between"><h5 class="mb-0 me-2"><i class="ri-bar-chart-grouped-line me-2"></i>Kas Masuk vs Keluar per Aktivitas</h5>
+                    <div class="dropdown flex-shrink-0">
+                        <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a>
+                            <a class="dropdown-item" href="javascript:void(0)" onclick="if(window.__arusKasChart) window.__arusKasChart.exportTo({type:'png'});"><i class="ri-download-2-line me-2"></i>Unduh Grafik</a>
+                        </div>
+                    </div></div><div class="card-body"><div id="arusKasChart" style="min-height:320px;"></div></div></div>
 
-    <!-- Cash Flow by Activity -->
     <div class="row g-4 mb-4">
         <div class="col-md-4" id="sec-operasi">
             <div class="card h-100">
@@ -255,7 +280,6 @@
         </div>
     </div>
 
-    <!-- Saldo Kas per Akun -->
     <div class="card" id="sec-netsaldo">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="ri-wallet-3-line me-2"></i>Saldo Kas & Bank</h5>
@@ -266,17 +290,14 @@
         </div>
         <div class="card-datatable table-responsive"><table class="accounting-data-table table table-hover mb-0" id="arusKasTable" data-accounting-primary="true" data-export-title="Laporan Arus Kas" data-search-placeholder="Cari akun kas/bank..."><thead class="table-light"><tr><th>Akun</th><th>Nama</th><th class="text-end">Saldo</th></tr></thead><tbody>
             {% for s in saldo_kas %}<tr><td class="fw-medium">{{ s.akun.kode }}</td><td>{{ s.akun.nama }}</td><td class="text-end fw-bold text-primary">{{ s.saldo|rupiah }}</td></tr>{% endfor %}
-        </tbody><tfoot class="table-footer-summary"><tr><td colspan="2" class="text-start ps-4 py-3"><div class="d-flex align-items-center justify-content-start"><i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i><div class="text-start"><strong class="d-block" style="font-size: 0.875rem;">RINGKASAN</strong><small class="text-muted">Total Kas & Bank</small></div></div></td><td class="text-end py-3"><span class="badge bg-label-primary">{{ total_saldo_kas|rupiah }}</span></td></tr></tfoot></table></div>
+        </tbody><tfoot class="table-footer-summary">
+                    <tr><td colspan="2" class="text-start ps-4 py-3"><div class="d-flex align-items-center justify-content-start"><i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i><div class="text-start"><strong class="d-block" style="font-size: 0.875rem;">RINGKASAN</strong><small class="text-muted">Total Kas & Bank</small></div></div></td><td class="text-end py-3"><span class="badge bg-label-primary">{{ total_saldo_kas|rupiah }}</span></td></tr></tfoot></table></div>
     </div>
 </div>
 {% endblock content %}
 
 {% block page_js %}
 <script>
-// ═══════════════════════════════════════════════════════════════
-// EXPORT EXCEL & PDF - STANDARD TEMPLATE (Support Android)
-// Konsisten dengan: Produk, POS, Sales Order, Purchase Order
-// ═══════════════════════════════════════════════════════════════
 
 const EXCEL_INFO = {
     name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
@@ -294,27 +315,24 @@ const PDF_INFO = {
     copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
 };
 
-// GLOBAL FUNCTIONS - Defined outside DOMContentLoaded so onclick can access them
 function exportExcel() {
     let colCount = 3;
     let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
     html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
     html += '<body>';
 
-    // --- ADD EXCEL HEADER (Company Info) ---
     html += '<table border="0">';
     if (typeof EXCEL_INFO !== 'undefined') {
         html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
         html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
         html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
-        html += `<tr><td colspan="${colCount}"></td></tr>`; // empty row for spacing
+        html += `<tr><td colspan="${colCount}"></td></tr>`; 
         html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:14px; font-weight:bold;">LAPORAN ARUS KAS</td></tr>`;
         html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">Periode: {{ tanggal_mulai|date:"d F Y" }} - {{ tanggal_akhir|date:"d F Y" }}</td></tr>`;
         html += `<tr><td colspan="${colCount}"></td></tr>`;
     }
     html += '</table>';
 
-    // --- TABLE: Data ---
     html += '<table border="1">';
     html += '<thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;"><th>Akun</th><th>Nama</th><th>Saldo</th></tr></thead>';
     html += '<tbody>';
@@ -340,9 +358,8 @@ function exportExcel() {
     
     html += '</tbody></table>';
 
-    // --- ADD EXCEL FOOTER ---
     html += '<table border="0">';
-    html += `<tr><td colspan="${colCount}"></td></tr>`; // empty spacer
+    html += `<tr><td colspan="${colCount}"></td></tr>`; 
     if (typeof EXCEL_INFO !== 'undefined') {
         html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</td></tr>`;
         html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">${EXCEL_INFO.copyright}</td></tr>`;
@@ -402,7 +419,7 @@ function exportPDF() {
                 row.push(text);
             }
         });
-        // Pad row if total cells < 3
+        
         while (row.length < 3) row.push('');
         if (row.length > 0) {
             if (isBold && !row[0].colSpan) {
@@ -489,25 +506,21 @@ function searchPage(q) {
     });
 }
 
-// Initialize Chart on DOM Ready
 document.addEventListener('DOMContentLoaded', function () {
     var el = document.getElementById('arusKasChart');
     if (!el) return;
     var seriesData = [{name:'Kas Masuk', data: {{ chart_masuk|safe }}},{name:'Kas Keluar', data: {{ chart_keluar|safe }}}];
     var hasData = seriesData.some(function(s){ return s.data && s.data.some(function(v){return v>0;}); });
-    if (!hasData) {
-        el.innerHTML = '<div class="text-center text-muted py-5"><i class="ri-bar-chart-2-line ri-3x d-block mb-2" style="opacity:0.3"></i><small>Belum ada data untuk ditampilkan</small></div>';
-        return;
-    }
+    
     var isDark = typeof isDarkStyle !== 'undefined' ? isDarkStyle : document.documentElement.classList.contains('dark-style');
     var gridColor  = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
     var labelColor = isDark ? '#b4b5ba' : '#a5a3ae';
     var chartColors = ['#28c76f','#ea5455'];
-    new ApexCharts(el, {
+    var __chartInst = new ApexCharts(el, {
         chart: {
             type: 'area', height: 300,
             fontFamily: 'Inter, -apple-system, sans-serif', background: 'transparent',
-            toolbar: { show: true, tools: { download: '<i class="ri-download-2-line" style="font-size:16px"></i>', selection:false,zoom:false,zoomin:false,zoomout:false,pan:false,reset:false } },
+            toolbar: { show: false },
             animations: { enabled:true, easing:'easeinout', speed:800, dynamicAnimation:{enabled:true,speed:350} },
             dropShadow: { enabled:true, top:6, left:0, blur:6, opacity:isDark?0.15:0.08, color:chartColors }
         },
@@ -533,7 +546,9 @@ document.addEventListener('DOMContentLoaded', function () {
         markers: { size:0, hover:{size:6,sizeOffset:3}, strokeWidth:2, strokeColors:isDark?'#2b2c40':'#fff' },
         grid: { borderColor:gridColor, strokeDashArray:4, padding:{top:-10,left:10,right:10,bottom:0}, xaxis:{lines:{show:false}}, yaxis:{lines:{show:true}} },
         responsive: [{ breakpoint:768, options:{ chart:{height:240}, legend:{fontSize:'11px'}, stroke:{width:2} } }]
-    }).render();
+    });
+    __chartInst.render();
+    window.__arusKasChart = __chartInst;
 });
 </script>
 {% include 'accounting/partials/table_tools.html' %}

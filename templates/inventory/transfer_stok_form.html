@@ -13,11 +13,11 @@
 {% block vendor_css %}
 <link rel="stylesheet" href="{% static 'vendor/libs/select2/select2.css' %}" />
 <style>
-    /* Custom Select2 Styling to match Materialize/Bootstrap inputs */
+    
     .select2-container--bootstrap-5 .select2-selection--single {
         border: 1px solid #d9dee3 !important;
         border-radius: 0.375rem !important;
-        /* Match height to standard input ~48px */
+        
         height: auto !important;
         min-height: 48px !important;
         padding: 0.45rem 0.875rem !important;
@@ -28,7 +28,7 @@
     .select2-container--bootstrap-5 .select2-selection__rendered {
         color: #697a8d !important;
         padding-left: 0 !important;
-        /* Already padded by container */
+        
         font-size: 0.9375rem !important;
         font-weight: 400 !important;
         line-height: 1.5 !important;
@@ -47,13 +47,11 @@
         box-shadow: 0 0 0.25rem 0.05rem rgba(105, 108, 255, 0.1) !important;
     }
 
-    /* Fix dropdown z-index if needed and styling */
     .select2-container--bootstrap-5 .select2-dropdown {
         border-color: #d9dee3;
         z-index: 1050;
     }
 
-    /* Style for fields in Formset */
     .formset-row .select2-container {
         width: 100% !important;
         flex: 1 1 auto;
@@ -72,6 +70,7 @@
             <div class="card mb-4">
                 <h5 class="card-header">{{ title }}</h5>
                 <div class="card-body">
+                    
                     <form method="post" id="transferForm">
                         {% csrf_token %}
 
@@ -177,7 +176,7 @@
                                 <div class="d-none">{{ item_form.DELETE }}</div>
                             </div>
                             {% empty %}
-                            <!-- Template form awal jika formset kosong -->
+                            
                             <div class="formset-row card mb-3">
                                 <div class="card-body">
                                     <div class="row align-items-end">
@@ -242,7 +241,6 @@
         const totalForms = document.getElementById('id_items-TOTAL_FORMS');
         const gudangAsalSelect = document.querySelector('[name="gudang_asal"]');
 
-        // Inisialisasi dropdown gudang dengan Select2
         $('[name="gudang_asal"], [name="gudang_tujuan"]').select2({
             theme: 'bootstrap-5',
             placeholder: '-- Pilih Gudang --',
@@ -250,11 +248,9 @@
             width: '100%'
         });
 
-        // Function untuk init Select2 AJAX pada produk select
         function initProdukSelect(element) {
             const $select = $(element);
 
-            // Destroy existing Select2 jika ada
             if ($select.hasClass('select2-hidden-accessible')) {
                 $select.select2('destroy');
             }
@@ -320,7 +316,6 @@
                 }
             });
 
-            // Event saat produk dipilih - cek stok terbaru
             $select.on('select2:select', function (e) {
                 const row = $(this).closest('.formset-row');
                 checkStokTersedia(row[0]);
@@ -332,7 +327,6 @@
             });
         }
 
-        // Function untuk cek stok tersedia
         function checkStokTersedia(row) {
             const produkSelect = row.querySelector('.produk-select');
             const stokInfoDiv = row.querySelector('.stok-info');
@@ -371,7 +365,6 @@
                             }
                         }
 
-                        // Set nilai maksimum untuk input jumlah
                         if (jumlahInput) {
                             jumlahInput.setAttribute('max', stokTersedia);
                             jumlahInput.setAttribute('data-stok-max', stokTersedia);
@@ -381,22 +374,19 @@
                 .catch(error => console.error('Error fetching stok:', error));
         }
 
-        // Inisialisasi semua select produk yang ada
         document.querySelectorAll('.produk-select').forEach(select => {
             initProdukSelect(select);
         });
 
-        // Re-cek stok saat gudang asal berubah
         if (gudangAsalSelect) {
             $(gudangAsalSelect).on('change', function () {
-                // Clear dan refresh semua Select2 produk
+                
                 document.querySelectorAll('.produk-select').forEach(select => {
                     const $select = $(select);
                     const currentVal = $select.val();
 
-                    // Re-init Select2 untuk update stok display
                     if (currentVal) {
-                        // Panggil checkStokTersedia untuk setiap row
+                        
                         const row = select.closest('.formset-row');
                         if (row) checkStokTersedia(row);
                     }
@@ -404,12 +394,10 @@
             });
         }
 
-        // Tambah form baru
         addButton.addEventListener('click', function () {
             const formCount = parseInt(totalForms.value);
             const newIndex = formCount;
 
-            // Buat HTML form baru
             const newFormHTML = `
             <div class="formset-row card mb-3">
                 <div class="card-body">
@@ -441,54 +429,45 @@
             </div>
         `;
 
-            // Tambahkan ke container
             formsetContainer.insertAdjacentHTML('beforeend', newFormHTML);
 
-            // Update jumlah total forms
             totalForms.value = newIndex + 1;
 
-            // Init Select2 untuk form baru
             const newForm = formsetContainer.lastElementChild;
             const newSelect = newForm.querySelector('.produk-select');
             initProdukSelect(newSelect);
         });
 
-        // Hapus form (event delegation)
         formsetContainer.addEventListener('click', function (e) {
             if (e.target.closest('.remove-form')) {
                 const formRow = e.target.closest('.formset-row');
                 const visibleForms = document.querySelectorAll('.formset-row:not(.d-none)');
 
-                // Minimal harus ada 1 form
                 if (visibleForms.length <= 1) {
                     alert('Minimal harus ada 1 produk yang ditransfer!');
                     return;
                 }
 
-                // Cek apakah ada input DELETE (untuk form yang sudah disimpan sebelumnya)
                 const deleteInput = formRow.querySelector('input[name*="DELETE"]');
 
                 if (deleteInput) {
-                    // Form lama - tandai untuk dihapus dan sembunyikan
+                    
                     deleteInput.checked = true;
                     formRow.classList.add('d-none');
                 } else {
-                    // Form baru - hapus langsung
-                    // Destroy Select2 dulu
+                    
                     const select = formRow.querySelector('.produk-select');
                     if (select && $(select).hasClass('select2-hidden-accessible')) {
                         $(select).select2('destroy');
                     }
                     formRow.remove();
 
-                    // Update jumlah total forms
                     const currentTotal = parseInt(totalForms.value);
                     totalForms.value = currentTotal - 1;
                 }
             }
         });
 
-        // Validasi jumlah sebelum submit
         document.getElementById('transferForm').addEventListener('submit', function (e) {
             let hasError = false;
 

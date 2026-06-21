@@ -28,7 +28,7 @@
 ==========================================================================
 """
 
-from django.db import models, transaction   # Django ORM + atomic transaction
+from django.db import models, transaction, OperationalError   # Django ORM + atomic + lock error
 from django.contrib.auth.models import User  # Model User bawaan
 from apps.produk.models import Produk, Gudang, Stok  # Model master produk
 
@@ -84,6 +84,13 @@ class Supplier(models.Model):
         return f"{self.kode} - {self.nama}"
 
 
+# =====================================================================
+    # REKOMENDASI PRODUCTION: Pertimbangkan soft delete untuk model ini.
+    # Soft delete (is_deleted = BooleanField) menjaga audit trail dan
+    # mencegah kehilangan data saat record dihapus secara tidak sengaja.
+    # Implementasi: tambahkan is_deleted=True/False dan override delete()
+    # atau gunakan Django manager dengan filter is_deleted=False.
+    # =====================================================================
 class PurchaseOrder(models.Model):
     """
     Model untuk PURCHASE ORDER (PO) — dokumen pembelian barang.
@@ -251,8 +258,8 @@ class PurchaseOrder(models.Model):
 
         Return: String nomor PO — contoh 'PO/2024/01/0001'
         """
-        from datetime import datetime
-        today = datetime.now()
+        from django.utils import timezone
+        today = timezone.now()
         # Format prefix: PO/2024/01 (per bulan)
         prefix = f"PO/{today.year}/{today.month:02d}"
 
@@ -358,11 +365,17 @@ class PurchaseOrder(models.Model):
             # LANGKAH 2: Tambah stok untuk setiap item PO
             for item in self.items.select_related('produk'):
                 # Lock baris stok untuk mencegah concurrent write
-                stok, _ = Stok.objects.select_for_update().get_or_create(
-                    produk=item.produk,
-                    gudang=self.gudang,
-                    defaults={'jumlah': 0}
-                )
+                # nowait=True → gagal cepat jika stok sedang di-lock
+                try:
+                    stok, _ = Stok.objects.select_for_update(nowait=True).get_or_create(
+                        produk=item.produk,
+                        gudang=self.gudang,
+                        defaults={'jumlah': 0}
+                    )
+                except OperationalError:
+                    raise ValueError(
+                        f"Stok {item.produk.nama} sedang diproses pengguna lain. Coba lagi."
+                    )
                 # Gunakan jumlah_konversi (satuan dasar) untuk update stok
                 qty_stok = item.jumlah_konversi if item.jumlah_konversi else item.jumlah
                 stok.jumlah += qty_stok

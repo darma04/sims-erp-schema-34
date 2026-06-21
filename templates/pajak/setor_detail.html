@@ -1,6 +1,29 @@
 {% extends 'layout/layout_vertical.html' %}
 {% load currency_filters %}
 
+{% comment %}
+  ==========================================================================
+  PAJAK - Detail Setor
+  ==========================================================================
+  Menampilkan informasi lengkap satu setor termasuk data relasi.
+  Detail page biasanya menampilkan data read-only (tidak bisa diedit langsung).
+
+  FLOW DATA:
+  - URL: /pajak/setor/<pk>/- View: DetailView mengambil 1 object berdasarkan primary key- Context: object + data relasi (items, history, dll)- Template: Render semua informasi ke HTML
+
+  RELASI KE MODUL LAIN:
+  - apps/pajak/views.py -> SetorDetailView- apps/pajak/models.py -> Model Setor- get_context_data(): Menambahkan data relasi ke context
+
+  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
+  - BOLEH diubah: Layout detail, urutan informasi- BOLEH ditambah: Informasi baru dari relasi- JANGAN diubah: {% extends %} dan {% block %} structure
+
+  TIPS & DEBUGGING:
+  - Error 'DoesNotExist'? Primary key tidak ditemukan di database- Data relasi kosong? Cek get_context_data() di views.py
+
+  ==========================================================================
+{% endcomment %}
+
+
 {% block title %}{{ pembayaran.nomor }} - Detail Setor PPN{% endblock title %}
 
 {% block content %}

@@ -1,23 +1,20 @@
-{# ══════════════════════════════════════════════════════════════════════ #}
-{# FRAUD DETECTION — Rekonsiliasi Kas (Blind Cash Closing)              #}
-{# ══════════════════════════════════════════════════════════════════════ #}
-{# Halaman ini menampilkan daftar semua rekonsiliasi kas (tutup shift):  #}
-{# - Summary cards (Total Record, Total Selisih, Kurang, Lebih)         #}
-{# - Filter cards (Kasir, Cabang, Status) + Pilih Kolom                 #}
-{# - Tabel DataTables dengan Export Excel/PDF, Pagination, Search       #}
-{#                                                                      #}
-{# Pola tabel & export identik dengan produk_list.html                  #}
-{# Terhubung dengan:                                                    #}
-{# - apps/fraud_detection/views.py → CashReconciliationListView         #}
-{# - apps/fraud_detection/models.py → CashReconciliation                #}
-{# ══════════════════════════════════════════════════════════════════════ #}
+
 {% extends layout_path %}
 {% load static %}
 {% load currency_filters %}
 
+{% comment %}
+   ==========================================================================
+   FRAUD DETECTION - Daftar Transaksi Kas
+   Menampilkan semua transaksi kas (masuk/keluar) untuk
+   keperluan audit fraud detection. Mendukung filter
+   berdasarkan periode, akun, dan cabang.
+   ==========================================================================
+{% endcomment %}
+
+
 {% block title %}Rekonsiliasi Kas - Fraud Detection{% endblock title %}
 
-{# ═══ VENDOR CSS — DataTables styling ═══ #}
 {% block vendor_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
@@ -25,7 +22,6 @@
 <link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
 {% endblock vendor_css %}
 
-{# ═══ VENDOR JS — DataTables + pdfmake untuk export ═══ #}
 {% block vendor_js %}
 {{ block.super }}
 <script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
@@ -35,7 +31,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    {# ─── HEADER HALAMAN ─── #}
+    
     <div class="d-flex justify-content-between align-items-center mb-1">
         <div>
             <h4 class="mb-1">
@@ -44,7 +40,7 @@
             <p class="text-muted mb-0">Monitor selisih kas kasir per shift</p>
         </div>
         <div class="d-flex gap-2">
-            {# Tombol untuk membuat rekonsiliasi baru (tutup shift) #}
+            
             {% if can_create.fraud_detection %}
             <a href="{% url 'fraud_detection:cash_create' %}" class="btn btn-primary">
                 <i class="ri-add-line me-1"></i>Tutup Shift Baru
@@ -52,7 +48,7 @@
             {% endif %}
         </div>
     </div>
-    <!-- Label Sumber Data -->
+    
     <div class="mb-4">
         <span class="badge bg-label-danger rounded-pill px-3 py-2">
             <i class="ri-shield-check-line me-1"></i>Rekonsiliasi Kas Kasir (Harian)
@@ -62,9 +58,8 @@
         </small>
     </div>
 
-    {# ─── SUMMARY CARDS — 4 kartu ringkasan rekonsiliasi kas ─── #}
     <div class="row g-6 mb-4">
-        {# Card 1: Total Record — jumlah seluruh tutup shift yang tercatat #}
+        
         <div class="col-sm-6 col-lg-3">
             <div class="card h-100">
                 <div class="card-body">
@@ -82,7 +77,7 @@
                 </div>
             </div>
         </div>
-        {# Card 2: Total Selisih — jumlah keseluruhan selisih kas (bisa negatif) #}
+        
         <div class="col-sm-6 col-lg-3">
             <div class="card h-100">
                 <div class="card-body">
@@ -100,7 +95,7 @@
                 </div>
             </div>
         </div>
-        {# Card 3: Kurang (Shortage) — jumlah shift dgn selisih negatif #}
+        
         <div class="col-sm-6 col-lg-3">
             <div class="card h-100">
                 <div class="card-body">
@@ -118,7 +113,7 @@
                 </div>
             </div>
         </div>
-        {# Card 4: Lebih (Overage) — jumlah shift dgn selisih positif #}
+        
         <div class="col-sm-6 col-lg-3">
             <div class="card h-100">
                 <div class="card-body">
@@ -138,10 +133,9 @@
         </div>
     </div>
 
-    {# ─── FILTER CARD — Layout identik dengan Daftar Produk ─── #}
     <div class="card mb-4">
         <div class="card-body">
-            {# Baris pertama: 4 filter #}
+            
             <div class="row g-3">
                 <div class="col-md-3">
                     <label class="form-label" for="searchKasir">Cari Kasir</label>
@@ -179,7 +173,7 @@
                     </select>
                 </div>
             </div>
-            {# Baris kedua: Pilih Kolom (kiri) + Tombol Filter (kanan) #}
+            
             <div class="row g-3 mt-2 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
@@ -264,7 +258,6 @@
         </div>
     </div>
 
-    {# ─── MAIN DATA TABLE CARD ─── #}
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="ri-safe-2-line me-2"></i>Data Rekonsiliasi Kas</h5>
@@ -304,7 +297,7 @@
                         <td>{{ recon.expected_amount|rupiah }}</td>
                         <td>{{ recon.actual_amount|rupiah }}</td>
                         <td>
-                            {# Tampilkan selisih dgn warna: merah jika kurang, hijau jika lebih, default jika sesuai #}
+                            
                             {% if recon.discrepancy < 0 %}
                             <span class="text-danger fw-semibold">{{ recon.discrepancy|rupiah }}</span>
                             {% elif recon.discrepancy > 0 %}
@@ -322,7 +315,7 @@
                             <span class="badge bg-label-secondary">{{ recon.status }}</span>
                             {% endif %}
                         </td>
-                        {# Kolom Aksi — dropdown dengan Detail dan Review #}
+                        
                         <td>
                             {% if can_view.fraud_detection or can_edit.fraud_detection or can_delete.fraud_detection %}
                             <div class="dropdown">
@@ -363,7 +356,7 @@
                     </tr>
                     {% endfor %}
                 </tbody>
-                {# ─── TFOOT RINGKASAN ─── #}
+                
                 <tfoot class="table-footer-summary">
                     <tr>
                         <td colspan="4" class="text-start ps-4 py-3" style="vertical-align: middle;">
@@ -374,7 +367,7 @@
                                     <small class="text-muted" style="font-size: 0.75rem;">{{ total_records }} Record Tercatat</small>
                                 </div>
                             </div>
-                        </td>
+                        </td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td>
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-info d-flex align-items-center gap-1 mb-2"
@@ -412,7 +405,7 @@
             </table>
         </div>
     </div>
-    {# ═══ MODAL DETAIL REKONSILIASI ═══ #}
+    
     <div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
@@ -468,7 +461,6 @@
         </div>
     </div>
 
-    {# ─── MODAL KONFIRMASI HAPUS ─── #}
     {% if can_delete.fraud_detection %}
     <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -500,7 +492,6 @@
     </div>
     {% endif %}
 
-    {# ═══ MODAL REVIEW / SETUJUI (Dengan Tindak Lanjut) ═══ #}
     <div class="modal fade" id="reviewModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -547,7 +538,6 @@
         </div>
     </div>
 
-    {# ═══ MODAL EDIT UANG FISIK ═══ #}
     <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -581,7 +571,7 @@
 {% endblock content %}
 
 {% block page_js %}
-{# ═══ CUSTOM CSS — DataTables Pagination Styling ═══ #}
+
 <style>
     .dataTables_wrapper .dataTables_info { padding: 1rem 1.5rem; font-size: 0.875rem; color: #697a8d; }
     .dataTables_wrapper .dataTables_paginate { padding: 1rem 1.5rem; }
@@ -597,14 +587,12 @@
     .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.disabled) { background: rgba(105, 108, 255, 0.08) !important; border: none; color: #696cff !important; }
     .dataTables_wrapper .dataTables_paginate .paginate_button.disabled { color: #c7cdd4 !important; cursor: not-allowed; }
     .card-datatable { padding-bottom: 0; }
-    .datatables-rekon { min-width: 1000px; }
+    {% if reconciliation_list %}.datatables-rekon { min-width: 1000px; }{% endif %}
     .datatables-rekon thead th { font-weight: 600; font-size: 0.8125rem; text-transform: none; letter-spacing: 0; }
 </style>
 
 <script>
-    // ═══════════════════════════════════════════════════════════════
-    // DELETE ACTION
-    // ═══════════════════════════════════════════════════════════════
+    
     let deleteId = null;
 
     function confirmDelete(id, name) {
@@ -648,11 +636,8 @@
         });
     });
 
-    // ═══════════════════════════════════════════════════════════════
-    // INISIALISASI DATATABLES — Tabel interaktif dengan pagination
-    // ═══════════════════════════════════════════════════════════════
     $(document).ready(function () {
-        // Hanya inisialisasi DataTables jika tabel memiliki data (bukan empty state)
+        
         if ($('#tabelRekon tbody tr').length > 0 && !$('#tabelRekon tbody tr td[colspan]').length) {
             const table = $('#tabelRekon').DataTable({
                 language: {
@@ -666,8 +651,8 @@
                     "sSearch": "Cari:",
                     "oPaginate": { "sFirst": "Pertama", "sPrevious": "Sebelumnya", "sNext": "Selanjutnya", "sLast": "Terakhir" }
                 },
-                order: [[0, 'desc']],           // Urutkan tanggal terbaru di atas
-                pageLength: 25,                  // Default 25 baris per halaman
+                order: [[0, 'desc']],           
+                pageLength: 25,                  
                 lengthMenu: [[10, 25, 50, 75, 100, -1], ['10', '25', '50', '75', '100', 'Semua']],
                 responsive: false,
                 dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
@@ -678,13 +663,10 @@
         }
     });
 
-    // ═══════════════════════════════════════════════════════════════
-    // FILTER — Terapkan filter via DataTables search (client-side)
-    // ═══════════════════════════════════════════════════════════════
     function applyDTFilter() {
         const table = $.fn.dataTable.isDataTable('#tabelRekon') ? new $.fn.dataTable.Api('#tabelRekon') : null;
         if (!table) return;
-        // Gabungkan semua nilai filter menjadi satu search query
+        
         const kasir = document.getElementById('searchKasir').value;
         const cabang = document.getElementById('filterCabang').value;
         const status = document.getElementById('filterStatus').value;
@@ -692,7 +674,6 @@
         table.search(searchTerm).draw();
     }
 
-    // Reset semua filter — kosongkan search dan reload
     function resetDTFilter() {
         document.getElementById('searchKasir').value = '';
         document.getElementById('filterCabang').value = '';
@@ -702,9 +683,6 @@
         if (table) table.search('').draw();
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // TOGGLE KOLOM — Tampilkan/sembunyikan kolom tabel via checkbox
-    // ═══════════════════════════════════════════════════════════════
     function toggleColumns() {
         const checkboxes = document.querySelectorAll('.column-checkbox');
         const table = $.fn.dataTable.isDataTable('#tabelRekon') ? new $.fn.dataTable.Api('#tabelRekon') : null;
@@ -724,9 +702,6 @@
         toggleColumns();
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // DATA TEMPLATE EXPORT — Info perusahaan untuk header/footer
-    // ═══════════════════════════════════════════════════════════════
     const EXCEL_INFO = {
         name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
         address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -744,12 +719,10 @@
     const FOOTER_DATA = { 4: "{{ total_expected|escapejs }}", 5: "{{ total_actual|escapejs }}", 6: "{{ total_discrepancy|escapejs }}" };
     const FOOTER_LABEL = 'RINGKASAN';
 
-    // ═══════════════════════════════════════════════════════════════
-    // EXPORT EXCEL — File .xls identik pola produk_list
-    // ═══════════════════════════════════════════════════════════════
     function exportToExcel() {
+        if (typeof $ === "undefined" || typeof $.fn.dataTable === "undefined" || !$.fn.dataTable.isDataTable('#tabelRekon')) { alert('Tidak ada data untuk di-export. Silakan tambahkan data terlebih dahulu.'); return; }
         const table = document.getElementById('tabelRekon');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
         const tableObj = new $.fn.dataTable.Api('#tabelRekon');
         let colCount = 0, visibleColumns = [];
         tableObj.columns().every(function (index) {
@@ -760,15 +733,16 @@
         let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
         html += '<head><meta charset="utf-8"></head><body>';
         html += '<table border="0">';
-        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
-        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
-        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
+        html += `<tr><td colspan="${colCount}">${EXCEL_INFO.name}</td></tr>`;
+        html += `<tr><td colspan="${colCount}">${EXCEL_INFO.address}</td></tr>`;
+        html += `<tr><td colspan="${colCount}">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
         html += `<tr><td colspan="${colCount}"></td></tr>`;
         html += '</table>';
         html += '<table border="1"><thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;">';
         visibleColumns.forEach(col => { html += `<th>${col.text}</th>`; });
         html += '</tr></thead><tbody>';
-        tableObj.rows({ page: 'current' }).every(function (rowIdx) {
+
+          tableObj.rows({ page: 'current' }).every(function (rowIdx) {
             html += '<tr>';
             visibleColumns.forEach(col => {
                 let cn = tableObj.cell(rowIdx, col.index).node();
@@ -805,10 +779,8 @@
         link.click();
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // EXPORT PDF — File .pdf via pdfMake identik pola produk_list
-    // ═══════════════════════════════════════════════════════════════
     function exportToPDF() {
+        if (typeof $ === "undefined" || typeof $.fn.dataTable === "undefined" || !$.fn.dataTable.isDataTable('#tabelRekon')) { alert('Tidak ada data untuk di-export. Silakan tambahkan data terlebih dahulu.'); return; }
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
         const tableObj = new $.fn.dataTable.Api('#tabelRekon');
         const headers = []; let visibleColumns = [];
@@ -876,15 +848,12 @@
         };
         pdfMake.createPdf(docDefinition).download('Rekonsiliasi_Kas_' + new Date().toISOString().slice(0, 10) + '.pdf');
     }
-    // ═══════════════════════════════════════════════════════════════
-    // DETAIL REKONSILIASI — Tampilkan modal detail lengkap
-    // ═══════════════════════════════════════════════════════════════
+    
     function showReconDetail(pk, kasir, cabang, shiftStart, shiftEnd, expected, actual, discrepancy, status, catatan, reviewer) {
         document.getElementById('detailKasir').textContent = kasir;
         document.getElementById('detailCabang').textContent = cabang;
         document.getElementById('detailShift').textContent = shiftStart + ' - ' + shiftEnd;
 
-        // Format uang
         const fmt = (v) => 'Rp ' + Number(v).toLocaleString('id-ID');
         document.getElementById('detailSistem').textContent = fmt(expected);
         document.getElementById('detailFisik').textContent = fmt(actual);
@@ -894,7 +863,6 @@
         selisihEl.textContent = (disc > 0 ? '+' : '') + fmt(discrepancy);
         selisihEl.className = disc < 0 ? 'fw-bold text-danger' : (disc > 0 ? 'fw-bold text-success' : 'fw-bold');
 
-        // Status badge
         const statusMap = {'closed': '<span class="badge bg-label-warning">Closed</span>', 'reviewed': '<span class="badge bg-label-success">Reviewed</span>', 'open': '<span class="badge bg-label-secondary">Open</span>'};
         document.getElementById('detailStatus').innerHTML = statusMap[status] || status;
         document.getElementById('detailReviewer').textContent = reviewer || '-';
@@ -903,9 +871,6 @@
         new bootstrap.Modal(document.getElementById('detailModal')).show();
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // EDIT UANG FISIK — Buka modal edit
-    // ═══════════════════════════════════════════════════════════════
     function openEditModal(reconId, kasirName, actualAmount) {
         document.getElementById('editReconId').value = reconId;
         document.getElementById('editKasirName').textContent = kasirName;
@@ -914,7 +879,6 @@
         new bootstrap.Modal(document.getElementById('editModal')).show();
     }
 
-    // Kirim request AJAX untuk edit uang fisik
     function confirmEdit() {
         const reconId = document.getElementById('editReconId').value;
         const actualAmount = document.getElementById('editActualAmount').value;
@@ -956,19 +920,14 @@
         });
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // REVIEW REKONSILIASI — Buka modal konfirmasi review
-    // ═══════════════════════════════════════════════════════════════
     function openReviewModal(reconId, kasirName, discrepancy) {
         document.getElementById('reviewReconId').value = reconId;
         document.getElementById('reviewDiscrepancy').value = discrepancy;
         document.getElementById('reviewKasirName').textContent = kasirName;
         document.getElementById('reviewCatatan').value = '';
 
-        // Reset radio
         document.getElementById('tlCatatanSaja').checked = true;
 
-        // Tampilkan opsi tindak lanjut hanya jika ada selisih negatif
         const disc = Number(discrepancy);
         const tindakLanjutSection = document.getElementById('tindakLanjutSection');
         if (disc < 0) {
@@ -980,7 +939,6 @@
         new bootstrap.Modal(document.getElementById('reviewModal')).show();
     }
 
-    // Kirim request AJAX untuk review rekonsiliasi
     function confirmReview() {
         const reconId = document.getElementById('reviewReconId').value;
         const catatan = document.getElementById('reviewCatatan').value;
@@ -1017,4 +975,42 @@
         });
     }
 </script>
+
+<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning align-items-center py-3">
+                <h5 class="modal-title text-dark mb-0">
+                    <i class="ri-error-warning-line me-2"></i>Export Gagal
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center py-3">
+                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
+                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
+                    <i class="ri-close-line me-1"></i>Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+function showExportError() {
+    var modal = document.getElementById('exportErrorModal');
+    if (modal) {
+        new bootstrap.Modal(modal).show();
+    } else {
+        alert('Tabel tidak ditemukan!');
+    }
+}
+</script>
+
 {% endblock page_js %}

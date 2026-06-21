@@ -7,16 +7,13 @@
 {% endcomment %}
 {% load static %}
 
-<!--Fonts-->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
 
-<!-- Icons -->
 <link rel="stylesheet" href="{% static 'vendor/fonts/remixicon/remixicon.css' %}" />
 <link rel="stylesheet" href="{% static 'vendor/fonts/flag-icons.css' %}" />
 
-<!--Core CSS -->
 {% if rtl_support %}
 <link rel="stylesheet" href="{% static 'vendor/css/rtl/core.css' %}" class="{{ has_customizer|yesno:'template-customizer-core-css,' }}" />
 <link rel="stylesheet" href="{% static 'vendor/css/rtl/theme-default.css' %}" class="{{ has_customizer|yesno:'template-customizer-theme-css,' }}" />
@@ -25,18 +22,14 @@
 <link rel="stylesheet" href="{% static 'vendor/css/theme-default.css' %}" class="{{ has_customizer|yesno:'template-customizer-theme-css,' }}" />
 {% endif %}
 
+<link rel="stylesheet" href="{% static 'css/demo.css' %}?v=7" />
 
-<link rel="stylesheet" href="{% static 'css/demo.css' %}?v=5" />
-
-<!--Vendor CSS-->
 <link rel="stylesheet" href="{% static 'vendor/libs/perfect-scrollbar/perfect-scrollbar.css' %}" />
-<link rel="stylesheet" href="{% static 'vendor/libs/typeahead-js/typeahead.css' %}" />
 <link rel="stylesheet" href="{% static 'vendor/libs/node-waves/node-waves.css' %}" />
 
-<!-- Fix Mobile: Pagination Scrollbar + Export Buttons (inline agar bypass WhiteNoise cache) -->
 <style>
 @media (max-width: 991px) {
-  /* === PAGINATION SCROLLBAR FIX === */
+  
   .card-datatable,
   .card-datatable.table-responsive {
     overflow-x: hidden !important;
@@ -80,24 +73,22 @@
     overflow-x: auto !important;
   }
 
-  /* === EXPORT BUTTONS FIX: Tidak gepeng di mobile === */
-  /* Card header: wrap konten */
   .card-header.d-flex.justify-content-between {
     flex-wrap: wrap !important;
     gap: 0.5rem !important;
   }
-  /* Judul card header full width */
+  
   .card-header.d-flex.justify-content-between > h5,
   .card-header.d-flex.justify-content-between > h6 {
     width: 100% !important;
     flex: 0 0 100% !important;
   }
-  /* Container tombol export full width */
+  
   .card-header.d-flex.justify-content-between > .d-flex.gap-2 {
     width: 100% !important;
     flex: 0 0 100% !important;
   }
-  /* Tombol export: padding & font proporsional */
+  
   .card-header.d-flex.justify-content-between > .d-flex.gap-2 > .btn {
     flex: 1 1 0 !important;
     text-align: center !important;
@@ -107,7 +98,6 @@
   }
 }
 
-/* HP: tombol export stack vertikal */
 @media (max-width: 575px) {
   .card-header.d-flex.justify-content-between > .d-flex.gap-2 {
     flex-direction: column !important;
@@ -121,13 +111,8 @@
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
-   GLOBAL MOBILE ≤ 576px — Padding, Margin, Gap konsisten SEMUA halaman
-   Berlaku untuk: Dashboard, CRUD, SUBCRUD, Form, Tabel, Modal, dll.
-   ═══════════════════════════════════════════════════════════════════════ */
 @media (max-width: 576px) {
 
-  /* ─── Container utama: kurangi padding samping ─── */
   .container-p-y {
     padding-left: 0.75rem !important;
     padding-right: 0.75rem !important;
@@ -139,7 +124,6 @@
     padding-right: 0.75rem !important;
   }
 
-  /* ─── Grid: kurangi gap antar kolom ─── */
   .row.g-6 {
     --bs-gutter-x: 0.75rem !important;
     --bs-gutter-y: 0.75rem !important;
@@ -152,7 +136,6 @@
     --bs-gutter-y: 0.5rem !important;
   }
 
-  /* ─── Card: padding lebih compact ─── */
   .card > .card-body {
     padding: 0.875rem !important;
   }
@@ -163,13 +146,11 @@
     padding: 0.625rem 0.875rem !important;
   }
 
-  /* ─── Heading: sedikit lebih kecil ─── */
   h3, .h3 { font-size: 1.15rem !important; }
   h4, .h4 { font-size: 1rem !important; }
   h5, .h5 { font-size: 0.9375rem !important; }
   h6, .h6 { font-size: 0.8125rem !important; }
 
-  /* ─── Page header (judul + tombol aksi) ─── */
   .d-flex.justify-content-between.align-items-center.mb-4 {
     margin-bottom: 0.75rem !important;
     flex-wrap: wrap !important;
@@ -183,7 +164,6 @@
     margin-bottom: 0.25rem;
   }
 
-  /* ─── Filter card: lebih compact ─── */
   .card.mb-4 > .card-body > .row.g-3 {
     --bs-gutter-x: 0.5rem !important;
     --bs-gutter-y: 0.5rem !important;
@@ -192,7 +172,6 @@
     margin-bottom: 0.75rem !important;
   }
 
-  /* ─── Form: spacing antar field lebih rapat ─── */
   .form-floating.form-floating-outline {
     margin-bottom: 0 !important;
   }
@@ -220,7 +199,6 @@
     font-size: 0.75rem !important;
   }
 
-  /* ─── Tabel: padding sel lebih compact ─── */
   .table th,
   .table td {
     padding: 0.5rem 0.625rem !important;
@@ -231,7 +209,6 @@
     height: 28px !important;
   }
 
-  /* ─── DataTables: wrapper lebih compact ─── */
   .dataTables_wrapper .dataTables_length,
   .dataTables_wrapper .dataTables_filter,
   .dataTables_wrapper .dataTables_info,
@@ -248,7 +225,6 @@
     padding: 0.375rem 0.5rem !important;
   }
 
-  /* ─── Pagination: lebih compact ─── */
   .pagination .page-link {
     padding: 0.3rem 0.6rem !important;
     font-size: 0.75rem !important;
@@ -258,7 +234,6 @@
     font-size: 0.75rem !important;
   }
 
-  /* ─── Button: font lebih kecil pada mobile ─── */
   .btn {
     font-size: 0.8125rem !important;
   }
@@ -271,7 +246,6 @@
     height: 30px !important;
   }
 
-  /* ─── Breadcrumb: lebih compact ─── */
   h4.py-3.mb-4 {
     padding-top: 0.5rem !important;
     padding-bottom: 0.5rem !important;
@@ -282,7 +256,6 @@
     font-size: 0.85rem !important;
   }
 
-  /* ─── Alert: lebih compact ─── */
   .alert {
     padding: 0.625rem 0.75rem !important;
     font-size: 0.8125rem !important;
@@ -291,13 +264,11 @@
     font-size: 0.875rem !important;
   }
 
-  /* ─── Badge: font lebih kecil ─── */
   .badge {
     font-size: 0.7rem !important;
     padding: 0.3em 0.55em !important;
   }
 
-  /* ─── Modal: padding lebih compact ─── */
   .modal .modal-body {
     padding: 0.875rem !important;
   }
@@ -311,13 +282,11 @@
     font-size: 0.9375rem !important;
   }
 
-  /* ─── Divider, separator ─── */
   hr.my-4, hr.my-3 {
     margin-top: 0.75rem !important;
     margin-bottom: 0.75rem !important;
   }
 
-  /* ─── Dropdown ─── */
   .dropdown-menu {
     font-size: 0.8125rem !important;
   }
@@ -326,34 +295,28 @@
     font-size: 0.8125rem !important;
   }
 
-  /* ─── Tab navigation ─── */
   .nav-tabs .nav-link,
   .nav-pills .nav-link {
     font-size: 0.8125rem !important;
     padding: 0.4375rem 0.75rem !important;
   }
 
-  /* ─── Progress bar ─── */
   .progress {
     height: 6px !important;
   }
 
-  /* ─── Tooltip text ─── */
   [data-bs-toggle="tooltip"] {
     cursor: pointer;
   }
 
-  /* ─── Avatar kecilkan sedikit ─── */
   .avatar .avatar-initial i.ri-24px { font-size: 20px !important; }
   .avatar .avatar-initial i.ri-26px { font-size: 22px !important; }
 
-  /* ─── List group ─── */
   .list-group-item {
     padding: 0.5rem 0.75rem !important;
     font-size: 0.8125rem !important;
   }
 
-  /* ─── Accordion ─── */
   .accordion-button {
     padding: 0.625rem 0.875rem !important;
     font-size: 0.8125rem !important;
@@ -362,13 +325,11 @@
     padding: 0.625rem 0.875rem !important;
   }
 
-  /* ─── Input group (filter, search) ─── */
   .input-group-text {
     font-size: 0.8rem !important;
     padding: 0.375rem 0.5rem !important;
   }
 
-  /* ─── Card datatable: lebih compact ─── */
   .card-datatable {
     padding: 0 !important;
   }
@@ -376,20 +337,15 @@
     padding: 0.75rem 0.875rem !important;
   }
 
-  /* ─── Teks muted dan caption ─── */
   .text-muted { font-size: 0.8rem; }
   p.mb-0 { font-size: 0.8125rem; }
 
-  /* ─── Action column: tombol aksi lebih compact ─── */
   .btn-text-secondary.btn-icon {
     width: 28px !important;
     height: 28px !important;
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
-   TABLET KECIL 577-767px — Penyesuaian moderat
-   ═══════════════════════════════════════════════════════════════════════ */
 @media (min-width: 577px) and (max-width: 767.98px) {
   .container-p-y {
     padding-left: 1rem !important;
@@ -426,22 +382,12 @@
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   DARK MODE FIX — Perbaikan kontras teks saat dark mode aktif
-   Masalah: Beberapa teks (menu header sidebar, label, dll) terlalu gelap
-   sehingga "hilang" di background gelap dark mode.
-
-   Selector: [data-theme="dark"] — aktif saat user memilih mode Gelap
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* ─── SIDEBAR: Menu Header (MASTER DATA, TRANSAKSI, dll) ─── */
 [data-theme="dark"] .menu-header-text {
   color: rgba(255, 255, 255, 0.45) !important;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-/* ─── SIDEBAR: Menu Link teks (Dashboard, Produk, dll) ─── */
 [data-theme="dark"] .menu-link {
   color: rgba(255, 255, 255, 0.75) !important;
 }
@@ -453,7 +399,6 @@
   color: #ffffff !important;
 }
 
-/* ─── SIDEBAR: Sub-menu link ─── */
 [data-theme="dark"] .menu-sub .menu-link {
   color: rgba(255, 255, 255, 0.6) !important;
 }
@@ -464,7 +409,6 @@
   color: rgba(255, 255, 255, 0.9) !important;
 }
 
-/* ─── SIDEBAR: Icon menu ─── */
 [data-theme="dark"] .menu-link i {
   color: rgba(255, 255, 255, 0.55) !important;
 }
@@ -473,17 +417,14 @@
   color: #ffffff !important;
 }
 
-/* ─── SIDEBAR: Brand/Logo title ─── */
 [data-theme="dark"] .app-brand-text {
   color: #ffffff !important;
 }
 
-/* ─── SIDEBAR: Toggle arrow ─── */
 [data-theme="dark"] .menu-toggle::after {
   border-color: rgba(255, 255, 255, 0.5) !important;
 }
 
-/* ─── NAVBAR: Search dan teks ─── */
 [data-theme="dark"] .navbar-search-wrapper .search-input {
   color: rgba(255, 255, 255, 0.8) !important;
 }
@@ -491,7 +432,6 @@
   color: rgba(255, 255, 255, 0.75) !important;
 }
 
-/* ─── CARD: Heading dan body text ─── */
 [data-theme="dark"] .card {
   color: rgba(255, 255, 255, 0.85);
 }
@@ -508,12 +448,10 @@
   color: rgba(255, 255, 255, 0.9) !important;
 }
 
-/* ─── CARD: Subtitle dan text-muted ─── */
 [data-theme="dark"] .text-muted {
   color: rgba(255, 255, 255, 0.5) !important;
 }
 
-/* ─── TABEL: Header dan body ─── */
 [data-theme="dark"] .table thead th {
   color: rgba(255, 255, 255, 0.7) !important;
 }
@@ -524,7 +462,6 @@
   color: rgba(255, 255, 255, 0.85) !important;
 }
 
-/* ─── FORM: Label dan input text ─── */
 [data-theme="dark"] .form-label,
 [data-theme="dark"] label {
   color: rgba(255, 255, 255, 0.75) !important;
@@ -538,7 +475,6 @@
   color: rgba(255, 255, 255, 0.35) !important;
 }
 
-/* ─── BREADCRUMB ─── */
 [data-theme="dark"] .breadcrumb-item,
 [data-theme="dark"] .breadcrumb-item a {
   color: rgba(255, 255, 255, 0.6) !important;
@@ -547,7 +483,6 @@
   color: rgba(255, 255, 255, 0.8) !important;
 }
 
-/* ─── MODAL ─── */
 [data-theme="dark"] .modal-title {
   color: rgba(255, 255, 255, 0.9) !important;
 }
@@ -555,7 +490,6 @@
   color: rgba(255, 255, 255, 0.8) !important;
 }
 
-/* ─── DROPDOWN ─── */
 [data-theme="dark"] .dropdown-item {
   color: rgba(255, 255, 255, 0.75) !important;
 }
@@ -563,12 +497,10 @@
   color: #ffffff !important;
 }
 
-/* ─── PAGINATION ─── */
 [data-theme="dark"] .page-link {
   color: rgba(255, 255, 255, 0.7) !important;
 }
 
-/* ─── DATATABLES: Info dan filter text ─── */
 [data-theme="dark"] .dataTables_info {
   color: rgba(255, 255, 255, 0.6) !important;
 }
@@ -577,12 +509,10 @@
   color: rgba(255, 255, 255, 0.7) !important;
 }
 
-/* ─── ALERT ─── */
 [data-theme="dark"] .alert {
   color: rgba(255, 255, 255, 0.85) !important;
 }
 
-/* ─── TABS / NAV ─── */
 [data-theme="dark"] .nav-tabs .nav-link {
   color: rgba(255, 255, 255, 0.6) !important;
 }
@@ -590,7 +520,6 @@
   color: #ffffff !important;
 }
 
-/* ─── ACCORDION ─── */
 [data-theme="dark"] .accordion-button {
   color: rgba(255, 255, 255, 0.85) !important;
 }
@@ -598,17 +527,14 @@
   color: rgba(255, 255, 255, 0.75) !important;
 }
 
-/* ─── LIST GROUP ─── */
 [data-theme="dark"] .list-group-item {
   color: rgba(255, 255, 255, 0.8) !important;
 }
 
-/* ─── FOOTER ─── */
 [data-theme="dark"] .footer {
   color: rgba(255, 255, 255, 0.5) !important;
 }
 
-/* ─── PAGE HEADER: judul halaman (h4) dan deskripsi ─── */
 [data-theme="dark"] .container-xxl h4,
 [data-theme="dark"] .container-p-y h4,
 [data-theme="dark"] .content-wrapper h4 {
@@ -619,14 +545,12 @@
   color: rgba(255, 255, 255, 0.7);
 }
 
-/* ─── FILTER CARD ─── */
 [data-theme="dark"] .card .form-control,
 [data-theme="dark"] .card .form-select {
   background-color: rgba(255, 255, 255, 0.05) !important;
   color: rgba(255, 255, 255, 0.85) !important;
 }
 
-/* ─── TIMELINE (Dashboard) ─── */
 [data-theme="dark"] .timeline .timeline-header span {
   color: rgba(255, 255, 255, 0.85) !important;
 }
@@ -634,8 +558,49 @@
   color: rgba(255, 255, 255, 0.65) !important;
 }
 
-/* ─── SVG path fill di sidebar (toggle arrow) ─── */
 [data-theme="dark"] .layout-menu-toggle svg path {
   fill: rgba(255, 255, 255, 0.6) !important;
 }
+
+.layout-navbar .search-input-wrapper {
+  position: absolute !important;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+.layout-navbar .search-input-wrapper .search-input {
+  height: 100% !important;
+  box-shadow: none !important;
+  padding-right: 3rem !important;
+}
+@media (min-width: 1400px) {
+  .layout-horizontal .layout-navbar .search-input-wrapper.container-xxl {
+    left: calc((100% - 1440px) * 0.5) !important;
+    width: calc(100% - (100% - 1440px)) !important;
+  }
+  .layout-horizontal .layout-navbar .search-input-wrapper.container-xxl > .search-toggler {
+    right: calc((100% - 1440px + 5rem) * 0.5) !important;
+  }
+}
+@media (min-width: 1724px) {
+  .layout-wrapper:not(.layout-horizontal) .layout-navbar .search-input-wrapper.container-xxl {
+    left: calc((100% - 1440px) * 0.5) !important;
+    width: calc(100% - (100% - 1440px)) !important;
+  }
+  .layout-wrapper:not(.layout-horizontal) .layout-navbar .search-input-wrapper.container-xxl > .search-toggler {
+    right: calc((100% - 1440px + 5rem) * 0.5) !important;
+  }
+}
+@media (min-width: 1534px) {
+  .layout-menu-collapsed .layout-wrapper:not(.layout-horizontal) .layout-navbar .search-input-wrapper.container-xxl {
+    left: calc((100% - 1440px) * 0.5) !important;
+    width: calc(100% - (100% - 1440px)) !important;
+  }
+  .layout-menu-collapsed .layout-wrapper:not(.layout-horizontal) .layout-navbar .search-input-wrapper.container-xxl > .search-toggler {
+    right: calc((100% - 1440px + 5rem) * 0.5) !important;
+  }
+}
+
 </style>

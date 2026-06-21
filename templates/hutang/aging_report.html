@@ -2,9 +2,30 @@
 {% load static %}
 {% load currency_filters %}
 
+{% comment %}
+  ==========================================================================
+  HUTANG - Aging Report
+  ==========================================================================
+  Halaman Aging Report untuk modul Hutang.
+  Template ini merender data dari view ke HTML yang ditampilkan di browser.
+
+  FLOW DATA:
+  - URL: /hutang/ -> View di apps/hutang/views.py- View: Mengambil data, menyiapkan context, render template ini- Template: File ini (HTML + Django template tags)- Response: HTML yang ditampilkan di browser user
+
+  RELASI KE MODUL LAIN:
+  - apps/hutang/views.py -> View (handler untuk halaman ini)- apps/hutang/models.py -> Model (sumber data)- apps/hutang/urls.py -> URL routing- layout/ -> Template induk (sidebar, header, footer)
+
+  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
+  - BOLEH diubah: Tampilan HTML, CSS inline, JavaScript- JANGAN diubah: {% extends %} dan {% block %} structure- JANGAN dihapus: {% csrf_token %} di form
+
+  TIPS & DEBUGGING:
+  - Error 'TemplateDoesNotExist'? Cek template_name di views.py- Variabel {{ }} kosong? Cek get_context_data() di views.py- Layout rusak? Pastikan TemplateLayout.init() dipanggil di view
+
+  ==========================================================================
+{% endcomment %}
+
+
 {% block title %}Aging Report Hutang - Akuntansi ERP{% endblock title %}
-
-
 
 {% block vendor_css %}{{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/libs/apex-charts/apex-charts.css' %}" />
@@ -25,11 +46,10 @@
         </div>
     </div>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <form method="get">
-                <!-- Baris 1: field filter -->
+                
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label">Cari Supplier</label>
@@ -52,7 +72,7 @@
                         <input type="date" name="per_tanggal" class="form-control" value="{{ request.GET.per_tanggal }}">
                     </div>
                 </div>
-                <!-- Baris 2: Filter Kolom (kiri) + spacer + Tombol Filter (kanan) — standar 3+6+3 -->
+                
                 <div class="row g-3 mt-2 align-items-end">
                     <div class="col-md-3">
                         <label class="form-label">Pilih Kolom yang Ditampilkan</label>
@@ -122,7 +142,6 @@
         </div>
     </div>
 
-    <!-- Summary Cards — Aging Buckets -->
     <div class="row g-3 mb-4">
         {% for key, bucket in buckets.items %}
         <div class="col-sm-6 col-md">
@@ -148,17 +167,22 @@
         {% endfor %}
     </div>
 
-    <!-- Chart -->
     <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="ri-bar-chart-2-line me-2"></i>Grafik Aging Hutang</h5>
+        <div class="card-header d-flex flex-nowrap align-items-center justify-content-between">
+            <h5 class="mb-0 me-2"><i class="ri-bar-chart-2-line me-2"></i>Grafik Aging Hutang</h5>
+                    <div class="dropdown flex-shrink-0">
+                        <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a>
+                            <a class="dropdown-item" href="javascript:void(0)" onclick="if(window.__agingHutangChart) window.__agingHutangChart.exportTo({type:'png'});"><i class="ri-download-2-line me-2"></i>Unduh Grafik</a>
+                        </div>
+                    </div>
         </div>
         <div class="card-body">
             <div id="agingChart" style="min-height:300px;"></div>
         </div>
     </div>
 
-    <!-- Detail Tables per Bucket -->
     {% for key, bucket in buckets.items %}
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -196,7 +220,7 @@
                 </tbody>
                 <tfoot class="table-footer-summary">
                     <tr>
-                        <td colspan="4" class="text-start ps-4 py-3">
+                        <td colspan="5" class="text-start ps-4 py-3">
                             <div class="d-flex align-items-center justify-content-start">
                                 <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
                                 <div class="text-start">
@@ -208,7 +232,6 @@
                         <td colspan="2" class="text-end py-3">
                             <span class="badge bg-label-danger">{{ bucket.total|rupiah }}</span>
                         </td>
-                        <td></td>
                     </tr>
                 </tfoot>
             </table>
@@ -216,7 +239,6 @@
     </div>
     {% endfor %}
 
-    <!-- Grand Total -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Grand Total Hutang Outstanding</h5>
@@ -227,7 +249,6 @@
     </div>
 </div>
 {% endblock content %}
-
 
 {% block vendor_js %}{{ block.super }}
 <script src="{% static 'vendor/libs/apex-charts/apexcharts.js' %}"></script>
@@ -247,11 +268,11 @@ $(document).ready(function() {
         var gridColor  = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
         var labelColor = isDark ? '#b4b5ba' : '#a5a3ae';
         var chartColor = ['#ea5455'];
-        new ApexCharts(el, {
+        var __chartInst = new ApexCharts(el, {
             chart: {
                 type: 'area', height: 300,
                 fontFamily: 'Inter, -apple-system, sans-serif', background: 'transparent',
-                toolbar: { show: true, tools: { download: '<i class="ri-download-2-line" style="font-size:16px"></i>', selection:false,zoom:false,zoomin:false,zoomout:false,pan:false,reset:false } },
+                toolbar: { show: false },
                 animations: { enabled:true, easing:'easeinout', speed:800, dynamicAnimation:{enabled:true,speed:350} },
                 dropShadow: { enabled:true, top:6, left:0, blur:6, opacity:isDark?0.15:0.08, color:chartColor }
             },
@@ -277,12 +298,12 @@ $(document).ready(function() {
             markers: { size:0, hover:{size:6,sizeOffset:3}, strokeWidth:2, strokeColors:isDark?'#2b2c40':'#fff' },
             grid: { borderColor:gridColor, strokeDashArray:4, padding:{top:-10,left:10,right:10,bottom:0}, xaxis:{lines:{show:false}}, yaxis:{lines:{show:true}} },
             responsive: [{ breakpoint:768, options:{ chart:{height:240}, legend:{fontSize:'11px'}, stroke:{width:2} } }]
-        }).render();
+        });
+        __chartInst.render();
+        window.__agingHutangChart = __chartInst;
     }
 });
 
-
-// Template Data for Independent Headers/Footers
 const EXCEL_INFO = {
     name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
     address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -305,7 +326,6 @@ function exportAgingExcel(){
     html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
     html += '<body>';
     
-    // --- ADD EXCEL HEADER (Company Info) ---
     html += '<table border="0">';
     if (typeof EXCEL_INFO !== 'undefined') {
         html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
@@ -322,7 +342,6 @@ function exportAgingExcel(){
     {% for key, bucket in buckets.items %}html += '<tr><td>{{ bucket.label }}</td><td>{{ bucket.total }}</td><td>{{ bucket.items|length }}</td></tr>';{% endfor %}
     html += '<tr style="font-weight:bold;"><td>TOTAL</td><td>{{ grand_total }}</td><td></td></tr></tbody></table>';
     
-    // --- ADD EXCEL FOOTER ---
     html += '<table border="0">';
     html += `<tr><td colspan="${colCount}"></td></tr>`;
     if (typeof EXCEL_INFO !== 'undefined') {
@@ -343,7 +362,6 @@ function exportAgingPDF(){
     const body=[
         [{text:'Kategori',bold:true,fillColor:'#696CFF',color:'#FFF'},{text:'Jumlah Hutang',bold:true,fillColor:'#696CFF',color:'#FFF'},{text:'Count',bold:true,fillColor:'#696CFF',color:'#FFF'}],
         {% for key, bucket in buckets.items %}['{{ bucket.label }}','{{ bucket.total }}','{{ bucket.items|length }}'],{% endfor %}
-        [{text:'TOTAL',bold:true},'{{ grand_total }}','']
     ];
     
     let companyInfoExists = typeof PDF_INFO !== 'undefined';

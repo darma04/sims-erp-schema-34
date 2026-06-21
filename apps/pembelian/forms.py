@@ -78,8 +78,8 @@ class PurchaseOrderForm(forms.ModelForm):
             'metode_pembayaran': forms.Select(attrs={'class': 'form-select'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'catatan': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'pajak': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0'}),
-            'biaya_pengiriman': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0'}),
+            'pajak': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0', 'min': '0', 'step': '0.01'}),
+            'biaya_pengiriman': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0', 'min': '0', 'step': '0.01'}),
         }
     
     def __init__(self, *args, **kwargs):

@@ -417,8 +417,8 @@ def compare_faces(encoding1_json, encoding2_json, threshold=0.45):
                     total_possible = min(len(desc1), len(desc2))
                     desc_score = len(good_matches) / total_possible if total_possible > 0 else 0
                     desc_score = min(1.0, desc_score * 2)  # Scale up
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Error tidak terduga: %s", e)
         
         scores.append(desc_score)
         weights.append(0.25)

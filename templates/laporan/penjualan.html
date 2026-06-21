@@ -27,15 +27,14 @@
 <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="mb-4"><i class="ri-shopping-cart-line me-2"></i>Laporan Penjualan</h4>
 
-    <!-- 4 Summary Cards -->
     <div class="row g-2 g-md-3 mb-4">
         <div class="col-6 col-lg-3">
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div class="card-info">
-                            <p class="card-text text-muted">Pendapatan Bersih</p>
-                            <h4 class="mb-0 text-success summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Sales Order dihitung dari subtotal setelah diskon + ongkir, POS dari subtotal setelah diskon, tanpa PPN Keluaran.<br><br><b>Sumber:</b> SalesOrder + POSTransaction.<br><b>Catatan:</b> Diskon mengurangi pendapatan, ongkir menambah pendapatan operasional, PPN masuk akun pajak/kas.">{{ total_penjualan|rupiah }}</h4>
+                            <p class="card-text text-muted">Total Penjualan</p>
+                            <h4 class="mb-0 text-success summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>╬ú total_harga Sales Order (confirmed/delivered/completed) + ╬ú total_harga POS (paid).<br><br><b>Sumber:</b> Tabel SalesOrder + POSTransaction.<br>Mendukung filter tanggal.">{{ total_penjualan|rupiah }}</h4>
                         </div>
                         <div class="card-icon">
                             <span class="badge bg-label-success rounded p-2">
@@ -86,7 +85,7 @@
                     <div class="d-flex justify-content-between">
                         <div class="card-info">
                             <p class="card-text text-muted">Rata-rata Order</p>
-                            <h4 class="mb-0 text-warning summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Pendapatan bersih / jumlah transaksi.<br><br><b>Sumber:</b> SO net setelah diskon termasuk ongkir + POS net setelah diskon, tanpa PPN.">{{ rata_rata_order|rupiah }}</h4>
+                            <h4 class="mb-0 text-warning summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Total Penjualan ├À Jumlah Transaksi.<br><br><b>Sumber:</b> (SalesOrder + POS total) / (SO count + POS count).<br>Rata-rata nilai per transaksi.">{{ rata_rata_order|rupiah }}</h4>
                         </div>
                         <div class="card-icon">
                             <span class="badge bg-label-warning rounded p-2">
@@ -99,7 +98,108 @@
         </div>
     </div>
 
-    <!-- Filter Card -->
+    <div class="row g-2 g-md-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div class="card-info">
+                            <p class="card-text text-muted">Total Diskon</p>
+                            <h4 class="mb-0 text-warning summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
+                                data-bs-placement="bottom" data-bs-html="true"
+                                title="<b>Alur Data:</b><br>Σ diskon SO (header) + Σ diskon POS (header).<br><br><b>Sumber:</b> SalesOrder.diskon + POSTransaction.diskon.<br>Mendukung filter tanggal.">
+                                {{ total_diskon|rupiah }}</h4>
+                            <small class="text-muted">Potongan harga penjualan</small>
+                        </div>
+                        <div class="card-icon">
+                            <span class="badge bg-label-warning rounded p-2">
+                                <i class="ri-discount-percent-line ri-24px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div class="card-info">
+                            <p class="card-text text-muted">Total PPN</p>
+                            <h4 class="mb-0 text-info summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
+                                data-bs-placement="bottom" data-bs-html="true"
+                                title="<b>Alur Data:</b><br>Σ pajak SO + Σ pajak POS.<br><br><b>Sumber:</b> SalesOrder.pajak + POSTransaction.pajak.<br>Mendukung filter tanggal.">
+                                {{ total_pajak|rupiah }}</h4>
+                            <small class="text-muted">Pajak penjualan</small>
+                        </div>
+                        <div class="card-icon">
+                            <span class="badge bg-label-info rounded p-2">
+                                <i class="ri-government-line ri-24px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div class="card-info">
+                            <p class="card-text text-muted">Total Ongkir SO</p>
+                            <h4 class="mb-0 text-primary summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
+                                data-bs-placement="bottom" data-bs-html="true"
+                                title="<b>Alur Data:</b><br>Σ biaya_pengiriman dari Sales Order.<br><br><b>Sumber:</b> SalesOrder.biaya_pengiriman.<br>Mendukung filter tanggal.">
+                                {{ total_ongkir_so|rupiah }}</h4>
+                            <small class="text-muted">Biaya pengiriman SO</small>
+                        </div>
+                        <div class="card-icon">
+                            <span class="badge bg-label-primary rounded p-2">
+                                <i class="ri-truck-line ri-24px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div class="card-info">
+                            <p class="card-text text-muted">Diskon SO</p>
+                            <h4 class="mb-0 text-warning summary-nominal">{{ total_diskon_so|rupiah }}</h4>
+                            <small class="text-muted">Diskon Sales Order</small>
+                        </div>
+                        <div class="card-icon">
+                            <span class="badge bg-label-warning rounded p-2">
+                                <i class="ri-price-tag-2-line ri-24px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div class="card-info">
+                            <p class="card-text text-muted">Diskon POS</p>
+                            <h4 class="mb-0 text-warning summary-nominal">{{ total_diskon_pos|rupiah }}</h4>
+                            <small class="text-muted">Diskon Point of Sale</small>
+                        </div>
+                        <div class="card-icon">
+                            <span class="badge bg-label-warning rounded p-2">
+                                <i class="ri-store-line ri-24px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -147,7 +247,7 @@
                             <div class="form-check mb-2">
                                 <input class="form-check-input so-column-checkbox" type="checkbox" value="3" checked
                                     onchange="toggleSOColumns()">
-                                <label class="form-check-label">Pendapatan Bersih</label>
+                                <label class="form-check-label">Harga Jual</label>
                             </div>
                             <div class="form-check mb-2">
                                 <input class="form-check-input so-column-checkbox" type="checkbox" value="4" checked
@@ -200,7 +300,7 @@
                             <div class="form-check mb-2">
                                 <input class="form-check-input pos-column-checkbox" type="checkbox" value="3" checked
                                     onchange="togglePOSColumns()">
-                                <label class="form-check-label">Pendapatan Bersih</label>
+                                <label class="form-check-label">Harga Jual</label>
                             </div>
                             <div class="form-check mb-2">
                                 <input class="form-check-input pos-column-checkbox" type="checkbox" value="4" checked
@@ -246,7 +346,6 @@
         </div>
     </div>
 
-    <!-- ========== Sales Order Table ========== -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between">
             <div>
@@ -267,7 +366,7 @@
                         <th>No. SO</th>
                         <th>Tanggal</th>
                         <th>Customer</th>
-                        <th>Pendapatan Bersih</th>
+                        <th>Harga Jual</th>
                         <th>Harga Beli</th>
                         <th>Keuntungan</th>
                         <th>Status</th>
@@ -280,7 +379,7 @@
                         <td><code>{{ so.nomor_so }}</code></td>
                         <td>{{ so.tanggal|date:"d M Y" }}</td>
                         <td>{{ so.customer.nama }}</td>
-                        <td>{{ so.nilai_laporan|rupiah }}</td>
+                        <td>{{ so.total_harga|rupiah }}</td>
                         <td>{{ so.harga_beli_calc|rupiah }}</td>
                         <td>
                             <span class="{% if so.keuntungan_calc >= 0 %}text-success{% else %}text-danger{% endif %} fw-medium">
@@ -329,11 +428,11 @@
                                 <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
                                 <div class="text-start">
                                     <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
-                                    <small class="text-muted" style="font-size: 0.75rem;">{{ so_count }} Sales
-                                        Order</small>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ so_count }} Sales Order</small>
+                                    <small class="text-muted d-block" style="font-size: 0.7rem;">Diskon: {{ total_diskon_so|rupiah }} | PPN: {{ total_pajak_so|rupiah }}</small>
                                 </div>
                             </div>
-                        </td>
+                        </td><td class="py-3"></td><td class="py-3"></td>
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-success d-flex align-items-center gap-1 mb-1"
@@ -341,7 +440,7 @@
                                     <i class="ri-money-dollar-circle-line"></i>
                                     <span>{{ so_total|rupiah }}</span>
                                 </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Pendapatan Bersih</small>
+                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Harga Jual</small>
                             </div>
                         </td>
                         <td class="py-3" style="vertical-align: middle;">
@@ -372,7 +471,6 @@
         </div>
     </div>
 
-    <!-- ========== POS Transaction Table ========== -->
     <div class="card">
         <div class="card-header d-flex justify-content-between">
             <div>
@@ -393,7 +491,7 @@
                         <th>No. Transaksi</th>
                         <th>Tanggal</th>
                         <th>Kasir</th>
-                        <th>Pendapatan Bersih</th>
+                        <th>Harga Jual</th>
                         <th>Harga Beli</th>
                         <th>Keuntungan</th>
                         <th>Metode Bayar</th>
@@ -406,7 +504,7 @@
                         <td><code>{{ pos.nomor_transaksi }}</code></td>
                         <td>{{ pos.tanggal|date:"d M Y H:i" }}</td>
                         <td>{{ pos.kasir.username|default:"-" }}</td>
-                        <td>{{ pos.nilai_laporan|rupiah }}</td>
+                        <td>{{ pos.total_harga|rupiah }}</td>
                         <td>{{ pos.harga_beli_calc|rupiah }}</td>
                         <td>
                             <span class="{% if pos.keuntungan_calc >= 0 %}text-success{% else %}text-danger{% endif %} fw-medium">
@@ -441,8 +539,8 @@
                                 <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
                                 <div class="text-start">
                                     <strong class="d-block" style="font-size: 1rem;">RINGKASAN POS</strong>
-                                    <small class="text-muted" style="font-size: 0.75rem;">{{ pos_count }}
-                                        Transaksi</small>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ pos_count }} Transaksi</small>
+                                    <small class="text-muted d-block" style="font-size: 0.7rem;">Diskon: {{ total_diskon_pos|rupiah }} | PPN: {{ total_pajak_pos|rupiah }}</small>
                                 </div>
                             </div>
                         </td>
@@ -453,7 +551,7 @@
                                     <i class="ri-money-dollar-circle-line"></i>
                                     <span>{{ pos_total|rupiah }}</span>
                                 </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Pendapatan Bersih</small>
+                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Harga Jual</small>
                             </div>
                         </td>
                         <td class="py-3" style="vertical-align: middle;">
@@ -497,9 +595,7 @@
     }
 </style>
 <script>
-    // ========================
-    // DataTables Initialization
-    // ========================
+    
     $(document).ready(function () {
         const dtConfig = {
             language: { "sEmptyTable": "Tidak ada data", "sLengthMenu": "Tampilkan _MENU_ data", "sInfo": "_START_ - _END_ dari _TOTAL_ data", "sSearch": "Cari:", "oPaginate": { "sPrevious": "Sebelumnya", "sNext": "Selanjutnya" } },
@@ -519,9 +615,6 @@
         {% endif %}
     });
 
-    // ========================
-    // Column Toggle - Sales Order
-    // ========================
     function toggleSOColumns() {
         if (!window.soTable) return;
         document.querySelectorAll('.so-column-checkbox').forEach(function(cb) {
@@ -537,9 +630,6 @@
         toggleSOColumns();
     }
 
-    // ========================
-    // Column Toggle - POS
-    // ========================
     function togglePOSColumns() {
         if (!window.posTable) return;
         document.querySelectorAll('.pos-column-checkbox').forEach(function(cb) {
@@ -555,9 +645,6 @@
         togglePOSColumns();
     }
 
-    // ========================
-    // Fungsi Filter (Server-side via URL params)
-    // ========================
     function applyFilter() {
         var startDate = document.getElementById('startDate').value;
         var endDate = document.getElementById('endDate').value;
@@ -571,9 +658,6 @@
         window.location.href = window.location.pathname;
     }
 
-    // ========================
-    // Company Info for PDF
-    // ========================
     const COMPANY_INFO = {
         name: "{{ export_pdf_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
         address: "{{ export_pdf_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -583,14 +667,11 @@
         copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
     };
 
-    // ========================
-    // Generic Export Excel Function
-    // ========================
     function genericExportExcel(tableId, filename, titleLabel, footerData, footerLabel) {
         footerData = footerData || {};
         footerLabel = footerLabel || 'RINGKASAN';
         var table = document.getElementById(tableId);
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
 
         var tableObj = new jQuery.fn.dataTable.Api('#' + tableId);
         
@@ -610,13 +691,12 @@
         html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
         html += '<body>';
         
-        // --- ADD EXCEL HEADER (Company Info) ---
         html += '<table border="0">';
         if (typeof COMPANY_INFO !== 'undefined') {
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${COMPANY_INFO.name}</td></tr>`;
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${COMPANY_INFO.address}</td></tr>`;
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${COMPANY_INFO.phone} | ${COMPANY_INFO.email}</td></tr>`;
-            html += `<tr><td colspan="${colCount}"></td></tr>`; // empty row for spacing
+            html += `<tr><td colspan="${colCount}"></td></tr>`; 
         }
         html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:14px; font-weight:bold;">${titleLabel}</td></tr>`;
         html += `<tr><td colspan="${colCount}"></td></tr>`;
@@ -641,7 +721,6 @@
             html += '</tr>';
         });
 
-        // Build summary row from explicit footerData
         if (footerData && Object.keys(footerData).length > 0) {
             html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
             let ri = 0;
@@ -669,9 +748,8 @@
         }
         html += '</tbody></table>';
 
-        // --- ADD EXCEL FOOTER ---
         html += '<table border="0">';
-        html += `<tr><td colspan="${colCount}"></td></tr>`; // empty spacer
+        html += `<tr><td colspan="${colCount}"></td></tr>`; 
         if (typeof COMPANY_INFO !== 'undefined') {
             html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</td></tr>`;
             html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">${COMPANY_INFO.copyright}</td></tr>`;
@@ -686,15 +764,12 @@
         link.click();
     }
 
-    // ========================
-    // Generic Export PDF Function
-    // ========================
     function genericExportPDF(tableId, filename, docTitle, footerData, footerLabel) {
         footerData = footerData || {};
         footerLabel = footerLabel || 'RINGKASAN';
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
         const table = document.getElementById(tableId);
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
 
         const tableObj = new jQuery.fn.dataTable.Api('#' + tableId);
         
@@ -728,7 +803,6 @@
             if (row.length > 0) body.push(row);
         });
 
-        // Build summary row from explicit footerData
         if (footerData && Object.keys(footerData).length > 0) {
             const summaryRow = [];
             let ri = 0;
@@ -818,23 +892,16 @@
         pdfMake.createPdf(docDefinition).download(filename + '_' + new Date().toISOString().slice(0, 10) + '.pdf');
     }
 
-    // ========================
-    // Ekspor SO
-    // ========================
-    // Footer data for Sales Order table
-    // salesTable cols: 0=NoSO, 1=Tanggal, 2=Customer, 3=HargaJual, 4=HargaBeli, 5=Keuntungan, 6=Status, 7=Aksi
     const SO_FOOTER = { 3: "{{ so_total|escapejs }}", 4: "{{ so_harga_beli_total|escapejs }}", 5: "{{ so_keuntungan_total|escapejs }}" };
     function exportSOExcel() { genericExportExcel('salesTable', 'Laporan_Sales_Order', 'Sales Order', SO_FOOTER, 'RINGKASAN'); }
     function exportSOPDF()   { genericExportPDF('salesTable', 'Laporan_Sales_Order', 'LAPORAN SALES ORDER', SO_FOOTER, 'RINGKASAN'); }
 
-    // Footer data for POS table
-    // posTable cols: 0=NoTransaksi, 1=Tanggal, 2=Kasir, 3=HargaJual, 4=HargaBeli, 5=Keuntungan, 6=MetodeBayar, 7=Status
     const POS_FOOTER = { 3: "{{ pos_total|escapejs }}", 4: "{{ pos_harga_beli_total|escapejs }}", 5: "{{ pos_keuntungan_total|escapejs }}" };
     function exportPOSExcel() { genericExportExcel('posTable', 'Laporan_Transaksi_POS', 'Transaksi POS', POS_FOOTER, 'RINGKASAN POS'); }
     function exportPOSPDF()   { genericExportPDF('posTable', 'Laporan_Transaksi_POS', 'LAPORAN TRANSAKSI POS', POS_FOOTER, 'RINGKASAN POS'); }
 </script>
 <script>
-    // Inisialisasi Bootstrap Tooltip
+    
     document.addEventListener('DOMContentLoaded', function() {
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         tooltipTriggerList.forEach(function(el) {
@@ -891,4 +958,42 @@
     }
 }
 </style>
+
+<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning align-items-center py-3">
+                <h5 class="modal-title text-dark mb-0">
+                    <i class="ri-error-warning-line me-2"></i>Export Gagal
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center py-3">
+                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
+                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
+                    <i class="ri-close-line me-1"></i>Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+function showExportError() {
+    var modal = document.getElementById('exportErrorModal');
+    if (modal) {
+        new bootstrap.Modal(modal).show();
+    } else {
+        alert('Tabel tidak ditemukan!');
+    }
+}
+</script>
+
 {% endblock page_js %}

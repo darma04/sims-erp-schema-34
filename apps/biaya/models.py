@@ -250,8 +250,8 @@ class TransaksiBiaya(models.Model):
 
         Return: String nomor transaksi — contoh 'EXP/2024/01/0001'
         """
-        from datetime import datetime
-        today = datetime.now()
+        from django.utils import timezone
+        today = timezone.now()
         # Format prefix: EXP/2024/01 (per bulan, bukan per hari seperti POS)
         prefix = f"EXP/{today.year}/{today.month:02d}"
 

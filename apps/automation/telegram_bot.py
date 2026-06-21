@@ -178,7 +178,7 @@ def start_polling():
 
     thread = threading.Thread(target=_polling_loop, daemon=True)
     thread.start()
-    print("[TelegramBot] Auto-polling dimulai di background thread")
+    logger.info("[TelegramBot] Auto-polling dimulai di background thread")
     logger.info("[TelegramBot] Auto-polling dimulai di background thread")
 
 
@@ -195,7 +195,7 @@ def _polling_loop():
 
         if not pengaturan.bot_token:
             logger.warning("[TelegramBot] Bot Token belum dikonfigurasi, polling tidak dimulai")
-            print("[TelegramBot] Bot Token belum dikonfigurasi")
+            logger.warning("[TelegramBot] Bot Token belum dikonfigurasi")
             _polling_active = False
             return
 
@@ -203,8 +203,7 @@ def _polling_loop():
 
         # SSL context
         ssl_ctx = ssl.create_default_context()
-        ssl_ctx.check_hostname = False
-        ssl_ctx.verify_mode = ssl.CERT_NONE
+        # SSL context dengan verifikasi sertifikat aktif (default aman)
 
         # Hapus webhook agar getUpdates berfungsi
         _delete_webhook(bot_token, ssl_ctx)
@@ -212,7 +211,7 @@ def _polling_loop():
         # Skip pesan lama yang menumpuk — mulai dari update terbaru saja
         offset = _get_latest_offset(bot_token, ssl_ctx)
 
-        print(f"[TelegramBot] Polling aktif - Token: {_mask_token(bot_token)}")
+        logger.info(f"[TelegramBot] Polling aktif - Token: {_mask_token(bot_token)}")
         logger.info(f"[TelegramBot] Polling aktif — Token: {_mask_token(bot_token)}")
 
         conflict_count = 0
@@ -251,15 +250,15 @@ def _polling_loop():
                 error_body = ''
                 try:
                     error_body = e.read().decode('utf-8', errors='replace')
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning("Error tidak terduga: %s", e)
 
                 if e.code == 409 or 'conflict' in error_body.lower():
                     conflict_count += 1
                     wait = min(conflict_count * 10, 35)
                     # Hanya log SEKALI, jangan spam terminal
                     if not conflict_logged:
-                        print("[TelegramBot] Ada sesi polling lain yang aktif, menunggu...")
+                        logger.info("[TelegramBot] Ada sesi polling lain yang aktif, menunggu...")
                         conflict_logged = True
                     time.sleep(wait)
                     continue
@@ -327,19 +326,19 @@ def _get_latest_offset(bot_token, ssl_ctx):
             data = json.loads(resp.read().decode('utf-8'))
             if data.get('ok') and data.get('result'):
                 latest_id = data['result'][-1].get('update_id', 0)
-                print(f"[TelegramBot] Skip pesan lama, mulai dari offset {latest_id + 1}")
+                logger.info(f"[TelegramBot] Skip pesan lama, mulai dari offset {latest_id + 1}")
                 return latest_id + 1
             return 0
         except urllib.error.HTTPError as e:
             if e.code == 409:
                 wait = (attempt + 1) * 10
-                print(f"[TelegramBot] Menunggu sesi lama selesai ({wait}s)...")
+                logger.info(f"[TelegramBot] Menunggu sesi lama selesai ({wait}s)...")
                 time.sleep(wait)
                 continue
-            print(f"[TelegramBot] HTTP error saat ambil offset: {e.code}")
+            logger.error(f"[TelegramBot] HTTP error saat ambil offset: {e.code}")
             return 0
         except Exception as e:
-            print(f"[TelegramBot] Gagal ambil latest offset: {e}")
+            logger.error(f"[TelegramBot] Gagal ambil latest offset: {e}")
             return 0
     return 0
 

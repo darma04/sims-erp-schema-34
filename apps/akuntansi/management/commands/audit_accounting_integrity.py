@@ -23,7 +23,6 @@ class Command(BaseCommand):
         issues.extend(self.audit_pos(fix))
         issues.extend(self.audit_biaya(fix))
         issues.extend(self.audit_payroll(fix))
-        issues.extend(self.audit_service(fix))
         issues.extend(self.audit_aset(fix))
 
         if issues:
@@ -117,39 +116,6 @@ class Command(BaseCommand):
                 )
                 if fix:
                     penggajian.save()
-        return issues
-
-    def audit_service(self, fix):
-        from apps.kas_bank.models import KasBankTransaction
-        from apps.service_center.models import OrderService
-
-        issues = []
-        qs = OrderService.objects.filter(
-            status_bayar__in=["dp", "lunas"]
-        ).exclude(
-            status="dibatalkan"
-        ).select_related("metode_pembayaran", "cabang")
-        for order in qs:
-            missing_journal = not JurnalEntry.objects.filter(
-                sumber="service",
-                sumber_id=order.pk,
-                is_reversed=False,
-            ).exclude(
-                sumber_ref__endswith="_reversal"
-            ).exists()
-            missing_mutation = not KasBankTransaction.objects.filter(
-                sumber_app="service_center",
-                sumber_model="OrderService",
-                sumber_id=order.pk,
-                status="posted",
-            ).exists()
-            if missing_journal or missing_mutation:
-                issues.append(
-                    f"Service {order.nomor_service}: jurnal={not missing_journal}, kas_bank={not missing_mutation}"
-                )
-                if fix:
-                    from apps.service_center.services import sync_service_payment_accounting
-                    sync_service_payment_accounting(order, user=order.diterima_oleh)
         return issues
 
     def audit_aset(self, fix):

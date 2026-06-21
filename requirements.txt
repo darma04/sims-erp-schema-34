@@ -1,4 +1,4 @@
-Django==5.0.6
+Django==6.0.3
 gunicorn==22.0.0
 packaging==24.1
 python-dotenv==1.0.1
@@ -16,3 +16,9 @@ opencv-python-headless==4.10.0.84
 psycopg2-binary>=2.9.9
 redis>=5.0.0
 django-redis>=5.4.0
+sentry-sdk[django]>=2.0.0
+
+# --- Added missing dependencies ---
+beautifulsoup4==4.12.3
+google-genai>=1.0.0
+django-tenants>=3.10.1

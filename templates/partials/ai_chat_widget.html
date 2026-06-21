@@ -8,7 +8,7 @@
 {% load static %}
 
 <style>
-/* ═══════ AI CHAT WIDGET ═══════ */
+
 #ai-chat-fab {
   position: fixed;
   bottom: 80px;
@@ -77,7 +77,6 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Header */
 .ai-chat-header {
   background: #666cff;
   color: #fff;
@@ -108,9 +107,6 @@
 }
 .ai-chat-header-actions .btn:hover { background: rgba(255,255,255,0.3); }
 
-
-
-/* Messages */
 .ai-chat-messages {
   flex: 1;
   overflow-y: auto;
@@ -123,7 +119,6 @@
 .ai-chat-messages::-webkit-scrollbar { width: 3px; }
 .ai-chat-messages::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
 
-/* Bubble wrapper */
 .ai-msg-wrapper { position: relative; display: flex; flex-direction: column; max-width: 88%; }
 .ai-msg-wrapper.user-wrap { align-self: flex-end; }
 .ai-msg-wrapper.bot-wrap { align-self: flex-start; }
@@ -149,7 +144,6 @@
   border-radius: 0.5rem 0.5rem 0.5rem 0.15rem;
 }
 
-/* ═══════ TABEL DI DALAM CHAT ═══════ */
 .ai-table-scroll {
   overflow-x: auto;
   max-width: 100%;
@@ -188,13 +182,12 @@
 .ai-msg.bot table tbody tr:hover {
   background: rgba(102, 108, 255, 0.08);
 }
-/* Teks biasa di dalam bot bubble */
+
 .ai-msg.bot p { margin: 4px 0; }
 .ai-msg.bot ul, .ai-msg.bot ol { margin: 4px 0; padding-left: 18px; }
 .ai-msg.bot li { margin: 2px 0; }
 .ai-msg.bot strong { font-weight: 600; }
 
-/* Action buttons di bawah bubble */
 .ai-msg-actions {
   display: flex;
   gap: 2px;
@@ -224,7 +217,6 @@
 .ai-msg-actions .msg-action-btn.fb-active-up { color: #28a745; }
 .ai-msg-actions .msg-action-btn.fb-active-down { color: #dc3545; }
 
-/* Edit mode */
 .ai-msg-edit-area {
   width: 100%;
   border: 1px solid #666cff;
@@ -246,7 +238,6 @@
 }
 .ai-msg-edit-actions .btn { font-size: 0.72rem; padding: 2px 10px; }
 
-/* Typing */
 .ai-typing {
   display: flex; gap: 5px; align-items: center;
   align-self: flex-start;
@@ -265,7 +256,6 @@
   40% { transform: scale(1); opacity: 1; }
 }
 
-/* Suggestions */
 .ai-suggestions {
   display: flex; flex-wrap: wrap; gap: 5px;
   padding: 6px 14px 8px;
@@ -273,7 +263,6 @@
   background: var(--bs-body-bg, #f5f5f9);
 }
 
-/* Input */
 .ai-chat-input-wrap {
   display: flex; padding: 10px 14px; gap: 8px;
   border-top: 1px solid var(--bs-border-color, #e7e7e8);
@@ -294,7 +283,6 @@
   flex-shrink: 0;
 }
 
-/* Toast */
 .ai-toast {
   position: fixed;
   bottom: 100px;
@@ -313,7 +301,6 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Mobile */
 @media (max-width: 480px) {
   #ai-chat-panel {
     bottom: 0; right: 0;
@@ -330,19 +317,16 @@
 }
 </style>
 
-<!-- Refresh Cache Button -->
 <button id="refresh-cache-fab" class="btn btn-primary shadow{% if not can_show_refresh_cache_button %} cache-refresh-rbac-hidden{% endif %}" title="Refresh Cache" aria-label="Refresh Cache">
   <i class="ri-rocket-line"></i>
 </button>
 
-<!-- FAB Button -->
 <button id="ai-chat-fab" class="btn btn-primary shadow{% if not can_show_ai_assistant_widget %} ai-fab-rbac-hidden{% endif %}" title="AI Chat Assistant" aria-label="Buka AI Chat">
   <i class="ri-robot-2-line"></i>
 </button>
 
-<!-- Chat Panel -->
 <div id="ai-chat-panel" class="card shadow-lg">
-  <!-- Header -->
+  
   <div class="ai-chat-header">
     <div class="ai-chat-header-avatar">
       <i class="ri-robot-2-line"></i>
@@ -364,16 +348,15 @@
     </div>
   </div>
 
-
-  <!-- Messages -->
   <div class="ai-chat-messages" id="aiChatMessages"></div>
 
-  <!-- Quick Suggestions -->
-  <div class="ai-suggestions" id="aiSuggestions">
-    <button class="btn btn-outline-primary btn-xs rounded-pill" data-q="Bantuan fitur ERP"><i class="ri-question-line me-1"></i>Bantuan ?</button>
+    <div class="ai-suggestions" id="aiSuggestions">
+    <button class="btn btn-outline-primary btn-xs rounded-pill mb-1" data-q="Bantuan fitur ERP"><i class="ri-question-line me-1"></i>Bantuan</button>
+    <button class="btn btn-outline-primary btn-xs rounded-pill mb-1" data-q="Ringkasan executive bisnis"><i class="ri-bar-chart-line me-1"></i>Ringkasan</button>
+    <button class="btn btn-outline-primary btn-xs rounded-pill mb-1" data-q="Cara input Sales Order"><i class="ri-shopping-cart-line me-1"></i>Cara Input</button>
+    <button class="btn btn-outline-primary btn-xs rounded-pill mb-1" data-q="Analisa stok dan inventory"><i class="ri-archive-line me-1"></i>Stok</button>
   </div>
 
-  <!-- Input -->
   <div class="ai-chat-input-wrap">
     <input type="text" class="form-control-sm" id="aiChatInput" placeholder="Ketik pertanyaan..." autocomplete="off" maxlength="500">
     <button class="btn btn-primary btn-send" id="aiChatSend" title="Kirim">
@@ -392,26 +375,22 @@
   var sendBtn = document.getElementById('aiChatSend');
   var suggestions = document.getElementById('aiSuggestions');
   var isLoading = false;
-  var chatOpened = false;  // Track if chat was opened the first time
+  var chatOpened = false;  
 
-  // Simpan riwayat untuk download TXT
   var chatHistory = [];
 
-  // Toggle panel — buka chat
   fab.addEventListener('click', function() {
     panel.classList.add('visible');
     fab.classList.add('ai-fab-hidden');
     if (refreshCacheFab) refreshCacheFab.classList.add('cache-refresh-hidden');
     setTimeout(function(){ input.focus(); }, 200);
 
-    // Saat pertama kali buka: load history + insight
     if (!chatOpened) {
       chatOpened = true;
       loadHistory();
     }
   });
 
-  // Close button di header — tutup chat
   document.getElementById('aiCloseChat').addEventListener('click', function() {
     panel.classList.remove('visible');
     fab.classList.remove('ai-fab-hidden');
@@ -453,19 +432,18 @@
     });
   }
 
-  // ═══════ LOAD HISTORY DARI DATABASE ═══════
   function loadHistory() {
     fetch('/ai/history/', { method: 'GET', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.messages && data.messages.length > 0) {
-        // Tampilkan pesan dari DB
+        
         data.messages.forEach(function(msg) {
           addMsg(msg.message, msg.role === 'user' ? 'user' : 'bot', msg.id, true);
         });
         if (suggestions) suggestions.style.display = 'none';
       } else {
-        // Tidak ada history, tampilkan welcome message
+        
         addMsg('Halo! 👋 Saya AI Assistant SERPTECH. Tanyakan apa saja tentang data bisnis Anda — penjualan, produk, stok, keuntungan, dan lainnya!', 'bot', null, true);
       }
     })
@@ -475,8 +453,6 @@
     });
   }
 
-
-  // ═══════ SEND MESSAGE ═══════
   function sendMessage(text) {
     if (!text || isLoading) return;
     text = text.trim();
@@ -520,7 +496,6 @@
     });
   }
 
-  // ═══════ MARKDOWN → HTML PARSER ═══════
   function parseMarkdown(text) {
     var lines = text.split('\n');
     var html = '';
@@ -583,10 +558,16 @@
 
   function parseLine(line) {
     if (!line) return '';
-    // Strip arrow characters before links
+    
     line = line.replace(/→\s*/g, '');
-    // Markdown links: [text](url) → clickable <a> tags
-    line = line.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="ai-link" style="color:#666cff;text-decoration:underline;font-weight:500;">$1</a>');
+    
+    line = escapeHtml(line);
+    
+    line = line.replace(/\[([^\]]+)\]\(([^)]+)\)/g, function(match, text, url) {
+      url = url.trim();
+      if (/^(javascript|data|vbscript):/i.test(url)) return text;
+      return '<a href="' + url + '" class="ai-link" style="color:#666cff;text-decoration:underline;font-weight:500;" target="_blank" rel="noopener noreferrer">' + text + '</a>';
+    });
     line = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     line = line.replace(/__(.+?)__/g, '<strong>$1</strong>');
     line = line.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
@@ -606,9 +587,8 @@
     return div.innerHTML;
   }
 
-  // ═══════ ADD MESSAGE WITH ACTIONS ═══════
   function addMsg(text, type, chatId, isHistory) {
-    // Simpan ke local history (untuk download TXT)
+    
     chatHistory.push({
       type: type,
       text: text,
@@ -632,12 +612,11 @@
     if (chatId) bubble.setAttribute('data-chat-id', chatId);
     wrapper.appendChild(bubble);
 
-    // Action buttons
     var actions = document.createElement('div');
     actions.className = 'ai-msg-actions';
 
     if (type === 'bot') {
-      // Copy button
+      
       var copyBtn = document.createElement('button');
       copyBtn.className = 'msg-action-btn';
       copyBtn.innerHTML = '<i class="ri-file-copy-line"></i> Salin';
@@ -653,7 +632,6 @@
       });
       actions.appendChild(copyBtn);
 
-      // Feedback 👍
       var thumbUp = document.createElement('button');
       thumbUp.className = 'msg-action-btn';
       thumbUp.innerHTML = '<i class="ri-thumb-up-line"></i>';
@@ -667,7 +645,6 @@
       });
       actions.appendChild(thumbUp);
 
-      // Feedback 👎
       var thumbDown = document.createElement('button');
       thumbDown.className = 'msg-action-btn';
       thumbDown.innerHTML = '<i class="ri-thumb-down-line"></i>';
@@ -683,7 +660,7 @@
     }
 
     if (type === 'user') {
-      // Edit button
+      
       var editBtn = document.createElement('button');
       editBtn.className = 'msg-action-btn';
       editBtn.innerHTML = '<i class="ri-edit-line"></i> Edit';
@@ -693,7 +670,6 @@
       });
       actions.appendChild(editBtn);
 
-      // Copy button for user msg
       var copyBtn2 = document.createElement('button');
       copyBtn2.className = 'msg-action-btn';
       copyBtn2.innerHTML = '<i class="ri-file-copy-line"></i>';
@@ -708,16 +684,14 @@
     wrapper.appendChild(actions);
     msgArea.appendChild(wrapper);
 
-    // Hanya scroll otomatis jika bukan loading history
     if (!isHistory) {
       msgArea.scrollTop = msgArea.scrollHeight;
     } else {
-      // Scroll ke bawah setelah semua history dimuat
+      
       setTimeout(function() { msgArea.scrollTop = msgArea.scrollHeight; }, 100);
     }
   }
 
-  // ═══════ SEND FEEDBACK ═══════
   function sendFeedback(type, chatId, messageText) {
     var csrfToken = getCsrfToken();
     fetch('/ai/feedback/', {
@@ -739,7 +713,6 @@
     .catch(function(err) { console.error('[AI Feedback]', err); });
   }
 
-  // ═══════ EDIT MESSAGE ═══════
   function startEditMsg(wrapper, bubble, originalText) {
     bubble.style.display = 'none';
 
@@ -791,7 +764,6 @@
     editArea.select();
   }
 
-  // ═══════ DOWNLOAD TXT ═══════
   document.getElementById('aiDownloadTxt').addEventListener('click', function() {
     if (chatHistory.length === 0) {
       showToast('Belum ada percakapan untuk di-download');
@@ -830,7 +802,6 @@
     showToast('📄 File TXT berhasil di-download!');
   });
 
-  // ═══════ CLEAR HISTORY ═══════
   document.getElementById('aiClearHistory').addEventListener('click', function() {
     if (!confirm('Hapus semua riwayat chat? Tindakan ini tidak bisa dibatalkan.')) return;
 
@@ -842,7 +813,7 @@
     })
     .then(function(r) { return r.json(); })
     .then(function(data) {
-      // Bersihkan UI
+      
       msgArea.innerHTML = '';
       chatHistory.length = 0;
       addMsg('Halo! 👋 Riwayat chat berhasil dihapus. Tanyakan apa saja!', 'bot', null, true);
@@ -855,7 +826,6 @@
     });
   });
 
-  // ═══════ HELPERS ═══════
   function copyToClipboard(text) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).catch(function() { fallbackCopy(text); });

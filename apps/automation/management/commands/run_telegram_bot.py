@@ -71,7 +71,7 @@ class Command(BaseCommand):
             '══════════════════════════════════════════════\n'
             '  🤖 SERPTECH Telegram Bot — Polling Mode\n'
             '══════════════════════════════════════════════\n'
-            f'  Bot Token: {bot_token[:20]}...\n'
+            f'  Bot Token: {bot_token[:8]}...\n'
             f'  Chat ID: {pengaturan.chat_id}\n'
             f'  Interval: {interval}s\n'
             '══════════════════════════════════════════════\n'

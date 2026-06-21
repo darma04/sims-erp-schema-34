@@ -1,24 +1,20 @@
-{# ══════════════════════════════════════════════════════════════════════ #}
-{# FRAUD DETECTION — Daftar Anomali Mencurigakan                       #}
-{# ══════════════════════════════════════════════════════════════════════ #}
-{# Halaman ini menampilkan daftar semua anomali/fraud alert:            #}
-{# - Summary cards (Total Anomali, Menunggu Review, Total Nominal)      #}
-{# - Filter cards (Status, Jenis, Tingkat, User) + Pilih Kolom          #}
-{# - Tabel DataTables dengan Export Excel/PDF, Pagination, Search       #}
-{# - Modal konfirmasi update status anomali                             #}
-{#                                                                      #}
-{# Pola tabel & export identik dengan produk_list.html                  #}
-{# Terhubung dengan:                                                    #}
-{# - apps/fraud_detection/views.py → FraudAlertListView                 #}
-{# - apps/fraud_detection/models.py → FraudAlert                       #}
-{# ══════════════════════════════════════════════════════════════════════ #}
+
 {% extends layout_path %}
 {% load static %}
 {% load currency_filters %}
 
+{% comment %}
+   ==========================================================================
+   FRAUD DETECTION - Daftar Anomali/Alert
+   Menampilkan daftar anomali transaksi yang terdeteksi
+   oleh sistem fraud detection. Menggunakan DataTables
+   untuk sorting, filtering, dan export PDF/Excel.
+   ==========================================================================
+{% endcomment %}
+
+
 {% block title %}Daftar Anomali - Fraud Detection{% endblock title %}
 
-{# ═══ VENDOR CSS — DataTables styling ═══ #}
 {% block vendor_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
@@ -26,7 +22,6 @@
 <link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
 {% endblock vendor_css %}
 
-{# ═══ VENDOR JS — DataTables + pdfmake untuk export ═══ #}
 {% block vendor_js %}
 {{ block.super }}
 <script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
@@ -36,7 +31,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    {# ─── HEADER HALAMAN ─── #}
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -46,9 +41,8 @@
         </div>
     </div>
 
-    {# ─── SUMMARY CARDS — 3 kartu ringkasan data anomali ─── #}
     <div class="row g-6 mb-4">
-        {# Card 1: Total Anomali — jumlah seluruh anomali yang tercatat #}
+        
         <div class="col-sm-6 col-lg-4">
             <div class="card h-100">
                 <div class="card-body">
@@ -66,7 +60,7 @@
                 </div>
             </div>
         </div>
-        {# Card 2: Menunggu Review — anomali berstatus pending #}
+        
         <div class="col-sm-6 col-lg-4">
             <div class="card h-100">
                 <div class="card-body">
@@ -84,7 +78,7 @@
                 </div>
             </div>
         </div>
-        {# Card 3: Total Nominal — total rupiah dari semua anomali #}
+        
         <div class="col-sm-6 col-lg-4">
             <div class="card h-100">
                 <div class="card-body">
@@ -104,12 +98,9 @@
         </div>
     </div>
 
-    {# ─── FILTER CARD — Layout identik dengan Daftar Produk ─── #}
-    {# Baris 1: 4 kolom filter (Status, Jenis, Tingkat, User)    #}
-    {# Baris 2: Pilih Kolom (kiri), Tombol Filter/Reset (kanan)  #}
     <div class="card mb-4">
         <div class="card-body">
-            {# Baris pertama: 4 filter dropdown #}
+            
             <div class="row g-3">
                 <div class="col-md-3">
                     <label class="form-label">Status</label>
@@ -150,9 +141,9 @@
                     </select>
                 </div>
             </div>
-            {# Baris kedua: Pilih Kolom (kiri) + Tombol Filter (kanan) #}
+            
             <div class="row g-3 mt-2 align-items-end">
-                {# Dropdown Pilih Kolom — togglekolom tabel via DataTables API #}
+                
                 <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
                     <div class="dropdown">
@@ -164,7 +155,7 @@
                         </button>
                         <div class="dropdown-menu p-3" aria-labelledby="columnFilterDropdown" style="min-width: 260px;">
                             <h6 class="dropdown-header px-0 mb-2">Kolom Tabel</h6>
-                            {# Checkbox untuk setiap kolom — value = indeks kolom DataTables #}
+                            
                             <div class="form-check mb-2">
                                 <input class="form-check-input column-checkbox" type="checkbox" value="0"
                                     id="col-tanggal" checked onchange="toggleColumns()">
@@ -213,9 +204,9 @@
                     </div>
                     <small class="text-muted d-block mt-1">Klik untuk memilih kolom</small>
                 </div>
-                {# Spacer tengah #}
+                
                 <div class="col-md-6"></div>
-                {# Tombol Terapkan Filter & Reset #}
+                
                 <div class="col-md-3">
                     <div class="d-grid gap-2">
                         <button class="btn btn-primary" onclick="applyFilter()">
@@ -230,17 +221,15 @@
         </div>
     </div>
 
-    {# ─── MAIN DATA TABLE CARD ─── #}
-    {# Card header berisi judul + tombol Export Excel & PDF #}
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="ri-list-check-3 me-2"></i>Data Anomali</h5>
             <div class="d-flex gap-2">
-                {# Tombol Export Excel — generate file .xls dari data tabel #}
+                
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()">
                     <i class="ri-file-excel-2-line me-1"></i>Export Excel
                 </button>
-                {# Tombol Export PDF — generate file .pdf via pdfMake library #}
+                
                 <button class="btn btn-sm btn-label-danger" onclick="exportToPDF()">
                     <i class="ri-file-pdf-line me-1"></i>Export PDF
                 </button>
@@ -361,7 +350,7 @@
                     </tr>
                     {% endfor %}
                 </tbody>
-                {# ─── TFOOT RINGKASAN — identik dengan produk_list.html ─── #}
+                
                 <tfoot class="table-footer-summary">
                     <tr>
                         <td colspan="5" class="text-start ps-4 py-3" style="vertical-align: middle;">
@@ -372,7 +361,7 @@
                                     <small class="text-muted" style="font-size: 0.75rem;">{{ total_alerts }} Anomali Tercatat</small>
                                 </div>
                             </div>
-                        </td>
+                        </td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td>
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-danger d-flex align-items-center gap-1 mb-2"
@@ -401,7 +390,6 @@
         </div>
     </div>
 
-    {# ─── MODAL KONFIRMASI HAPUS ─── #}
     {% if can_delete.fraud_detection %}
     <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -433,7 +421,6 @@
     </div>
     {% endif %}
 
-    {# ═══ MODAL DETAIL ANOMALI (Popup) ═══ #}
     <div class="modal fade" id="alertDetailModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
@@ -496,8 +483,6 @@
         </div>
     </div>
 
-    {# ─── MODAL KONFIRMASI UPDATE STATUS ─── #}
-    {# Modal Bootstrap untuk konfirmasi aksi Tandai Aman / Terbukti Fraud / Investigasi #}
     <div class="modal fade" id="statusModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -528,9 +513,9 @@
 {% endblock content %}
 
 {% block page_js %}
-{# ═══ CUSTOM CSS UNTUK DATATABLES — Pagination styling identik produk_list ═══ #}
+
 <style>
-    /* DataTables Custom Styling - Materialize Style */
+    
     .dataTables_wrapper .dataTables_info {
         padding: 1rem 1.5rem;
         font-size: 0.875rem;
@@ -553,7 +538,7 @@
         border-radius: 0.375rem;
         padding: 0.4375rem 2rem 0.4375rem 0.875rem;
     }
-    /* Pagination button styling — sama persis dengan produk_list */
+    
     .dataTables_wrapper .dataTables_paginate .paginate_button {
         padding: 0.438rem 0.875rem;
         border-radius: 0.375rem;
@@ -577,7 +562,7 @@
         cursor: not-allowed;
     }
     .card-datatable { padding-bottom: 0; }
-    .datatables-anomali { min-width: 900px; }
+    {% if users %}.datatables-anomali { min-width: 900px; }{% endif %}
     .datatables-anomali thead th {
         font-weight: 600;
         font-size: 0.8125rem;
@@ -587,9 +572,7 @@
 </style>
 
 <script>
-    // ═══════════════════════════════════════════════════════════════
-    // DELETE ACTION
-    // ═══════════════════════════════════════════════════════════════
+    
     let deleteId = null;
 
     function confirmDelete(id, name) {
@@ -633,11 +616,8 @@
         });
     });
 
-    // ═══════════════════════════════════════════════════════════════
-    // INISIALISASI DATATABLES — Tabel interaktif dengan pagination
-    // ═══════════════════════════════════════════════════════════════
     $(document).ready(function () {
-        // Cek apakah tabel memiliki data (bukan kosong/empty state)
+        
         if ($('#tabelAnomali tbody tr').length > 0 && !$('#tabelAnomali tbody tr td[colspan]').length) {
             const table = $('#tabelAnomali').DataTable({
                 language: {
@@ -656,26 +636,23 @@
                         "sLast": "Terakhir"
                     }
                 },
-                order: [[0, 'desc']],          // Urutkan berdasarkan tanggal terbaru
-                pageLength: 25,                 // Default 25 baris per halaman
+                order: [[0, 'desc']],          
+                pageLength: 25,                 
                 lengthMenu: [[10, 25, 50, 75, 100, -1], ['10', '25', '50', '75', '100', 'Semua']],
-                responsive: false,              // Nonaktifkan responsive agar tabel scroll horizontal
+                responsive: false,              
                 columnDefs: [
-                    { orderable: false, targets: [7] }  // Kolom Aksi tidak bisa di-sort
+                    { orderable: false, targets: [7] }  
                 ],
-                // DOM layout: l=length, f=filter, r=processing, t=table, i=info, p=pagination
+                
                 dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
                 initComplete: function () {
-                    // Placeholder teks pada kotak pencarian DataTables
+                    
                     $('.dataTables_filter input').attr('placeholder', 'Cari anomali...');
                 }
             });
         }
     });
 
-    // ═══════════════════════════════════════════════════════════════
-    // FILTER — Terapkan filter via URL query parameter
-    // ═══════════════════════════════════════════════════════════════
     function applyFilter() {
         const params = new URLSearchParams();
         if ($('#filterStatus').val()) params.append('status', $('#filterStatus').val());
@@ -685,18 +662,14 @@
         window.location.href = '{% url "fraud_detection:alert_list" %}?' + params.toString();
     }
 
-    // Reset semua filter — kembali ke halaman tanpa parameter
     function resetFilter() {
         window.location.href = '{% url "fraud_detection:alert_list" %}';
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // TOGGLE KOLOM — Tampilkan/sembunyikan kolom tabel via checkbox
-    // ═══════════════════════════════════════════════════════════════
     function toggleColumns() {
         const checkboxes = document.querySelectorAll('.column-checkbox');
         const table = new $.fn.dataTable.Api('#tabelAnomali');
-        // Map value checkbox ke indeks kolom DataTables
+        
         const columnMap = { '0': 0, '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6 };
         checkboxes.forEach(cb => {
             const colIdx = columnMap[cb.value];
@@ -706,22 +679,16 @@
         });
     }
 
-    // Centang semua checkbox kolom
     function selectAllColumns() {
         document.querySelectorAll('.column-checkbox').forEach(cb => { cb.checked = true; });
         toggleColumns();
     }
 
-    // Batalkan semua centang checkbox kolom
     function deselectAllColumns() {
         document.querySelectorAll('.column-checkbox').forEach(cb => { cb.checked = false; });
         toggleColumns();
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // DATA TEMPLATE EXPORT — Info perusahaan untuk header/footer
-    // ═══════════════════════════════════════════════════════════════
-    // Diambil dari context processor config/context_processors.py
     const EXCEL_INFO = {
         name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
         address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -739,19 +706,15 @@
         copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
     };
 
-    // Data ringkasan untuk baris footer di export (kolom index: nilai)
     const FOOTER_DATA = { 5: "{{ total_nominal|escapejs }}" };
     const FOOTER_LABEL = 'RINGKASAN';
 
-    // ═══════════════════════════════════════════════════════════════
-    // EXPORT EXCEL — Generate file .xls dari data tabel yang terlihat
-    // ═══════════════════════════════════════════════════════════════
     function exportToExcel() {
+        if (typeof $ === "undefined" || typeof $.fn.dataTable === "undefined" || !$.fn.dataTable.isDataTable('#tabelAnomali')) { alert('Tidak ada data untuk di-export. Silakan tambahkan data terlebih dahulu.'); return; }
         const table = document.getElementById('tabelAnomali');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
         const tableObj = new $.fn.dataTable.Api('#tabelAnomali');
 
-        // Kumpulkan kolom yang terlihat (kecuali Aksi)
         let colCount = 0;
         let visibleColumns = [];
         tableObj.columns().every(function (index) {
@@ -763,28 +726,23 @@
             }
         });
 
-        // Bangun HTML tabel untuk file Excel
         let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
         html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
         html += '<body>';
 
-        // Header perusahaan di atas tabel
         html += '<table border="0">';
         if (typeof EXCEL_INFO !== 'undefined') {
-            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
-            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
-            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
+            html += `<tr><td colspan="${colCount}">${EXCEL_INFO.name}</td></tr>`;
+            html += `<tr><td colspan="${colCount}">${EXCEL_INFO.address}</td></tr>`;
+            html += `<tr><td colspan="${colCount}">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
             html += `<tr><td colspan="${colCount}"></td></tr>`;
         }
         html += '</table>';
 
-        // Tabel data utama
         html += '<table border="1">';
         html += '<thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;">';
         visibleColumns.forEach(col => { html += `<th>${col.text}</th>`; });
         html += '</tr></thead><tbody>';
-
-        // Ambil data dari semua baris yang ditampilkan
         tableObj.rows({ page: 'current' }).every(function (rowIdx) {
             html += '<tr>';
             visibleColumns.forEach(col => {
@@ -795,7 +753,6 @@
             html += '</tr>';
         });
 
-        // Baris ringkasan (footer)
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
             let ri = 0;
@@ -815,7 +772,6 @@
         }
         html += '</tbody></table>';
 
-        // Footer perusahaan
         html += '<table border="0">';
         html += `<tr><td colspan="${colCount}"></td></tr>`;
         if (typeof EXCEL_INFO !== 'undefined') {
@@ -824,7 +780,6 @@
         }
         html += '</table></body></html>';
 
-        // Download file .xls
         const BOM = '\uFEFF';
         const blob = new Blob([BOM + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
         const link = document.createElement('a');
@@ -833,16 +788,13 @@
         link.click();
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // EXPORT PDF — Generate file .pdf via pdfMake library
-    // ═══════════════════════════════════════════════════════════════
     function exportToPDF() {
+        if (typeof $ === "undefined" || typeof $.fn.dataTable === "undefined" || !$.fn.dataTable.isDataTable('#tabelAnomali')) { alert('Tidak ada data untuk di-export. Silakan tambahkan data terlebih dahulu.'); return; }
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
         const table = document.getElementById('tabelAnomali');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
         const tableObj = new $.fn.dataTable.Api('#tabelAnomali');
 
-        // Kumpulkan header kolom (kecuali Aksi)
         const headers = [];
         let visibleColumns = [];
         tableObj.columns().every(function (index) {
@@ -854,7 +806,6 @@
             }
         });
 
-        // Bangun body tabel PDF
         const body = [headers];
         tableObj.rows({ page: 'current' }).every(function (rowIdx) {
             const row = [];
@@ -866,7 +817,6 @@
             if (row.length > 0) body.push(row);
         });
 
-        // Baris ringkasan (footer)
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             const summaryRow = [];
             let ri = 0;
@@ -888,10 +838,9 @@
 
         let companyInfoExists = typeof PDF_INFO !== 'undefined';
 
-        // Definisi dokumen PDF
         const docDefinition = {
-            pageOrientation: 'landscape',       // Orientasi landscape karena tabel lebar
-            pageMargins: [40, 100, 40, 60],     // Margin halaman [kiri, atas, kanan, bawah]
+            pageOrientation: 'landscape',       
+            pageMargins: [40, 100, 40, 60],     
             header: function (currentPage) {
                 if (companyInfoExists) {
                     return {
@@ -944,13 +893,9 @@
             defaultStyle: { fontSize: 9 }
         };
 
-        // Generate dan download PDF
         pdfMake.createPdf(docDefinition).download('Daftar_Anomali_' + new Date().toISOString().slice(0, 10) + '.pdf');
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // DETAIL ANOMALI — Tampilkan modal detail
-    // ═══════════════════════════════════════════════════════════════
     function showAlertDetail(pk, tanggal, jenis, severity, user, deskripsi, nominal, status, catatan, reviewer, reviewDate, modelName, objectId) {
         document.getElementById('alertDetailTanggal').textContent = tanggal || '-';
         document.getElementById('alertDetailJenis').textContent = jenis || '-';
@@ -966,14 +911,11 @@
         new bootstrap.Modal(document.getElementById('alertDetailModal')).show();
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // UPDATE STATUS ANOMALI — Tampilkan modal konfirmasi
-    // ═══════════════════════════════════════════════════════════════
     function updateStatus(alertId, newStatus) {
         document.getElementById('modalAlertId').value = alertId;
         document.getElementById('modalNewStatus').value = newStatus;
         document.getElementById('modalCatatan').value = '';
-        // Sesuaikan pesan konfirmasi berdasarkan status baru
+        
         if (newStatus === 'cleared') {
             document.getElementById('modalMessage').innerHTML = '<span class="text-success"><i class="ri-check-line me-1"></i>Anda yakin anomali ini AMAN / WAJAR?</span>';
         } else if (newStatus === 'rejected') {
@@ -984,7 +926,6 @@
         new bootstrap.Modal(document.getElementById('statusModal')).show();
     }
 
-    // Kirim request AJAX untuk update status anomali
     function confirmUpdateStatus() {
         const alertId = document.getElementById('modalAlertId').value;
         const newStatus = document.getElementById('modalNewStatus').value;
@@ -1006,4 +947,42 @@
         .catch(err => alert('Terjadi kesalahan: ' + err));
     }
 </script>
+
+<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning align-items-center py-3">
+                <h5 class="modal-title text-dark mb-0">
+                    <i class="ri-error-warning-line me-2"></i>Export Gagal
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center py-3">
+                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
+                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
+                    <i class="ri-close-line me-1"></i>Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+function showExportError() {
+    var modal = document.getElementById('exportErrorModal');
+    if (modal) {
+        new bootstrap.Modal(modal).show();
+    } else {
+        alert('Tabel tidak ditemukan!');
+    }
+}
+</script>
+
 {% endblock page_js %}

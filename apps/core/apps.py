@@ -36,6 +36,26 @@ class CoreConfig(AppConfig):
     verbose_name = 'Core'  # Nama yang ditampilkan di Django admin
 
     def ready(self):
-        """Register signal invalidasi cache tampilan untuk data operasional."""
+        """
+        Dipanggil saat app siap — register signal untuk auto-invalidate cache
+        saat RolePermission berubah (create/update/delete).
+
+        Signal ini memastikan cache RBAC selalu fresh tanpa menunggu TTL expired.
+        """
+        from django.db.models.signals import post_save, post_delete
+
+        def invalidate_permission_cache(sender, instance, **kwargs):
+            """Signal handler — invalidate cache saat RolePermission berubah."""
+            try:
+                from apps.core.cache_utils import invalidate_role_permissions_cache
+                invalidate_role_permissions_cache(instance.role)
+            except Exception:
+                pass  # Jangan break operasi utama
+
+        # Lazy import model untuk menghindari circular import
+        from apps.core.models import RolePermission
+        post_save.connect(invalidate_permission_cache, sender=RolePermission)
+        post_delete.connect(invalidate_permission_cache, sender=RolePermission)
+
         from apps.core.cache_invalidation import register_data_cache_invalidation_signals
         register_data_cache_invalidation_signals()

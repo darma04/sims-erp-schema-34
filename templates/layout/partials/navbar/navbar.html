@@ -15,13 +15,11 @@
   id="layout-navbar">
   {% endif %}
 
-  {# Layout horizontal (navbar tidak terpisah) #}
-
   {% if not navbar_detached %}
   <nav class="layout-navbar navbar navbar-expand-xl align-items-center bg-navbar-theme" id="layout-navbar">
     <div class="{{container_class}}">
       {% endif %}
-      <!--  Brand demo (display only for navbar-full and hide on below xl) -->
+      
       {% if navbar_full %}
       <div class="navbar-brand app-brand demo d-none d-xl-flex py-0 me-6">
         <a href="{% url 'dashboard:index' %}" class="app-brand-link gap-2">
@@ -39,7 +37,6 @@
       </div>
       {% endif %}
 
-      <!-- ! Not required for layout-without-menu -->
       {% if not navbar_hide_toggle %}
       <div
         class="layout-menu-toggle navbar-nav align-items-xl-center me-4 me-xl-0 {{ menu_horizontal|yesno:'d-xl-none,' }} {{ content_navbar|yesno:'d-xl-none,' }}">
@@ -51,7 +48,7 @@
 
       <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
         {% if not menu_horizontal %}
-        <!-- Search -->
+        
         <div class="navbar-nav align-items-center">
           <div class="nav-item navbar-search-wrapper mb-0">
             <a class="nav-item nav-link search-toggler fw-normal px-0" href="javascript:void(0);">
@@ -60,24 +57,22 @@
             </a>
           </div>
         </div>
-        <!-- /Search -->
+        
         {% endif %}
         <ul class="navbar-nav flex-row align-items-center ms-auto">
 
           {% if menu_horizontal %}
-          <!-- Search -->
+          
           <li class="nav-item navbar-search-wrapper me-1 me-xl-0">
             <a class="nav-link btn btn-text-secondary rounded-pill search-toggler fw-normal" href="javascript:void(0);">
               <i class="ri-search-line ri-22px scaleX-n1-rtl"></i>
             </a>
           </li>
-          <!-- /Search -->
+          
           {% endif %}
 
-
-
           {% if has_customizer %}
-          <!-- Style Switcher -->
+          
           <div class="navbar-nav align-items-center">
             <div class="nav-item dropdown-style-switcher dropdown me-2 me-xl-0">
               <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
@@ -102,10 +97,9 @@
               </ul>
             </div>
           </div>
-          <!-- / Style Switcher-->
-
-          {% if is_dashboard or is_laporan_cabang %}
-          <!-- Dashboard Date Filter Icon -->
+          
+          {% if is_dashboard or is_laporan_cabang or is_service_center_dashboard %}
+          
           <div class="navbar-nav align-items-center">
             <div class="nav-item dropdown me-1 me-xl-0">
               <a class="nav-link dropdown-toggle hide-arrow position-relative" href="javascript:void(0);"
@@ -171,13 +165,11 @@
               window.location.href = window.location.pathname + (q ? '?' + q : '');
             }
           </script>
-          <!-- /Dashboard Date Filter Icon -->
+          
           {% endif %}
 
           {% endif %}
-          <!-- Notification removed - not implemented -->
-
-          <!-- User -->
+          
           <li class="nav-item navbar-dropdown dropdown-user dropdown">
             <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
               <div class="avatar avatar-online">
@@ -256,11 +248,10 @@
               </li>
             </ul>
           </li>
-          <!--/ User -->
+          
         </ul>
       </div>
 
-      <!-- Search Small Screens -->
       <div
         class="navbar-search-wrapper search-input-wrapper {% if menu_horizontal %}{{container_class}}{% endif %} d-none">
         <input type="text"
@@ -268,7 +259,7 @@
           placeholder="Cari produk, customer, supplier, transaksi..." aria-label="Search..." id="globalSearchInput"
           autocomplete="off">
         <i class="ri-close-fill search-toggler cursor-pointer"></i>
-        <!-- Search Results Dropdown -->
+        
         <div id="searchResultsDropdown" class="search-results-dropdown d-none">
           <div id="searchResultsList"></div>
           <div id="searchLoading" class="text-center py-3 d-none">
@@ -282,7 +273,6 @@
         </div>
       </div>
 
-      <!-- Search Results Styles & Script -->
       <style>
         .search-results-dropdown {
           position: absolute;
@@ -406,7 +396,6 @@
           }, 300);
         });
 
-        // Keyboard navigation
         searchInput.addEventListener('keydown', function(e) {
           const items = dropdown.querySelectorAll('.search-result-item');
           if (items.length === 0) return;
@@ -472,7 +461,6 @@
           return div.innerHTML;
         }
 
-        // Close search dropdown ketika search ditutup
         document.querySelectorAll('.search-toggler').forEach(el => {
           el.addEventListener('click', function() {
             setTimeout(function() {

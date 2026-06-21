@@ -35,15 +35,29 @@ from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
 from django.http import JsonResponse
+from django.views.decorators.cache import never_cache
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from django.views.generic.base import RedirectView
 from apps.core.cache_views import refresh_cache_view
 from web_project.views import custom_error_404, custom_error_403, custom_error_400, custom_error_500
 
 
+@never_cache
 @login_required
 def global_search_api(request):
     """API pencarian global — mencari di semua model utama sistem."""
+    # Simple rate limiting: max 10 requests per 30 seconds per IP
+    from django.core.cache import cache
+    client_ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', 'unknown'))
+    if client_ip:
+        client_ip = client_ip.split(',')[0].strip()
+    rate_key = f'global_search_rate_{client_ip}'
+    request_count = cache.get(rate_key, 0)
+    if request_count >= 10:
+        return JsonResponse({'results': [], 'message': 'Rate limit exceeded. Try again shortly.'}, status=429)
+    cache.set(rate_key, request_count + 1, timeout=30)
+
     query = request.GET.get('q', '').strip()
     if len(query) < 2:
         return JsonResponse({'results': []})
@@ -62,7 +76,7 @@ def global_search_api(request):
                 'subtitle': f'SKU: {p.sku}' if p.sku else 'Produk',
                 'icon': 'ri-shopping-bag-line',
                 'category': 'Produk',
-                'url': '/produk/',
+                'url': '/produk/list/',
             })
 
         # 2. Kategori
@@ -106,7 +120,7 @@ def global_search_api(request):
             })
 
         # 5. Gudang
-        from apps.inventory.models import Gudang
+        from apps.produk.models import Gudang
         gudang_qs = Gudang.objects.filter(
             Q(nama__icontains=query) | Q(alamat__icontains=query)
         )[:3]
@@ -131,7 +145,7 @@ def global_search_api(request):
                 'subtitle': f'@{u.username}',
                 'icon': 'ri-user-line',
                 'category': 'User',
-                'url': '/users/',
+                'url': f'/users/detail/{u.pk}/',
             })
 
         # 7. Karyawan
@@ -145,7 +159,7 @@ def global_search_api(request):
                 'subtitle': f'NIK: {k.nik}' if hasattr(k, 'nik') and k.nik else 'Karyawan',
                 'icon': 'ri-team-line',
                 'category': 'Karyawan',
-                'url': '/hr/karyawan/',
+                'url': f'/hr/karyawan/{k.pk}/',
             })
 
         # 8. Transaksi POS
@@ -173,7 +187,7 @@ def global_search_api(request):
                 'subtitle': 'Sales Order',
                 'icon': 'ri-file-list-3-line',
                 'category': 'Sales Order',
-                'url': '/penjualan/sales-order/',
+                'url': f'/penjualan/sales-order/{so.pk}/',
             })
 
         # 10. Purchase Order
@@ -187,7 +201,7 @@ def global_search_api(request):
                 'subtitle': 'Purchase Order',
                 'icon': 'ri-file-list-2-line',
                 'category': 'Purchase Order',
-                'url': '/pembelian/purchase-order/',
+                'url': f'/pembelian/purchase-order/{po.pk}/',
             })
 
         # 11. Order Service
@@ -219,8 +233,10 @@ def global_search_api(request):
                 'url': '/service/pelanggan/',
             })
 
-    except Exception:
-        pass  # Jika model tidak ada, skip
+    except Exception as exc:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.exception('Global search error for query=%r: %s', query, exc)
 
     return JsonResponse({'results': results[:20]})
 
@@ -229,13 +245,9 @@ def global_search_api(request):
 
 urlpatterns = [
     #path("admin/", admin.site.urls),
-    
-    # Test Error Routes (untuk testing error handlers)
-    path("test-error/404/", lambda request: custom_error_404(request, Exception("Test 404"))),
-    path("test-error/403/", lambda request: custom_error_403(request, Exception("Test 403"))),
-    path("test-error/400/", lambda request: custom_error_400(request, Exception("Test 400"))),
-    path("test-error/500/", lambda request: custom_error_500(request)),
-    
+]
+
+urlpatterns += [
     # Global Search API — endpoint pencarian global untuk semua modul
     path("api/search/", global_search_api, name='global_search'),
     path("core/cache/refresh/", refresh_cache_view, name='core_refresh_cache'),
@@ -276,7 +288,17 @@ urlpatterns = [
     
     # Original URLs
     path("", include("apps.pages.urls")),
+    path("", RedirectView.as_view(url='/', permanent=False), name='landing-page'),
 ]
+
+# Test Error Routes -- only available in DEBUG mode
+if settings.DEBUG:
+    urlpatterns += [
+        path("test-error/404/", lambda request: custom_error_404(request, Exception("Test 404"))),
+        path("test-error/403/", lambda request: custom_error_403(request, Exception("Test 403"))),
+        path("test-error/400/", lambda request: custom_error_400(request, Exception("Test 400"))),
+        path("test-error/500/", lambda request: custom_error_500(request)),
+    ]
 
 # Media files — dilayani di semua environment (development & production)
 # WhiteNoise hanya menangani static files, bukan media files.

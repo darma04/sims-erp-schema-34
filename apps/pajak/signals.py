@@ -189,5 +189,5 @@ def create_ppn_journal(sender, instance, **kwargs):
                 source_id=str(instance.pk),
                 source_repr=instance.nomor,
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Gagal mencatat activity log: %s", e)

@@ -15,10 +15,13 @@
 ==========================================================================
 """
 import uuid
+import logging
 import hashlib
 import platform
 from django.db import models
 from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 
 
 def generate_hardware_id():
@@ -104,6 +107,15 @@ class LicenseConfig(models.Model):
     app_version = models.CharField(
         max_length=20, default="v1.0", verbose_name="Versi Aplikasi Lokal"
     )
+    consecutive_failures = models.IntegerField(
+        default=0, verbose_name="Gagal Beruntun (Circuit Breaker)"
+    )
+    circuit_open_until = models.DateTimeField(
+        null=True, blank=True, verbose_name="Circuit Breaker Buka Sampai"
+    )
+    offline_warning_dismissed = models.BooleanField(
+        default=False, verbose_name="Peringatan Offline Dismissed"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -129,6 +141,32 @@ class LicenseConfig(models.Model):
             return False
         return timezone.now() < self.cache_expires_at
 
+    def is_circuit_open(self):
+        """Cek apakah circuit breaker sedang terbuka (skip panggilan CLS)."""
+        if not self.circuit_open_until:
+            return False
+        return timezone.now() < self.circuit_open_until
+
+    def record_failure(self):
+        """Catat kegagalan beruntun dan buka circuit jika > 3 kali."""
+        from datetime import timedelta
+        self.consecutive_failures += 1
+        if self.consecutive_failures >= 3:
+            self.circuit_open_until = timezone.now() + timedelta(minutes=30)
+            logger.warning(
+                f"Circuit breaker OPEN setelah {self.consecutive_failures} "
+                f"kegagalan beruntun. Akan coba lagi setelah {self.circuit_open_until}"
+            )
+        self.save(update_fields=['consecutive_failures', 'circuit_open_until'])
+        return self.consecutive_failures
+
+    def reset_failures(self):
+        """Reset circuit breaker setelah berhasil."""
+        self.consecutive_failures = 0
+        self.circuit_open_until = None
+        self.offline_warning_dismissed = False
+        self.save(update_fields=['consecutive_failures', 'circuit_open_until', 'offline_warning_dismissed'])
+
     def update_validation_cache(self, is_valid, message="", expires_at=None,
                                  product_name=None, client_name=None, 
                                  is_maintenance=False, maintenance_message=None,
@@ -145,11 +183,15 @@ class LicenseConfig(models.Model):
         self.force_update_url = force_update_url
         
         if is_valid:
-            # Cache valid berlaku 15 detik — agar perubahan status di CLS terasa realtime
-            self.cache_expires_at = timezone.now() + timedelta(seconds=15)
+            # Reset circuit breaker pada keberhasilan
+            self.consecutive_failures = 0
+            self.circuit_open_until = None
+            self.offline_warning_dismissed = False
+            # Cache valid berlaku 5 menit — keseimbangan antara realtime dan performa
+            self.cache_expires_at = timezone.now() + timedelta(minutes=5)
         else:
-            # Cache invalid hanya berlaku 30 detik — agar bisa cek ulang lebih cepat
-            self.cache_expires_at = timezone.now() + timedelta(seconds=30)
+            # Cache invalid berlaku 1 menit — cek ulang lebih cepat
+            self.cache_expires_at = timezone.now() + timedelta(minutes=1)
         if product_name:
             self.product_name = product_name
         if client_name:

@@ -283,9 +283,6 @@ class PembayaranHutang(models.Model):
                     raise ValueError(f"Auto-jurnal pembayaran hutang gagal: {e}")
             return
 
-        # Update total dibayar pada hutang induk
-        # ── Auto-Jurnal: D:Hutang Usaha  K:Kas/Bank ──
-        # Hanya buat jurnal saat record baru dan belum punya jurnal
     def delete(self, *args, **kwargs):
         hutang = self.hutang
         with transaction.atomic():

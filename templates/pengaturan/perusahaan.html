@@ -25,7 +25,6 @@
     {% endfor %}
     {% endif %}
 
-    <!-- UI Gating: Read-Only Alert -->
     {% if not can_edit.pengaturan %}
     <div class="alert alert-warning alert-dismissible mb-4" role="alert">
         <h6 class="alert-heading d-flex align-items-center mb-1"><i class="ri-alert-line me-2"></i>Mode Cuma-baca (Read-Only)</h6>
@@ -34,11 +33,10 @@
     </div>
     {% endif %}
 
-    <!-- Single Form for All Settings -->
+    
     <form method="POST" enctype="multipart/form-data" id="formPerusahaan">
         {% csrf_token %}
         
-        <!-- Company Identity Card -->
         <div class="row">
             <div class="col-md-12">
                 <div class="card mb-4">
@@ -111,7 +109,6 @@
             </div>
         </div>
 
-        <!-- System Settings Card -->
         <div class="row">
             <div class="col-md-12">
                 <div class="card mb-4">
@@ -262,7 +259,6 @@
             </div>
         </div>
 
-        <!-- Email/SMTP Settings Card -->
         <div class="row">
             <div class="col-md-12">
                 <div class="card mb-4">
@@ -330,7 +326,6 @@
             </div>
         </div>
 
-        <!-- Email Template Settings Card -->
         <div class="row">
             <div class="col-md-12">
                 <div class="card mb-4">
@@ -346,7 +341,6 @@
                             <code>{verification_link}</code> - Link verifikasi (khusus register)
                         </div>
 
-                        <!-- Common Template (Header & Footer) -->
                         <h6 class="text-muted mt-3 mb-3">Template Umum (Berlaku untuk Semua Email)</h6>
                         <div class="row">
                             <div class="mb-3 col-md-6">
@@ -371,7 +365,6 @@
 
                         <hr class="my-4">
 
-                        <!-- Forgot Password Template -->
                         <h6 class="text-muted mb-3">Template Forgot Password</h6>
                         <div class="row">
                             <div class="mb-3 col-md-12">
@@ -396,7 +389,6 @@
 
                         <hr class="my-4">
 
-                        <!-- Register/Verification Template -->
                         <h6 class="text-muted mb-3">Template Register/Verifikasi Email</h6>
                         <div class="row">
                             <div class="mb-3 col-md-12">
@@ -423,7 +415,6 @@
             </div>
         </div>
 
-        <!-- Submit Button -->
         <div class="row">
             <div class="col-md-12">
                 <div class="card mb-4">
@@ -440,44 +431,18 @@
 </div>
 
 <script>
-    /**
-     * ==========================================================================
-     * PENGATURAN PERUSAHAAN - Script Inisialisasi Form
-     * ==========================================================================
-     * Script ini menambahkan class Bootstrap ke field-field form yang di-render
-     * oleh Django secara otomatis (tanpa class). Dikelompokkan per section:
-     *
-     * 1. Identitas Perusahaan (nama, telepon, email, dll)
-     * 2. Pengaturan Meta Sistem (judul, deskripsi, keywords, logo, favicon)
-     * 3. Email/SMTP (host, port, user, password)
-     * 4. Template Email (header, footer, forgot password, register)
-     * ==========================================================================
-     */
-
-    /**
-     * Helper: Tambah class ke elemen berdasarkan ID (aman jika elemen tidak ada)
-     * @param {string} id - ID elemen HTML
-     * @param {string} className - Class CSS yang akan ditambahkan
-     */
+    
     function tambahClass(id, className) {
         var el = document.getElementById(id);
         if (el) el.classList.add(className);
         return el;
     }
 
-    /**
-     * Helper: Set atribut pada elemen berdasarkan ID (aman jika elemen tidak ada)
-     * @param {string} id - ID elemen HTML
-     * @param {string} attr - Nama atribut
-     * @param {*} value - Nilai atribut
-     */
     function setAttr(id, attr, value) {
         var el = document.getElementById(id);
         if (el) el[attr] = value;
     }
 
-    // ── 1. Identitas Perusahaan ──────────────────────────────────────
-    // Semua input text, email, textarea pada bagian identitas perusahaan
     tambahClass('id_nama_perusahaan', 'form-control');
     tambahClass('id_telepon', 'form-control');
     tambahClass('id_email', 'form-control');
@@ -486,11 +451,9 @@
     tambahClass('id_pajak_default', 'form-control');
     tambahClass('id_logo', 'form-control');
 
-    // ── 2. Pengaturan Meta Sistem ────────────────────────────────────
-    // Field yang mengontrol judul, deskripsi SEO, keywords, logo & favicon
     tambahClass('id_system_title', 'form-control');
     tambahClass('id_system_description', 'form-control');
-    setAttr('id_system_description', 'rows', 3); // Textarea tidak terlalu tinggi
+    setAttr('id_system_description', 'rows', 3); 
     tambahClass('id_system_keywords', 'form-control');
     tambahClass('id_system_logo', 'form-control');
     tambahClass('id_system_favicon', 'form-control');
@@ -498,31 +461,27 @@
     tambahClass('id_auth_background_image', 'form-control');
     tambahClass('id_misc_image', 'form-control');
     tambahClass('id_misc_background_image', 'form-control');
-    // Checkbox maintenance mode — gunakan class form-check-input untuk styling Bootstrap
+    
     tambahClass('id_maintenance_mode', 'form-check-input');
     tambahClass('id_maintenance_message', 'form-control');
-    setAttr('id_maintenance_message', 'rows', 3); // Textarea tidak terlalu tinggi
+    setAttr('id_maintenance_message', 'rows', 3); 
 
-    // ── 3. Email/SMTP Settings ───────────────────────────────────────
-    // Konfigurasi SMTP untuk kirim email (forgot password, register)
     tambahClass('id_email_smtp_host', 'form-control');
     tambahClass('id_email_smtp_port', 'form-control');
     tambahClass('id_email_smtp_user', 'form-control');
     tambahClass('id_email_smtp_password', 'form-control');
-    setAttr('id_email_smtp_password', 'type', 'password'); // Sembunyikan password
-    // Checkbox TLS — gunakan class form-check-input untuk styling Bootstrap
+    setAttr('id_email_smtp_password', 'type', 'password'); 
+    
     tambahClass('id_email_use_tls', 'form-check-input');
 
-    // ── 4. Template Email ────────────────────────────────────────────
-    // Template pesan untuk forgot password dan register/verifikasi
     tambahClass('id_email_header', 'form-control');
     tambahClass('id_email_footer', 'form-control');
     tambahClass('id_forgot_password_subject', 'form-control');
     tambahClass('id_forgot_password_message', 'form-control');
-    setAttr('id_forgot_password_message', 'rows', 6); // Textarea lebih tinggi
+    setAttr('id_forgot_password_message', 'rows', 6); 
     tambahClass('id_register_subject', 'form-control');
     tambahClass('id_register_message', 'form-control');
-    setAttr('id_register_message', 'rows', 6); // Textarea lebih tinggi
+    setAttr('id_register_message', 'rows', 6); 
 </script>
 
 {% if not can_edit.pengaturan %}

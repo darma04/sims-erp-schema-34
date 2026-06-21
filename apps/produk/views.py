@@ -31,22 +31,64 @@ Koneksi:
 ==========================================================================
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
+# ==========================================================================
+# PANDUAN DJANGO UNTUK DEVELOPER PEMULA (baca ini sebelum mempelajari views)
+# ==========================================================================
+#
+# APA ITU CLASS-BASED VIEW (CBV)?
+# - CBV = class Python yang menangani HTTP request dan return response
+# - Django menyediakan CBV bawaan: ListView, CreateView, UpdateView, DeleteView
+# - Setiap CBV punya "lifecycle" (siklus hidup) yang bisa di-customize
+#
+# SIKLUS HIDUP CBV (urutan method yang dipanggil):
+# 1. as_view()     → Entry point, dipanggil oleh URL router
+# 2. dispatch()    → Tentukan method (GET/POST) → panggil get() atau post()
+# 3. get()/post()  → Handle request, kumpulkan data
+# 4. get_queryset()→ Ambil data dari database (bisa di-filter/optimasi)
+# 5. get_context_data() → Siapkan data untuk template (variabel {{ }})
+# 6. render()      → Gabungkan template + context → HTML response
+#
+# METHOD PENTING YANG SERING DI-OVERRIDE:
+# - get_queryset()     → Optimasi query (prefetch_related, select_related)
+# - get_context_data() → Tambah variabel ke template (self.context)
+# - form_valid()       → Proses setelah form divalidasi (sebelum save)
+# - get_success_url()  → URL redirect setelah operasi berhasil
+#
+# DECORATOR YANG SERING DIGUNAKAN:
+# @login_required       → User HARUS login, jika tidak → redirect ke /login/
+# @permission_required  → User harus punya permission tertentu (RBAC)
+# @require_http_methods → Batasi method yang diterima (GET, POST, dll)
+# @never_cache          → Response tidak boleh di-cache oleh browser
+#
+# POLA UMUM VIEW DI PROYEK INI:
+# class MyListView(SubModulePermissionMixin, ListView):
+#     module_name = 'nama_modul'          # Untuk pengecekan RBAC
+#     sub_module_name = 'nama_sub_modul'  # Sub-modul yang diakses
+#     model = MyModel                      # Model database yang dipakai
+#     template_name = 'modul/page.html'    # File HTML template
+#
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         context = TemplateLayout.init(self, context)  # WAJIB: setup layout
+#         context['data_tambahan'] = ...    # Tambah data custom
+#         return context
+# ==========================================================================
+
+
 # Import dari framework Django
 from django.shortcuts import render, redirect
-from django.db.models import ProtectedError                                    # Fungsi render template
-# Import dari framework Django
-from django.contrib.auth.decorators import login_required              # Decorator login wajib
-# Import dari framework Django
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView  # CBV bawaan Django
-# Import dari framework Django
-from django.urls import reverse_lazy                                   # URL reverse yang lazy-evaluated
-# Import dari framework Django
-from django.contrib import messages                                    # Framework pesan flash
-# Import dari framework Django
-from django.utils.decorators import method_decorator                   # Decorator untuk CBV
-# Import dari framework Django
-from django.http import JsonResponse                                   # Response JSON untuk AJAX
-from web_project import TemplateLayout                                 # Layout template manager
+from django.db.models import ProtectedError
+from django.contrib.auth.decorators import login_required
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
+from django.urls import reverse_lazy
+from django.contrib import messages
+from django.utils.decorators import method_decorator
+from django.http import JsonResponse
+from django import forms
+from web_project import TemplateLayout
 # Import dari modul internal proyek
 from apps.produk.models import Kategori, Satuan, Produk, Gudang, Stok  # Model database
 # Import dari modul internal proyek
@@ -58,12 +100,10 @@ from apps.core.mixins import (                                         # Permiss
     SubModulePermissionMixin
 )
 from apps.core.permissions import permission_required
-from django import forms  # Django forms — untuk widget override (HiddenInput)
 import logging  # Modul logging standar Python - pengganti print() untuk production
 from django.db import transaction
 
 # Inisialisasi logger untuk modul Produk
-logger = logging.getLogger(__name__)
 
 
 # ╔══════════════════════════════════════════════════════════════╗
@@ -392,7 +432,7 @@ class ProdukListView(SubModulePermissionMixin, ListView):
         Dengan optimasi: 3 query saja (produk, stok+gudang, kategori+satuan)
         """
         return Produk.objects.filter(
-            tipe='produk'             # Hanya tampilkan tipe Produk (bukan Sparepart)
+            tipe='produk'
         ).prefetch_related(
             'stok_set',           # Prefetch semua stok (reverse FK)
             'stok_set__gudang'    # Prefetch gudang dari setiap stok
@@ -648,579 +688,6 @@ class ProdukDeleteView(SubModulePermissionMixin, DeleteView):
                 'success': False,
                 'message': f'Gagal menghapus produk: {str(e)}'
             }, status=400)
-
-
-# ╔══════════════════════════════════════════════════════════════╗
-#                ║                   SPAREPART CRUD                              ║
-# ╚══════════════════════════════════════════════════════════════╝
-
-class SparepartListView(SubModulePermissionMixin, ListView):
-    paginate_by = 50
-    """
-    Menampilkan daftar semua sparepart (tipe='sparepart').
-
-    URL: /produk/sparepart/
-    Permission: produk.daftar_sparepart.read
-    """
-    model = Produk
-    template_name = 'produk/sparepart_list.html'
-    context_object_name = 'produk_list'
-    permission_module = 'sparepart'
-    permission_sub_module = 'daftar_sparepart'
-    permission_action = 'read'
-
-    def get_queryset(self):
-        """Override queryset — hanya sparepart."""
-        return Produk.objects.filter(
-            tipe='sparepart'
-        ).prefetch_related(
-            'stok_set',
-            'stok_set__gudang'
-        ).select_related(
-            'kategori',
-            'satuan',
-            'cabang'
-        )
-
-    def get_context_data(self, **kwargs):
-        """Menghitung data summary untuk template."""
-        context = TemplateLayout.init(self, super().get_context_data(**kwargs))
-        produk_list = context['produk_list']
-
-        context['gudang_list'] = Gudang.objects.filter(aktif=True)
-
-        total_produk = 0
-        total_stok = 0
-        total_nilai_beli = 0
-        total_nilai_jual = 0
-
-        for produk in produk_list:
-            total_produk += 1
-            stok = produk.stok_total
-            total_stok += stok
-            total_nilai_beli += produk.harga_beli * stok
-            total_nilai_jual += produk.harga_jual * stok
-
-        context['total_produk'] = total_produk
-        context['total_stok'] = total_stok
-        context['total_nilai_beli'] = total_nilai_beli
-        context['total_nilai_jual'] = total_nilai_jual
-
-        return context
-
-
-class SparepartCreateView(SubModulePermissionMixin, CreateView):
-    """
-    Form untuk menambahkan sparepart baru (auto-set tipe='sparepart').
-
-    URL: /produk/sparepart/tambah/
-    Permission: produk.tambah_sparepart.create
-    """
-    model = Produk
-    form_class = ProdukForm
-    template_name = 'produk/produk_form.html'
-    success_url = reverse_lazy('produk:sparepart_list')
-    permission_module = 'sparepart'
-    permission_sub_module = 'tambah_sparepart'
-    permission_action = 'create'
-
-    def get_context_data(self, **kwargs):
-        """Menambahkan data konteks tambahan ke template."""
-        context = TemplateLayout.init(self, super().get_context_data(**kwargs))
-        context['title'] = 'Tambah Sparepart'
-        context['is_sparepart'] = True
-        return context
-
-    def get_form(self, form_class=None):
-        """Override form — set default tipe='sparepart' dan hide field tipe."""
-        form = super().get_form(form_class)
-        if 'tipe' in form.fields:
-            form.fields['tipe'].initial = 'sparepart'
-            form.fields['tipe'].widget = forms.HiddenInput()
-        return form
-
-    def form_valid(self, form):
-        """Set tipe='sparepart' dan handle stok awal."""
-        form.instance.dibuat_oleh = self.request.user
-        form.instance.tipe = 'sparepart'  # Force sparepart
-        response = super().form_valid(form)
-
-        # Handle stok awal
-        stok_awal = self.request.POST.get('stok_awal')
-        if stok_awal and float(stok_awal) > 0:
-            gudang = form.instance.cabang
-            if not gudang:
-                gudang = Gudang.objects.filter(aktif=True).first()
-                if not gudang:
-                    gudang = Gudang.objects.create(
-                        kode='GD-DEFAULT',
-                        nama='Gudang Utama',
-                        aktif=True
-                    )
-
-            Stok.objects.update_or_create(
-                produk=form.instance,
-                gudang=gudang,
-                defaults={'jumlah': float(stok_awal)}
-            )
-
-        messages.success(self.request, 'Sparepart berhasil ditambahkan')
-        return response
-
-
-class SparepartUpdateView(SubModulePermissionMixin, UpdateView):
-    """
-    Form untuk mengedit sparepart.
-
-    URL: /produk/sparepart/<pk>/edit/
-    Permission: produk.write
-    """
-    model = Produk
-    form_class = ProdukForm
-    template_name = 'produk/produk_form.html'
-    success_url = reverse_lazy('produk:sparepart_list')
-    permission_module = 'sparepart'
-    permission_sub_module = 'daftar_sparepart'
-    permission_action = 'write'
-
-    def get_queryset(self):
-        """Hanya bisa edit sparepart."""
-        return Produk.objects.filter(tipe='sparepart')
-
-    def get_context_data(self, **kwargs):
-        """Menambahkan data konteks tambahan ke template."""
-        context = TemplateLayout.init(self, super().get_context_data(**kwargs))
-        context['title'] = 'Edit Sparepart'
-        context['is_sparepart'] = True
-
-        # Stok per-cabang
-        stok_queryset = Stok.objects.filter(
-            produk=self.object
-        ).select_related('gudang').order_by('gudang__nama')
-
-        stok_per_cabang = []
-        total_stok = 0
-        for stok_item in stok_queryset:
-            stok_per_cabang.append({
-                'gudang_id': stok_item.gudang.id,
-                'gudang_kode': stok_item.gudang.kode,
-                'gudang_nama': stok_item.gudang.nama,
-                'jumlah': stok_item.jumlah,
-            })
-            total_stok += stok_item.jumlah
-
-        context['stok_per_cabang'] = stok_per_cabang
-        context['total_stok'] = total_stok
-        if stok_per_cabang:
-            context['stok_saat_ini'] = total_stok
-
-        return context
-
-    def get_form(self, form_class=None):
-        """Override form — hide field tipe karena sudah pasti sparepart."""
-        form = super().get_form(form_class)
-        if 'tipe' in form.fields:
-            form.fields['tipe'].widget = forms.HiddenInput()
-        return form
-
-    def form_valid(self, form):
-        """Handle update stok per-cabang."""
-        form.instance.tipe = 'sparepart'  # Force tetap sparepart
-        response = super().form_valid(form)
-
-        has_per_cabang_input = False
-        for key in self.request.POST:
-            if key.startswith('stok_cabang_'):
-                has_per_cabang_input = True
-                gudang_id = key.replace('stok_cabang_', '')
-                stok_value = self.request.POST.get(key, '').strip()
-                if stok_value:
-                    try:
-                        jumlah = float(stok_value)
-                        Stok.objects.update_or_create(
-                            produk=form.instance,
-                            gudang_id=int(gudang_id),
-                            defaults={'jumlah': jumlah}
-                        )
-                    except (ValueError, TypeError):
-                        pass
-
-        if not has_per_cabang_input:
-            stok_input = self.request.POST.get('stok_awal')
-            if stok_input:
-                gudang = form.instance.cabang
-                if not gudang:
-                    gudang = Gudang.objects.filter(aktif=True).first()
-                    if not gudang:
-                        gudang = Gudang.objects.create(
-                            kode='GD-DEFAULT',
-                            nama='Gudang Utama',
-                            aktif=True
-                        )
-                Stok.objects.update_or_create(
-                    produk=form.instance,
-                    gudang=gudang,
-                    defaults={'jumlah': float(stok_input)}
-                )
-
-        messages.success(self.request, 'Sparepart berhasil diupdate')
-        return response
-
-
-class SparepartDeleteView(SubModulePermissionMixin, DeleteView):
-    """Hapus sparepart via AJAX. URL: /produk/sparepart/<pk>/delete/"""
-    model = Produk
-    success_url = reverse_lazy('produk:sparepart_list')
-    permission_module = 'sparepart'
-    permission_sub_module = 'daftar_sparepart'
-    permission_action = 'delete'
-
-    def get_queryset(self):
-        """Hanya bisa hapus sparepart."""
-        return Produk.objects.filter(tipe='sparepart')
-
-    def delete(self, request, *args, **kwargs):
-        """Hapus data - return JSON response untuk AJAX."""
-        from django.http import JsonResponse
-        self.object = self.get_object()
-
-        try:
-            produk_name = self.object.nama
-            self.object.delete()
-            return JsonResponse({
-                'success': True,
-                'message': f'Sparepart {produk_name} berhasil dihapus'
-            })
-        except ProtectedError:
-            return JsonResponse({'success': False, 'message': 'Data tidak dapat dihapus karena sedang digunakan atau terkait dengan data lain.'}, status=400)
-        except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'message': f'Gagal menghapus sparepart: {str(e)}'
-            }, status=400)
-
-
-# ╔══════════════════════════════════════════════════════════════╗
-                # ║                IMPORT SPAREPART (CSV/EXCEL)                   ║
-# ╚══════════════════════════════════════════════════════════════╝
-
-class SparepartImportView(SubModulePermissionMixin, TemplateView):
-    """
-    Halaman import sparepart dari file CSV atau Excel.
-
-    URL: /produk/sparepart/import/
-    Permission: sparepart.sparepart_import.create
-
-    Mendukung format:
-    - CSV (.csv) → Dengan auto-detect delimiter (koma, titik koma, tab)
-    - Excel (.xlsx, .xls) → Parse HTML table (format export dari sistem)
-
-    Alur import:
-    1. User upload file CSV/Excel
-    2. Sistem parsing file → ambil data per baris
-    3. Untuk setiap baris: buat/cari Kategori & Satuan → buat Produk (tipe='sparepart')
-    4. Return summary: berapa berhasil, berapa gagal + alasan error
-    """
-    template_name = 'produk/sparepart_import.html'
-    permission_module = 'sparepart'
-    permission_sub_module = 'sparepart_import'
-    permission_action = 'create'
-
-    def get_context_data(self, **kwargs):
-        """Menambahkan data konteks tambahan ke template."""
-        context = TemplateLayout.init(self, super().get_context_data(**kwargs))
-        context['kategori_list'] = Kategori.objects.all()
-        context['satuan_list'] = Satuan.objects.all()
-        return context
-
-    def post(self, request, *args, **kwargs):
-        """
-        Proses upload dan import file sparepart (POST).
-
-        Tahapan:
-        1. Validasi: file ada? format didukung?
-        2. Parse file (CSV atau HTML/Excel)
-        3. Loop setiap baris → buat sparepart (tipe='sparepart')
-        4. Return summary (jumlah berhasil/gagal)
-        """
-        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-
-        # Validasi: file harus ada
-        if 'file' not in request.FILES:
-            if is_ajax:
-                return JsonResponse({'success': False, 'message': 'Tidak ada file yang diupload!'})
-            messages.error(request, 'Tidak ada file yang diupload!')
-            return self.get(request, *args, **kwargs)
-
-        file = request.FILES['file']
-        file_name = file.name.lower()
-
-        # Validasi: format file
-        if not (file_name.endswith('.csv') or file_name.endswith('.xlsx') or file_name.endswith('.xls')):
-            if is_ajax:
-                return JsonResponse({'success': False, 'message': 'Format file tidak didukung! Gunakan CSV atau Excel.'})
-            messages.error(request, 'Format file tidak didukung! Gunakan CSV atau Excel.')
-            return self.get(request, *args, **kwargs)
-
-        try:
-            import io
-            import csv
-
-            if file_name.endswith('.csv'):
-                # ===== PARSE CSV =====
-                decoded_file = file.read().decode('utf-8-sig')
-
-                # Skip 'sep=,' directive jika ada (dari Excel)
-                lines = decoded_file.splitlines()
-                if lines and lines[0].strip().startswith('sep='):
-                    decoded_file = '\n'.join(lines[1:])
-
-                # Auto-detect delimiter
-                io_string = io.StringIO(decoded_file)
-                sample = io_string.read(1024)
-                io_string.seek(0)
-
-                try:
-                    sniffer = csv.Sniffer()
-                    dialect = sniffer.sniff(sample, delimiters=',;\t')
-                    delimiter = dialect.delimiter
-                except Exception:
-                    delimiter = ','
-
-                reader = csv.DictReader(io_string, delimiter=delimiter)
-                rows = list(reader)
-
-            else:
-                # ===== PARSE EXCEL (HTML format) =====
-                try:
-                    file.seek(0)
-                    content_bytes = file.read()
-
-                    encodings = ['utf-8-sig', 'utf-8', 'latin-1', 'cp1252']
-                    html_content = None
-
-                    for enc in encodings:
-                        try:
-                            html_content = content_bytes.decode(enc)
-                            break
-                        except UnicodeDecodeError:
-                            continue
-
-                    if not html_content:
-                        raise ValueError("Could not decode file")
-
-                    from bs4 import BeautifulSoup
-                    soup = BeautifulSoup(html_content, 'html.parser')
-
-                    # Cek apakah frameset
-                    frameset = soup.find('frameset')
-                    if frameset:
-                        frames = soup.find_all('frame')
-                        sheet_file = None
-                        for frame in frames:
-                            src = frame.get('src', '')
-                            if 'sheet' in src.lower() and src.endswith('.htm'):
-                                sheet_file = src
-                                break
-
-                        if not sheet_file:
-                            raise ValueError("File export menggunakan frameset tapi tidak ditemukan sheet data. Gunakan template CSV atau konversi ke format sederhana.")
-                        raise ValueError("File export ini memiliki format frameset Excel. Silakan gunakan 'Download Template CSV' atau export ulang ke format yang lebih sederhana.")
-
-                    table = soup.find('table')
-
-                    if not table:
-                        import re
-                        table_match = re.search(r'<table[^>]*>(.*?)</table>', html_content, re.DOTALL | re.IGNORECASE)
-                        if table_match:
-                            soup = BeautifulSoup(table_match.group(0), 'html.parser')
-                            table = soup.find('table')
-
-                    if not table:
-                        raise ValueError("Tidak ditemukan tabel dalam file. Pastikan file adalah hasil export atau template yang valid.")
-
-                    # Ekstrak header
-                    headers = []
-                    header_row = table.find('thead')
-                    if header_row:
-                        headers = [th.get_text(strip=True).lower() for th in header_row.find_all('th')]
-                    else:
-                        first_row = table.find('tr')
-                        if first_row:
-                            headers = [td.get_text(strip=True).lower() for td in first_row.find_all(['th', 'td'])]
-
-                    if not headers or 'nama' not in headers:
-                        raise ValueError(f"Header tidak valid atau kolom 'nama' tidak ditemukan. Headers ditemukan: {headers}")
-
-                    # Ekstrak baris data
-                    rows = []
-                    rows_iter = table.find_all('tr')
-                    if header_row:
-                        rows_iter = table.find('tbody').find_all('tr') if table.find('tbody') else rows_iter[1:]
-                    else:
-                        rows_iter = rows_iter[1:]
-
-                    for tr in rows_iter:
-                        cells = tr.find_all(['td', 'th'])
-                        if not cells:
-                            continue
-
-                        row_text = ''.join([cell.get_text(strip=True) for cell in cells])
-                        if not row_text or row_text.replace('\xa0', '').strip() == '':
-                            continue
-
-                        row_data = {}
-                        for idx, cell in enumerate(cells):
-                            if idx < len(headers):
-                                cell_text = cell.get_text(strip=True).replace('\xa0', '').strip()
-                                row_data[headers[idx]] = cell_text if cell_text else ''
-
-                        if row_data.get('nama', '').strip():
-                            rows.append(row_data)
-
-                except ProtectedError:
-                    return JsonResponse({'success': False, 'message': 'Data tidak dapat dihapus karena sedang digunakan atau terkait dengan data lain.'}, status=400)
-                except Exception as e:
-                    logger.warning("HTML parsing error saat import sparepart: %s", e)
-                    if is_ajax:
-                        return JsonResponse({'success': False, 'message': f'Gagal membaca file: {str(e)}'})
-                    messages.error(request, f'Gagal membaca file: {str(e)}')
-                    return self.get(request, *args, **kwargs)
-
-            # ===== PROSES SETIAP BARIS DATA =====
-            success_count = 0
-            error_count = 0
-            errors = []
-
-            for idx, row in enumerate(rows, start=2):
-                try:
-                    # Ambil atau buat Kategori
-                    kategori = None
-                    if 'kategori' in row and row['kategori']:
-                        kategori, _ = Kategori.objects.get_or_create(
-                            nama=str(row['kategori']).strip(),
-                            defaults={'dibuat_oleh': request.user}
-                        )
-
-                    # Ambil atau buat Satuan
-                    satuan_nama = str(row.get('satuan', 'pcs')).strip()
-                    satuan, _ = Satuan.objects.get_or_create(
-                        nama=satuan_nama,
-                        defaults={'singkatan': satuan_nama[:3].upper()}
-                    )
-
-                    # Cek duplikasi SKU
-                    sku = str(row.get('sku', '')).strip() if row.get('sku') else None
-                    if sku and Produk.objects.filter(sku=sku).exists():
-                        errors.append(f"Baris {idx}: SKU '{sku}' sudah ada")
-                        error_count += 1
-                        continue
-
-                    # Tentukan metode pembayaran dari file atau default
-                    metode_pembayaran = None
-                    metode_nama = str(row.get('metode_pembayaran', '')).strip() if row.get('metode_pembayaran') else ''
-                    if metode_nama:
-                        from apps.pos.models import MetodePembayaran
-                        metode_pembayaran = MetodePembayaran.objects.filter(
-                            nama__iexact=metode_nama, aktif=True
-                        ).first()
-                    if not metode_pembayaran:
-                        from apps.pos.models import MetodePembayaran
-                        metode_pembayaran = MetodePembayaran.objects.filter(aktif=True).first()
-
-                    # Ambil gudang target dari file import (by nama/kode) atau default
-                    gudang_nama = str(row.get('gudang', '')).strip() if row.get('gudang') else ''
-                    gudang_target = None
-                    if gudang_nama:
-                        gudang_target = Gudang.objects.filter(nama__iexact=gudang_nama, aktif=True).first()
-                        if not gudang_target:
-                            gudang_target = Gudang.objects.filter(kode__iexact=gudang_nama, aktif=True).first()
-                    if not gudang_target:
-                        gudang_target = Gudang.objects.filter(aktif=True).first()
-                    if not gudang_target:
-                        gudang_target = Gudang.objects.create(
-                            kode='GD-DEFAULT', nama='Gudang Utama', aktif=True
-                        )
-
-                    # Buat sparepart baru (tipe='sparepart')
-                    produk = Produk.objects.create(
-                        sku=sku or '',
-                        nama=str(row['nama']).strip(),
-                        deskripsi=str(row.get('deskripsi', '')).strip() if row.get('deskripsi') else '',
-                        kategori=kategori,
-                        satuan=satuan,
-                        harga_beli=float(row.get('harga_beli', 0) or 0),
-                        harga_jual=float(row.get('harga_jual', 0) or 0),
-                        barcode=str(row.get('barcode', '')).strip() if row.get('barcode') else '',
-                        aktif=True,
-                        tipe='sparepart',
-                        cabang=gudang_target,
-                        dibuat_oleh=request.user,
-                        metode_pembayaran=metode_pembayaran
-                    )
-
-                    # Tangani stok — masuk ke gudang_target (stok per-cabang)
-                    stok_value = row.get('stok', None)
-                    if stok_value is not None and str(stok_value).strip():
-                        try:
-                            stok_jumlah = float(str(stok_value).strip())
-                            if stok_jumlah > 0:
-                                Stok.objects.update_or_create(
-                                    produk=produk,
-                                    gudang=gudang_target,
-                                    defaults={'jumlah': stok_jumlah}
-                                )
-                        except (ValueError, TypeError):
-                            pass
-
-                    success_count += 1
-
-                except KeyError as e:
-                    errors.append(f"Baris {idx}: Kolom {str(e)} tidak ditemukan")
-                    error_count += 1
-                except ProtectedError:
-                    return JsonResponse({'success': False, 'message': 'Data tidak dapat dihapus karena sedang digunakan atau terkait dengan data lain.'}, status=400)
-                except Exception as e:
-                    errors.append(f"Baris {idx}: {str(e)}")
-                    error_count += 1
-
-            # ===== BUAT PESAN RESPONSE =====
-            success_msg = ''
-            error_msg = ''
-
-            if success_count > 0:
-                success_msg = f'<strong>Berhasil import {success_count} sparepart!</strong>'
-
-            if error_count > 0:
-                error_details = '<br>'.join(errors[:5]) if len(errors) <= 5 else '<br>'.join(errors[:5]) + f'<br>... dan {len(errors)-5} error lainnya'
-                error_msg = f'<br><strong>{error_count} sparepart gagal diimport</strong><br><small>{error_details}</small>'
-
-            final_message = success_msg + error_msg
-
-            if is_ajax:
-                if success_count > 0:
-                    return JsonResponse({'success': True, 'message': final_message})
-                else:
-                    return JsonResponse({'success': False, 'message': final_message})
-            else:
-                if success_count > 0:
-                    messages.success(request, f'Berhasil import {success_count} sparepart!')
-                if error_count > 0:
-                    error_msg_plain = f'{error_count} sparepart gagal diimport. '
-                    if len(errors) <= 5:
-                        error_msg_plain += 'Error: ' + '; '.join(errors)
-                    else:
-                        error_msg_plain += 'Error: ' + '; '.join(errors[:5]) + f'... dan {len(errors)-5} error lainnya'
-                    messages.warning(request, error_msg_plain)
-
-        except ProtectedError:
-            return JsonResponse({'success': False, 'message': 'Data tidak dapat dihapus karena sedang digunakan atau terkait dengan data lain.'}, status=400)
-        except Exception as e:
-            if is_ajax:
-                return JsonResponse({'success': False, 'message': f'Terjadi kesalahan: {str(e)}'})
-            messages.error(request, f'Terjadi kesalahan: {str(e)}')
-
-        return self.get(request, *args, **kwargs)
 
 
 # ╔══════════════════════════════════════════════════════════════╗
@@ -1639,6 +1106,355 @@ def api_konversi_satuan(request, produk_id):
             'harga_beli': float(produk.harga_beli),
         'konversi': konversi_list,
     })
+
+
+# ╔══════════════════════════════════════════════════════════════╗
+# ║                   SPAREPART CRUD                              ║
+# ╚══════════════════════════════════════════════════════════════╝
+
+class SparepartListView(SubModulePermissionMixin, ListView):
+    paginate_by = 50
+    model = Produk
+    template_name = 'produk/sparepart_list.html'
+    context_object_name = 'produk_list'
+    permission_module = 'sparepart'
+    permission_sub_module = 'daftar_sparepart'
+    permission_action = 'read'
+
+    def get_queryset(self):
+        return Produk.objects.filter(
+            tipe='sparepart'
+        ).prefetch_related(
+            'stok_set',
+            'stok_set__gudang'
+        ).select_related(
+            'kategori',
+            'satuan',
+            'cabang'
+        )
+
+    def get_context_data(self, **kwargs):
+        context = TemplateLayout.init(self, super().get_context_data(**kwargs))
+        produk_list = context['produk_list']
+        context['gudang_list'] = Gudang.objects.filter(aktif=True)
+        total_produk = 0
+        total_stok = 0
+        total_nilai_beli = 0
+        total_nilai_jual = 0
+        for produk in produk_list:
+            total_produk += 1
+            stok = produk.stok_total
+            total_stok += stok
+            total_nilai_beli += produk.harga_beli * stok
+            total_nilai_jual += produk.harga_jual * stok
+        context['total_produk'] = total_produk
+        context['total_stok'] = total_stok
+        context['total_nilai_beli'] = total_nilai_beli
+        context['total_nilai_jual'] = total_nilai_jual
+        return context
+
+
+class SparepartCreateView(SubModulePermissionMixin, CreateView):
+    model = Produk
+    form_class = ProdukForm
+    template_name = 'produk/produk_form.html'
+    success_url = reverse_lazy('produk:sparepart_list')
+    permission_module = 'sparepart'
+    permission_sub_module = 'tambah_sparepart'
+    permission_action = 'create'
+
+    def get_context_data(self, **kwargs):
+        context = TemplateLayout.init(self, super().get_context_data(**kwargs))
+        context['title'] = 'Tambah Sparepart'
+        context['is_sparepart'] = True
+        return context
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        if 'tipe' in form.fields:
+            form.fields['tipe'].initial = 'sparepart'
+            form.fields['tipe'].widget = forms.HiddenInput()
+        return form
+
+    def form_valid(self, form):
+        form.instance.dibuat_oleh = self.request.user
+        form.instance.tipe = 'sparepart'
+        response = super().form_valid(form)
+        stok_awal = self.request.POST.get('stok_awal')
+        if stok_awal and float(stok_awal) > 0:
+            gudang = form.instance.cabang
+            if not gudang:
+                gudang = Gudang.objects.filter(aktif=True).first()
+                if not gudang:
+                    gudang = Gudang.objects.create(
+                        kode='GD-DEFAULT',
+                        nama='Gudang Utama',
+                        aktif=True
+                    )
+            Stok.objects.update_or_create(
+                produk=form.instance,
+                gudang=gudang,
+                defaults={'jumlah': float(stok_awal)}
+            )
+        messages.success(self.request, 'Sparepart berhasil ditambahkan')
+        return response
+
+
+class SparepartUpdateView(SubModulePermissionMixin, UpdateView):
+    model = Produk
+    form_class = ProdukForm
+    template_name = 'produk/produk_form.html'
+    success_url = reverse_lazy('produk:sparepart_list')
+    permission_module = 'sparepart'
+    permission_sub_module = 'daftar_sparepart'
+    permission_action = 'write'
+
+    def get_queryset(self):
+        return Produk.objects.filter(tipe='sparepart')
+
+    def get_context_data(self, **kwargs):
+        context = TemplateLayout.init(self, super().get_context_data(**kwargs))
+        context['title'] = 'Edit Sparepart'
+        context['is_sparepart'] = True
+        stok_queryset = Stok.objects.filter(
+            produk=self.object
+        ).select_related('gudang').order_by('gudang__nama')
+        stok_per_cabang = []
+        total_stok = 0
+        for stok_item in stok_queryset:
+            stok_per_cabang.append({
+                'gudang_id': stok_item.gudang.id,
+                'gudang_kode': stok_item.gudang.kode,
+                'gudang_nama': stok_item.gudang.nama,
+                'jumlah': stok_item.jumlah,
+            })
+            total_stok += stok_item.jumlah
+        context['stok_per_cabang'] = stok_per_cabang
+        context['total_stok'] = total_stok
+        if stok_per_cabang:
+            context['stok_saat_ini'] = total_stok
+        return context
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        if 'tipe' in form.fields:
+            form.fields['tipe'].widget = forms.HiddenInput()
+        return form
+
+    def form_valid(self, form):
+        form.instance.tipe = 'sparepart'
+        response = super().form_valid(form)
+        has_per_cabang_input = False
+        for key in self.request.POST:
+            if key.startswith('stok_cabang_'):
+                has_per_cabang_input = True
+                gudang_id = key.replace('stok_cabang_', '')
+                stok_value = self.request.POST.get(key, '').strip()
+                if stok_value:
+                    try:
+                        jumlah = float(stok_value)
+                        Stok.objects.update_or_create(
+                            produk=form.instance,
+                            gudang_id=int(gudang_id),
+                            defaults={'jumlah': jumlah}
+                        )
+                    except (ValueError, TypeError):
+                        pass
+        if not has_per_cabang_input:
+            stok_input = self.request.POST.get('stok_awal')
+            if stok_input:
+                gudang = form.instance.cabang
+                if not gudang:
+                    gudang = Gudang.objects.filter(aktif=True).first()
+                    if not gudang:
+                        gudang = Gudang.objects.create(
+                            kode='GD-DEFAULT',
+                            nama='Gudang Utama',
+                            aktif=True
+                        )
+                Stok.objects.update_or_create(
+                    produk=form.instance,
+                    gudang=gudang,
+                    defaults={'jumlah': float(stok_input)}
+                )
+        messages.success(self.request, 'Sparepart berhasil diupdate')
+        return response
+
+
+class SparepartDeleteView(SubModulePermissionMixin, DeleteView):
+    model = Produk
+    success_url = reverse_lazy('produk:sparepart_list')
+    permission_module = 'sparepart'
+    permission_sub_module = 'daftar_sparepart'
+    permission_action = 'delete'
+
+    def get_queryset(self):
+        return Produk.objects.filter(tipe='sparepart')
+
+    def delete(self, request, *args, **kwargs):
+        from django.http import JsonResponse
+        self.object = self.get_object()
+        try:
+            produk_name = self.object.nama
+            self.object.delete()
+            return JsonResponse({
+                'success': True,
+                'message': f'Sparepart {produk_name} berhasil dihapus'
+            })
+        except ProtectedError:
+            return JsonResponse({'success': False, 'message': 'Data tidak dapat dihapus karena sedang digunakan atau terkait dengan data lain.'}, status=400)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Gagal menghapus sparepart: {str(e)}'
+            }, status=400)
+
+
+class SparepartImportView(SubModulePermissionMixin, TemplateView):
+    template_name = 'produk/sparepart_import.html'
+    permission_module = 'sparepart'
+    permission_sub_module = 'sparepart_import'
+    permission_action = 'create'
+
+    def get_context_data(self, **kwargs):
+        context = TemplateLayout.init(self, super().get_context_data(**kwargs))
+        context['kategori_list'] = Kategori.objects.all()
+        context['satuan_list'] = Satuan.objects.all()
+        return context
+
+    def post(self, request, *args, **kwargs):
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        if 'file' not in request.FILES:
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': 'Tidak ada file yang diupload!'})
+            messages.error(request, 'Tidak ada file yang diupload!')
+            return self.get(request, *args, **kwargs)
+        file = request.FILES['file']
+        file_name = file.name.lower()
+        if not (file_name.endswith('.csv') or file_name.endswith('.xlsx') or file_name.endswith('.xls')):
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': 'Format file tidak didukung! Gunakan CSV atau Excel.'})
+            messages.error(request, 'Format file tidak didukung! Gunakan CSV atau Excel.')
+            return self.get(request, *args, **kwargs)
+        try:
+            import io
+            import csv
+            if file_name.endswith('.csv'):
+                decoded_file = file.read().decode('utf-8-sig')
+                lines = decoded_file.splitlines()
+                if lines and lines[0].strip().startswith('sep='):
+                    decoded_file = '\n'.join(lines[1:])
+                io_string = io.StringIO(decoded_file)
+                sample = io_string.read(1024)
+                io_string.seek(0)
+                try:
+                    sniffer = csv.Sniffer()
+                    dialect = sniffer.sniff(sample, delimiters=',;\t')
+                    delimiter = dialect.delimiter
+                except Exception:
+                    delimiter = ','
+                reader = csv.DictReader(io_string, delimiter=delimiter)
+                rows = list(reader)
+            else:
+                try:
+                    file.seek(0)
+                    content_bytes = file.read()
+                    encodings = ['utf-8-sig', 'utf-8', 'latin-1', 'cp1252']
+                    html_content = None
+                    for enc in encodings:
+                        try:
+                            html_content = content_bytes.decode(enc)
+                            break
+                        except (UnicodeDecodeError, UnicodeError):
+                            continue
+                    if not html_content:
+                        raise ValueError('Tidak dapat membaca file dengan encoding yang didukung')
+                except Exception as e:
+                    if is_ajax:
+                        return JsonResponse({'success': False, 'message': f'Gagal membaca file: {str(e)}'})
+                    messages.error(request, f'Gagal membaca file: {str(e)}')
+                    return self.get(request, *args, **kwargs)
+                from bs4 import BeautifulSoup
+                soup = BeautifulSoup(html_content, 'html.parser')
+                table = soup.find('table')
+                if not table:
+                    if is_ajax:
+                        return JsonResponse({'success': False, 'message': 'Tidak menemukan tabel dalam file Excel/HTML.'})
+                    messages.error(request, 'Tidak menemukan tabel dalam file Excel/HTML.')
+                    return self.get(request, *args, **kwargs)
+                rows_data = []
+                headers = []
+                for i, tr in enumerate(table.find_all('tr')):
+                    cols = [td.get_text(strip=True) for td in tr.find_all(['td', 'th'])]
+                    if i == 0:
+                        headers = cols
+                    else:
+                        if cols:
+                            rows_data.append(dict(zip(headers, cols)))
+                rows = rows_data
+            success_count = 0
+            error_count = 0
+            error_details = ''
+            for row in rows:
+                try:
+                    nama = (row.get('Nama') or row.get('nama') or row.get('Nama Produk') or row.get('nama_produk') or '').strip()
+                    if not nama:
+                        error_count += 1
+                        error_details += f'<br>- Baris {success_count + error_count}: Nama kosong'
+                        continue
+                    sku = (row.get('SKU') or row.get('sku') or row.get('Kode') or '').strip()
+                    if not sku:
+                        import uuid
+                        sku = f'SPR-{uuid.uuid4().hex[:8].upper()}'
+                    kategori_nama = (row.get('Kategori') or row.get('kategori') or '').strip()
+                    kategori = None
+                    if kategori_nama:
+                        kategori, _ = Kategori.objects.get_or_create(nama=kategori_nama)
+                    satuan_nama = (row.get('Satuan') or row.get('satuan') or 'Unit').strip()
+                    satuan, _ = Satuan.objects.get_or_create(nama=satuan_nama, defaults={'singkatan': satuan_nama[:3].upper()})
+                    harga_beli_str = (row.get('Harga Beli') or row.get('harga_beli') or '0').strip().replace(',', '').replace('.', '').replace('Rp', '').replace(' ', '')
+                    harga_jual_str = (row.get('Harga Jual') or row.get('harga_jual') or '0').strip().replace(',', '').replace('.', '').replace('Rp', '').replace(' ', '')
+                    try:
+                        harga_beli = float(harga_beli_str) if harga_beli_str else 0
+                    except ValueError:
+                        harga_beli = 0
+                    try:
+                        harga_jual = float(harga_jual_str) if harga_jual_str else 0
+                    except ValueError:
+                        harga_jual = 0
+                    Produk.objects.create(
+                        sku=sku,
+                        nama=nama,
+                        tipe='sparepart',
+                        kategori=kategori,
+                        satuan=satuan,
+                        harga_beli=harga_beli,
+                        harga_jual=harga_jual,
+                        dibuat_oleh=request.user if request.user.is_authenticated else None,
+                    )
+                    success_count += 1
+                except Exception as e:
+                    error_count += 1
+                    error_details += f'<br>- Baris {success_count + error_count}: {str(e)}'
+            if is_ajax:
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Berhasil import {success_count} sparepart!',
+                    'success_count': success_count,
+                    'error_count': error_count,
+                    'error_details': error_details
+                })
+            if success_count > 0:
+                messages.success(request, f'Berhasil import {success_count} sparepart!')
+            if error_count > 0:
+                messages.warning(request, f'{error_count} sparepart gagal diimport. {error_details}')
+            return redirect('produk:sparepart_list')
+        except Exception as e:
+            logger.error(f"Error import sparepart: {str(e)}", exc_info=True)
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': f'Gagal import sparepart: {str(e)}'})
+            messages.error(request, f'Gagal import sparepart: {str(e)}')
+            return self.get(request, *args, **kwargs)
 
 
 @login_required

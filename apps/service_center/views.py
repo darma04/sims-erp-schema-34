@@ -12,6 +12,50 @@
 ==========================================================================
 """
 
+# ==========================================================================
+# PANDUAN DJANGO UNTUK DEVELOPER PEMULA (baca ini sebelum mempelajari views)
+# ==========================================================================
+#
+# APA ITU CLASS-BASED VIEW (CBV)?
+# - CBV = class Python yang menangani HTTP request dan return response
+# - Django menyediakan CBV bawaan: ListView, CreateView, UpdateView, DeleteView
+# - Setiap CBV punya "lifecycle" (siklus hidup) yang bisa di-customize
+#
+# SIKLUS HIDUP CBV (urutan method yang dipanggil):
+# 1. as_view()     → Entry point, dipanggil oleh URL router
+# 2. dispatch()    → Tentukan method (GET/POST) → panggil get() atau post()
+# 3. get()/post()  → Handle request, kumpulkan data
+# 4. get_queryset()→ Ambil data dari database (bisa di-filter/optimasi)
+# 5. get_context_data() → Siapkan data untuk template (variabel {{ }})
+# 6. render()      → Gabungkan template + context → HTML response
+#
+# METHOD PENTING YANG SERING DI-OVERRIDE:
+# - get_queryset()     → Optimasi query (prefetch_related, select_related)
+# - get_context_data() → Tambah variabel ke template (self.context)
+# - form_valid()       → Proses setelah form divalidasi (sebelum save)
+# - get_success_url()  → URL redirect setelah operasi berhasil
+#
+# DECORATOR YANG SERING DIGUNAKAN:
+# @login_required       → User HARUS login, jika tidak → redirect ke /login/
+# @permission_required  → User harus punya permission tertentu (RBAC)
+# @require_http_methods → Batasi method yang diterima (GET, POST, dll)
+# @never_cache          → Response tidak boleh di-cache oleh browser
+#
+# POLA UMUM VIEW DI PROYEK INI:
+# class MyListView(SubModulePermissionMixin, ListView):
+#     module_name = 'nama_modul'          # Untuk pengecekan RBAC
+#     sub_module_name = 'nama_sub_modul'  # Sub-modul yang diakses
+#     model = MyModel                      # Model database yang dipakai
+#     template_name = 'modul/page.html'    # File HTML template
+#
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         context = TemplateLayout.init(self, context)  # WAJIB: setup layout
+#         context['data_tambahan'] = ...    # Tambah data custom
+#         return context
+# ==========================================================================
+
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView
@@ -21,9 +65,10 @@ from django.utils.decorators import method_decorator
 from django.contrib import messages
 from django.http import JsonResponse
 from django.db.models import Sum, Count, Q, F
+from django.db.models.functions import TruncDate
 from django.db import models, transaction
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, datetime
 from decimal import Decimal
 import json
 
@@ -68,14 +113,48 @@ class ServiceDashboardView(ReadPermissionMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))
 
+        # --- FILTER WAKTU dari GET params (sama dengan Dashboard utama) ---
+        start_date_str = self.request.GET.get('start_date', '')
+        end_date_str = self.request.GET.get('end_date', '')
+        filter_start = None
+        filter_end = None
+        has_date_filter = False
+
+        if start_date_str:
+            try:
+                filter_start = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+                has_date_filter = True
+            except ValueError:
+                pass
+        if end_date_str:
+            try:
+                filter_end = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+                has_date_filter = True
+            except ValueError:
+                pass
+
+        context['filter_start_date'] = start_date_str
+        context['filter_end_date'] = end_date_str
+        context['has_date_filter'] = has_date_filter
+        context['is_service_center_dashboard'] = True  # Flag untuk navbar filter icon
+
         today = timezone.now().date()
         month_start = today.replace(day=1)
 
-        # Statistik umum
-        context['total_order'] = OrderService.objects.count()
-        context['order_aktif'] = OrderService.objects.exclude(
+        # Base queryset dengan filter tanggal
+        base_qs = OrderService.objects.all()
+        if filter_start:
+            base_qs = base_qs.filter(tanggal_masuk__date__gte=filter_start)
+        if filter_end:
+            base_qs = base_qs.filter(tanggal_masuk__date__lte=filter_end)
+
+        # Statistik umum (terfilter)
+        context['total_order'] = base_qs.count()
+        context['order_aktif'] = base_qs.exclude(
             status__in=['diambil', 'dibatalkan']
         ).count()
+
+        # Statistik tetap (tidak terfilter — konteks absolut)
         context['order_selesai_bulan_ini'] = OrderService.objects.filter(
             status='selesai',
             tanggal_selesai__date__gte=month_start
@@ -84,22 +163,22 @@ class ServiceDashboardView(ReadPermissionMixin, TemplateView):
             tanggal_masuk__date=today
         ).count()
 
-        # Pendapatan bulan ini — konsisten dengan Dashboard & Laporan Keuangan: gunakan status_bayar
-        context['pendapatan_bulan_ini'] = OrderService.objects.filter(
-            status_bayar='lunas',
-            tanggal_masuk__date__gte=month_start
-        ).aggregate(total=Sum('biaya_akhir'))['total'] or Decimal('0')
+        # Pendapatan (terfilter)
+        base_qs_lunas = base_qs.filter(status_bayar='lunas')
+        context['pendapatan_bulan_ini'] = base_qs_lunas.aggregate(
+            total=Sum('biaya_akhir')
+        )['total'] or Decimal('0')
 
         # Total pelanggan
         context['total_pelanggan'] = Pelanggan.objects.filter(aktif=True).count()
 
-        # Order menunggu konfirmasi
-        context['order_menunggu'] = OrderService.objects.filter(
+        # Order menunggu konfirmasi (terfilter)
+        context['order_menunggu'] = base_qs.filter(
             status='menunggu_konfirmasi'
         ).count()
 
-        # Distribusi status (untuk donut chart)
-        status_counts = OrderService.objects.exclude(
+        # Distribusi status (terfilter — untuk donut chart)
+        status_counts = base_qs.exclude(
             status__in=['diambil', 'dibatalkan']
         ).values('status').annotate(count=Count('id')).order_by('status')
 
@@ -109,30 +188,57 @@ class ServiceDashboardView(ReadPermissionMixin, TemplateView):
         context['status_labels_json'] = json.dumps(status_labels)
         context['status_data_json'] = json.dumps(status_data)
 
-        # Tren order per hari (30 hari terakhir, untuk area chart)
+        # Tren order per hari — single aggregated query (TruncDate) untuk performa
+        if filter_start and filter_end:
+            start_tren = filter_start
+            end_tren = filter_end
+            span = (end_tren - start_tren).days + 1
+            if span > 90:
+                span = 90
+                start_tren = end_tren - timedelta(days=89)
+            if span < 2:
+                start_tren = end_tren - timedelta(days=1)
+                span = 2
+        else:
+            start_tren = today - timedelta(days=29)
+            end_tren = today
+            span = 30
+
+        tren_qs = OrderService.objects.filter(
+            tanggal_masuk__date__gte=start_tren,
+            tanggal_masuk__date__lte=end_tren
+        ).annotate(
+            tgl=TruncDate('tanggal_masuk')
+        ).values('tgl').annotate(
+            count=Count('id')
+        ).order_by('tgl')
+
+        tren_dict = {item['tgl']: item['count'] for item in tren_qs}
         tren_labels = []
         tren_data = []
-        for i in range(29, -1, -1):
-            d = today - timedelta(days=i)
+        for i in range(span - 1, -1, -1):
+            d = start_tren + timedelta(days=i)
             tren_labels.append(d.strftime('%d/%m'))
-            tren_data.append(OrderService.objects.filter(tanggal_masuk__date=d).count())
+            tren_data.append(tren_dict.get(d, 0))
         context['tren_labels_json'] = json.dumps(tren_labels)
         context['tren_data_json'] = json.dumps(tren_data)
 
-        # Order terbaru (10 terakhir)
-        context['order_terbaru'] = OrderService.objects.select_related(
+        # Order terbaru (terfilter)
+        context['order_terbaru'] = base_qs.select_related(
             'pelanggan', 'jenis_perangkat', 'teknisi'
         ).order_by('-dibuat_pada')[:10]
 
-        # Perangkat paling sering
-        context['top_perangkat'] = OrderService.objects.values(
+        # Perangkat paling sering (terfilter)
+        context['top_perangkat'] = base_qs.values(
             'jenis_perangkat__nama'
         ).annotate(total=Count('id')).order_by('-total')[:5]
 
-        # Jenis service populer
-        context['top_jenis_service'] = ItemService.objects.values(
-            'nama_layanan'
-        ).annotate(total=Count('id')).order_by('-total')[:5]
+        # Jenis service populer (terfilter)
+        context['top_jenis_service'] = ItemService.objects.filter(
+            order_service__in=base_qs
+        ).values('nama_layanan').annotate(
+            total=Count('id')
+        ).order_by('-total')[:5]
 
         return context
 
@@ -153,7 +259,7 @@ class PelangganListView(ReadPermissionMixin, TemplateView):
 
         # Hitung total order per pelanggan
         pelanggan = pelanggan.annotate(
-            jumlah_order=Count('order_services')
+            jumlah_order=Count('order_services_pelanggan')
         )
 
         context['pelanggan_list'] = pelanggan
@@ -246,14 +352,14 @@ class PerangkatListView(ReadPermissionMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))
         perangkat = Perangkat.objects.annotate(
-            jumlah_order=Count('order_services')
+            jumlah_order=Count('order_services_perangkat')
         )
         context['perangkat_list'] = perangkat
         context['total_perangkat'] = Perangkat.objects.count()
 
         try:
-            from apps.pengaturan.models import ExportPDFTemplate
-            context['export_pdf_template'] = ExportPDFTemplate.objects.first()
+            from apps.pengaturan.models import TemplateCetak
+            context['export_pdf_template'] = TemplateCetak.objects.filter(jenis='export_pdf').first()
         except Exception:
             context['export_pdf_template'] = None
         return context
@@ -347,8 +453,8 @@ class KategoriServiceListView(ReadPermissionMixin, TemplateView):
         context['total_kategori'] = KategoriService.objects.count()
 
         try:
-            from apps.pengaturan.models import ExportPDFTemplate
-            context['export_pdf_template'] = ExportPDFTemplate.objects.first()
+            from apps.pengaturan.models import TemplateCetak
+            context['export_pdf_template'] = TemplateCetak.objects.filter(jenis='export_pdf').first()
         except Exception:
             context['export_pdf_template'] = None
         return context
@@ -446,8 +552,8 @@ class JenisServiceListView(ReadPermissionMixin, TemplateView):
         )['total'] or Decimal('0')
 
         try:
-            from apps.pengaturan.models import ExportPDFTemplate
-            context['export_pdf_template'] = ExportPDFTemplate.objects.first()
+            from apps.pengaturan.models import TemplateCetak
+            context['export_pdf_template'] = TemplateCetak.objects.filter(jenis='export_pdf').first()
         except Exception:
             context['export_pdf_template'] = None
         return context
@@ -550,8 +656,8 @@ class OrderServiceListView(ReadPermissionMixin, TemplateView):
         ).aggregate(total=Sum('biaya_akhir'))['total'] or Decimal('0')
 
         try:
-            from apps.pengaturan.models import ExportPDFTemplate
-            context['export_pdf_template'] = ExportPDFTemplate.objects.first()
+            from apps.pengaturan.models import TemplateCetak
+            context['export_pdf_template'] = TemplateCetak.objects.filter(jenis='export_pdf').first()
         except Exception:
             context['export_pdf_template'] = None
         return context
@@ -692,12 +798,10 @@ class OrderServiceUpdateView(UpdatePermissionMixin, TemplateView):
         item_formset = ItemServiceFormSet(request.POST, instance=order)
 
         if form.is_valid() and item_formset.is_valid():
-            order = form.save()
-            item_formset.save()
-
-            sync_order_biaya_akhir(order)
-            from apps.service_center.services import sync_service_payment_accounting
-            sync_service_payment_accounting(order, user=request.user)
+            with transaction.atomic():
+                order = form.save()
+                item_formset.save()
+                sync_order_biaya_akhir(order)
 
             messages.success(request, f'Order {order.nomor_service} berhasil diperbarui!')
             return redirect('service_center:order_detail', pk=order.pk)
@@ -731,57 +835,57 @@ def update_status(request, pk):
                     messages.error(request, f'Perubahan status dari "{old_display}" ke "{new_display}" tidak diizinkan.')
                     return redirect('service_center:order_detail', pk=order.pk)
 
-                order.status = new_status
+                with transaction.atomic():
+                    order.status = new_status
 
-                catatan_teknisi = form.cleaned_data.get('catatan_teknisi', '')
-                if catatan_teknisi:
-                    order.catatan_teknisi = catatan_teknisi
+                    catatan_teknisi = form.cleaned_data.get('catatan_teknisi', '')
+                    if catatan_teknisi:
+                        order.catatan_teknisi = catatan_teknisi
 
-                biaya_akhir = form.cleaned_data.get('biaya_akhir')
-                if biaya_akhir is not None and biaya_akhir > 0:
-                    order.biaya_akhir = biaya_akhir
+                    biaya_akhir = form.cleaned_data.get('biaya_akhir')
+                    if biaya_akhir is not None and biaya_akhir > 0:
+                        order.biaya_akhir = biaya_akhir
 
-                order.save()
+                    order.save()
 
-                # --- INTEGRASI INVENTORY: Kembalikan stok sparepart jika dibatalkan ---
-                if new_status == 'dibatalkan':
-                    for sp in order.penggunaan_sparepart.all():
-                        sp.kembalikan_stok()
-                        try:
-                            from apps.activity_log.stock_signals import log_service_stock_return
-                            log_service_stock_return(sp, request.user, request)
-                        except Exception:
-                            pass
-                    # DIPERBAIKI #8: Reset biaya_akhir dan pembayaran saat dibatalkan
-                    order.biaya_akhir = Decimal('0')
-                    order.dp_bayar = Decimal('0')
-                    order.status_bayar = 'belum_bayar'
-                    order.save(update_fields=['biaya_akhir', 'dp_bayar', 'status_bayar'])
-                    from apps.service_center.services import sync_service_payment_accounting
-                    sync_service_payment_accounting(order, user=request.user)
+                    # --- INTEGRASI INVENTORY: Kembalikan stok sparepart jika dibatalkan ---
+                    if new_status == 'dibatalkan':
+                        for sp in order.penggunaan_sparepart.all():
+                            sp.kembalikan_stok()
+                            try:
+                                from apps.activity_log.stock_signals import log_service_stock_return
+                                log_service_stock_return(sp, request.user, request)
+                            except Exception:
+                                pass
+                        # DIPERBAIKI #8: Reset biaya_akhir ke 0 saat dibatalkan
+                        order.biaya_akhir = Decimal('0')
+                        order.save(update_fields=['biaya_akhir'])
 
-                # DIPERBAIKI #15: Re-activate dari dibatalkan → kurangi stok ulang
-                elif old_status == 'dibatalkan' and new_status != 'dibatalkan':
-                    for sp in order.penggunaan_sparepart.all():
-                        sp.kurangi_stok()
-                        try:
-                            from apps.activity_log.stock_signals import log_service_stock_out
-                            log_service_stock_out(sp, request.user, request)
-                        except Exception:
-                            pass
-                # ----------------------------------------------------------------------
+                    # DIPERBAIKI #15: Re-activate dari dibatalkan → kurangi stok ulang
+                    elif old_status == 'dibatalkan' and new_status != 'dibatalkan':
+                        for sp in order.penggunaan_sparepart.all():
+                            sp.kurangi_stok()
+                            try:
+                                from apps.activity_log.stock_signals import log_service_stock_out
+                                log_service_stock_out(sp, request.user, request)
+                            except Exception:
+                                pass
+                    # ----------------------------------------------------------------------
 
-                RiwayatStatus.objects.create(
-                    order_service=order,
-                    status_sebelum=old_status,
-                    status_sesudah=new_status,
-                    catatan=form.cleaned_data.get('catatan', ''),
-                    diubah_oleh=request.user
-                )
+                    RiwayatStatus.objects.create(
+                        order_service=order,
+                        status_sebelum=old_status,
+                        status_sesudah=new_status,
+                        catatan=form.cleaned_data.get('catatan', ''),
+                        diubah_oleh=request.user
+                    )
 
-                # --- INTEGRASI: Notifikasi Telegram ---
-                from apps.automation.signals import kirim_notifikasi_order_service
-                kirim_notifikasi_order_service(order)
+                # --- INTEGRASI: Notifikasi Telegram (di luar atomic) ---
+                try:
+                    from apps.automation.signals import kirim_notifikasi_order_service
+                    kirim_notifikasi_order_service(order)
+                except Exception:
+                    pass
                 # ----------------------------------------
 
                 status_display = dict(OrderService.STATUS_CHOICES).get(new_status, new_status)
@@ -835,19 +939,12 @@ def update_pembayaran(request, pk):
                 messages.error(request, 'Nominal DP harus lebih dari 0 untuk status pembayaran DP.')
                 return redirect('service_center:order_detail', pk=order.pk)
 
-            try:
-                with transaction.atomic():
-                    order = OrderService.objects.select_for_update().get(pk=order.pk)
-                    order.status_bayar = new_status_bayar
-                    if dp is not None:
-                        order.dp_bayar = dp
-                    order.metode_pembayaran = metode
-                    order.save()
-                    from apps.service_center.services import sync_service_payment_accounting
-                    sync_service_payment_accounting(order, user=request.user)
-            except Exception as exc:
-                messages.error(request, f'Gagal memperbarui pembayaran service: {exc}')
-                return redirect('service_center:order_detail', pk=order.pk)
+            with transaction.atomic():
+                order.status_bayar = new_status_bayar
+                if dp is not None:
+                    order.dp_bayar = dp
+                order.metode_pembayaran = metode
+                order.save()
             messages.success(request, f'Pembayaran order {order.nomor_service} berhasil diperbarui!')
 
     return redirect('service_center:order_detail', pk=order.pk)
@@ -865,11 +962,9 @@ def update_items(request, pk):
     if request.method == 'POST':
         formset = ItemServiceFormSet(request.POST, instance=order)
         if formset.is_valid():
-            formset.save()
-
-            sync_order_biaya_akhir(order)
-            from apps.service_center.services import sync_service_payment_accounting
-            sync_service_payment_accounting(order, user=request.user)
+            with transaction.atomic():
+                formset.save()
+                sync_order_biaya_akhir(order)
 
             messages.success(request, 'Detail layanan berhasil diperbarui!')
         else:
@@ -900,9 +995,6 @@ def order_delete(request, pk):
                     except Exception:
                         pass
                 # --------------------------------------------------------------------------
-
-                from apps.service_center.services import cancel_service_payment_accounting
-                cancel_service_payment_accounting(order, user=request.user, reason='Penghapusan order service')
 
                 # Set current user untuk fraud signal superuser exemption
                 try:
@@ -935,7 +1027,7 @@ class LaporanServiceView(ReadPermissionMixin, TemplateView):
     """Laporan service — chart, filter tanggal, ringkasan."""
     template_name = 'service_center/laporan_service.html'
     permission_module = 'service_center'
-    permission_sub_module = 'laporan_service'
+    permission_sub_module = 'sc_laporan'
 
     def get_context_data(self, **kwargs):
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))
@@ -1008,8 +1100,8 @@ class LaporanServiceView(ReadPermissionMixin, TemplateView):
         context['status_data_json'] = json.dumps([s['count'] for s in status_counts])
 
         try:
-            from apps.pengaturan.models import ExportPDFTemplate
-            context['export_pdf_template'] = ExportPDFTemplate.objects.first()
+            from apps.pengaturan.models import TemplateCetak
+            context['export_pdf_template'] = TemplateCetak.objects.filter(jenis='export_pdf').first()
         except Exception:
             context['export_pdf_template'] = None
 
@@ -1118,7 +1210,7 @@ class CetakNotaServiceView(ReadPermissionMixin, TemplateView):
     permission_sub_module = 'order_service'
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+        context = TemplateLayout.init(self, super().get_context_data(**kwargs))
         order = get_object_or_404(
             OrderService.objects.select_related(
                 'pelanggan', 'jenis_perangkat', 'teknisi', 'diterima_oleh'
@@ -1158,7 +1250,7 @@ class CetakBuktiPembayaranView(ReadPermissionMixin, TemplateView):
     permission_sub_module = 'order_service'
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+        context = TemplateLayout.init(self, super().get_context_data(**kwargs))
         order = get_object_or_404(
             OrderService.objects.select_related(
                 'pelanggan', 'jenis_perangkat', 'teknisi', 'diterima_oleh'
@@ -1192,7 +1284,7 @@ class CetakBuktiPembayaranView(ReadPermissionMixin, TemplateView):
 # ==========================================================================
 
 @login_required
-@permission_required('create', 'sparepart')
+@permission_required('create', 'service_center')
 def tambah_sparepart(request, pk):
     """Tambah sparepart ke order service. Otomatis kurangi stok."""
     if request.method != 'POST':
@@ -1265,8 +1357,6 @@ def tambah_sparepart(request, pk):
             # ---------------------------------------------------
 
             sync_order_biaya_akhir(order)
-            from apps.service_center.services import sync_service_payment_accounting
-            sync_service_payment_accounting(order, user=request.user)
 
         # --- INTEGRASI: Activity Log ---
         try:
@@ -1302,7 +1392,7 @@ def tambah_sparepart(request, pk):
 
 
 @login_required
-@permission_required('delete', 'sparepart')
+@permission_required('delete', 'service_center')
 def hapus_sparepart(request, pk, sparepart_id):
     """Hapus sparepart dari order service. Kembalikan stok."""
     if request.method != 'POST':
@@ -1337,8 +1427,6 @@ def hapus_sparepart(request, pk, sparepart_id):
             penggunaan.delete()
 
             sync_order_biaya_akhir(order)
-            from apps.service_center.services import sync_service_payment_accounting
-            sync_service_payment_accounting(order, user=request.user)
 
         # --- INTEGRASI: Activity Log ---
         try:
@@ -1364,7 +1452,7 @@ def hapus_sparepart(request, pk, sparepart_id):
 
 
 @login_required
-@permission_required('update', 'sparepart')
+@permission_required('update', 'service_center')
 def edit_sparepart(request, pk, sparepart_id):
     """
     Edit penggunaan sparepart pada order service.
@@ -1457,24 +1545,22 @@ def edit_sparepart(request, pk, sparepart_id):
             # -----------------------------------------------------------
 
             sync_order_biaya_akhir(order)
-            from apps.service_center.services import sync_service_payment_accounting
-            sync_service_payment_accounting(order, user=request.user)
 
         # --- INTEGRASI: Activity Log ---
         try:
             from apps.activity_log.middleware import ActivityLogMiddleware
             ActivityLogMiddleware.log_activity(
-                request,
-                action='update',
-                model_name='PenggunaanSparepart',
-                object_id=penggunaan.pk,
-                object_repr=f"{penggunaan.produk.nama} ({new_jumlah})",
-                description=(
+            request,
+            action='update',
+            model_name='PenggunaanSparepart',
+            object_id=penggunaan.pk,
+            object_repr=f"{penggunaan.produk.nama} ({new_jumlah})",
+            description=(
                 f"Edit sparepart pada Order {order.nomor_service}: "
                 f"jumlah {old_jumlah}→{new_jumlah}, "
                 f"gudang {old_gudang.nama}→{new_gudang.nama}"
-                )
             )
+        )
         except Exception:
             pass
         # -------------------------------
@@ -1497,7 +1583,7 @@ def edit_sparepart(request, pk, sparepart_id):
 
 
 @login_required
-@permission_required('read', 'sparepart')
+@permission_required('read', 'service_center')
 def api_search_sparepart(request):
     """API untuk search sparepart by name/SKU, termasuk info stok per gudang."""
     q = request.GET.get('q', '').strip()
@@ -1512,7 +1598,6 @@ def api_search_sparepart(request):
         produk_list = Produk.objects.filter(
             Q(nama__icontains=q) | Q(sku__icontains=q),
             aktif=True,
-            tipe='sparepart'  # Hanya tampilkan sparepart untuk Service Center
         ).select_related('satuan', 'kategori')[:20]
 
         results = []

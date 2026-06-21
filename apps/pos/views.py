@@ -31,6 +31,53 @@
 ==========================================================================
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
+# ==========================================================================
+# PANDUAN DJANGO UNTUK DEVELOPER PEMULA (baca ini sebelum mempelajari views)
+# ==========================================================================
+#
+# APA ITU CLASS-BASED VIEW (CBV)?
+# - CBV = class Python yang menangani HTTP request dan return response
+# - Django menyediakan CBV bawaan: ListView, CreateView, UpdateView, DeleteView
+# - Setiap CBV punya "lifecycle" (siklus hidup) yang bisa di-customize
+#
+# SIKLUS HIDUP CBV (urutan method yang dipanggil):
+# 1. as_view()     → Entry point, dipanggil oleh URL router
+# 2. dispatch()    → Tentukan method (GET/POST) → panggil get() atau post()
+# 3. get()/post()  → Handle request, kumpulkan data
+# 4. get_queryset()→ Ambil data dari database (bisa di-filter/optimasi)
+# 5. get_context_data() → Siapkan data untuk template (variabel {{ }})
+# 6. render()      → Gabungkan template + context → HTML response
+#
+# METHOD PENTING YANG SERING DI-OVERRIDE:
+# - get_queryset()     → Optimasi query (prefetch_related, select_related)
+# - get_context_data() → Tambah variabel ke template (self.context)
+# - form_valid()       → Proses setelah form divalidasi (sebelum save)
+# - get_success_url()  → URL redirect setelah operasi berhasil
+#
+# DECORATOR YANG SERING DIGUNAKAN:
+# @login_required       → User HARUS login, jika tidak → redirect ke /login/
+# @permission_required  → User harus punya permission tertentu (RBAC)
+# @require_http_methods → Batasi method yang diterima (GET, POST, dll)
+# @never_cache          → Response tidak boleh di-cache oleh browser
+#
+# POLA UMUM VIEW DI PROYEK INI:
+# class MyListView(SubModulePermissionMixin, ListView):
+#     module_name = 'nama_modul'          # Untuk pengecekan RBAC
+#     sub_module_name = 'nama_sub_modul'  # Sub-modul yang diakses
+#     model = MyModel                      # Model database yang dipakai
+#     template_name = 'modul/page.html'    # File HTML template
+#
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         context = TemplateLayout.init(self, context)  # WAJIB: setup layout
+#         context['data_tambahan'] = ...    # Tambah data custom
+#         return context
+# ==========================================================================
+
+
 from django.shortcuts import render
 from django.db.models import ProtectedError
 from django.shortcuts import get_object_or_404
@@ -52,7 +99,6 @@ from decimal import Decimal
 
 # Inisialisasi logger untuk modul POS
 # Menggunakan __name__ agar nama logger sesuai nama modul (apps.pos.views)
-logger = logging.getLogger(__name__)
 
 
 # ╔══════════════════════════════════════════════════════════════╗
@@ -331,10 +377,10 @@ def create_transaction(request):
                 kasir=request.user,
                 gudang=gudang,
                 nama_customer=data.get('customer_name', 'Umum'),
-                diskon=Decimal(str(data.get('diskon', 0))),
-                pajak=Decimal(str(data.get('pajak', 0))),
+                diskon=max(Decimal('0'), Decimal(str(data.get('diskon', 0)))),
+                pajak=max(Decimal('0'), Decimal(str(data.get('pajak', 0)))),
                 metode_pembayaran=metode_pembayaran,
-                jumlah_bayar=Decimal(str(data.get('jumlah_bayar', 0))),
+                jumlah_bayar=max(Decimal('0'), Decimal(str(data.get('jumlah_bayar', 0)))),
                 status=data.get('status', 'paid'),  # Support kasbon: 'unpaid' jika dikirim dari frontend
                 catatan=data.get('catatan', '')
             )

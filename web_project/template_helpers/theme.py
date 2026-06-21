@@ -26,7 +26,6 @@
 """
 
 from django.conf import settings  # Mengakses konfigurasi Django (termasuk TEMPLATE_CONFIG)
-from pprint import pprint          # Pretty print — untuk debug output yang rapi di terminal
 import os                          # Modul OS — operasi file dan path
 from importlib import import_module, util  # Dynamic import — memuat module Python secara programatis
 
@@ -353,9 +352,8 @@ class TemplateHelper:
     #   cls.init(context)  # Panggil init() dari class yang diimport
     # ──────────────────────────────────────────────────────────
     def import_class(fromModule, import_className):
-        # Debug: cetak modul dan class yang sedang dimuat ke terminal
-        if settings.DEBUG:
-            pprint(f"Loading {import_className} from {fromModule}")
+        # Debug: silent — pprint() removed for clean terminal output
+        pass
 
         # import_module() → import module secara dinamis berdasarkan string nama
         # Contoh: import_module("templates.layout.bootstrap.master")

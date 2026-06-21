@@ -33,7 +33,7 @@
 
 from decimal import Decimal
 
-from django.db import models, transaction    # Django ORM + atomic transaction
+from django.db import models, transaction, OperationalError    # Django ORM + atomic + lock error
 from django.contrib.auth.models import User  # Model User bawaan Django (akun login)
 from apps.core.validators import validate_image_file
 from apps.produk.models import Produk, Gudang, Stok  # Import model dari modul Produk untuk relasi FK
@@ -218,8 +218,8 @@ class MetodePembayaran(models.Model):
                 
                 qty_historis = stok_saat_ini + qty_sold_so + qty_sold_pos + qty_adj_out
                 produk_total += produk.harga_beli * qty_historis
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
 
         return biaya_total + po_total + produk_total
 
@@ -263,6 +263,13 @@ class MetodePembayaran(models.Model):
         return pos_count + so_count + po_count + biaya_count + produk_count
 
 
+# =====================================================================
+    # REKOMENDASI PRODUCTION: Pertimbangkan soft delete untuk model ini.
+    # Soft delete (is_deleted = BooleanField) menjaga audit trail dan
+    # mencegah kehilangan data saat record dihapus secara tidak sengaja.
+    # Implementasi: tambahkan is_deleted=True/False dan override delete()
+    # atau gunakan Django manager dengan filter is_deleted=False.
+    # =====================================================================
 class POSTransaction(models.Model):
     """
     Model untuk TRANSAKSI POS / kasir.
@@ -394,8 +401,8 @@ class POSTransaction(models.Model):
 
         Return: String nomor transaksi — contoh 'POS/2024/01/15/0001'
         """
-        from datetime import datetime
-        today = datetime.now()
+        from django.utils import timezone
+        today = timezone.now()
         # Format prefix: POS/2024/01/15 (tahun/bulan/hari dengan zero-padding)
         prefix = f"POS/{today.year}/{today.month:02d}/{today.day:02d}"
 
@@ -476,18 +483,26 @@ class POSTransaction(models.Model):
         with transaction.atomic():
             for item in self.items.all():
                 try:
-                    # DIPERBAIKI: select_for_update() mencegah race condition
-                    # Cari record stok: produk X di gudang Y (dengan row lock)
-                    stok = Stok.objects.select_for_update().get(
+                    # DIPERBAIKI: select_for_update(nowait=True) mencegah race condition
+                    # nowait=True → gagal cepat jika stok sedang di-lock transaksi lain
+                    stok = Stok.objects.select_for_update(nowait=True).get(
                         produk=item.produk, gudang=self.gudang
                     )
                     # Kurangi jumlah stok sesuai quantity yang dijual
                     stok.jumlah -= item.jumlah
                     stok.save()  # Simpan perubahan stok ke database
                 except Stok.DoesNotExist:
-                    # Produk belum punya record stok di gudang ini → skip
-                    # Tidak raise error agar transaksi tetap berhasil
-                    pass
+                    import logging
+                    logging.getLogger(__name__).warning(
+                        f"Stok tidak ditemukan untuk item {item} di gudang {self.gudang}"
+                    )
+                    raise
+                except OperationalError:
+                    # Stok sedang di-lock transaksi lain → log warning dan re-raise untuk rollback
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.warning(f"Stok terkunci untuk item {item}, stok tidak berkurang")
+                    raise  # Re-raise to rollback the transaction
 
 
 class POSTransactionItem(models.Model):

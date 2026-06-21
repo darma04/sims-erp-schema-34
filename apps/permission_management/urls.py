@@ -48,6 +48,7 @@ urlpatterns = [
     
     # ===== PERMISSION CRUD =====
     path('permissions/', views.PermissionListView.as_view(), name='permission_list'),
+    path('permissions/seed/', views.SeedPermissionView.as_view(), name='seed_permissions'),
     
     # Permission AJAX endpoints
     path('permissions/ajax/create/', views.PermissionCreateAjaxView.as_view(), name='ajax_create'),

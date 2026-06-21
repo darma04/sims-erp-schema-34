@@ -30,7 +30,7 @@ Fitur: export Excel & PDF, filter.
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    <!-- Header -->
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -50,7 +50,6 @@ Fitur: export Excel & PDF, filter.
         </div>
     </div>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -86,7 +85,7 @@ Fitur: export Excel & PDF, filter.
                     <input type="text" class="form-control flatpickr-input" id="dateFilter" placeholder="Pilih tanggal">
                 </div>
             </div>
-            <!-- Baris kedua: Pilih Kolom (kiri) dan Tombol Filter (kanan) -->
+            
             <div class="row g-3 mt-2 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
@@ -162,7 +161,6 @@ Fitur: export Excel & PDF, filter.
         </div>
     </div>
 
-    <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Daftar Purchase Order</h5>
@@ -322,7 +320,6 @@ Fitur: export Excel & PDF, filter.
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
     <div class="modal fade" id="deletePOModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -359,7 +356,7 @@ Fitur: export Excel & PDF, filter.
 <style>
     @media (max-width: 768px) {
         .card-datatable {
-            overflow-x: auto !important;
+            overflow-x: hidden !important;
             -webkit-overflow-scrolling: touch;
         }
 
@@ -368,7 +365,7 @@ Fitur: export Excel & PDF, filter.
         }
 
         .dataTables_wrapper {
-            overflow-x: auto !important;
+            overflow-x: hidden !important;
             max-width: 100% !important;
         }
     }
@@ -376,11 +373,11 @@ Fitur: export Excel & PDF, filter.
 
 <script>
     $(document).ready(function () {
-        // Inisialisasi Flatpickr
+        
         flatpickr('.flatpickr-input', { dateFormat: 'Y-m-d' });
 
         {% if purchase_order_list %}
-        // Inisialisasi DataTable hanya jika ada data
+        
         const table = $('#poTable').DataTable({
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia",
@@ -411,7 +408,6 @@ Fitur: export Excel & PDF, filter.
         {% endif %}
     });
 
-    // Toggle visibilitas kolom menggunakan DataTables API
     function toggleColumns() {
         const checkboxes = document.querySelectorAll('.column-checkbox');
         const table = new $.fn.dataTable.Api('#poTable');
@@ -446,7 +442,6 @@ Fitur: export Excel & PDF, filter.
         table.search('').draw();
     }
 
-    // Template Data for Independent Headers/Footers
     const EXCEL_INFO = {
         name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
         address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -465,13 +460,12 @@ Fitur: export Excel & PDF, filter.
         copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
     };
 
-    // === FOOTER DATA: Explicit summary values per column index ===
     const FOOTER_DATA = { 5: "Rp {{ total_nominal_po|floatformat:0|escapejs }}" };
     const FOOTER_LABEL = 'RINGKASAN';
 
     function exportToExcel() {
         const table = document.getElementById('poTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#poTable');
 
@@ -491,13 +485,12 @@ Fitur: export Excel & PDF, filter.
         html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
         html += '<body>';
 
-        // --- ADD EXCEL HEADER (Company Info) ---
         html += '<table border="0">';
         if (typeof EXCEL_INFO !== 'undefined') {
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
-            html += `<tr><td colspan="${colCount}"></td></tr>`; // empty row for spacing
+            html += `<tr><td colspan="${colCount}"></td></tr>`; 
         }
         html += '</table>';
 
@@ -510,7 +503,7 @@ Fitur: export Excel & PDF, filter.
 
         html += '</tr></thead><tbody>';
 
-        tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
+          tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
             html += '<tr>';
             visibleColumns.forEach(col => {
                 let cellNode = tableObj.cell(rowIdx, col.index).node();
@@ -520,7 +513,6 @@ Fitur: export Excel & PDF, filter.
             html += '</tr>';
         });
 
-        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
             let footerCells = [];
@@ -531,7 +523,7 @@ Fitur: export Excel & PDF, filter.
                     html += `<td>${FOOTER_DATA[colIdx]}</td>`;
                     ri++;
                 } else {
-                    // Count consecutive non-data columns for colspan (RINGKASAN label)
+                    
                     let spanCount = 0;
                     let si = ri;
                     while (si < visibleColumns.length && FOOTER_DATA[visibleColumns[si].index] === undefined) {
@@ -550,9 +542,8 @@ Fitur: export Excel & PDF, filter.
         }
         html += '</tbody></table>';
 
-        // --- ADD EXCEL FOOTER ---
         html += '<table border="0">';
-        html += `<tr><td colspan="${colCount}"></td></tr>`; // empty spacer
+        html += `<tr><td colspan="${colCount}"></td></tr>`; 
         if (typeof EXCEL_INFO !== 'undefined') {
             html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</td></tr>`;
             html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">${EXCEL_INFO.copyright}</td></tr>`;
@@ -571,7 +562,7 @@ Fitur: export Excel & PDF, filter.
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('poTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#poTable');
 
@@ -605,7 +596,6 @@ Fitur: export Excel & PDF, filter.
             if (row.length > 0) body.push(row);
         });
 
-        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             const summaryRow = [];
             let ri = 0;
@@ -615,7 +605,7 @@ Fitur: export Excel & PDF, filter.
                     summaryRow.push({ text: String(FOOTER_DATA[colIdx]), bold: true, fillColor: '#f8f9fa' });
                     ri++;
                 } else {
-                    // Count consecutive non-data columns for colspan (RINGKASAN label)
+                    
                     let spanCount = 0;
                     let si = ri;
                     while (si < visibleColumns.length && FOOTER_DATA[visibleColumns[si].index] === undefined) {
@@ -700,7 +690,6 @@ Fitur: export Excel & PDF, filter.
         window.open(`/pembelian/purchase-order/${id}/print/`, '_blank');
     }
 
-    // Tangani Hapus PO
     let deleteId = null;
 function confirmDeletePO(id, name) {
     deleteId = id;
@@ -739,8 +728,46 @@ $('#confirmDeletePOBtn').on('click', function() {
 });
 
     function showErrorAlert(message) {
-        const modalBody = ('#deletePOModal').find('.modal-body');
+        const modalBody = $('#deletePOModal').find('.modal-body');
         modalBody.find('.delete-error-msg').remove();
         modalBody.append('<div class="delete-error-msg alert alert-danger d-flex align-items-start mt-3 mb-0" role="alert"><i class="ri-error-warning-line me-2 fs-5"></i><div>' + message + '</div></div>');
     }</script>
+
+<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning align-items-center py-3">
+                <h5 class="modal-title text-dark mb-0">
+                    <i class="ri-error-warning-line me-2"></i>Export Gagal
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center py-3">
+                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
+                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
+                    <i class="ri-close-line me-1"></i>Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+function showExportError() {
+    var modal = document.getElementById('exportErrorModal');
+    if (modal) {
+        new bootstrap.Modal(modal).show();
+    } else {
+        alert('Tabel tidak ditemukan!');
+    }
+}
+</script>
+
 {% endblock page_js %}

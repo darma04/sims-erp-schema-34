@@ -26,7 +26,7 @@ Tabel: produk, gudang, jumlah stok, satuan.
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    <!-- Header -->
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -36,10 +36,9 @@ Tabel: produk, gudang, jumlah stok, satuan.
         </div>
     </div>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
-            <!-- Baris 1: Filter Inputs -->
+            
             <div class="row g-3">
                 <div class="col-md-4">
                     <label class="form-label" for="searchProduct">Cari Produk</label>
@@ -68,7 +67,6 @@ Tabel: produk, gudang, jumlah stok, satuan.
                 </div>
             </div>
 
-            <!-- Baris 2: Pilih Kolom (kiri) dan Tombol Filter (kanan) -->
             <div class="row g-3 mt-2 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
@@ -139,7 +137,6 @@ Tabel: produk, gudang, jumlah stok, satuan.
         </div>
     </div>
 
-    <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Daftar Stok Produk per Gudang</h5>
@@ -204,7 +201,7 @@ Tabel: produk, gudang, jumlah stok, satuan.
                                         Record Stok</small>
                                 </div>
                             </div>
-                        </td>
+                        </td><td class="py-3"></td><td class="py-3"></td>
                         <td class="text-end py-3 pe-4" style="vertical-align: middle;">
                             <div class="badge bg-label-primary" style="font-size: 0.9rem; padding: 0.5rem 0.75rem;">
                                 <i class="ri-stack-line me-1"></i>
@@ -223,7 +220,7 @@ Tabel: produk, gudang, jumlah stok, satuan.
 
 {% block page_js %}
 <style>
-    /* DataTables Custom Styling */
+    
     .dataTables_wrapper .dataTables_info {
         padding: 1rem 1.5rem;
         font-size: 0.875rem;
@@ -288,7 +285,6 @@ Tabel: produk, gudang, jumlah stok, satuan.
         letter-spacing: 0;
     }
 
-    /* Mobile Responsiveness - Horizontal Scroll */
     @media (max-width: 768px) {
         .card-datatable {
             overflow-x: hidden !important;
@@ -296,11 +292,7 @@ Tabel: produk, gudang, jumlah stok, satuan.
             max-width: 100%;
         }
 
-        .datatables-stok {
-            min-width: 1100px !important;
-            width: 1100px !important;
-            table-layout: auto !important;
-        }
+        {% if gudang_list %}.datatables-stok { min-width: 1100px !important; }{% endif %}
 
         .dataTables_wrapper {
             overflow-x: hidden !important;
@@ -311,7 +303,9 @@ Tabel: produk, gudang, jumlah stok, satuan.
 
 <script>
     $(document).ready(function () {
-        // Inisialisasi DataTable (selalu init, meskipun tabel kosong)
+        
+        {% if stok_list %}
+        if (!$.fn.dataTable.isDataTable('#stokTable')) {
         const table = $('#stokTable').DataTable({
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini",
@@ -340,9 +334,10 @@ Tabel: produk, gudang, jumlah stok, satuan.
                 $('.dataTables_filter input').attr('placeholder', 'Cari stok produk...');
             }
         });
+        }
+        {% endif %}
     });
 
-    // Toggle visibilitas kolom menggunakan DataTables API
     function toggleColumns() {
         const checkboxes = document.querySelectorAll('.column-checkbox');
         const table = new $.fn.dataTable.Api('#stokTable');
@@ -376,7 +371,6 @@ Tabel: produk, gudang, jumlah stok, satuan.
         table.search('').draw();
     }
 
-    // Template Data for Independent Headers/Footers
     const EXCEL_INFO = {
         name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
         address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -395,13 +389,13 @@ Tabel: produk, gudang, jumlah stok, satuan.
         copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
     };
 
-    // === FOOTER DATA: Explicit summary values per column index ===
     const FOOTER_DATA = { 3: "{{ total_stok_jumlah|floatformat:0 }}" };
     const FOOTER_LABEL = 'RINGKASAN';
 
     function exportToExcel() {
+        if (typeof $ === "undefined" || typeof $.fn.dataTable === "undefined" || !$.fn.dataTable.isDataTable('#stokTable')) { alert('Tidak ada data untuk di-export. Silakan tambahkan data terlebih dahulu.'); return; }
         const table = document.getElementById('stokTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#stokTable');
 
@@ -421,13 +415,12 @@ Tabel: produk, gudang, jumlah stok, satuan.
         html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
         html += '<body>';
 
-        // --- ADD EXCEL HEADER (Company Info) ---
         html += '<table border="0">';
         if (typeof EXCEL_INFO !== 'undefined') {
-            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
-            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
-            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
-            html += `<tr><td colspan="${colCount}"></td></tr>`; // empty row for spacing
+            html += `<tr><td colspan="${colCount}">${EXCEL_INFO.name}</td></tr>`;
+            html += `<tr><td colspan="${colCount}">${EXCEL_INFO.address}</td></tr>`;
+            html += `<tr><td colspan="${colCount}">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
+            html += `<tr><td colspan="${colCount}"></td></tr>`; 
         }
         html += '</table>';
 
@@ -440,7 +433,7 @@ Tabel: produk, gudang, jumlah stok, satuan.
 
         html += '</tr></thead><tbody>';
 
-        tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
+          tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
             html += '<tr>';
             visibleColumns.forEach(col => {
                 let cellNode = tableObj.cell(rowIdx, col.index).node();
@@ -450,7 +443,6 @@ Tabel: produk, gudang, jumlah stok, satuan.
             html += '</tr>';
         });
 
-        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
             let ri = 0;
@@ -478,7 +470,6 @@ Tabel: produk, gudang, jumlah stok, satuan.
         }
         html += '</tbody></table>';
 
-        // --- ADD EXCEL FOOTER ---
         html += '<table border="0">';
         html += `<tr><td colspan="${colCount}"></td></tr>`;
         if (typeof EXCEL_INFO !== 'undefined') {
@@ -496,10 +487,11 @@ Tabel: produk, gudang, jumlah stok, satuan.
     }
 
     function exportToPDF() {
+        if (typeof $ === "undefined" || typeof $.fn.dataTable === "undefined" || !$.fn.dataTable.isDataTable('#stokTable')) { alert('Tidak ada data untuk di-export. Silakan tambahkan data terlebih dahulu.'); return; }
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('stokTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#stokTable');
 
@@ -533,7 +525,6 @@ Tabel: produk, gudang, jumlah stok, satuan.
             if (row.length > 0) body.push(row);
         });
 
-        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             const summaryRow = [];
             let ri = 0;
@@ -623,4 +614,42 @@ Tabel: produk, gudang, jumlah stok, satuan.
         pdfMake.createPdf(docDefinition).download('Stok_Produk_' + new Date().toISOString().slice(0, 10) + '.pdf');
     }
 </script>
+
+<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning align-items-center py-3">
+                <h5 class="modal-title text-dark mb-0">
+                    <i class="ri-error-warning-line me-2"></i>Export Gagal
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center py-3">
+                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
+                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
+                    <i class="ri-close-line me-1"></i>Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+function showExportError() {
+    var modal = document.getElementById('exportErrorModal');
+    if (modal) {
+        new bootstrap.Modal(modal).show();
+    } else {
+        alert('Tabel tidak ditemukan!');
+    }
+}
+</script>
+
 {% endblock page_js %}

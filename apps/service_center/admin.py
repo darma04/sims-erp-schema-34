@@ -7,7 +7,7 @@
 from django.contrib import admin
 from .models import (
     Pelanggan, Perangkat, KategoriService, JenisService,
-    OrderService, ItemService, RiwayatStatus
+    OrderService, ItemService, RiwayatStatus, PenggunaanSparepart
 )
 
 
@@ -78,3 +78,11 @@ class RiwayatStatusAdmin(admin.ModelAdmin):
     list_filter = ['status_sesudah']
     readonly_fields = ['timestamp']
     list_select_related = ['order_service', 'diubah_oleh']
+
+
+@admin.register(PenggunaanSparepart)
+class PenggunaanSparepartAdmin(admin.ModelAdmin):
+    list_display = ['order_service', 'produk', 'gudang', 'jumlah', 'harga_satuan', 'subtotal']
+    list_select_related = ['order_service', 'produk', 'gudang']
+    search_fields = ['order_service__nomor_service', 'produk__nama']
+    readonly_fields = ['subtotal']

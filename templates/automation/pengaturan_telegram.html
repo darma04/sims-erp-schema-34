@@ -26,7 +26,6 @@
     {% endfor %}
     {% endif %}
 
-    <!-- UI Gating: Read-Only Alert -->
     {% if not can_edit.automation %}
     <div class="alert alert-warning alert-dismissible mb-4" role="alert">
         <h6 class="alert-heading d-flex align-items-center mb-1"><i class="ri-alert-line me-2"></i>Mode Cuma-baca (Read-Only)</h6>
@@ -35,13 +34,14 @@
     </div>
     {% endif %}
 
+    
     <form method="post" id="telegramForm">
         {% csrf_token %}
 
         <div class="row">
-            <!-- Form Pengaturan (Kiri) -->
+            
             <div class="col-lg-8">
-                <!-- Konfigurasi Bot -->
+                
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Konfigurasi Bot</h5>
@@ -82,7 +82,7 @@
                                     </button>
                                 </div>
                                 <small class="text-muted">Chat ID grup atau personal. Klik "Deteksi" setelah mengirim <code>/start</code> ke bot Anda, atau gunakan <a href="https://t.me/userinfobot" target="_blank">@userinfobot</a></small>
-                                <!-- Daftar Chat Terdeteksi -->
+                                
                                 <div id="detectedChatsList" class="mt-2" style="display:none;">
                                     <small class="text-primary fw-bold d-block mb-2"><i class="ri-list-check me-1"></i>Pilih Chat ID yang ingin digunakan:</small>
                                     <div id="chatItemsContainer"></div>
@@ -92,7 +92,6 @@
                     </div>
                 </div>
 
-                <!-- Toggle Notifikasi -->
                 <div class="card mb-4">
                     <h5 class="card-header">Notifikasi per Transaksi</h5>
                     <div class="card-body">
@@ -191,7 +190,6 @@
                     </div>
                 </div>
 
-                <!-- System Prompt Bot AI -->
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="ri-robot-line me-2"></i>System Prompt Bot AI</h5>
@@ -214,7 +212,6 @@
                     </div>
                 </div>
 
-                <!-- Tombol Simpan -->
                 <div class="card mb-4">
                     <div class="card-body">
                         <button type="submit" class="btn btn-primary me-2" id="btnSimpan">
@@ -227,9 +224,8 @@
                 </div>
             </div>
 
-            <!-- Sidebar Info (Kanan) -->
             <div class="col-lg-4">
-                <!-- Statistik -->
+                
                 <div class="card mb-4">
                     <h5 class="card-header">Statistik Pengiriman</h5>
                     <div class="card-body">
@@ -258,7 +254,6 @@
                     </div>
                 </div>
 
-                <!-- Panduan -->
                 <div class="card mb-4">
                     <h5 class="card-header">Panduan Setup</h5>
                     <div class="card-body">
@@ -274,7 +269,6 @@
                     </div>
                 </div>
 
-                <!-- Log Terbaru -->
                 {% if log_terbaru %}
                 <div class="card">
                     <h5 class="card-header">Log Terbaru</h5>
@@ -301,7 +295,6 @@
         </div>
     </form>
 
-    <!-- Alert Response -->
     <div id="testResult" class="alert" style="display: none;"></div>
 </div>
 
@@ -373,7 +366,6 @@ function testKirim() {
     });
 }
 
-// Toggle aktif label
 document.getElementById('aktif').addEventListener('change', function() {
     const label = this.closest('.form-check').querySelector('.badge');
     if (this.checked) {
@@ -385,21 +377,18 @@ document.getElementById('aktif').addEventListener('change', function() {
     }
 });
 
-// Clear Chat ID button
 document.getElementById('btnClearChatId').addEventListener('click', function() {
     const chatIdInput = document.getElementById('chat_id');
     chatIdInput.value = '';
     chatIdInput.focus();
 });
 
-// Form submit - visual feedback
 document.getElementById('telegramForm').addEventListener('submit', function(e) {
     const btnSimpan = document.getElementById('btnSimpan');
     btnSimpan.disabled = true;
     btnSimpan.innerHTML = '<i class="ri-loader-4-line ri-spin me-1"></i>Menyimpan...';
 });
 
-// Deteksi Chat ID otomatis — tampilkan SEMUA chat terdeteksi
 const btnDeteksi = document.getElementById('btnDeteksiChatId');
 if (btnDeteksi) {
     btnDeteksi.addEventListener('click', function() {
@@ -426,7 +415,7 @@ if (btnDeteksi) {
             btn.innerHTML = '<i class="ri-search-eye-line me-1"></i>Deteksi';
 
             if (data.success && data.all_chats && data.all_chats.length > 0) {
-                // Tampilkan SEMUA chat yang terdeteksi sebagai pilihan
+                
                 data.all_chats.forEach(function(chat) {
                     var icon = 'ri-user-line';
                     var badgeClass = 'bg-label-primary';
@@ -457,7 +446,7 @@ if (btnDeteksi) {
 
                     item.addEventListener('click', function() {
                         chatIdInput.value = chat.chat_id;
-                        // Update visual: tandai yang dipilih
+                        
                         chatItemsContainer.querySelectorAll('.border').forEach(function(el) {
                             el.classList.remove('border-primary', 'bg-light');
                             var lastIcon = el.querySelector('.ms-auto');
@@ -467,7 +456,6 @@ if (btnDeteksi) {
                         var selectedIcon = item.querySelector('.ms-auto');
                         if (selectedIcon) selectedIcon.className = 'ri-check-line text-success ms-auto';
 
-                        // Tampilkan pesan konfirmasi
                         resultDiv.className = 'alert alert-success alert-dismissible fade show';
                         resultDiv.innerHTML = '<i class="ri-checkbox-circle-line me-2"></i>Chat ID <strong>' + chat.chat_id + '</strong> (' + chat.title + ') dipilih. Klik <strong>Simpan Pengaturan</strong> untuk menyimpan.' +
                             '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
@@ -507,7 +495,6 @@ if (btnDeteksi) {
 }
 </script>
 
-<!-- UI Gating: JS Auto-Disabler -->
 {% if not can_edit.automation %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {

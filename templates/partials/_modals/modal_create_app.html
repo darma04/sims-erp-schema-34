@@ -6,7 +6,6 @@
 {% endcomment %}
 {% load static %}
 
-<!-- Create App Modal -->
 <div class="modal fade" id="createApp" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered modal-simple modal-upgrade-plan">
     <div class="modal-content">
@@ -16,7 +15,7 @@
           <h4 class="mb-2">Create App</h4>
           <p class="mb-6">Provide data with this form to create your app.</p>
         </div>
-        <!-- Property Listing Wizard -->
+        
         <div id="wizard-create-app" class="bs-stepper vertical wizard-vertical-icons mt-2 shadow-none">
           <div class="bs-stepper-header border-0 p-1">
             <div class="step" data-target="#details">
@@ -87,7 +86,7 @@
           </div>
           <div class="bs-stepper-content p-1">
             <form onSubmit="return false">
-              <!-- Details -->
+              
               <div id="details" class="content pt-4 pt-lg-0">
                 <div class="form-floating form-floating-outline mb-6">
                   <input type="text" class="form-control form-control-lg" id="modalAppName" placeholder="Application Name">
@@ -146,7 +145,6 @@
                 </div>
               </div>
 
-              <!-- Frameworks -->
               <div id="frameworks" class="content pt-4 pt-lg-0">
                 <h5>Select Framework</h5>
                 <ul class="p-0 m-0">
@@ -214,7 +212,6 @@
                 </div>
               </div>
 
-              <!-- Database -->
               <div id="database" class="content pt-4 pt-lg-0">
                 <div class="form-floating form-floating-outline mb-6">
                   <input type="text" class="form-control form-control-lg" id="modalAppDatabaseName" placeholder="Database Name">
@@ -271,7 +268,6 @@
                 </div>
               </div>
 
-              <!-- billing -->
               <div id="billing" class="content">
                 <div id="AppNewCCForm" class="row g-5 pt-4 pt-lg-6 mb-6" onsubmit="return false">
                   <div class="col-12">
@@ -317,11 +313,10 @@
                 </div>
               </div>
 
-              <!-- submit -->
               <div id="submit" class="content text-center pt-4 pt-lg-0">
                 <h5 class="mb-1 mt-4">Submit</h5>
                 <p class="small">Submit to kick start your project.</p>
-                <!-- image -->
+                
                 <img src="{% static 'img/illustrations/create-app-modal-illustration-' %}{{ COOKIES.style|default:style }}.png" alt="Create App img" width="265" class="img-fluid" data-app-light-img="illustrations/create-app-modal-illustration-light.png" data-app-dark-img="illustrations/create-app-modal-illustration-dark.png">
                 <div class="col-12 d-flex justify-content-between mt-4 pt-2">
                   <button class="btn btn-outline-secondary btn-prev"> <i class="ri-arrow-left-line ri-16px"></i> <span class="align-middle d-none d-sm-block ms-2">Previous</span> </button>
@@ -332,8 +327,7 @@
           </div>
         </div>
       </div>
-      <!--/ Property Listing Wizard -->
+      
     </div>
   </div>
 </div>
-<!--/ Create App Modal -->

@@ -56,6 +56,11 @@ from django.core.serializers.json import DjangoJSONEncoder
 import datetime
 from decimal import Decimal
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 @receiver(user_logged_in)
 def log_user_login(sender, request, user, **kwargs):
     """Mencatat aktivitas login user ke database log"""
@@ -78,8 +83,8 @@ def log_user_login(sender, request, user, **kwargs):
             ip_address=get_client_ip(req),
             user_agent=req.META.get('HTTP_USER_AGENT', '')[:500]
         )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Error tidak terduga: %s", e)
 
 
 @receiver(user_logged_out)
@@ -105,8 +110,8 @@ def log_user_logout(sender, request, user, **kwargs):
                 ip_address=get_client_ip(req),
                 user_agent=req.META.get('HTTP_USER_AGENT', '')[:500]
             )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Error tidak terduga: %s", e)
 
 
 def get_field_diff(instance, old_instance):
@@ -149,8 +154,8 @@ def get_field_diff(instance, old_instance):
                     try:
                         old_val = str(old_val)
                         new_val = str(new_val)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.warning("Error tidak terduga: %s", e)
                         
                 diff[field_name] = {'old': old_val, 'new': new_val}
         except Exception:
@@ -261,7 +266,7 @@ def log_model_delete(sender, instance, **kwargs):
         )
     # Tangkap error Exception — lanjutkan tanpa crash
     except Exception as e:
-        pass
+        logger.warning("Error tidak terduga: %s", e)
 
 
 def capture_old_state(sender, instance, **kwargs):
@@ -282,8 +287,8 @@ def capture_old_state(sender, instance, **kwargs):
                 instance._old_state = None
         else:
             instance._old_state = None
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Gagal mengirim email: %s", e)
 
 
 # Register signals untuk semua models kecuali yang excluded

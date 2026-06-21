@@ -84,7 +84,7 @@
 
 <body>
     <div class="invoice-container">
-        <!-- Header -->
+        
         <table class="header-table" cellpadding="0" cellspacing="0">
             <tr>
                 <td style="vertical-align: top;">
@@ -119,7 +119,6 @@
             </tr>
         </table>
 
-        <!-- SO Info -->
         <table class="info-table" cellpadding="0" cellspacing="0">
             <tr>
                 <td style="vertical-align: top; width: 50%;" class="info-section">
@@ -165,7 +164,6 @@
             </tr>
         </table>
 
-        <!-- Items Table -->
         <table class="items-table">
             <thead>
                 <tr>
@@ -198,7 +196,6 @@
             </tbody>
         </table>
 
-        <!-- Totals -->
         {% if sales_order.items.all %}
         <table class="totals-table">
             <tr>
@@ -230,7 +227,6 @@
         </table>
         {% endif %}
 
-        <!-- Notes -->
         {% if sales_order.catatan %}
         <div class="notes">
             <h4>Catatan:</h4>
@@ -238,7 +234,6 @@
         </div>
         {% endif %}
 
-        <!-- Signature -->
         <table class="signature-table" cellpadding="0" cellspacing="0">
             <tr>
                 <td style="text-align: center; width: 200px;">
@@ -251,7 +246,6 @@
             </tr>
         </table>
 
-        <!-- Footer (TABLE layout untuk konsistensi xhtml2pdf) -->
         <table class="footer-table" cellpadding="0" cellspacing="0">
             <tr>
                 <td>
@@ -265,7 +259,6 @@
         </table>
     </div>
 
-    <!-- Tombol Kembali (ditampilkan setelah native Android print dialog) -->
     <div id="backBtnWrap" class="no-print" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:9999;">
         <a id="backBtn" href="javascript:void(0)" style="display:inline-block; padding:12px 32px; background:#696cff; color:#fff; text-decoration:none; border-radius:8px; font-size:14px; font-weight:bold; box-shadow:0 4px 12px rgba(0,0,0,0.2);">
             ← Kembali
@@ -273,7 +266,7 @@
     </div>
 
     <script>
-        // Smart Print Handler — Universal: Browser + Capacitor Android (SerpApp.triggerPrint)
+        
         (function() {
             var printed = false;
             function goBack() {

@@ -2,8 +2,30 @@
 {% load static %}
 {% load currency_filters %}
 
-{% block title %}Rekap PPN - Akuntansi ERP{% endblock title %}
+{% comment %}
+  ==========================================================================
+  PAJAK - Rekap Ppn
+  ==========================================================================
+  Halaman Rekap Ppn untuk modul Pajak.
+  Template ini merender data dari view ke HTML yang ditampilkan di browser.
 
+  FLOW DATA:
+  - URL: /pajak/ -> View di apps/pajak/views.py- View: Mengambil data, menyiapkan context, render template ini- Template: File ini (HTML + Django template tags)- Response: HTML yang ditampilkan di browser user
+
+  RELASI KE MODUL LAIN:
+  - apps/pajak/views.py -> View (handler untuk halaman ini)- apps/pajak/models.py -> Model (sumber data)- apps/pajak/urls.py -> URL routing- layout/ -> Template induk (sidebar, header, footer)
+
+  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
+  - BOLEH diubah: Tampilan HTML, CSS inline, JavaScript- JANGAN diubah: {% extends %} dan {% block %} structure- JANGAN dihapus: {% csrf_token %} di form
+
+  TIPS & DEBUGGING:
+  - Error 'TemplateDoesNotExist'? Cek template_name di views.py- Variabel {{ }} kosong? Cek get_context_data() di views.py- Layout rusak? Pastikan TemplateLayout.init() dipanggil di view
+
+  ==========================================================================
+{% endcomment %}
+
+
+{% block title %}Rekap PPN - Akuntansi ERP{% endblock title %}
 
 {% block vendor_css %}{{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/libs/apex-charts/apex-charts.css' %}" />
@@ -21,11 +43,11 @@
             <a href="{% url 'pajak:list' %}" class="btn btn-outline-secondary"><i class="ri-arrow-left-line me-1"></i>Kembali</a>
         </div>
     </div>
-    <!-- Filter Card -->
+    
     <div class="card mb-4">
         <div class="card-body">
             <form method="get">
-                <!-- Baris 1: field filter -->
+                
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label">Tahun</label>
@@ -62,7 +84,7 @@
                         </select>
                     </div>
                 </div>
-                <!-- Baris 2: Filter Kolom (kiri) + spacer + Tombol Filter (kanan) — standar 3+6+3 -->
+                
                 <div class="row g-3 mt-2 align-items-end">
                     <div class="col-md-3">
                         <label class="form-label">Pilih Kolom yang Ditampilkan</label>
@@ -127,7 +149,7 @@
             </form>
         </div>
     </div>
-    <!-- Summary Cards -->
+    
     <div class="row g-3 mb-4">
         <div class="col-sm-6 col-lg-4">
             <div class="card">
@@ -173,7 +195,14 @@
             </div>
         </div>
     </div>
-    <div class="card mb-4" id="sec-grafik-ppn"><div class="card-header"><h5 class="mb-0"><i class="ri-bar-chart-2-line me-2"></i>Grafik PPN Bulanan</h5></div><div class="card-body"><div id="ppnChart" style="min-height:300px;"></div></div></div>
+    <div class="card mb-4" id="sec-grafik-ppn"><div class="card-header d-flex flex-nowrap align-items-center justify-content-between"><h5 class="mb-0 me-2"><i class="ri-bar-chart-2-line me-2"></i>Grafik PPN Bulanan</h5>
+                    <div class="dropdown flex-shrink-0">
+                        <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a>
+                            <a class="dropdown-item" href="javascript:void(0)" onclick="if(window.__ppnChart) window.__ppnChart.exportTo({type:'png'});"><i class="ri-download-2-line me-2"></i>Unduh Grafik</a>
+                        </div>
+                    </div></div><div class="card-body"><div id="ppnChart" style="min-height:300px;"></div></div></div>
     <div class="card" id="sec-rekap-ppn">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="ri-list-check me-2"></i>Rekap Bulanan {{ selected_tahun }}</h5>
@@ -206,19 +235,16 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!el) return;
     var seriesData = [{name:'PPN Masukan', data: {{ chart_masukan|safe }}},{name:'PPN Keluaran', data: {{ chart_keluaran|safe }}},{name:'Setor/Restitusi', data: {{ chart_setor|safe }}}];
     var hasData = seriesData.some(function(s){ return s.data && s.data.some(function(v){return v>0;}); });
-    if (!hasData) {
-        el.innerHTML = '<div class="text-center text-muted py-5"><i class="ri-bar-chart-2-line ri-3x d-block mb-2" style="opacity:0.3"></i><small>Belum ada data untuk ditampilkan</small></div>';
-        return;
-    }
+    
     var isDark = typeof isDarkStyle !== 'undefined' ? isDarkStyle : document.documentElement.classList.contains('dark-style');
     var gridColor  = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
     var labelColor = isDark ? '#b4b5ba' : '#a5a3ae';
     var chartColors = ['#ff9f43','#28c76f','#ea5455'];
-    new ApexCharts(el, {
+    var __chartInst = new ApexCharts(el, {
         chart: {
             type: 'area', height: 300,
             fontFamily: 'Inter, -apple-system, sans-serif', background: 'transparent',
-            toolbar: { show: true, tools: { download: '<i class="ri-download-2-line" style="font-size:16px"></i>', selection:false,zoom:false,zoomin:false,zoomout:false,pan:false,reset:false } },
+            toolbar: { show: false },
             animations: { enabled:true, easing:'easeinout', speed:800, dynamicAnimation:{enabled:true,speed:350} },
             dropShadow: { enabled:true, top:6, left:0, blur:6, opacity:isDark?0.15:0.08, color:chartColors }
         },
@@ -244,11 +270,11 @@ document.addEventListener('DOMContentLoaded', function () {
         markers: { size:0, hover:{size:6,sizeOffset:3}, strokeWidth:2, strokeColors:isDark?'#2b2c40':'#fff' },
         grid: { borderColor:gridColor, strokeDashArray:4, padding:{top:-10,left:10,right:10,bottom:0}, xaxis:{lines:{show:false}}, yaxis:{lines:{show:true}} },
         responsive: [{ breakpoint:768, options:{ chart:{height:240}, legend:{fontSize:'11px'}, stroke:{width:2} } }]
-    }).render();
+    });
+    __chartInst.render();
+    window.__ppnChart = __chartInst;
 });
 
-
-// Template Data for Independent Headers/Footers
 const EXCEL_INFO = {
     name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
     address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -267,7 +293,7 @@ const PDF_INFO = {
 
 function exportExcel() {
     const tbl = document.getElementById('rekapTable');
-    if (!tbl) { alert('Tabel tidak ditemukan!'); return; }
+    if (!tbl) { showExportError(); return; }
     
     let visibleColumns = [];
     const firstRow = tbl.querySelector('thead tr');
@@ -284,7 +310,6 @@ function exportExcel() {
     html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
     html += '<body>';
     
-    // --- ADD EXCEL HEADER (Company Info) ---
     html += '<table border="0">';
     if (typeof EXCEL_INFO !== 'undefined') {
         html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
@@ -317,7 +342,6 @@ function exportExcel() {
     });
     html += '</tbody></table>';
     
-    // --- ADD EXCEL FOOTER ---
     html += '<table border="0">';
     html += `<tr><td colspan="${colCount}"></td></tr>`;
     if (typeof EXCEL_INFO !== 'undefined') {
@@ -338,7 +362,7 @@ function exportPDF() {
     if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
     
     const tbl = document.getElementById('rekapTable');
-    if (!tbl) { alert('Tabel tidak ditemukan!'); return; }
+    if (!tbl) { showExportError(); return; }
     
     const headers = [];
     let visibleColumns = [];
@@ -468,4 +492,42 @@ function deselectAllColumns() {
 }
 </script>
 {% include 'accounting/partials/table_tools.html' %}
+
+<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning align-items-center py-3">
+                <h5 class="modal-title text-dark mb-0">
+                    <i class="ri-error-warning-line me-2"></i>Export Gagal
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center py-3">
+                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
+                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
+                    <i class="ri-close-line me-1"></i>Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+function showExportError() {
+    var modal = document.getElementById('exportErrorModal');
+    if (modal) {
+        new bootstrap.Modal(modal).show();
+    } else {
+        alert('Tabel tidak ditemukan!');
+    }
+}
+</script>
+
 {% endblock page_js %}

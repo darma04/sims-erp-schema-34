@@ -216,7 +216,11 @@ class PembayaranPPN(models.Model):
 
     def generate_nomor(self):
         prefix = f"PPN/{self.masa_tahun}/{self.masa_bulan:02d}"
-        # Cek apakah sudah ada record dengan periode ini (unique_together)
-        if PembayaranPPN.objects.filter(masa_bulan=self.masa_bulan, masa_tahun=self.masa_tahun).exists():
-            return f"{prefix}/REV"
-        return f"{prefix}/0001"
+        # Check if there's already a record for this period (unique_together)
+        if not PembayaranPPN.objects.filter(masa_bulan=self.masa_bulan, masa_tahun=self.masa_tahun).exists():
+            return f"{prefix}/0001"
+        # Revision: find next available revision number
+        rev = 2
+        while PembayaranPPN.objects.filter(nomor=f"{prefix}/REV-{rev:02d}").exists():
+            rev += 1
+        return f"{prefix}/REV-{rev:02d}"

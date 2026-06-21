@@ -28,7 +28,7 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    <!-- Header -->
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -43,7 +43,6 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
         {% endif %}
     </div>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -73,7 +72,7 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
                     </select>
                 </div>
             </div>
-            <!-- Baris kedua: Pilih Kolom -->
+            
             <div class="row g-3 mt-2 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
@@ -149,7 +148,6 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
         </div>
     </div>
 
-    <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Riwayat Adjustment</h5>
@@ -269,7 +267,7 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
                                         Adjustment Tercatat</small>
                                 </div>
                             </div>
-                        </td>
+                        </td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td>
                         <td class="py-3"></td>
                     </tr>
                 </tfoot>
@@ -277,7 +275,6 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
     <div class="modal fade" id="deleteAdjustmentModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -312,7 +309,7 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
 
 {% block page_js %}
 <style>
-    /* DataTables Custom Styling */
+    
     .dataTables_wrapper .dataTables_info {
         padding: 1rem 1.5rem;
         font-size: 0.875rem;
@@ -377,7 +374,6 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
         letter-spacing: 0;
     }
 
-    /* Mobile Responsiveness - Horizontal Scroll */
     @media (max-width: 768px) {
         .card-datatable {
             overflow-x: hidden !important;
@@ -385,11 +381,7 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
             max-width: 100%;
         }
 
-        .datatables-adjustment {
-            min-width: 1000px !important;
-            width: 1000px !important;
-            table-layout: auto !important;
-        }
+        .datatables-adjustment { min-width: 1000px !important; }
 
         .dataTables_wrapper {
             overflow-x: hidden !important;
@@ -403,7 +395,6 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
         flatpickr('#startDate', { dateFormat: 'Y-m-d', locale: 'id' });
         flatpickr('#endDate', { dateFormat: 'Y-m-d', locale: 'id' });
 
-        // Inisialisasi DataTable
         {% if adjustment_list %}
         const table = $('#adjustmentTable').DataTable({
             language: {
@@ -424,12 +415,12 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
                     "sLast": "Terakhir"
                 }
             },
-            order: [[1, 'desc']], // Sort by tanggal desc
+            order: [[1, 'desc']], 
             pageLength: 25,
             lengthMenu: [[10, 25, 50, 75, 100, -1], ['10', '25', '50', '75', '100', 'Semua']],
             responsive: false,
             columnDefs: [
-                { orderable: false, targets: [7] } // Nonaktifkan sort untuk kolom aksi
+                { orderable: false, targets: [7] } 
             ],
             dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             initComplete: function () {
@@ -470,7 +461,6 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
         toggleColumns();
     }
 
-    // Company Information (from Template Cetak settings)
     const EXCEL_INFO = {
         name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
         address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -489,14 +479,12 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
         copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
     };
 
-
-    // === FOOTER DATA: Explicit summary values per column index ===
     const FOOTER_DATA = {};
     const FOOTER_LABEL = 'RINGKASAN';
 
     function exportToExcel() {
         const table = document.getElementById('adjustmentTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#adjustmentTable');
 
@@ -516,7 +504,6 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
         html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
         html += '<body>';
 
-        // --- ADD EXCEL HEADER (Company Info) ---
         html += '<table border="0">';
         if (typeof EXCEL_INFO !== 'undefined') {
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
@@ -535,7 +522,7 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
 
         html += '</tr></thead><tbody>';
 
-        tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
+          tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
             html += '<tr>';
             visibleColumns.forEach(col => {
                 let cellNode = tableObj.cell(rowIdx, col.index).node();
@@ -545,7 +532,6 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
             html += '</tr>';
         });
 
-        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
             let ri = 0;
@@ -586,7 +572,7 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('adjustmentTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#adjustmentTable');
 
@@ -620,7 +606,6 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
             if (row.length > 0) body.push(row);
         });
 
-        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             const summaryRow = [];
             let ri = 0;
@@ -710,7 +695,6 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
         alert('Fitur detail adjustment akan segera tersedia');
     }
 
-    // Tangani Hapus Adjustment Stok
     let deleteId = null;
 function confirmDelete(id, name) {
     deleteId = id;
@@ -761,4 +745,42 @@ $('#confirmDeleteBtn').on('click', function() {
         setTimeout(() => $('.alert').fadeOut(() => $(this).remove()), 5000);
     }
 </script>
+
+<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning align-items-center py-3">
+                <h5 class="modal-title text-dark mb-0">
+                    <i class="ri-error-warning-line me-2"></i>Export Gagal
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center py-3">
+                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
+                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
+                    <i class="ri-close-line me-1"></i>Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+function showExportError() {
+    var modal = document.getElementById('exportErrorModal');
+    if (modal) {
+        new bootstrap.Modal(modal).show();
+    } else {
+        alert('Tabel tidak ditemukan!');
+    }
+}
+</script>
+
 {% endblock page_js %}

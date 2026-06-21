@@ -14,10 +14,10 @@ JURNAL FORM - Input Jurnal Manual (Header + Inline Lines)
         <span class="text-muted fw-light">Akuntansi / <a href="{% url 'akuntansi:jurnal' %}">Jurnal</a> /</span> {{ title }}
     </h4>
 
+    
     <form method="post" id="jurnalForm">
         {% csrf_token %}
 
-        <!-- Header Card -->
         <div class="card mb-4">
             <h5 class="card-header"><i class="ri-file-text-line me-2"></i>{{ title }}</h5>
             <div class="card-body">
@@ -42,7 +42,6 @@ JURNAL FORM - Input Jurnal Manual (Header + Inline Lines)
             </div>
         </div>
 
-        <!-- Lines Card -->
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="ri-list-check-2 me-2"></i>Detail Jurnal Lines</h5>
@@ -112,7 +111,6 @@ JURNAL FORM - Input Jurnal Manual (Header + Inline Lines)
 $(document).ready(function() {
     calculateTotals();
 
-    // Listen for changes on debit/kredit inputs
     $(document).on('input', '.debit-input, .kredit-input', function() {
         calculateTotals();
     });
@@ -139,13 +137,11 @@ function calculateTotals() {
     }
 }
 
-// Add new line row
 $('#addLineBtn').on('click', function() {
     const totalForms = $('#id_lines-TOTAL_FORMS');
     const currentCount = parseInt(totalForms.val());
     const newRow = $('#linesBody tr.line-row:first').clone();
 
-    // Update form indices
     newRow.find('input, select, textarea').each(function() {
         const name = $(this).attr('name');
         if (name) {
@@ -162,7 +158,6 @@ $('#addLineBtn').on('click', function() {
     totalForms.val(currentCount + 1);
 });
 
-// Toggle delete row visibility
 $(document).on('change', 'input[type="checkbox"][name$="-DELETE"]', function() {
     const row = $(this).closest('tr');
     if ($(this).is(':checked')) { row.addClass('d-none'); }
@@ -170,7 +165,6 @@ $(document).on('change', 'input[type="checkbox"][name$="-DELETE"]', function() {
     calculateTotals();
 });
 
-// Form validation before submit
 $('#jurnalForm').on('submit', function(e) {
     let totalD = 0, totalK = 0;
     $('#linesBody tr.line-row:visible').each(function() {

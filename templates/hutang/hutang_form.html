@@ -1,6 +1,30 @@
 {% extends 'layout/layout_vertical.html' %}
 {% load static %}
 
+{% comment %}
+  ==========================================================================
+  HUTANG - Form Tambah/Edit Hutang
+  ==========================================================================
+  Form untuk menambah data baru atau mengedit data hutang yang sudah ada.
+  Django otomatis mendeteksi: jika object ada = EDIT, jika tidak ada = TAMBAH.
+  Form menggunakan {% csrf_token %} untuk keamanan (cegah CSRF attack).
+
+  FLOW DATA:
+  - URL tambah: /hutang/hutang/add/ -> HutangCreateView- URL edit:   /hutang/hutang/<pk>/edit/ -> HutangUpdateView- GET:  Tampilkan form kosong (tambah) atau form terisi (edit)- POST: Validasi input -> simpan ke database -> redirect ke list- Jika validasi gagal: tampilkan kembali form + pesan error
+
+  RELASI KE MODUL LAIN:
+  - apps/hutang/models.py -> Model Hutang (field yang disimpan)- apps/hutang/forms.py -> Form class (validasi + widget)- apps/hutang/views.py -> CreateView + UpdateView (handler)- apps/core/validators.py -> Validasi bisnis (jika ada)
+
+  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
+  - BOLEH diubah: Urutan field, label, placeholder, help text- BOLEH ditambah: Field baru (sesuaikan juga di forms.py dan models.py)- JANGAN dihapus: {% csrf_token %} (wajib untuk keamanan)- JANGAN dihapus: {{ form.as_p }} atau {{ form.field_name }} (render field)
+
+  TIPS & DEBUGGING:
+  - Error 'CSRF token missing'? Pastikan {% csrf_token %} ada di <form>- Field tidak muncul? Cek forms.py Meta.fields- Validasi gagal? Cek clean_<field>() di forms.py- Tambah field baru: 1) models.py 2) forms.py 3) template ini 4) migrate
+
+  ==========================================================================
+{% endcomment %}
+
+
 {% block title %}{{ title }} - Hutang{% endblock title %}
 
 {% block content %}
@@ -13,6 +37,7 @@
             <div class="card mb-4">
                 <h5 class="card-header"><i class="ri-hand-coin-line me-2"></i>{{ title }}</h5>
                 <div class="card-body">
+                    
                     <form method="post">
                         {% csrf_token %}
                         

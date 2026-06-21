@@ -1,6 +1,6 @@
-﻿"""
+"""
 ==========================================================================
- GUNICORN PRODUCTION CONFIG — SIMS-Software-Isolated-Schema-34
+ GUNICORN PRODUCTION CONFIG -- SIMS-Software+Accounting-Isolated-Schema-36
 ==========================================================================
  Panduan deploy:
    gunicorn -c gunicorn.conf.py config.wsgi:application
@@ -12,8 +12,8 @@
 import multiprocessing
 
 # ===== SOCKET / BIND =====
-# Bind ke semua interface port 8000 (Nginx akan proxy ke sini)
-bind = "0.0.0.0:8000"
+# Bind ke localhost saja (Nginx reverse proxy akan forward ke sini)
+bind = "127.0.0.1:8006"
 
 # ===== WORKERS =====
 # Formula standar: (2 x CPU cores) + 1
@@ -28,18 +28,18 @@ max_requests = 1000        # Restart worker setelah 1000 requests
 max_requests_jitter = 100  # Random jitter agar worker tidak restart bersamaan
 
 # ===== LOGGING =====
-accesslog = "-"            # stdout (systemd/Docker akan capture)
-errorlog  = "-"            # stderr
+accesslog = "/var/log/gunicorn/sims_acc_schema/access.log"
+errorlog  = "/var/log/gunicorn/sims_acc_schema/error.log"
 loglevel  = "info"         # debug | info | warning | error | critical
 capture_output = True      # Capture Django print() ke errorlog
 
 # ===== PROCESS NAMING =====
-proc_name = "sims_erp_schema"
+proc_name = "sims_acc_schema"
 
 # ===== SECURITY =====
-limit_request_line   = 4096   # Max panjang URL
-limit_request_fields = 100    # Max HTTP headers
-forwarded_allow_ips  = "*"    # Trust X-Forwarded-For dari Nginx (sesuaikan IP Nginx di prod)
+limit_request_line   = 4096     # Max panjang URL
+limit_request_fields = 100      # Max HTTP headers
+forwarded_allow_ips  = "127.0.0.1"  # Trust X-Forwarded-For dari Nginx saja
 
 # ===== GRACEFUL SHUTDOWN =====
 graceful_timeout = 30          # Tunggu 30 detik sebelum force-kill worker

@@ -1,6 +1,15 @@
 {% extends layout_path %}
 {% load static %}
 
+{% comment %}
+   ==========================================================================
+   FRAUD DETECTION - Pengaturan
+   Halaman konfigurasi parameter fraud detection:
+   threshold, aturan deteksi, dan notifikasi alert.
+   ==========================================================================
+{% endcomment %}
+
+
 {% block title %}Pengaturan Fraud - Fraud Detection{% endblock title %}
 
 {% block content %}
@@ -18,7 +27,6 @@
                     <form id="formFraudSettings">
                         {% csrf_token %}
 
-                        <!-- Toggle: Blokir Hapus Data Lunas -->
                         <div class="d-flex justify-content-between align-items-center py-3 border-bottom">
                             <div>
                                 <h6 class="mb-1"><i class="ri-delete-bin-5-line me-1 text-danger"></i>Blokir Hapus Data Lunas</h6>
@@ -31,7 +39,6 @@
                             </div>
                         </div>
 
-                        <!-- Toggle: Blokir Stok Minus -->
                         <div class="d-flex justify-content-between align-items-center py-3 border-bottom">
                             <div>
                                 <h6 class="mb-1"><i class="ri-subtract-line me-1 text-warning"></i>Blokir Stok Minus</h6>
@@ -44,7 +51,6 @@
                             </div>
                         </div>
 
-                        <!-- Input: Batas Maksimal Diskon -->
                         <div class="d-flex justify-content-between align-items-center py-3 border-bottom">
                             <div>
                                 <h6 class="mb-1"><i class="ri-percent-line me-1 text-info"></i>Batas Maksimal Diskon</h6>
@@ -58,7 +64,6 @@
                             </div>
                         </div>
 
-                        <!-- Input: Jam Operasional -->
                         <div class="py-3 border-bottom">
                             <h6 class="mb-2"><i class="ri-time-line me-1 text-primary"></i>Jam Operasional Toko</h6>
                             <small class="text-muted mb-3 d-block">Aktivitas di luar jam ini akan otomatis <strong>ditandai sebagai anomali</strong>.</small>
@@ -78,7 +83,6 @@
                             </div>
                         </div>
 
-                        <!-- Submit -->
                         <div class="mt-4 text-end">
                             {% if can_edit.fraud_detection %}
                             <button type="submit" class="btn btn-primary btn-lg" id="btnSaveSettings">
@@ -94,7 +98,6 @@
                 </div>
             </div>
 
-            <!-- Info Card -->
             <div class="card mt-4">
                 <div class="card-body">
                     <div class="d-flex align-items-start">
@@ -135,11 +138,20 @@ document.getElementById('formFraudSettings').addEventListener('submit', function
         btn.disabled = false;
         btn.innerHTML = '<i class="ri-save-line me-1"></i>Simpan Pengaturan';
         if (data.success) {
-            // Show success toast/alert
+            
             const alertDiv = document.createElement('div');
             alertDiv.className = 'alert alert-success alert-dismissible fade show mt-3';
-            alertDiv.innerHTML = '<i class="ri-check-line me-1"></i>' + data.message +
-                '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+            var iconEl = document.createElement('i');
+            iconEl.className = 'ri-check-line me-1';
+            alertDiv.appendChild(iconEl);
+            var msgSpan = document.createElement('span');
+            msgSpan.textContent = data.message;
+            alertDiv.appendChild(msgSpan);
+            var closeBtn = document.createElement('button');
+            closeBtn.type = 'button';
+            closeBtn.className = 'btn-close';
+            closeBtn.setAttribute('data-bs-dismiss', 'alert');
+            alertDiv.appendChild(closeBtn);
             this.parentNode.insertBefore(alertDiv, this.nextSibling);
             setTimeout(() => alertDiv.remove(), 3000);
         } else {

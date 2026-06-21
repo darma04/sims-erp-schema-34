@@ -286,7 +286,7 @@ class OrderService(models.Model):
     pelanggan = models.ForeignKey(
         Pelanggan,
         on_delete=models.PROTECT,
-        related_name='order_services',
+        related_name='order_services_pelanggan',
         verbose_name="Pelanggan"
     )
 
@@ -294,7 +294,7 @@ class OrderService(models.Model):
     jenis_perangkat = models.ForeignKey(
         Perangkat,
         on_delete=models.PROTECT,
-        related_name='order_services',
+        related_name='order_services_perangkat',
         verbose_name="Jenis Perangkat"
     )
     merek = models.CharField(max_length=100, verbose_name="Merek")
@@ -392,7 +392,7 @@ class OrderService(models.Model):
         null=True,
         blank=True,
         verbose_name="Metode Pembayaran",
-        related_name='order_services'
+        related_name='order_services_pembayaran'
     )
 
     # ===== ESTIMASI & CATATAN =====
@@ -415,7 +415,7 @@ class OrderService(models.Model):
         'produk.Gudang',
         on_delete=models.SET_NULL,
         null=True, blank=True,
-        related_name='order_services',
+        related_name='order_services_cabang',
         verbose_name="Cabang / Gudang",
         help_text="Cabang/gudang tempat order service ini ditangani"
     )
@@ -519,8 +519,8 @@ class OrderService(models.Model):
 
     def generate_nomor(self):
         """Generate nomor service: SVC/2026/03/0001"""
-        from datetime import datetime
-        today = datetime.now()
+        from django.utils import timezone
+        today = timezone.now()
         prefix = f"SVC/{today.year}/{today.month:02d}"
 
         last = OrderService.objects.filter(
@@ -726,13 +726,13 @@ class PenggunaanSparepart(models.Model):
     produk = models.ForeignKey(
         'produk.Produk',
         on_delete=models.PROTECT,
-        related_name='penggunaan_service',
+        related_name='penggunaan_sparepart',
         verbose_name="Sparepart"
     )
     gudang = models.ForeignKey(
         'produk.Gudang',
         on_delete=models.PROTECT,
-        related_name='penggunaan_service',
+        related_name='penggunaan_sparepart',
         verbose_name="Gudang Sumber"
     )
     jumlah = models.DecimalField(
@@ -776,7 +776,7 @@ class PenggunaanSparepart(models.Model):
         if self.stok_dikurangi:
             return
         from apps.produk.models import Stok
-        from django.db import transaction
+        from django.db import transaction, OperationalError
         with transaction.atomic():
             stok, _ = Stok.objects.get_or_create(
                 produk=self.produk,
@@ -784,7 +784,14 @@ class PenggunaanSparepart(models.Model):
                 defaults={'jumlah': 0}
             )
             # Re-fetch dengan row lock untuk mencegah race condition
-            stok = Stok.objects.select_for_update().get(pk=stok.pk)
+            # nowait=True → gagal cepat jika baris terkunci (cegah deadlock)
+            try:
+                stok = Stok.objects.select_for_update(nowait=True).get(pk=stok.pk)
+            except OperationalError:
+                raise ValueError(
+                    f"Stok {self.produk.nama} sedang diproses oleh pengguna lain. "
+                    f"Coba lagi dalam beberapa saat."
+                )
             if stok.jumlah < self.jumlah:
                 raise ValueError(
                     f"Stok {self.produk.nama} tidak mencukupi! "
@@ -800,7 +807,7 @@ class PenggunaanSparepart(models.Model):
         if not self.stok_dikurangi:
             return
         from apps.produk.models import Stok
-        from django.db import transaction
+        from django.db import transaction, OperationalError
         with transaction.atomic():
             stok, _ = Stok.objects.get_or_create(
                 produk=self.produk,
@@ -808,7 +815,13 @@ class PenggunaanSparepart(models.Model):
                 defaults={'jumlah': 0}
             )
             # Re-fetch dengan row lock untuk mencegah race condition
-            stok = Stok.objects.select_for_update().get(pk=stok.pk)
+            try:
+                stok = Stok.objects.select_for_update(nowait=True).get(pk=stok.pk)
+            except OperationalError:
+                raise ValueError(
+                    f"Stok {self.produk.nama} sedang diproses oleh pengguna lain. "
+                    f"Coba lagi dalam beberapa saat."
+                )
             stok.jumlah += self.jumlah
             stok.save()
             self.stok_dikurangi = False

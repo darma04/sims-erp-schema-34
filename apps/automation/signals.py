@@ -261,7 +261,7 @@ def kirim_notifikasi_order_service(instance):
     detail_sparepart = ""
     total_sparepart = 0
     for sp in instance.penggunaan_sparepart.select_related('produk').all():
-        detail_sparepart += f"  • {sp.produk.nama} x{sp.jumlah} = Rp {format_angka(sp.subtotal)}\n"
+        detail_sparepart += f"  \u2022 {sp.produk.nama} x{sp.jumlah} = Rp {format_angka(sp.subtotal)}\n"
         total_sparepart += float(sp.subtotal)
 
     if not detail_sparepart:

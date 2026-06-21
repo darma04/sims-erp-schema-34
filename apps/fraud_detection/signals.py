@@ -73,10 +73,10 @@ _BYPASS_FRAUD_SIGNALS = False
 # FRAUD_BLOCK, sesuai deskripsi UI: "tidak bisa dihapus kecuali superuser".
 #
 # Penggunaan dari views.py sebelum delete:
-#   from apps.fraud_detection.signals import set_current_delete_user, clear_current_delete_user
-#   set_current_delete_user(request.user)
+#   from apps.fraud_detection import signals as fraud_signals
+#   fraud_signals.set_current_delete_user(request.user)
 #   instance.delete()
-#   clear_current_delete_user()
+#   fraud_signals.clear_current_delete_user()
 import threading
 _thread_locals = threading.local()
 
@@ -94,7 +94,6 @@ def clear_current_delete_user():
 def _get_current_delete_user():
     """Ambil user yang sedang melakukan delete (internal)."""
     return getattr(_thread_locals, 'current_delete_user', None)
-
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -139,8 +138,8 @@ def check_operasional_time():
         # Jika sekarang SEBELUM jam buka ATAU SESUDAH jam tutup → diluar jam
         if now_time < rule.jam_operasional_mulai or now_time > rule.jam_operasional_selesai:
             return True, rule
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Error tidak terduga: %s", e)
     return False, None
 
 
@@ -491,7 +490,7 @@ def detect_sparepart_anomali(sender, instance, created, **kwargs):
             order_nomor = order_service.nomor_service if order_service else 'N/A'
 
             # DIPERBAIKI #19: Baca threshold dari FraudRule (configurable via admin)
-            max_qty = rule.max_sparepart_qty or 10  # fallback ke 10 jika 0/null
+            max_qty = getattr(rule, 'max_sparepart_qty', None) or 10  # fallback ke 10 jika 0/null
 
             # 1. Deteksi jumlah sparepart yang sangat besar (> threshold)
             if jumlah > max_qty:
@@ -573,3 +572,135 @@ def detect_biaya_service_anomali(sender, instance, created, **kwargs):
                 )
         except Exception as e:
             logger.error(f"Error in detect_biaya_service_anomali: {e}")
+
+
+
+# ═══════════════════════════════════════════════════════════════
+#  SIGNAL 6: ANOMALI PEMBAYARAN PIUTANG (post_save)
+# ═══════════════════════════════════════════════════════════════
+# Trigger: Setiap kali PembayaranPiutang BARU disimpan (created=True)
+# Target model: PembayaranPiutang
+# Aksi: Buat FraudAlert jenis 'anomali_lainnya' severity 'medium'/'high'
+#
+# Kenapa penting?
+# → Pembayaran piutang melebihi sisa hutang bisa mengindikasikan:
+#   - Salah input nominal (typo, salah desimal)
+#   - Kecurangan: kasir memasukkan pembayaran palsu untuk "menutup" piutang
+#   - Pembayaran ganda (double entry)
+
+@receiver(post_save)
+def detect_anomali_pembayaran_piutang(sender, instance, created, **kwargs):
+    """
+    Deteksi anomali pada pembayaran piutang:
+    1. Jumlah bayar > sisa piutang (overpayment)
+    2. Pembayaran di luar jam operasional
+    """
+    if _BYPASS_FRAUD_SIGNALS:
+        return
+    if sender.__name__ != 'PembayaranPiutang':
+        return
+    if not created:
+        return
+
+    try:
+        piutang = getattr(instance, 'piutang', None)
+        if not piutang:
+            return
+
+        from decimal import Decimal
+        jumlah_bayar = Decimal(str(getattr(instance, 'jumlah', 0) or 0))
+        # Hitung sisa SEBELUM pembayaran ini (jumlah_dibayar di piutang sudah include pembayaran ini)
+        sisa_setelah = piutang.jumlah_total - piutang.jumlah_dibayar
+
+        # 1. Cek overpayment: jika jumlah_dibayar > jumlah_total → anomali
+        if piutang.jumlah_dibayar > piutang.jumlah_total:
+            user = getattr(instance, 'created_by', None)
+            FraudAlert.objects.create(
+                jenis='anomali_lainnya',
+                severity='high',
+                deskripsi=(
+                    f"Overpayment Piutang {piutang.nomor}: "
+                    f"Total dibayar Rp {piutang.jumlah_dibayar:,.0f} "
+                    f"melebihi piutang Rp {piutang.jumlah_total:,.0f}"
+                ),
+                user_terkait=user,
+                nominal=jumlah_bayar,
+                model_name='PembayaranPiutang',
+                object_id=str(instance.pk)
+            )
+
+        # 2. Cek pembayaran di luar jam operasional
+        is_outside, rule = check_operasional_time()
+        if is_outside:
+            now_time = timezone.localtime().time().strftime('%H:%M')
+            user = getattr(instance, 'created_by', None)
+            FraudAlert.objects.create(
+                jenis='diluar_jam',
+                severity='medium',
+                deskripsi=(
+                    f"Pembayaran piutang di luar jam operasional ({now_time}): "
+                    f"Piutang {piutang.nomor}, jumlah Rp {jumlah_bayar:,.0f}"
+                ),
+                user_terkait=user,
+                nominal=jumlah_bayar,
+                model_name='PembayaranPiutang',
+                object_id=str(instance.pk)
+            )
+    except Exception as e:
+        logger.error(f"Error in detect_anomali_pembayaran_piutang: {e}")
+
+
+# ═══════════════════════════════════════════════════════════════
+#  SIGNAL 7: HAPUS PIUTANG ATAU PEMBAYARAN PIUTANG (pre_delete)
+# ═══════════════════════════════════════════════════════════════
+# Trigger: pre_delete pada Piutang / PembayaranPiutang
+# Target: blokir penghapusan piutang yang sudah lunas/sebagian dibayar,
+#         kecuali oleh superuser. Hindari "menghapus jejak" piutang lunas.
+
+@receiver(pre_delete)
+def detect_hapus_piutang_lunas(sender, instance, **kwargs):
+    """
+    Deteksi dan blokir penghapusan Piutang yang sudah ada pembayaran-nya,
+    kecuali oleh superuser.
+    """
+    if _BYPASS_FRAUD_SIGNALS:
+        return
+    if sender.__name__ != 'Piutang':
+        return
+
+    try:
+        status = getattr(instance, 'status', '')
+        if status in ['lunas', 'sebagian']:
+            rule = FraudRule.load()
+            user = getattr(instance, 'created_by', None)
+            nominal = getattr(instance, 'jumlah_total', 0)
+
+            # Catat alert
+            FraudAlert.objects.create(
+                jenis='hapus_lunas',
+                severity='high',
+                deskripsi=(
+                    f"Percobaan menghapus Piutang dengan status '{status}': "
+                    f"{getattr(instance, 'nomor', instance.pk)}, "
+                    f"sudah dibayar Rp {getattr(instance, 'jumlah_dibayar', 0):,.0f}"
+                ),
+                user_terkait=user,
+                nominal=nominal,
+                model_name='Piutang',
+                object_id=str(instance.pk)
+            )
+
+            # Blokir untuk non-superuser jika rule aktif
+            if getattr(rule, 'block_delete_paid', False):
+                current_user = _get_current_delete_user()
+                if current_user and getattr(current_user, 'is_superuser', False):
+                    pass  # superuser diizinkan
+                else:
+                    raise Exception(
+                        f"FRAUD_BLOCK: Penghapusan Piutang dengan status '{status}' "
+                        "diblokir oleh sistem keamanan."
+                    )
+    except Exception as e:
+        if "FRAUD_BLOCK" in str(e):
+            raise
+        logger.error(f"Error in detect_hapus_piutang_lunas: {e}")

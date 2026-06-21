@@ -53,7 +53,6 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
         <span class="text-muted fw-light"><i class="ri-shield-keyhole-line me-1"></i>Fraud Detection /</span> Dashboard
     </h4>
 
-    <!-- Row 1: Summary Cards -->
     <div class="row g-6 mb-6">
         <div class="col-6 col-xl-3">
             <div class="card h-100">
@@ -129,7 +128,6 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
         </div>
     </div>
 
-    <!-- Row 2: Total Aset Asli -->
     <div class="row mb-6">
         <div class="col-12">
             <div class="card" style="background: linear-gradient(135deg, #696cff 0%, #8592ff 100%);">
@@ -148,10 +146,8 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
         </div>
     </div>
 
-    {# ─── Row 3: Cards Keuangan / Aset / Nominal dengan Aksi Detail ─── #}
-    {# Menampilkan gambaran finansial keseluruhan + selisih kas kasir #}
     <div class="row g-6 mb-6">
-        {# Card: Total Pemasukan — seluruh pendapatan dari POS + Sales Order #}
+        
         <div class="col-6 col-xl-3">
             <div class="card h-100">
                 <div class="card-body">
@@ -175,7 +171,7 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
                 </div>
             </div>
         </div>
-        {# Card: Total Pengeluaran — biaya dari Purchase Order + Biaya operasional #}
+        
         <div class="col-6 col-xl-3">
             <div class="card h-100">
                 <div class="card-body">
@@ -199,7 +195,7 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
                 </div>
             </div>
         </div>
-        {# Card: Selisih Keuangan — laba/rugi (pemasukan - pengeluaran) #}
+        
         <div class="col-6 col-xl-3">
             <div class="card h-100">
                 <div class="card-body">
@@ -227,7 +223,7 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
                 </div>
             </div>
         </div>
-        {# Card: Selisih Kas — total selisih rekonsiliasi kasir per shift #}
+        
         <div class="col-6 col-xl-3">
             <div class="card h-100">
                 <div class="card-body">
@@ -257,42 +253,60 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
         </div>
     </div>
 
-    <!-- Row 4: Tren Anomali (Wave/Area Chart) + Distribusi Jenis (Doughnut) -->
     <div class="row mb-6">
-        <!-- Tren Anomali Bulanan — ApexCharts Area (Wave) -->
+        
         <div class="col-lg-8 mb-4">
             <div class="card h-100">
-                <div class="card-header d-flex align-items-center justify-content-between">
-                    <h5 class="card-title mb-0">
+                <div class="card-header d-flex flex-nowrap align-items-center justify-content-between">
+                    <h5 class="card-title mb-0 me-2">
                         <i class="ri-line-chart-line me-2"></i>Tren Anomali Bulanan
                     </h5>
+                    <div class="dropdown flex-shrink-0">
+                        <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a>
+                            <a class="dropdown-item" href="javascript:void(0)" onclick="if(window.__trendAnomalyChart) window.__trendAnomalyChart.exportTo({type:'png'});"><i class="ri-download-2-line me-2"></i>Unduh Grafik</a>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
+                    {% if trend_values != '[]' %}
                     <div id="trendAnomalyChart" style="min-height: 320px;"></div>
-                    {% if not trend_labels or trend_labels == '[]' %}
-                    <div class="text-center text-muted py-3">
-                        <i class="ri-bar-chart-box-line ri-48px mb-2 d-block" style="opacity:0.3;"></i>
-                        Belum ada data anomali
+                    {% else %}
+                    <div class="d-flex align-items-center justify-content-center" style="min-height: 320px;">
+                        <div class="text-center text-muted">
+                            <i class="ri-bar-chart-line ri-3x mb-2 d-block"></i>
+                            <p class="mb-0">Data Kosong</p>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
             </div>
         </div>
 
-        <!-- Distribusi Jenis Anomali — ApexCharts Donut -->
         <div class="col-lg-4 mb-4">
             <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
+                <div class="card-header d-flex flex-nowrap align-items-center justify-content-between">
+                    <h5 class="card-title mb-0 me-2">
                         <i class="ri-pie-chart-line me-2"></i>Distribusi Jenis
                     </h5>
+                    <div class="dropdown flex-shrink-0">
+                        <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a>
+                            <a class="dropdown-item" href="javascript:void(0)" onclick="if(window.__jenisDistChart&&window.__jenisDistChart.exportTo){window.__jenisDistChart.exportTo({type:'png'});}"><i class="ri-download-2-line me-2"></i>Unduh Grafik</a>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body text-center">
+                    {% if jenis_values != '[]' %}
                     <div id="jenisDistChart" style="min-height: 260px;"></div>
-                    {% if not jenis_labels or jenis_labels == '[]' %}
-                    <div class="text-center text-muted py-3">
-                        <i class="ri-pie-chart-line ri-48px mb-2 d-block" style="opacity:0.3;"></i>
-                        Belum ada data
+                    {% else %}
+                    <div class="d-flex align-items-center justify-content-center" style="min-height: 260px;">
+                        <div class="text-center text-muted">
+                            <i class="ri-pie-chart-line ri-3x mb-2 d-block"></i>
+                            <p class="mb-0">Data Kosong</p>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
@@ -300,9 +314,8 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
         </div>
     </div>
 
-    <!-- Row 4: Top 5 Karyawan Berisiko + Rekonsiliasi Kas Terbaru -->
     <div class="row">
-        <!-- Top 5 Karyawan Berisiko -->
+        
         <div class="col-lg-6 mb-4">
             <div class="card h-100">
                 <div class="card-header d-flex align-items-center justify-content-between">
@@ -353,7 +366,6 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
             </div>
         </div>
 
-        <!-- Rekonsiliasi Kas Terbaru -->
         <div class="col-lg-6 mb-4">
             <div class="card h-100">
                 <div class="card-header d-flex align-items-center justify-content-between">
@@ -415,7 +427,7 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
         [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]')).forEach(function (el) {
             new bootstrap.Tooltip(el);
         });
-        // ═══ DETEKSI DARK MODE ═══
+        
         var isDark = typeof isDarkStyle !== 'undefined' ? isDarkStyle :
             (document.documentElement.classList.contains('dark-style') ||
                 document.body.classList.contains('dark-style'));
@@ -423,7 +435,7 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
         var gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
         var labelColor = isDark ? '#b4b5ba' : '#a5a3ae';
 
-        // ═══ TREN ANOMALI — ApexCharts Area (Wave) ═══
+        {% if trend_values != '[]' %}
         var trendLabels = {{ trend_labels|safe }};
         var trendValues = {{ trend_values|safe }};
 
@@ -434,14 +446,7 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
                 height: 320,
                 fontFamily: 'Inter, -apple-system, sans-serif',
                 background: 'transparent',
-                toolbar: {
-                    show: true,
-                    tools: {
-                        download: '<i class="ri-download-2-line" style="font-size:16px"></i>',
-                        selection: false, zoom: false, zoomin: false,
-                        zoomout: false, pan: false, reset: false
-                    }
-                },
+                toolbar: { show: false },
                 animations: {
                     enabled: true,
                     easing: 'easeinout',
@@ -506,9 +511,11 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
 
         var trendChart = new ApexCharts(document.querySelector('#trendAnomalyChart'), trendOptions);
         trendChart.render();
+        window.__trendAnomalyChart = trendChart;
     }
+    {% endif %}
 
-    // ═══ DISTRIBUSI JENIS — ApexCharts Donut ═══
+    {% if jenis_values != '[]' %}
     var jenisLabels = {{ jenis_labels|safe }};
     var jenisValues = {{ jenis_values|safe }};
 
@@ -521,6 +528,7 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
                 height: 260,
                 fontFamily: 'Inter, -apple-system, sans-serif',
                 background: 'transparent',
+                toolbar: { show: false },
                 animations: { enabled: true, easing: 'easeinout', speed: 800 }
             },
             series: jenisValues,
@@ -566,7 +574,9 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
 
         var donutChart = new ApexCharts(document.querySelector('#jenisDistChart'), donutOptions);
         donutChart.render();
+        window.__jenisDistChart = donutChart;
     }
+    {% endif %}
 });
 </script>
 {% endblock page_js %}

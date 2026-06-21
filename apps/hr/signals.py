@@ -180,5 +180,6 @@ def create_penggajian_journal(sender, instance, **kwargs):
                 source_type="payroll",
                 source_id=str(instance.pk),
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Gagal mencatat activity log: %s", e)
+        # raise  # Disabled: transaksi tetap tersimpan meskipun jurnal gagal

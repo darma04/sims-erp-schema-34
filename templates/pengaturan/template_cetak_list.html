@@ -25,7 +25,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    <!-- Header -->
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -42,7 +42,6 @@
         </div>
     </div>
 
-    <!-- Summary Cards -->
     <div class="row g-4 mb-4">
         <div class="col-sm-4">
             <div class="card h-100">
@@ -91,7 +90,6 @@
         </div>
     </div>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3 align-items-end">
@@ -123,7 +121,7 @@
                     </select>
                 </div>
             </div>
-            <!-- Baris kedua: Pilih Kolom -->
+            
             <div class="row g-3 mt-2 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
@@ -196,7 +194,6 @@
         </div>
     </div>
 
-    <!-- Data Table Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="ri-table-line me-2"></i>Daftar Template Cetak</h5>
@@ -225,6 +222,7 @@
                         </tr>
                     </thead>
                     <tbody>
+                        {% if templates %}
                         {% for template in templates %}
                         <tr>
                             <td>{{ forloop.counter }}</td>
@@ -275,16 +273,18 @@
                                 {% endif %}
                             </td>
                         </tr>
-                        {% empty %}
+                        {% endfor %}
+                        {% else %}
                         <tr>
                             <td colspan="8" class="text-center text-muted py-4">
-                                Belum ada template cetak. 
+                                <i class="ri-file-list-3-line ri-3x text-muted mb-3 d-block"></i>
+                                <p class="text-muted mb-2">Belum ada template cetak</p>
                                 {% if can_create.pengaturan %}
-                                <a href="{% url 'pengaturan:template_cetak_create' %}">Tambah template</a>
+                                <p class="text-muted small">Klik "Tambah Template" untuk menambahkan template baru</p>
                                 {% endif %}
                             </td>
                         </tr>
-                        {% endfor %}
+                        {% endif %}
                     </tbody>
                     <tfoot class="table-footer-summary">
                         <tr>
@@ -296,7 +296,7 @@
                                         <small class="text-muted" style="font-size: 0.75rem;">{{ total_template }} Template Terdaftar</small>
                                     </div>
                                 </div>
-                            </td>
+                            </td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td>
                             <td class="py-3" style="vertical-align: middle;"></td>
                             <td class="py-3" style="vertical-align: middle;">
                                 <div class="d-flex flex-column align-items-center">
@@ -327,7 +327,6 @@
     </div>
 </div>
 
-<!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteTemplateModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -357,6 +356,8 @@
 var templateTable;
 
 $(document).ready(function() {
+    {% if templates %}
+    if (!$.fn.dataTable.isDataTable('#templateTable')) {
     templateTable = $('#templateTable').DataTable({
         responsive: false,
         ordering: true,
@@ -388,14 +389,16 @@ $(document).ready(function() {
             $('.dataTables_filter input').attr('placeholder', 'Cari template...');
         }
     });
+    }
+    {% endif %}
 });
 
 function applyFilters() {
+    if (!templateTable) return;
     const search = document.getElementById('searchTemplate').value;
     const jenis = document.getElementById('jenisFilter').value;
     const status = document.getElementById('statusFilter').value;
 
-    // Column 1 = Nama, Column 2 = Jenis, Column 5 = Status
     templateTable.column(1).search(search);
     templateTable.column(2).search(jenis);
     templateTable.column(5).search(status);
@@ -403,13 +406,13 @@ function applyFilters() {
 }
 
 function resetFilters() {
+    if (!templateTable) return;
     document.getElementById('searchTemplate').value = '';
     document.getElementById('jenisFilter').value = '';
     document.getElementById('statusFilter').value = '';
     templateTable.search('').columns().search('').draw();
 }
 
-// Pilih Kolom Functions
 function toggleColumns() {
     if (!templateTable) return;
     document.querySelectorAll('.column-checkbox').forEach(function(cb) {
@@ -453,18 +456,16 @@ function exportExcel() {
         }
     });
 
-    // Summary
     const summaryRows = [
         ['RINGKASAN', '', '', '', '', '', ''],
         ['Total Template', '{{ total_template }}', '', '', '', '', ''],
         ['Aktif', '{{ total_aktif }}', '', '', '', '', ''],
-        ['Nonaktif', '{{ total_nonaktif }}', '', '', '', '', '']
     ];
 
     if (typeof ExportUtils !== 'undefined') {
         ExportUtils.exportTableExcel(title, headers, rows, summaryRows, 'template_cetak');
     } else {
-        // Fallback: simple HTML table export
+        
         let html = '<html><head><meta charset="UTF-8"></head><body>';
         html += '<h2>' + title + '</h2>';
         html += '<table border="1" cellpadding="5" cellspacing="0">';
@@ -472,7 +473,7 @@ function exportExcel() {
         rows.forEach(row => {
             html += '<tr>' + row.map(c => '<td>' + c + '</td>').join('') + '</tr>';
         });
-        html += '<tr><td colspan="5" style="text-align:right;font-weight:bold">RINGKASAN:</td><td colspan="2">{{ total_template }} Total | {{ total_aktif }} Aktif | {{ total_nonaktif }} Nonaktif</td></tr>';
+        html += '<tr><td colspan="5" class="text-center py-5">RINGKASAN:</td><td colspan="2"class="text-center py-5">{{ total_template }} Total | {{ total_aktif }} Aktif | {{ total_nonaktif }} Nonaktif</td></tr>';
         html += '</table></body></html>';
 
         const blob = new Blob([html], {type: 'application/vnd.ms-excel'});
@@ -503,7 +504,6 @@ function exportPDF() {
         }
     });
 
-    // Summary line
     const summaryText = 'Total: {{ total_template }} template | Aktif: {{ total_aktif }} | Nonaktif: {{ total_nonaktif }}';
 
     if (typeof ExportUtils !== 'undefined') {
@@ -543,7 +543,6 @@ function exportPDF() {
     }
 }
 
-// === DELETE FUNCTIONS ===
 var deleteId = null;
 function confirmDelete(id, nama) {
     deleteId = id;

@@ -29,7 +29,7 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    <!-- Header -->
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -44,10 +44,9 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
         {% endif %}
     </div>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
-            <!-- Baris 1: Filter Inputs -->
+            
             <div class="row g-3">
                 <div class="col-md-3">
                     <label class="form-label">Tanggal Mulai</label>
@@ -77,7 +76,6 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
                 </div>
             </div>
 
-            <!-- Baris 2: Pilih Kolom (kiri) dan Tombol Filter (kanan) -->
             <div class="row g-3 mt-2 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
@@ -158,8 +156,6 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
         </div>
     </div>
 
-
-    <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Daftar Transaksi POS</h5>
@@ -294,7 +290,7 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
                                         Transaksi</small>
                                 </div>
                             </div>
-                        </td>
+                        </td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td>
                         <td class="py-3 text-center" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-primary d-flex align-items-center gap-1 mb-2"
@@ -317,13 +313,13 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
                         </td>
                         <td class="py-3"></td>
                         <td class="py-3"></td>
+                        <td class="py-3"></td>
                     </tr>
                 </tfoot>
             </table>
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
     <div class="modal fade" id="deleteTransactionModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -359,7 +355,7 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
 
 {% block page_js %}
 <style>
-    /* DataTables Custom Styling */
+    
     .dataTables_wrapper .dataTables_info {
         padding: 1rem 1.5rem;
         font-size: 0.875rem;
@@ -424,7 +420,6 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
         letter-spacing: 0;
     }
 
-    /* Mobile Horizontal Scroll */
     @media (max-width: 768px) {
         .card-datatable {
             overflow-x: hidden !important;
@@ -432,11 +427,7 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
             max-width: 100%;
         }
 
-        .datatables-transaction {
-            min-width: 1100px !important;
-            width: 1100px !important;
-            table-layout: auto !important;
-        }
+        {% if gudang_list %}.datatables-transaction { min-width: 1100px !important; }{% endif %}
 
         .dataTables_wrapper {
             overflow-x: hidden !important;
@@ -447,7 +438,7 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
 
 <script>
     $(document).ready(function () {
-        // Inisialisasi Flatpickr
+        
         flatpickr('#startDate', {
             dateFormat: 'Y-m-d',
             locale: 'id'
@@ -458,8 +449,7 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
             locale: 'id'
         });
 
-        // Inisialisasi DataTable
-        {% if transaction_list %}
+        {% if gudang_list %}
         const table = $('#transactionTable').DataTable({
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini",
@@ -479,12 +469,12 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
                     "sLast": "Terakhir"
                 }
             },
-            order: [[1, 'desc']], // Sort by tanggal desc
+            order: [[1, 'desc']], 
             pageLength: 25,
             lengthMenu: [[10, 25, 50, 75, 100, -1], ['10', '25', '50', '75', '100', 'Semua']],
             responsive: false,
             columnDefs: [
-                { orderable: false, targets: [8] } // Nonaktifkan sort untuk kolom aksi (indeks 8)
+                { orderable: false, targets: [8] } 
             ],
             dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             initComplete: function () {
@@ -494,13 +484,11 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
         {% endif %}
     });
 
-    // Toggle visibilitas kolom menggunakan DataTables API
     function showErrorAlert(message) {
-        const modalBody = ('#deleteTransactionModal').find('.modal-body');
+        const modalBody = $('#deleteTransactionModal').find('.modal-body');
         modalBody.find('.delete-error-msg').remove();
         modalBody.append('<div class="delete-error-msg alert alert-danger d-flex align-items-start mt-3 mb-0" role="alert"><i class="ri-error-warning-line me-2 fs-5"></i><div>' + message + '</div></div>');
     }
-
 
     function applyFilter() {
         const startDate = $('#startDate').val();
@@ -521,7 +509,6 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
         window.location.href = '{% url "penjualan:transaksi" %}';
     }
 
-    // Toggle visibilitas kolom menggunakan DataTables API
     function toggleColumns() {
         const checkboxes = document.querySelectorAll('.column-checkbox');
         const table = new $.fn.dataTable.Api('#transactionTable');
@@ -541,7 +528,6 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
         toggleColumns();
     }
 
-    // Template Data for Independent Headers/Footers
     const EXCEL_INFO = {
         name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
         address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -560,13 +546,13 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
         copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
     };
 
-    // === FOOTER DATA: Explicit summary values per column index ===
     const FOOTER_DATA = { 4: "{{ total_qty|escapejs }}", 5: "Rp {{ total_pendapatan|floatformat:0|escapejs }}" };
     const FOOTER_LABEL = 'RINGKASAN';
 
     function exportToExcel() {
+        if (typeof $ === "undefined" || typeof $.fn.dataTable === "undefined" || !$.fn.dataTable.isDataTable('#transactionTable')) { alert('Tidak ada data untuk di-export. Silakan tambahkan data terlebih dahulu.'); return; }
         const table = document.getElementById('transactionTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#transactionTable');
 
@@ -586,13 +572,12 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
         html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
         html += '<body>';
 
-        // --- ADD EXCEL HEADER (Company Info) ---
         html += '<table border="0">';
         if (typeof EXCEL_INFO !== 'undefined') {
-            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
-            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
-            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
-            html += `<tr><td colspan="${colCount}"></td></tr>`; // empty row for spacing
+            html += `<tr><td colspan="${colCount}">${EXCEL_INFO.name}</td></tr>`;
+            html += `<tr><td colspan="${colCount}">${EXCEL_INFO.address}</td></tr>`;
+            html += `<tr><td colspan="${colCount}">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
+            html += `<tr><td colspan="${colCount}"></td></tr>`; 
         }
         html += '</table>';
 
@@ -605,7 +590,7 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
 
         html += '</tr></thead><tbody>';
 
-        tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
+          tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
             html += '<tr>';
             visibleColumns.forEach(col => {
                 let cellNode = tableObj.cell(rowIdx, col.index).node();
@@ -615,7 +600,6 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
             html += '</tr>';
         });
 
-        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
             let ri = 0;
@@ -643,7 +627,6 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
         }
         html += '</tbody></table>';
 
-        // --- ADD EXCEL FOOTER ---
         html += '<table border="0">';
         html += `<tr><td colspan="${colCount}"></td></tr>`;
         if (typeof EXCEL_INFO !== 'undefined') {
@@ -661,10 +644,11 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
     }
 
     function exportToPDF() {
+        if (typeof $ === "undefined" || typeof $.fn.dataTable === "undefined" || !$.fn.dataTable.isDataTable('#transactionTable')) { alert('Tidak ada data untuk di-export. Silakan tambahkan data terlebih dahulu.'); return; }
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('transactionTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#transactionTable');
 
@@ -698,7 +682,6 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
             if (row.length > 0) body.push(row);
         });
 
-        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             const summaryRow = [];
             let ri = 0;
@@ -788,7 +771,6 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
         pdfMake.createPdf(docDefinition).download('Transaksi_POS_' + new Date().toISOString().slice(0, 10) + '.pdf');
     }
 
-    // Tangani Hapus Transaksi
     let deleteId = null;
     function confirmDelete(id, name) {
         deleteId = id;
@@ -804,7 +786,6 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
         btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Menghapus...');
         $('#deleteTransactionModal .delete-error-msg').remove();
         
-        // Coba ambil CSRF token dari input form jika ada
         var csrfElement = document.querySelector('[name=csrfmiddlewaretoken]');
         var csrftoken = csrfElement ? csrfElement.value : '';
         
@@ -830,4 +811,42 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
         });
     });
 </script>
+
+<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning align-items-center py-3">
+                <h5 class="modal-title text-dark mb-0">
+                    <i class="ri-error-warning-line me-2"></i>Export Gagal
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center py-3">
+                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
+                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
+                    <i class="ri-close-line me-1"></i>Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+function showExportError() {
+    var modal = document.getElementById('exportErrorModal');
+    if (modal) {
+        new bootstrap.Modal(modal).show();
+    } else {
+        alert('Tabel tidak ditemukan!');
+    }
+}
+</script>
+
 {% endblock page_js %}

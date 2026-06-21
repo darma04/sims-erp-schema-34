@@ -38,6 +38,12 @@
  - FraudRule menggunakan pola Singleton (pk selalu = 1)
  - FraudAlert dibuat otomatis oleh signals.py saat anomali terdeteksi
  - CashReconciliation.discrepancy dihitung otomatis di method save()
+
+ Konvensi penamaan field tanggal:
+ - Modul ini menggunakan konvensi English (created_at, updated_at) untuk
+   timestamp tracking, berbeda dengan modul inti yang menggunakan konvensi
+   Indonesian (dibuat_pada, diupdate_pada, tanggal). Hal ini dipertahankan
+   untuk konsistensi internal modul ini.
 ==========================================================================
 """
 
@@ -135,22 +141,36 @@ class FraudRule(models.Model):
     )
 
     # =================================================================
-    # FIELD 6: max_sparepart_qty — Batas Jumlah Sparepart per Item
+    # FIELD 6: max_sparepart_qty — Batas Maksimal Sparepart per Item
     # =================================================================
-    # Jika teknisi menambahkan sparepart melebihi jumlah ini dalam
-    # satu penggunaan, sistem buat FraudAlert jenis 'anomali_lainnya'.
-    # Default: 10 unit per item — admin bisa sesuaikan via pengaturan.
-    # Signal: detect_sparepart_anomali() di signals.py cek field ini.
-    max_sparepart_qty = models.PositiveIntegerField(
-        default=10,
-        verbose_name="Batas Jumlah Sparepart per Item",
-        help_text="Jumlah maksimal sparepart per item yang dianggap wajar. Lebih dari ini akan memicu alert fraud."
+    max_sparepart_qty = models.DecimalField(
+        max_digits=10, decimal_places=2, default=10.00,
+        verbose_name="Batas Maksimal Qty Sparepart",
+        help_text="Batas maksimal jumlah sparepart per item service. Default 10."
     )
 
     # =================================================================
-    # FIELD 6-7: Tracking — Siapa & kapan terakhir mengubah pengaturan
+    # FIELD 7: max_transaction_amount — Batas Transaksi Mencurigakan
     # =================================================================
-    updated_at = models.DateTimeField(auto_now=True)  # Otomatis update setiap kali save()
+    max_transaction_amount = models.DecimalField(
+        max_digits=15, decimal_places=2, default=10000000.00,
+        verbose_name="Batas Transaksi Mencurigakan (Rp)",
+        help_text="Jika nilai transaksi melebihi batas ini, buat FraudAlert. Default Rp 10.000.000."
+    )
+
+    # =================================================================
+    # FIELD 8: min_margin_percent — Margin Minimal untuk Alert
+    # =================================================================
+    min_margin_percent = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0.00,
+        verbose_name="Margin Minimal (%)",
+        help_text="Jika margin keuntungan di bawah % ini, buat FraudAlert. Default 0% (tanpa alert)."
+    )
+
+    # =================================================================
+    # FIELD 9-10: Tracking — Siapa & kapan terakhir mengubah pengaturan
+    # =================================================================
+    updated_at = models.DateTimeField(auto_now=True)
     updated_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True,
         verbose_name="Diubah Oleh"
@@ -226,7 +246,6 @@ class FraudAlert(models.Model):
         ('diluar_jam', 'Aktivitas Diluar Jam'),         # Transaksi di luar jam operasional
         ('adjustment_besar', 'Adjustment Stok Besar'),  # Adjustment qty > 50 atau nominal > 1 juta
         ('void_transaksi', 'Void Transaksi'),           # Void/batal transaksi
-        ('anomali_lainnya', 'Anomali Lainnya'),         # Anomali service center (sparepart/biaya)
         ('lainnya', 'Lainnya'),                         # Catch-all untuk jenis lain
     ]
 

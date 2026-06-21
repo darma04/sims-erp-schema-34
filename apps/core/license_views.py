@@ -86,6 +86,25 @@ def license_activation_view(request):
     return render(request, 'license/activation.html', context)
 
 
+@csrf_protect
+def license_error_view(request):
+    """
+    Halaman error ramah pengguna saat CLS down di instalasi baru.
+    Memberikan instruksi jelas untuk admin.
+    """
+    config = LicenseConfig.get_config()
+    hardware_id = config.hardware_id or generate_hardware_id()
+    cls_url = config.cls_server_url if config.cls_server_url else getattr(
+        settings, 'LICENSE_SERVER_URL', 'https://cls.serpgroup.cloud'
+    )
+    return render(request, 'license/error.html', {
+        'config': config,
+        'hardware_id': hardware_id,
+        'cls_url': cls_url,
+        'product_code': getattr(settings, 'PRODUCT_CODE', 'SERPTECH'),
+    })
+
+
 def license_status_view(request):
     """Menampilkan status lisensi saat ini (untuk admin)."""
     config = LicenseConfig.get_config()

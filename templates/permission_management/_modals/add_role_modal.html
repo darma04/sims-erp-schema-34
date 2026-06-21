@@ -5,7 +5,7 @@
    Field: nama role, deskripsi.
    ==========================================================================
 {% endcomment %}
-<!-- Add Role Modal with SubCRUD Permission Support -->
+
 <div class="modal fade" id="addRoleModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content p-3">
@@ -36,9 +36,8 @@
             <small class="text-muted">Toggle sub-pages for granular permission control</small>
           </div>
 
-          <!-- Permission checkboxes rendered by JavaScript based on RolePermission.SUB_MODULE_CHOICES -->
           <div id="permissionCheckboxContainer" class="col-12">
-            <!-- Will be populated by JavaScript -->
+            
           </div>
 
           <div class="col-12 text-center mt-4">
@@ -54,7 +53,7 @@
 </div>
 
 <style>
-  /* ═══ Permission Card Styles ═══ */
+  
   .perm-card {
     border: 1px solid rgba(0,0,0,.08);
     border-radius: .5rem;
@@ -101,7 +100,6 @@
     line-height: 1;
   }
 
-  /* Sub-module table */
   .perm-sub-table {
     width: 100%;
     border-collapse: collapse;
@@ -136,14 +134,12 @@
   .perm-sub-table tbody td:not(:first-child) { text-align: center; }
   .perm-sub-table tbody tr:hover { background: rgba(var(--bs-primary-rgb), .02); }
 
-  /* Module icon */
   .perm-card-header .module-icon {
     font-size: 1.125rem;
     color: rgba(var(--bs-primary-rgb), .7);
     flex-shrink: 0;
   }
 
-  /* Collapse button */
   .perm-toggle-btn {
     width: 28px;
     height: 28px;
@@ -164,10 +160,9 @@
 </style>
 
 <script>
-// Module and Sub-Module structure (from RolePermission model)
+
 const MODULE_STRUCTURE = {{ module_structure|safe }};
 
-// Icon mapping — sesuai dengan sidebar (vertical_menu.json)
 const MODULE_ICONS = {
   'dashboard': 'ri-home-smile-line',
   'produk': 'ri-box-3-line',
@@ -197,12 +192,10 @@ const MODULE_ICONS = {
   'ai_assistant': 'ri-robot-2-line',
 };
 
-// Track apakah checkbox sudah di-render per container
 const _renderedContainers = {};
 
-// Render checkbox permission dengan sub-module yang bisa di-collapse
 function renderPermissionCheckboxes(containerId, mode = 'add') {
-  // Guard: jangan re-render jika sudah pernah render untuk mode ini
+  
   const guardKey = `${containerId}_${mode}`;
   if (_renderedContainers[guardKey]) {
     console.log(`[Permissions] Skipping render — already rendered: ${guardKey}`);
@@ -300,25 +293,21 @@ function renderPermissionCheckboxes(containerId, mode = 'add') {
   console.log(`[Permissions] Rendered checkboxes: ${guardKey}`);
 }
 
-// Inisialisasi Add Role Modal
 document.addEventListener('DOMContentLoaded', function() {
   const addModal = document.getElementById('addRoleModal');
   const addForm = document.getElementById('addRoleForm');
   
-  // Render checkbox saat modal pertama kali dibuka
   if (addModal) {
     addModal.addEventListener('show.bs.modal', function() {
       renderPermissionCheckboxes('permissionCheckboxContainer', 'add');
     });
     
-    // Reset checkboxes saat modal ditutup (tanpa re-render DOM)
     addModal.addEventListener('hidden.bs.modal', function() {
       addModal.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
       if (addForm) addForm.reset();
     });
   }
   
-  // Tangani submit Tambah Role
   if (addForm) {
     addForm.addEventListener('submit', function(e) {
       e.preventDefault();
@@ -327,17 +316,14 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-// Submit Add Role form via AJAX
 function submitAddRole(form) {
   const formData = new FormData(form);
   const submitBtn = form.querySelector('button[type="submit"]');
   const originalBtnText = submitBtn.innerHTML;
   
-  // Loading state
   submitBtn.disabled = true;
   submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Membuat...';
   
-  // CSRF token
   const csrfToken = document.querySelector('#addRoleForm [name=csrfmiddlewaretoken]').value;
   
   fetch('/access/roles/ajax/create/', {
@@ -350,7 +336,7 @@ function submitAddRole(form) {
   .then(response => response.json())
   .then(data => {
     if (data.success) {
-      // Notifikasi berhasil
+      
       if (typeof Swal !== 'undefined') {
         Swal.fire({
           icon: 'success',
@@ -363,11 +349,9 @@ function submitAddRole(form) {
         alert(data.message || 'Role berhasil ditambahkan!');
       }
       
-      // Tutup modal
       const modalInstance = bootstrap.Modal.getInstance(document.getElementById('addRoleModal'));
       if (modalInstance) modalInstance.hide();
       
-      // Reload halaman
       setTimeout(() => location.reload(), 1500);
     } else {
       if (typeof Swal !== 'undefined') {
@@ -391,4 +375,3 @@ function submitAddRole(form) {
   });
 }
 </script>
-<!--/ Add Role Modal -->

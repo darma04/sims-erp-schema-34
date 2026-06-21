@@ -16,6 +16,7 @@
 """
 import logging
 
+from django.db import IntegrityError
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -56,6 +57,12 @@ def auto_journal_kas_bank_transaction(sender, instance, **kwargs):
                 jurnal.pk,
             )
 
+    except IntegrityError as exc:
+        logger.warning(
+            "[KAS_BANK] Duplicate jurnal untuk mutasi %s: %s",
+            instance.nomor,
+            exc,
+        )
     except Exception as exc:
         logger.error(
             "[KAS_BANK] Failed to create auto-jurnal for transaction %s: %s",
@@ -80,8 +87,8 @@ def auto_journal_kas_bank_transaction(sender, instance, **kwargs):
                 source_id=str(instance.pk),
                 source_repr=instance.nomor,
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Gagal mencatat activity log: %s", e)
 
 
 @receiver(post_save, sender='kas_bank.KasBankTransfer')
@@ -112,6 +119,12 @@ def auto_journal_kas_bank_transfer(sender, instance, **kwargs):
                 jurnal.pk,
             )
 
+    except IntegrityError as exc:
+        logger.warning(
+            "[KAS_BANK] Duplicate jurnal untuk transfer %s: %s",
+            instance.nomor,
+            exc,
+        )
     except Exception as exc:
         logger.error(
             "[KAS_BANK] Failed to create auto-jurnal for transfer %s: %s",
@@ -136,5 +149,5 @@ def auto_journal_kas_bank_transfer(sender, instance, **kwargs):
                 source_id=str(instance.pk),
                 source_repr=instance.nomor,
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Gagal mencatat activity log: %s", e)

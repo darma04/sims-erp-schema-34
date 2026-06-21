@@ -1,1 +1,24 @@
 {% extends 'shared/confirm_delete.html' %}
+
+{% comment %}
+  ==========================================================================
+  POS - Detail Postransaction
+  ==========================================================================
+  Menampilkan informasi lengkap satu postransaction termasuk data relasi.
+  Detail page biasanya menampilkan data read-only (tidak bisa diedit langsung).
+
+  FLOW DATA:
+  - URL: /pos/postransaction/<pk>/- View: DetailView mengambil 1 object berdasarkan primary key- Context: object + data relasi (items, history, dll)- Template: Render semua informasi ke HTML
+
+  RELASI KE MODUL LAIN:
+  - apps/pos/views.py -> PostransactionDetailView- apps/pos/models.py -> Model Postransaction- get_context_data(): Menambahkan data relasi ke context
+
+  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
+  - BOLEH diubah: Layout detail, urutan informasi- BOLEH ditambah: Informasi baru dari relasi- JANGAN diubah: {% extends %} dan {% block %} structure
+
+  TIPS & DEBUGGING:
+  - Error 'DoesNotExist'? Primary key tidak ditemukan di database- Data relasi kosong? Cek get_context_data() di views.py
+
+  ==========================================================================
+{% endcomment %}
+

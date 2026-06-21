@@ -303,11 +303,6 @@ class PembayaranPiutang(models.Model):
                 handle_pos_kasbon_payment(piutang.pos_transaction, user=self.created_by)
             return
 
-        # ── Auto-Jurnal: D:Kas/Bank  K:Piutang Usaha ──
-        # Hanya buat jurnal saat record baru dan belum punya jurnal
-        # ── Auto-update status POS kasbon saat piutang lunas ──
-        # Jika piutang ini berasal dari POS kasbon dan sudah lunas,
-        # update status POSTransaction dari 'unpaid' ke 'paid'
     def delete(self, *args, **kwargs):
         piutang = self.piutang
         with transaction.atomic():

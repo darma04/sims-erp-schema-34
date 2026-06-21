@@ -2,6 +2,30 @@
 {% load static %}
 {% load currency_filters %}
 
+{% comment %}
+  ==========================================================================
+  KAS BANK - Daftar Reconciliation (List View)
+  ==========================================================================
+  Menampilkan daftar semua reconciliation menggunakan DataTables (tabel interaktif).
+  DataTables menyediakan: search, sorting, pagination, dan export PDF/Excel
+  secara otomatis tanpa perlu coding JavaScript tambahan.
+
+  FLOW DATA:
+  - URL: /kas_bank/ -> kas_bank.views.ReconciliationListView- View: Mengambil data dari database via model Reconciliation- Template: File ini merender data ke HTML- Response: Browser menampilkan tabel + tombol aksi (edit/hapus/detail)
+
+  RELASI KE MODUL LAIN:
+  - apps/kas_bank/models.py -> Model Reconciliation (sumber data)- apps/kas_bank/views.py -> ReconciliationListView (handler)- apps/kas_bank/urls.py -> URL routing ke view ini- apps/core/mixins.py -> ReadPermissionMixin (cek hak akses)- layout/layout_vertical.html -> Template induk (sidebar, header)
+
+  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
+  - BOLEH diubah: Tampilan kolom tabel, tombol aksi, filter- BOLEH diubah: Tambah kolom baru (sesuaikan juga di views.py queryset)- JANGAN diubah: {% extends %} dan {% block %} structure- JANGAN diubah: class DataTables (break JavaScript)
+
+  TIPS & DEBUGGING:
+  - Error 'TemplateDoesNotExist'? Cek path di views.py template_name- Data tidak muncul? Cek get_queryset() di views.py- Tambah kolom? Edit <th> di <thead> dan <td> di <tbody>- Export gagal? Cek fungsi export_di_kas_bank_list() di <script>
+
+  ==========================================================================
+{% endcomment %}
+
+
 {% block title %}Rekonsiliasi Kas & Bank - Treasury{% endblock title %}
 
 {% block vendor_css %}
@@ -29,7 +53,7 @@
             <i class="ri-add-line me-1"></i>Tambah Rekonsiliasi
         </a>
     </div>
-    <!-- Label Sumber Data -->
+    
     <div class="mb-4">
         <span class="badge bg-label-info rounded-pill px-3 py-2">
             <i class="ri-bank-line me-1"></i>Rekonsiliasi Bank (Bulanan)
@@ -252,7 +276,7 @@
                 </tbody>
                 <tfoot class="table-footer-summary">
                     <tr>
-                        <td colspan="3" class="text-start ps-4 py-3">
+                        <td colspan="1" class="text-start ps-4 py-3">
                             <div class="d-flex align-items-center justify-content-start">
                                 <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
                                 <div class="text-start">
@@ -261,7 +285,7 @@
                                 </div>
                             </div>
                         </td>
-                        <td colspan="2" class="py-3">
+                        <td colspan="5" class="py-3">
                             <div class="text-center">
                                 <span class="badge bg-label-warning">{{ total_selisih|rupiah }}</span>
                                 <small class="d-block text-muted mt-1">Total Selisih</small>
@@ -273,7 +297,6 @@
                                 <small class="d-block text-muted mt-1">Status</small>
                             </div>
                         </td>
-                        <td></td>
                     </tr>
                 </tfoot>
             </table>

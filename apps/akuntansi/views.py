@@ -25,6 +25,53 @@
 ==========================================================================
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
+# ==========================================================================
+# PANDUAN DJANGO UNTUK DEVELOPER PEMULA (baca ini sebelum mempelajari views)
+# ==========================================================================
+#
+# APA ITU CLASS-BASED VIEW (CBV)?
+# - CBV = class Python yang menangani HTTP request dan return response
+# - Django menyediakan CBV bawaan: ListView, CreateView, UpdateView, DeleteView
+# - Setiap CBV punya "lifecycle" (siklus hidup) yang bisa di-customize
+#
+# SIKLUS HIDUP CBV (urutan method yang dipanggil):
+# 1. as_view()     → Entry point, dipanggil oleh URL router
+# 2. dispatch()    → Tentukan method (GET/POST) → panggil get() atau post()
+# 3. get()/post()  → Handle request, kumpulkan data
+# 4. get_queryset()→ Ambil data dari database (bisa di-filter/optimasi)
+# 5. get_context_data() → Siapkan data untuk template (variabel {{ }})
+# 6. render()      → Gabungkan template + context → HTML response
+#
+# METHOD PENTING YANG SERING DI-OVERRIDE:
+# - get_queryset()     → Optimasi query (prefetch_related, select_related)
+# - get_context_data() → Tambah variabel ke template (self.context)
+# - form_valid()       → Proses setelah form divalidasi (sebelum save)
+# - get_success_url()  → URL redirect setelah operasi berhasil
+#
+# DECORATOR YANG SERING DIGUNAKAN:
+# @login_required       → User HARUS login, jika tidak → redirect ke /login/
+# @permission_required  → User harus punya permission tertentu (RBAC)
+# @require_http_methods → Batasi method yang diterima (GET, POST, dll)
+# @never_cache          → Response tidak boleh di-cache oleh browser
+#
+# POLA UMUM VIEW DI PROYEK INI:
+# class MyListView(SubModulePermissionMixin, ListView):
+#     module_name = 'nama_modul'          # Untuk pengecekan RBAC
+#     sub_module_name = 'nama_sub_modul'  # Sub-modul yang diakses
+#     model = MyModel                      # Model database yang dipakai
+#     template_name = 'modul/page.html'    # File HTML template
+#
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         context = TemplateLayout.init(self, context)  # WAJIB: setup layout
+#         context['data_tambahan'] = ...    # Tambah data custom
+#         return context
+# ==========================================================================
+
+
 from django.shortcuts import redirect, get_object_or_404
 from django.db.models import ProtectedError, Sum, Count, Q
 from django.contrib.auth.decorators import login_required
@@ -273,8 +320,8 @@ class JurnalEntryCreateView(CreatePermissionMixin, CreateView):
                         object_id=self.object.pk, object_repr=str(self.object),
                         description=f'Input jurnal manual: {self.object.nomor}'
                     )
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning("Gagal mencatat activity log: %s", e)
 
                 messages.success(self.request, f'Jurnal {self.object.nomor} berhasil dibuat')
                 return redirect(self.success_url)
@@ -337,8 +384,8 @@ class JurnalEntryDeleteView(DeletePermissionMixin, DeleteView):
                     object_id=0, object_repr=nomor,
                     description=f'Menghapus jurnal draft: {nomor}'
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Gagal mencatat activity log: %s", e)
 
             return JsonResponse({'success': True, 'message': f'Jurnal {nomor} berhasil dihapus'})
         except Exception as e:
@@ -350,12 +397,17 @@ class JurnalPostView(UpdatePermissionMixin, TemplateView):
     template_name = 'akuntansi/jurnal_detail.html'
     permission_module = 'akuntansi'
     permission_sub_module = 'jurnal'
+    http_method_names = ['post']
 
     def post(self, request, *args, **kwargs):
         jurnal = get_object_or_404(JurnalEntry, pk=kwargs['pk'])
 
         if jurnal.is_posted:
             return JsonResponse({'success': False, 'message': 'Jurnal sudah diposting.'}, status=400)
+
+        if jurnal.lines.count() < 2:
+            messages.error(request, "Jurnal harus memiliki minimal 2 baris.")
+            return redirect('akuntansi:jurnal_detail', pk=jurnal.pk)
 
         # Validasi balance
         total_d = sum(l.debit for l in jurnal.lines.all())
@@ -382,8 +434,8 @@ class JurnalPostView(UpdatePermissionMixin, TemplateView):
                 object_id=jurnal.pk, object_repr=str(jurnal),
                 description=f'Memposting jurnal: {jurnal.nomor}'
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Gagal mencatat activity log: %s", e)
 
         return JsonResponse({'success': True, 'message': f'Jurnal {jurnal.nomor} berhasil diposting.'})
 
@@ -393,6 +445,8 @@ class JurnalReverseView(UpdatePermissionMixin, TemplateView):
     template_name = 'akuntansi/jurnal_detail.html'
     permission_module = 'akuntansi'
     permission_sub_module = 'jurnal'
+    http_method_names = ['post']
+    http_method_names = ['post']
 
     def post(self, request, *args, **kwargs):
         jurnal = get_object_or_404(JurnalEntry, pk=kwargs['pk'])
@@ -410,8 +464,8 @@ class JurnalReverseView(UpdatePermissionMixin, TemplateView):
                     object_id=pembalik.pk, object_repr=str(pembalik),
                     description=f'Membuat jurnal pembalik {pembalik.nomor} dari {jurnal.nomor}'
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Gagal mencatat activity log: %s", e)
 
             return JsonResponse({
                 'success': True,
@@ -550,10 +604,6 @@ class PeriodeTutupView(UpdatePermissionMixin, TemplateView):
         if periode.is_tutup:
             return JsonResponse({'success': False, 'message': 'Periode sudah ditutup.'}, status=400)
 
-        periode.is_tutup = True
-        periode.is_aktif = False
-        periode.save()
-
         # ── Closing Entry Otomatis (Sesuai Standar Akuntansi) ──
         # Proses tutup buku dengan 3 jurnal closing entry:
         # 1. Tutup akun Pendapatan → Ikhtisar Laba/Rugi
@@ -563,183 +613,185 @@ class PeriodeTutupView(UpdatePermissionMixin, TemplateView):
             from apps.akuntansi.services import get_laba_rugi, create_jurnal, get_akun_by_kode
             from apps.akuntansi.models import Akun
             
-            # Hitung laba/rugi periode
-            data = get_laba_rugi(periode.tanggal_mulai, periode.tanggal_akhir)
-            total_pendapatan = data.get('total_pendapatan', Decimal('0'))
-            total_hpp = data.get('total_hpp', Decimal('0'))
-            total_beban = data.get('total_beban', Decimal('0'))
-            laba_bersih = data.get('laba_bersih', Decimal('0'))
+            with transaction.atomic():
+                # Hitung laba/rugi periode
+                data = get_laba_rugi(periode.tanggal_mulai, periode.tanggal_akhir)
+                total_pendapatan = data.get('total_pendapatan', Decimal('0'))
+                total_hpp = data.get('total_hpp', Decimal('0'))
+                total_beban = data.get('total_beban', Decimal('0'))
+                laba_bersih = data.get('laba_bersih', Decimal('0'))
 
-            # Cek apakah akun Ikhtisar Laba/Rugi dan Laba Ditahan ada
-            akun_ikhtisar = get_akun_by_kode('3-9000')  # Ikhtisar Laba/Rugi (temporary)
-            akun_laba_ditahan = get_akun_by_kode('3-2000')  # Laba Ditahan
-            
-            if not akun_ikhtisar:
-                # Buat akun Ikhtisar Laba/Rugi jika belum ada
-                akun_ikhtisar = Akun.objects.create(
-                    kode='3-9000',
-                    nama='Ikhtisar Laba/Rugi',
-                    tipe='modal',
-                    sub_tipe='ikhtisar',
-                    saldo_normal='kredit',
-                    is_system=True,
-                    is_active=True,
-                    deskripsi='Akun temporary untuk closing entry'
-                )
+                # Cek apakah akun Ikhtisar Laba/Rugi dan Laba Ditahan ada
+                akun_ikhtisar = get_akun_by_kode('3-9000')  # Ikhtisar Laba/Rugi (temporary)
+                akun_laba_ditahan = get_akun_by_kode('3-2000')  # Laba Ditahan
+                
+                if not akun_ikhtisar:
+                    # Buat akun Ikhtisar Laba/Rugi jika belum ada
+                    akun_ikhtisar = Akun.objects.create(
+                        kode='3-9000',
+                        nama='Ikhtisar Laba/Rugi',
+                        tipe='modal',
+                        sub_tipe='ikhtisar',
+                        saldo_normal='kredit',
+                        is_system=True,
+                        is_active=True,
+                        deskripsi='Akun temporary untuk closing entry'
+                    )
 
-            if akun_ikhtisar and akun_laba_ditahan:
-                # ═══ Jurnal 1: Tutup Akun Pendapatan ═══
-                pendapatan_items = [
-                    item for item in data.get('pendapatan', [])
-                    if item.get('raw_saldo', item.get('saldo', Decimal('0'))) != 0
-                ]
-                if pendapatan_items:
-                    lines_pendapatan = []
-                    for item in pendapatan_items:
-                        raw_saldo = abs(item.get('raw_saldo', item.get('saldo', Decimal('0'))))
-                        if raw_saldo <= 0:
-                            continue
-                        if item['akun'].saldo_normal == 'kredit':
+                if akun_ikhtisar and akun_laba_ditahan:
+                    # ═══ Jurnal 1: Tutup Akun Pendapatan ═══
+                    pendapatan_items = [
+                        item for item in data.get('pendapatan', [])
+                        if item.get('raw_saldo', item.get('saldo', Decimal('0'))) != 0
+                    ]
+                    if pendapatan_items:
+                        lines_pendapatan = []
+                        for item in pendapatan_items:
+                            raw_saldo = abs(item.get('raw_saldo', item.get('saldo', Decimal('0'))))
+                            if raw_saldo <= 0:
+                                continue
+                            if item['akun'].saldo_normal == 'kredit':
+                                lines_pendapatan.append({
+                                    'akun': item['akun'],
+                                    'debit': raw_saldo,
+                                    'kredit': Decimal('0'),
+                                    'keterangan': f'Closing entry {periode.nama}'
+                                })
+                            else:
+                                lines_pendapatan.append({
+                                    'akun': item['akun'],
+                                    'debit': Decimal('0'),
+                                    'kredit': raw_saldo,
+                                    'keterangan': f'Closing entry {periode.nama}'
+                                })
+                        
+                        if total_pendapatan > 0:
                             lines_pendapatan.append({
-                                'akun': item['akun'],
-                                'debit': raw_saldo,
-                                'kredit': Decimal('0'),
-                                'keterangan': f'Closing entry {periode.nama}'
-                            })
-                        else:
-                            lines_pendapatan.append({
-                                'akun': item['akun'],
+                                'akun': akun_ikhtisar,
                                 'debit': Decimal('0'),
-                                'kredit': raw_saldo,
-                                'keterangan': f'Closing entry {periode.nama}'
+                                'kredit': total_pendapatan,
+                                'keterangan': f'Transfer pendapatan bersih ke Ikhtisar'
                             })
-                    
-                    if total_pendapatan > 0:
-                        lines_pendapatan.append({
+                        elif total_pendapatan < 0:
+                            lines_pendapatan.append({
+                                'akun': akun_ikhtisar,
+                                'debit': abs(total_pendapatan),
+                                'kredit': Decimal('0'),
+                                'keterangan': f'Transfer kontra pendapatan ke Ikhtisar'
+                            })
+                        
+                        create_jurnal(
+                            tanggal=periode.tanggal_akhir,
+                            deskripsi=f'Closing Entry (1/3) — Tutup Akun Pendapatan — {periode.nama}',
+                            lines_data=lines_pendapatan,
+                            sumber='closing',
+                            sumber_ref=f'CLOSE-1-{periode.nama}',
+                            user=request.user,
+                            auto_post=True,
+                            periode=periode,
+                            allow_closed_period=True,
+                        )
+
+                    # ═══ Jurnal 2: Tutup Akun HPP & Beban ═══
+                    total_hpp_beban = total_hpp + total_beban
+                    if total_hpp_beban > 0:
+                        lines_hpp_beban = []
+                        
+                        # Debit Ikhtisar Laba/Rugi
+                        lines_hpp_beban.append({
                             'akun': akun_ikhtisar,
-                            'debit': Decimal('0'),
-                            'kredit': total_pendapatan,
-                            'keterangan': f'Transfer pendapatan bersih ke Ikhtisar'
-                        })
-                    elif total_pendapatan < 0:
-                        lines_pendapatan.append({
-                            'akun': akun_ikhtisar,
-                            'debit': abs(total_pendapatan),
+                            'debit': total_hpp_beban,
                             'kredit': Decimal('0'),
-                            'keterangan': f'Transfer kontra pendapatan ke Ikhtisar'
+                            'keterangan': f'Transfer HPP & Beban ke Ikhtisar'
                         })
-                    
-                    create_jurnal(
-                        tanggal=periode.tanggal_akhir,
-                        deskripsi=f'Closing Entry (1/3) — Tutup Akun Pendapatan — {periode.nama}',
-                        lines_data=lines_pendapatan,
-                        sumber='closing',
-                        sumber_ref=f'CLOSE-1-{periode.nama}',
-                        user=request.user,
-                        auto_post=True,
-                        periode=periode,
-                        allow_closed_period=True,
-                    )
+                        
+                        # Kredit untuk tutup akun HPP
+                        for item in data.get('hpp', []):
+                            if item['saldo'] > 0:
+                                lines_hpp_beban.append({
+                                    'akun': item['akun'],
+                                    'debit': Decimal('0'),
+                                    'kredit': item['saldo'],  # Kredit untuk tutup akun HPP (saldo normal debit)
+                                    'keterangan': f'Closing entry {periode.nama}'
+                                })
+                        
+                        # Kredit untuk tutup akun Beban
+                        for item in data.get('beban', []):
+                            if item['saldo'] > 0:
+                                lines_hpp_beban.append({
+                                    'akun': item['akun'],
+                                    'debit': Decimal('0'),
+                                    'kredit': item['saldo'],  # Kredit untuk tutup akun Beban (saldo normal debit)
+                                    'keterangan': f'Closing entry {periode.nama}'
+                                })
+                        
+                        create_jurnal(
+                            tanggal=periode.tanggal_akhir,
+                            deskripsi=f'Closing Entry (2/3) — Tutup Akun HPP & Beban — {periode.nama}',
+                            lines_data=lines_hpp_beban,
+                            sumber='closing',
+                            sumber_ref=f'CLOSE-2-{periode.nama}',
+                            user=request.user,
+                            auto_post=True,
+                            periode=periode,
+                            allow_closed_period=True,
+                        )
 
-                # ═══ Jurnal 2: Tutup Akun HPP & Beban ═══
-                total_hpp_beban = total_hpp + total_beban
-                if total_hpp_beban > 0:
-                    lines_hpp_beban = []
-                    
-                    # Debit Ikhtisar Laba/Rugi
-                    lines_hpp_beban.append({
-                        'akun': akun_ikhtisar,
-                        'debit': total_hpp_beban,
-                        'kredit': Decimal('0'),
-                        'keterangan': f'Transfer HPP & Beban ke Ikhtisar'
-                    })
-                    
-                    # Kredit untuk tutup akun HPP
-                    for item in data.get('hpp', []):
-                        if item['saldo'] > 0:
-                            lines_hpp_beban.append({
-                                'akun': item['akun'],
-                                'debit': Decimal('0'),
-                                'kredit': item['saldo'],  # Kredit untuk tutup akun HPP (saldo normal debit)
-                                'keterangan': f'Closing entry {periode.nama}'
-                            })
-                    
-                    # Kredit untuk tutup akun Beban
-                    for item in data.get('beban', []):
-                        if item['saldo'] > 0:
-                            lines_hpp_beban.append({
-                                'akun': item['akun'],
-                                'debit': Decimal('0'),
-                                'kredit': item['saldo'],  # Kredit untuk tutup akun Beban (saldo normal debit)
-                                'keterangan': f'Closing entry {periode.nama}'
-                            })
-                    
-                    create_jurnal(
-                        tanggal=periode.tanggal_akhir,
-                        deskripsi=f'Closing Entry (2/3) — Tutup Akun HPP & Beban — {periode.nama}',
-                        lines_data=lines_hpp_beban,
-                        sumber='closing',
-                        sumber_ref=f'CLOSE-2-{periode.nama}',
-                        user=request.user,
-                        auto_post=True,
-                        periode=periode,
-                        allow_closed_period=True,
-                    )
+                    # ═══ Jurnal 3: Transfer Ikhtisar ke Laba Ditahan ═══
+                    if laba_bersih != 0:
+                        if laba_bersih > 0:
+                            # Laba → Debit Ikhtisar, Kredit Laba Ditahan
+                            lines_transfer = [
+                                {
+                                    'akun': akun_ikhtisar,
+                                    'debit': abs(laba_bersih),
+                                    'kredit': Decimal('0'),
+                                    'keterangan': f'Transfer laba bersih ke Laba Ditahan'
+                                },
+                                {
+                                    'akun': akun_laba_ditahan,
+                                    'debit': Decimal('0'),
+                                    'kredit': abs(laba_bersih),
+                                    'keterangan': f'Laba bersih periode {periode.nama}'
+                                }
+                            ]
+                        else:
+                            # Rugi → Debit Laba Ditahan, Kredit Ikhtisar
+                            lines_transfer = [
+                                {
+                                    'akun': akun_laba_ditahan,
+                                    'debit': abs(laba_bersih),
+                                    'kredit': Decimal('0'),
+                                    'keterangan': f'Rugi bersih periode {periode.nama}'
+                                },
+                                {
+                                    'akun': akun_ikhtisar,
+                                    'debit': Decimal('0'),
+                                    'kredit': abs(laba_bersih),
+                                    'keterangan': f'Transfer rugi bersih dari Ikhtisar'
+                                }
+                            ]
+                        
+                        create_jurnal(
+                            tanggal=periode.tanggal_akhir,
+                            deskripsi=f'Closing Entry (3/3) — Transfer Ikhtisar ke Laba Ditahan — {periode.nama}',
+                            lines_data=lines_transfer,
+                            sumber='closing',
+                            sumber_ref=f'CLOSE-3-{periode.nama}',
+                            user=request.user,
+                            auto_post=True,
+                            periode=periode,
+                            allow_closed_period=True,
+                        )
 
-                # ═══ Jurnal 3: Transfer Ikhtisar ke Laba Ditahan ═══
-                if laba_bersih != 0:
-                    if laba_bersih > 0:
-                        # Laba → Debit Ikhtisar, Kredit Laba Ditahan
-                        lines_transfer = [
-                            {
-                                'akun': akun_ikhtisar,
-                                'debit': abs(laba_bersih),
-                                'kredit': Decimal('0'),
-                                'keterangan': f'Transfer laba bersih ke Laba Ditahan'
-                            },
-                            {
-                                'akun': akun_laba_ditahan,
-                                'debit': Decimal('0'),
-                                'kredit': abs(laba_bersih),
-                                'keterangan': f'Laba bersih periode {periode.nama}'
-                            }
-                        ]
-                    else:
-                        # Rugi → Debit Laba Ditahan, Kredit Ikhtisar
-                        lines_transfer = [
-                            {
-                                'akun': akun_laba_ditahan,
-                                'debit': abs(laba_bersih),
-                                'kredit': Decimal('0'),
-                                'keterangan': f'Rugi bersih periode {periode.nama}'
-                            },
-                            {
-                                'akun': akun_ikhtisar,
-                                'debit': Decimal('0'),
-                                'kredit': abs(laba_bersih),
-                                'keterangan': f'Transfer rugi bersih dari Ikhtisar'
-                            }
-                        ]
-                    
-                    create_jurnal(
-                        tanggal=periode.tanggal_akhir,
-                        deskripsi=f'Closing Entry (3/3) — Transfer Ikhtisar ke Laba Ditahan — {periode.nama}',
-                        lines_data=lines_transfer,
-                        sumber='closing',
-                        sumber_ref=f'CLOSE-3-{periode.nama}',
-                        user=request.user,
-                        auto_post=True,
-                        periode=periode,
-                        allow_closed_period=True,
-                    )
+                # Semua 3 closing entry berhasil — baru update status periode
+                periode.is_tutup = True
+                periode.is_aktif = False
+                periode.save(update_fields=['is_tutup', 'is_aktif'])
 
         except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
             logger.error(f'Gagal membuat closing entry untuk {periode.nama}: {e}')
-            periode.is_tutup = False
-            periode.is_aktif = True
-            periode.save(update_fields=['is_tutup', 'is_aktif'])
+            # transaction.atomic() otomatis rollback — periode.is_tutup tetap False
             return JsonResponse({
                 'success': False,
                 'message': f'Periode gagal ditutup karena closing entry gagal dibuat: {e}'
@@ -793,8 +845,8 @@ class NeracaView(ReadPermissionMixin, TemplateView):
             from apps.produk.models import Gudang
             try:
                 cabang = Gudang.objects.get(pk=cabang_id)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Error tidak terduga: %s", e)
 
         neraca = get_neraca(tanggal_akhir, cabang=cabang)
         context.update(neraca)
@@ -851,8 +903,8 @@ class LabaRugiView(ReadPermissionMixin, TemplateView):
             from apps.produk.models import Gudang
             try:
                 cabang = Gudang.objects.get(pk=cabang_id)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Error tidak terduga: %s", e)
 
         data = get_laba_rugi(tanggal_mulai, tanggal_akhir, cabang=cabang)
         context.update(data)
@@ -933,8 +985,8 @@ class ArusKasView(ReadPermissionMixin, TemplateView):
             from apps.produk.models import Gudang
             try:
                 cabang = Gudang.objects.get(pk=cabang_id)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Error tidak terduga: %s", e)
 
         # Build cash flow from journal lines
         filters = Q(jurnal__is_posted=True,
@@ -943,14 +995,13 @@ class ArusKasView(ReadPermissionMixin, TemplateView):
         if cabang:
             filters &= Q(jurnal__cabang=cabang)
 
-        # Ambil semua akun Kas/Bank secara dinamis (bukan hardcoded)
-        # Mencakup akun aset lancar dengan kode berawalan 1-1 (Kas, Bank BCA, Bank Mandiri, dll)
+        # Ambil semua akun Kas/Bank secara dinamis berdasarkan sub_tipe (bukan hardcoded kode prefix)
+        # Mencakup semua akun aset lancar: Kas, Bank BCA, Bank Mandiri, dll
         kas_akun_kodes = list(
             Akun.objects.filter(
                 is_active=True,
                 tipe='aset',
                 sub_tipe='aset_lancar',
-                kode__startswith='1-1',
             ).values_list('kode', flat=True)
         )
 
@@ -971,8 +1022,9 @@ class ArusKasView(ReadPermissionMixin, TemplateView):
         pendanaan_masuk = Decimal('0')
         pendanaan_keluar = Decimal('0')
 
-        sumber_investasi = ['aset']
-        sumber_pendanaan = ['modal', 'prive']
+        sumber_investasi = ['aset', 'adjustment']
+        sumber_pendanaan = ['closing', 'pembalik']
+        # operasional: pos, so, po, biaya, payroll, pajak, piutang, hutang, kas_bank, rekon, service, manual
 
         for line in kas_lines:
             sumber = line.jurnal.sumber or 'manual'
@@ -1051,8 +1103,8 @@ class TrialBalanceView(ReadPermissionMixin, TemplateView):
             from apps.produk.models import Gudang
             try:
                 cabang = Gudang.objects.get(pk=cabang_id)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Error tidak terduga: %s", e)
 
         # Get all account balances
         all_saldo = get_all_saldo_akun(tanggal_akhir=tanggal, cabang=cabang)
@@ -1064,8 +1116,6 @@ class TrialBalanceView(ReadPermissionMixin, TemplateView):
         for item in all_saldo:
             akun = item['akun']
             saldo = item['saldo']
-            saldo_d = saldo if akun.saldo_normal == 'debit' else (abs(saldo) if saldo < 0 else Decimal('0'))
-            saldo_k = saldo if akun.saldo_normal == 'kredit' else (abs(saldo) if saldo < 0 else Decimal('0'))
             if akun.saldo_normal == 'debit':
                 saldo_d = saldo if saldo >= 0 else Decimal('0')
                 saldo_k = abs(saldo) if saldo < 0 else Decimal('0')
@@ -1193,6 +1243,7 @@ class PanduanAkuntansiView(ReadPermissionMixin, TemplateView):
         except Exception:
             context['total_kas_bank_accounts'] = 0
             context['total_mutasi_posted'] = 0
+        context['has_service_center'] = True
 
         # CoA structure reference
         context['coa_structure'] = [
@@ -1243,12 +1294,15 @@ class PanduanAkuntansiView(ReadPermissionMixin, TemplateView):
             {'sumber': 'POS (Tunai/Bank)', 'sumber_icon': 'ri-store-2-line',
              'jurnal': 'D: Kas/Bank  D: Diskon Penjualan  K: Pendapatan  K: PPN Keluaran | D: HPP  K: Persediaan',
              'trigger': 'Saat status = paid (signal post_save)'},
+            {'sumber': 'POS (Kredit/Tempo)', 'sumber_icon': 'ri-store-2-line',
+             'jurnal': 'D: Piutang Usaha  D: Diskon Penjualan  K: Pendapatan  K: PPN Keluaran | D: HPP  K: Persediaan',
+             'trigger': 'Saat status = unpaid (signal post_save) — Piutang tercipta otomatis'},
             {'sumber': 'Sales Order (Kredit/Tempo)', 'sumber_icon': 'ri-shopping-cart-2-line',
              'jurnal': 'D: Piutang Usaha  D: Diskon Penjualan  K: Pendapatan  K: PPN Keluaran | D: HPP  K: Persediaan',
-             'trigger': 'Saat status = completed (signal post_save)'},
+             'trigger': 'Saat status = confirmed/delivered/completed (signal post_save)'},
             {'sumber': 'Sales Order (Tunai/Bank)', 'sumber_icon': 'ri-shopping-cart-2-line',
              'jurnal': 'D: Kas/Bank  D: Diskon Penjualan  K: Pendapatan  K: PPN Keluaran | D: HPP  K: Persediaan',
-             'trigger': 'Saat status = completed (signal post_save)'},
+             'trigger': 'Saat status = confirmed/delivered/completed (signal post_save)'},
             {'sumber': 'Pelunasan Piutang', 'sumber_icon': 'ri-money-dollar-circle-line',
              'jurnal': 'D: Kas/Bank  K: Piutang Usaha',
              'trigger': 'Saat pembayaran disimpan (PembayaranPiutang.save)'},
@@ -1274,8 +1328,8 @@ class PanduanAkuntansiView(ReadPermissionMixin, TemplateView):
              'jurnal': 'D: Beban Kerusakan  K: Persediaan',
              'trigger': 'Saat adjustment stok dibuat'},
             {'sumber': 'Pembelian Aset Tetap', 'sumber_icon': 'ri-building-2-line',
-             'jurnal': 'D: Aset Tetap  K: Kas/Bank',
-             'trigger': 'Saat aset baru didaftarkan'},
+             'jurnal': 'D: Aset Tetap  K: Kas/Bank (atau Hutang jika kredit)',
+             'trigger': 'Manual — tidak ada auto-jurnal. Buat jurnal manual di menu Jurnal Umum.'},
             {'sumber': 'Penyusutan Aset', 'sumber_icon': 'ri-time-line',
              'jurnal': 'D: Beban Penyusutan  K: Akumulasi Penyusutan',
              'trigger': 'Saat Susutkan / Susutkan Massal'},
@@ -1289,8 +1343,11 @@ class PanduanAkuntansiView(ReadPermissionMixin, TemplateView):
              'jurnal': 'D/K: Kas/Bank  K/D: Akun Lawan',
              'trigger': 'Saat mutasi manual posted (akun lawan wajib)'},
             {'sumber': 'Settlement PPN', 'sumber_icon': 'ri-bank-line',
-             'jurnal': 'D: PPN Keluaran  K: PPN Masukan  K: Kas/Bank',
-             'trigger': 'Saat Setor PPN diproses'},
+             'jurnal': 'Setor (PK>PM): D:PPN Keluaran  K:PPN Masukan  K:Kas/Bank | Restitusi (PM>PK): D:PPN Keluaran + Kas/Bank  K:PPN Masukan',
+             'trigger': 'Saat Setor PPN diproses — otomatis pilih setor/restitusi berdasarkan selisih PK-PM'},
+            {'sumber': 'Service Center (Pembayaran Jasa)', 'sumber_icon': 'ri-customer-service-2-line',
+             'jurnal': 'D: Kas/Bank  K: Pendapatan Jasa',
+             'trigger': 'Saat OrderService dibayar (status_bayar = lunas/dp) — signal post_save'},
             {'sumber': 'Tutup Buku (Closing)', 'sumber_icon': 'ri-lock-line',
              'jurnal': '3 jurnal: Pendapatan → Ikhtisar → Laba Ditahan',
              'trigger': 'Saat periode ditutup'},
@@ -1319,10 +1376,7 @@ class PanduanAkuntansiView(ReadPermissionMixin, TemplateView):
             'alur': [
                 'Buat Periode Akuntansi (tanggal mulai & akhir)',
                 'Aktifkan periode → jurnal baru masuk ke periode ini',
-                'Tutup periode → sistem buat 3 Closing Entry otomatis',
-                'Jurnal 1: Tutup Pendapatan → Ikhtisar Laba/Rugi (3-9000)',
-                'Jurnal 2: Tutup HPP & Beban → Ikhtisar Laba/Rugi',
-                'Jurnal 3: Transfer Ikhtisar → Laba Ditahan (3-2000)',
+                'Tutup periode — 1 klik menghasilkan 3 Closing Entry otomatis: (a) Pendapatan → Ikhtisar (3-9000), (b) HPP&Beban → Ikhtisar, (c) Ikhtisar → Laba Ditahan (3-2000)',
             ],
             'validasi': [
                 'Jurnal baru tidak bisa masuk ke periode yang sudah ditutup',
@@ -1376,8 +1430,8 @@ class RekonsiliasiKeuanganView(ReadPermissionMixin, TemplateView):
             from apps.produk.models import Gudang
             try:
                 cabang = Gudang.objects.get(pk=cabang_id)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Error tidak terduga: %s", e)
 
         # ═══════════════════════════════════════════════════════
         # DATA OPERASIONAL (dari tabel transaksi langsung)

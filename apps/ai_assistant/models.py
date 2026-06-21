@@ -29,6 +29,12 @@
  - admin.py → Mendaftarkan ketiga model ke Django Admin
  - intents.py → Menggunakan data dari model lain (Produk, SO, POS, dll)
  - templatetags/ai_tags.py → Mengambil ai_name dari AIAssistantConfig
+
+ Konvensi penamaan field tanggal:
+ - Modul ini menggunakan konvensi English (created_at, updated_at) untuk
+   timestamp tracking, berbeda dengan modul inti yang menggunakan konvensi
+   Indonesian (dibuat_pada, diupdate_pada, tanggal). Hal ini dipertahankan
+   untuk konsistensi internal modul ini.
 ==========================================================================
 """
 

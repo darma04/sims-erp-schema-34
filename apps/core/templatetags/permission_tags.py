@@ -268,6 +268,7 @@ def extract_submodule(slug):
             'access-control-',
             'activity-log-',
             'fraud-detection-',
+            'service-center-',
         ]
         slug_lower = slug_str.lower()
         for prefix in known_prefixes:

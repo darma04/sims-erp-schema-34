@@ -73,6 +73,7 @@ class PermissionChecker:
         'activity_log': 'activity_log',
         'activity-log': 'activity_log',
         'ai_assistant': 'ai_assistant',
+        'sparepart': 'sparepart',
         'ai-assistant': 'ai_assistant',
         'fraud_detection': 'fraud_detection',
         'fraud-detection': 'fraud_detection',
@@ -240,6 +241,9 @@ def user_permissions(request):
             'is_superuser': is_superuser,
             'can_show_refresh_cache_button': can_show_refresh_cache_button,
             'can_show_ai_assistant_widget': can_show_ai_assistant_widget,
+
+            # Offline license warning (injected by license_middleware)
+            'offline_warning': getattr(request, 'offline_warning', False),
         }
 
     # ==================== USER BELUM LOGIN ====================

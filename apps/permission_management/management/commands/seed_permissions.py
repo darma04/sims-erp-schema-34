@@ -59,6 +59,15 @@ class Command(BaseCommand):
                 'kas_bank__rekonsiliasi': {'view': True, 'create': True, 'edit': True, 'delete': False},
                 'biaya': {'view': True, 'create': True, 'edit': True, 'delete': False},
                 'laporan': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                # Sub-modules laporan
+                'laporan__laporan_produk': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'laporan__laporan_stok': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'laporan__laporan_penjualan': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'laporan__laporan_pembelian': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'laporan__laporan_keuangan': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'laporan__laporan_service': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'laporan__laporan_sparepart': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'laporan__laporan_cabang': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'user_management': {'view': True, 'create': True, 'edit': True, 'delete': False},
                 'activity_log': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'pengaturan': {'view': True, 'create': True, 'edit': True, 'delete': False},
@@ -70,16 +79,6 @@ class Command(BaseCommand):
                 'ai_assistant__chat_widget': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'ai_assistant__dashboard_ai': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'ai_assistant__pengaturan_ai': {'view': True, 'create': False, 'edit': True, 'delete': False},
-                # Service Center module + sub-modules
-                'service_center': {'view': True, 'create': True, 'edit': True, 'delete': False},
-                'service_center__dashboard_service': {'view': True, 'create': False, 'edit': False, 'delete': False},
-                'service_center__pelanggan_service': {'view': True, 'create': True, 'edit': True, 'delete': False},
-                'service_center__perangkat': {'view': True, 'create': True, 'edit': True, 'delete': False},
-                'service_center__kategori_service': {'view': True, 'create': True, 'edit': True, 'delete': False},
-                'service_center__jenis_service': {'view': True, 'create': True, 'edit': True, 'delete': False},
-                'service_center__order_service': {'view': True, 'create': True, 'edit': True, 'delete': False},
-                'service_center__terima_unit': {'view': True, 'create': True, 'edit': False, 'delete': False},
-                'service_center__laporan_service': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 # Akuntansi
                 'akuntansi': {'view': True, 'create': True, 'edit': True, 'delete': False},
                 'akuntansi__coa': {'view': True, 'create': True, 'edit': True, 'delete': False},
@@ -127,21 +126,20 @@ class Command(BaseCommand):
                 'kas_bank__rekonsiliasi': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'biaya': {'view': True, 'create': True, 'edit': False, 'delete': False},
                 'laporan': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                # Sub-modules laporan
+                'laporan__laporan_produk': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'laporan__laporan_stok': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'laporan__laporan_penjualan': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'laporan__laporan_pembelian': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'laporan__laporan_keuangan': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'laporan__laporan_service': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'laporan__laporan_sparepart': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'laporan__laporan_cabang': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'activity_log': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'automation': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'automation__pengaturan_telegram': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'automation__template_pesan': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'automation__log_notifikasi': {'view': True, 'create': False, 'edit': False, 'delete': False},
-                # Service Center module + sub-modules
-                'service_center': {'view': True, 'create': True, 'edit': False, 'delete': False},
-                'service_center__dashboard_service': {'view': True, 'create': False, 'edit': False, 'delete': False},
-                'service_center__pelanggan_service': {'view': True, 'create': True, 'edit': False, 'delete': False},
-                'service_center__perangkat': {'view': True, 'create': False, 'edit': False, 'delete': False},
-                'service_center__kategori_service': {'view': True, 'create': False, 'edit': False, 'delete': False},
-                'service_center__jenis_service': {'view': True, 'create': False, 'edit': False, 'delete': False},
-                'service_center__order_service': {'view': True, 'create': True, 'edit': False, 'delete': False},
-                'service_center__terima_unit': {'view': True, 'create': True, 'edit': False, 'delete': False},
-                'service_center__laporan_service': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 # Akuntansi (view only)
                 'akuntansi': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'akuntansi__coa': {'view': True, 'create': False, 'edit': False, 'delete': False},
@@ -173,11 +171,6 @@ class Command(BaseCommand):
                 'produk': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'penjualan': {'view': True, 'create': True, 'edit': False, 'delete': False},
                 'pos': {'view': True, 'create': True, 'edit': False, 'delete': False},
-                # Service Center — kasir bisa lihat order dan terima unit
-                'service_center': {'view': True, 'create': True, 'edit': False, 'delete': False},
-                'service_center__dashboard_service': {'view': True, 'create': False, 'edit': False, 'delete': False},
-                'service_center__order_service': {'view': True, 'create': True, 'edit': False, 'delete': False},
-                'service_center__terima_unit': {'view': True, 'create': True, 'edit': False, 'delete': False},
             },
         }
         
@@ -193,7 +186,7 @@ class Command(BaseCommand):
                     module = module_key
                     sub_module = None
                 
-                obj, created = RolePermission.objects.update_or_create(
+                obj, created = RolePermission.objects.get_or_create(
                     role=role,
                     module=module,
                     sub_module=sub_module,
@@ -210,8 +203,8 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.SUCCESS(f'  + Created: {obj}'))
                 else:
                     updated_count += 1
-                    self.stdout.write(self.style.WARNING(f'  ~ Updated: {obj}'))
+                    self.stdout.write(self.style.WARNING(f'  = Skipped (already exists): {obj}'))
         
         self.stdout.write(self.style.SUCCESS(f'\nSeeding complete!'))
         self.stdout.write(self.style.SUCCESS(f'   Created: {created_count} permissions'))
-        self.stdout.write(self.style.SUCCESS(f'   Updated: {updated_count} permissions'))
+        self.stdout.write(self.style.SUCCESS(f'   Skipped (already exist): {updated_count} permissions'))

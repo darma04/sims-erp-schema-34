@@ -11,7 +11,7 @@
 {% endblock page_css %}
 
 {% block content %}
-<!--Under Maintenance -->
+
 <div class="misc-wrapper">
   <h3 class="mb-2 mx-2">Under Maintenance! 🚧</h3>
   <p class="mb-4 mx-2">
@@ -49,14 +49,7 @@
     </div>
   </div>
 </div>
-<!-- /Under Maintenance -->
 
-<!-- ═══════════════════════════════════════════════════════════════════════
-     MAINTENANCE AUTO-RECOVERY POLLING
-     Mengecek apakah maintenance sudah OFF setiap 15 detik.
-     Ketika OFF, otomatis redirect ke dashboard tanpa perlu reload manual.
-     Kompatibel dengan WebView (Capacitor) dan browser biasa.
-     ═══════════════════════════════════════════════════════════════════════ -->
 <script>
 (function() {
     var isRecovering = false;
@@ -70,8 +63,8 @@
                     window.location.href = '/';
                 }
             })
-            .catch(function(err) { /* ignore silently */ });
-    }, 15000); // Poll setiap 15 detik
+            .catch(function(err) {  });
+    }, 15000); 
 })();
 </script>
 {% endblock %}

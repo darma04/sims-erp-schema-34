@@ -22,6 +22,12 @@
  - apps/core/context_processors.py → Menyuntikkan permission ke template
  - apps/permission_management/ → UI untuk mengelola permissions
  - templates/layout/partials/menu/ → Sidebar difilter berdasarkan permission
+
+ Konvensi penamaan field tanggal:
+ - Modul ini menggunakan konvensi English (created_at, updated_at) untuk
+   timestamp tracking, berbeda dengan modul inti yang menggunakan konvensi
+   Indonesian (dibuat_pada, diupdate_pada, tanggal). Hal ini dipertahankan
+   untuk konsistensi internal modul ini.
 ==========================================================================
 """
 
@@ -63,7 +69,6 @@ class RolePermission(models.Model):
     MODULE_CHOICES = [
         ('dashboard', 'Dashboard'),                # Halaman utama analytics
         ('produk', 'Produk'),                      # Manajemen produk, kategori, satuan
-        ('sparepart', 'Sparepart'),                # Manajemen sparepart (terpisah dari produk)
         ('inventory', 'Inventory'),                # Gudang, stok, transfer, adjustment
         ('pembelian', 'Pembelian'),                # Supplier, purchase order
         ('penjualan', 'Penjualan'),                # Customer, sales order
@@ -79,7 +84,6 @@ class RolePermission(models.Model):
         ('access_control', 'Access Control'),       # Kelola role & permission
         ('ai_assistant', 'AI Manajemen'),            # AI Dashboard & AI Assistant
         ('fraud_detection', 'Fraud Detection'),      # Deteksi kecurangan
-        ('service_center', 'Service Center'),             # Manajemen service elektronik
         # ========== MODUL AKUNTANSI ==========
         ('akuntansi', 'Akuntansi'),                # CoA, Jurnal, Buku Besar, Periode
         ('laporan_keuangan', 'Laporan Keuangan'),  # Trial Balance, Laba Rugi, Neraca, Arus Kas
@@ -88,6 +92,8 @@ class RolePermission(models.Model):
         ('aset', 'Aset Tetap'),                    # Fixed Assets & Penyusutan
         ('pajak', 'Pajak (PPN)'),                  # Faktur Pajak & Rekap PPN
         ('rekonsiliasi_keuangan', 'Rekonsiliasi Keuangan'),  # Perbandingan Operasional vs Akuntansi
+        ('service_center', 'Service Center'),        # Service Center Elektronik
+        ('sparepart', 'Sparepart'),                  # Manajemen sparepart
     ]
 
     # ==================== DAFTAR SUB-MODUL ====================
@@ -103,12 +109,6 @@ class RolePermission(models.Model):
             ('daftar_produk', 'Daftar Produk'),     # List semua produk
             ('tambah_produk', 'Tambah Produk'),     # Form tambah produk baru
             ('produk_import', 'Import Produk'),      # Import produk dari CSV/Excel
-        ],
-        'sparepart': [
-            ('daftar_sparepart', 'Daftar Sparepart'),  # List semua sparepart
-            ('tambah_sparepart', 'Tambah Sparepart'),  # Form tambah sparepart baru
-            ('kategori_sparepart', 'Kategori'),        # CRUD Kategori (shared)
-            ('satuan_sparepart', 'Satuan'),             # CRUD Satuan (shared)
         ],
         'inventory': [
             ('gudang', 'Gudang'),                   # CRUD Gudang
@@ -184,17 +184,6 @@ class RolePermission(models.Model):
             ('rekonsiliasi_kas', 'Rekonsiliasi Kas'),         # Blind cash closing
             ('pengaturan_fraud', 'Pengaturan Fraud'),         # Pengaturan pencegahan
         ],
-        'service_center': [
-            ('dashboard_service', 'Dashboard Service'),       # Dashboard service center
-            ('pelanggan_service', 'Pelanggan'),               # CRUD pelanggan service
-            ('perangkat', 'Jenis Perangkat'),                 # CRUD jenis perangkat
-            ('kategori_service', 'Kategori Service'),         # CRUD kategori service
-            ('jenis_service', 'Jenis Service'),               # CRUD jenis/layanan service
-            ('order_service', 'Order Service'),               # CRUD order service
-            ('sparepart_service', 'Sparepart Service'),       # DIPERBAIKI QA-R1: CRUD sparepart pada order
-            ('terima_unit', 'Terima Unit Baru'),              # Form terima unit
-            ('laporan_service', 'Laporan Service'),           # Laporan service center
-        ],
         # ========== AKUNTANSI ==========
         'akuntansi': [
             ('coa', 'Chart of Accounts'),              # Bagan akun
@@ -229,6 +218,23 @@ class RolePermission(models.Model):
         # Catatan: 'rekonsiliasi_keuangan' TIDAK memiliki sub-modul.
         # Pola sama dengan 'dashboard', 'pos', 'activity_log' — modul tanpa submenu.
         # Permission dicek hanya di level modul (can_view, can_create, can_edit, can_delete).
+        # ========== SERVICE CENTER ==========
+        'service_center': [
+            ('dashboard', 'Dashboard Service'),               # Dashboard Service Center
+            ('order_service', 'Order Service'),               # CRUD Order Service
+            ('pelanggan_sc', 'Pelanggan'),                    # CRUD Pelanggan SC
+            ('perangkat', 'Jenis Perangkat'),                 # CRUD Perangkat
+            ('kategori_service', 'Kategori Service'),         # CRUD Kategori Service
+            ('jenis_service', 'Jenis Service'),               # CRUD Jenis Service
+            ('sparepart', 'Penggunaan Sparepart'),            # Penggunaan Sparepart
+            ('terima_unit', 'Terima Unit Baru'),              # Form terima order baru
+            ('sc_laporan', 'Laporan Service'),           # Laporan service center
+        ],
+        # ========== SPAREPART ==========
+        'sparepart': [
+            ('daftar_sparepart', 'Daftar Sparepart'),          # List sparepart
+            ('tambah_sparepart', 'Tambah Sparepart'),          # Form tambah sparepart
+        ],
     }
 
     # ==================== MAPPING SUB-MODULE KE SLUG MENU ====================
@@ -250,11 +256,6 @@ class RolePermission(models.Model):
         'daftar_produk': 'list',       # sidebar: produk-list
         'tambah_produk': 'tambah',     # sidebar: produk-tambah
         'produk_import': 'import',     # sidebar/url: produk-import
-        # === Sparepart ===
-        'daftar_sparepart': 'daftar_sparepart',   # sidebar: sparepart-daftar_sparepart
-        'tambah_sparepart': 'tambah_sparepart',   # sidebar: sparepart-tambah_sparepart
-        'kategori_sparepart': 'kategori',          # sidebar: sparepart-kategori
-        'satuan_sparepart': 'satuan',              # sidebar: sparepart-satuan
         # === Inventory ===
         'gudang': 'gudang',
         'stok': 'stok',
@@ -292,8 +293,8 @@ class RolePermission(models.Model):
         'laporan_penjualan': 'penjualan',
         'laporan_pembelian': 'pembelian',
         'laporan_keuangan': 'keuangan',
-        'laporan_service': 'service',              # sidebar: laporan-service
-        'laporan_sparepart': 'sparepart',          # sidebar: laporan-sparepart
+        'laporan_service': 'service',       # sidebar: laporan-service
+        'laporan_sparepart': 'sparepart',   # sidebar: laporan-sparepart
         'laporan_cabang': 'cabang',
         # === Access Control ===
         'roles': 'roles',
@@ -317,16 +318,6 @@ class RolePermission(models.Model):
         'daftar_anomali': 'anomali',              # sidebar: fraud-anomali
         'rekonsiliasi_kas': 'kas',                # sidebar: fraud-kas
         'pengaturan_fraud': 'pengaturan',         # sidebar: fraud-pengaturan
-        # === Service Center ===
-        'dashboard_service': 'dashboard',          # sidebar: service-center-dashboard
-        'pelanggan_service': 'pelanggan',          # sidebar: service-center-pelanggan
-        'perangkat': 'perangkat',                  # sidebar: service-center-perangkat
-        'kategori_service': 'kategori',            # sidebar: service-center-kategori
-        'jenis_service': 'jenis',                  # sidebar: service-center-jenis
-        'order_service': 'order',                  # sidebar: service-center-order
-        'sparepart_service': 'sparepart',          # DIPERBAIKI QA-R1: sidebar: service-center-sparepart
-        'terima_unit': 'terima',                   # sidebar: service-center-terima
-        'laporan_service': 'laporan',              # sidebar: service-center-laporan
         # === Akuntansi ===
         'coa': 'coa',
         'jurnal': 'jurnal',
@@ -350,6 +341,19 @@ class RolePermission(models.Model):
         'faktur_pajak': 'list',
         'rekap_ppn': 'rekap',
         'setting_pajak': 'setting',
+        # === Service Center ===
+        'dashboard': 'dashboard',
+        'order_service': 'order',
+        'pelanggan_sc': 'pelanggan',
+        'perangkat': 'perangkat',
+        'kategori_service': 'kategori',
+        'jenis_service': 'jenis',
+        'sparepart': 'sparepart',
+        'terima_unit': 'terima',
+        'sc_laporan': 'laporan',
+        # === Sparepart ===
+        'daftar_sparepart': 'daftar_sparepart',
+        'tambah_sparepart': 'tambah_sparepart',
     }
 
     # ==================== REVERSE MAPPING: SLUG → DB CODE ====================

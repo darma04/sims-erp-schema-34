@@ -1,5 +1,29 @@
 {% extends 'layout/layout_vertical.html' %}
 
+{% comment %}
+  ==========================================================================
+  KAS BANK - Form Tambah/Edit Reconciliation
+  ==========================================================================
+  Form untuk menambah data baru atau mengedit data reconciliation yang sudah ada.
+  Django otomatis mendeteksi: jika object ada = EDIT, jika tidak ada = TAMBAH.
+  Form menggunakan {% csrf_token %} untuk keamanan (cegah CSRF attack).
+
+  FLOW DATA:
+  - URL tambah: /kas_bank/reconciliation/add/ -> ReconciliationCreateView- URL edit:   /kas_bank/reconciliation/<pk>/edit/ -> ReconciliationUpdateView- GET:  Tampilkan form kosong (tambah) atau form terisi (edit)- POST: Validasi input -> simpan ke database -> redirect ke list- Jika validasi gagal: tampilkan kembali form + pesan error
+
+  RELASI KE MODUL LAIN:
+  - apps/kas_bank/models.py -> Model Reconciliation (field yang disimpan)- apps/kas_bank/forms.py -> Form class (validasi + widget)- apps/kas_bank/views.py -> CreateView + UpdateView (handler)- apps/core/validators.py -> Validasi bisnis (jika ada)
+
+  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
+  - BOLEH diubah: Urutan field, label, placeholder, help text- BOLEH ditambah: Field baru (sesuaikan juga di forms.py dan models.py)- JANGAN dihapus: {% csrf_token %} (wajib untuk keamanan)- JANGAN dihapus: {{ form.as_p }} atau {{ form.field_name }} (render field)
+
+  TIPS & DEBUGGING:
+  - Error 'CSRF token missing'? Pastikan {% csrf_token %} ada di <form>- Field tidak muncul? Cek forms.py Meta.fields- Validasi gagal? Cek clean_<field>() di forms.py- Tambah field baru: 1) models.py 2) forms.py 3) template ini 4) migrate
+
+  ==========================================================================
+{% endcomment %}
+
+
 {% block title %}{{ title }} - Treasury{% endblock title %}
 
 {% block content %}
@@ -7,6 +31,7 @@
     <h4 class="py-3 mb-4"><span class="text-muted fw-light">Kas & Bank / Rekonsiliasi /</span> {{ title }}</h4>
     <div class="card">
         <h5 class="card-header">{{ title }}</h5>
+        
         <form method="post">
             {% csrf_token %}
             <div class="card-body">

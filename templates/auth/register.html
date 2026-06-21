@@ -19,18 +19,13 @@
 {% load static %}
 {% load i18n %}
 
-{# ── Title Halaman ── #}
 {% block title %}Daftar - {{ system_title|default:"ERP System" }}{% endblock %}
 
-
-
-{# ── Page CSS: Styling khusus halaman auth ── #}
 {% block page_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/css/pages/page-auth.css' %}" />
 {% endblock page_css %}
 
-{# ── Page JS: Script validasi form auth (vanilla JS, tanpa library) ── #}
 {% block page_js %}
 {{ block.super }}
 <script src="{% static 'js/pages-auth.js' %}?v=2"></script>
@@ -38,14 +33,14 @@
 
 {% block content %}
 <div class="authentication-wrapper authentication-cover">
-  {# ── Logo & Nama Sistem ── #}
+  
   <a href="{% url 'dashboard:index' %}" class="auth-cover-brand d-flex align-items-center gap-2">
     <span class="app-brand-logo demo">{% include 'partials/logo.html' %}</span>
     <span class="app-brand-text demo text-heading fw-semibold">{{ system_title|default:"ERP System" }}</span>
   </a>
 
   <div class="authentication-inner row m-0">
-    {# ── Ilustrasi Kiri (hanya desktop ≥ lg) ── #}
+    
     <div class="d-none d-lg-flex col-lg-7 col-xl-8 align-items-center justify-content-center p-12 pb-2">
       {% if pengaturan.auth_image %}
       <img src="{{ pengaturan.auth_image.url }}"
@@ -67,7 +62,6 @@
       {% endif %}
     </div>
 
-    {# ── Form Registrasi (kolom kanan) ── #}
     <div
       class="d-flex col-12 col-lg-5 col-xl-4 align-items-center authentication-bg position-relative py-sm-12 px-sm-12 px-4 py-6">
       <div class="w-px-400 mx-auto pt-5 pt-lg-0">
@@ -83,11 +77,9 @@
         <div class="card shadow-lg border-0">
           <div class="card-body p-4 p-sm-5">
 
-            {# ── Judul & Deskripsi ── #}
             <h3 class="mb-2">Mulai Bergabung! 🚀</h3>
             <p class="mb-4">Buat akun baru untuk mengakses sistem</p>
 
-            {# ── Pesan Flash (sukses/error/warning) ── #}
             {% if messages %}
             {% for message in messages %}
             <div
@@ -98,24 +90,20 @@
             {% endfor %}
             {% endif %}
 
-            {# ── Form Registrasi ── #}
             <form id="formAuthentication" class="mb-3" action="{% url 'register' %}" method="post">
               {% csrf_token %}
 
-              {# Input Username #}
               <div class="form-floating form-floating-outline" style="margin-bottom: 1.5rem !important;">
                 <input type="text" class="form-control" id="username" name="username" placeholder="Masukkan username"
                   autofocus>
                 <label for="username">Username</label>
               </div>
 
-              {# Input Email #}
               <div class="form-floating form-floating-outline" style="margin-bottom: 1.5rem !important;">
                 <input type="text" class="form-control" id="email" name="email" placeholder="Masukkan email">
                 <label for="email">Email</label>
               </div>
 
-              {# Input Kata Sandi (dengan toggle show/hide) #}
               <div class="form-password-toggle" style="margin-bottom: 1.5rem !important;">
                 <div class="input-group input-group-merge">
                   <div class="form-floating form-floating-outline">
@@ -128,7 +116,6 @@
                 </div>
               </div>
 
-              {# Checkbox persetujuan kebijakan #}
               <div style="margin-bottom: 1.5rem !important;">
                 <div class="form-check mt-2">
                   <input class="form-check-input" type="checkbox" id="terms-conditions" name="terms">
@@ -139,7 +126,6 @@
                 </div>
               </div>
 
-              {# Tombol Daftar (dengan spinner loading) #}
               <button id="btnSubmit" class="btn btn-primary w-100" type="submit" style="margin-top: 0.5rem;">
                 <span id="btnText" class="me-1">Daftar</span>
                 <span id="btnLoader" class="spinner-border spinner-border-sm visually-hidden" role="status"
@@ -147,7 +133,6 @@
               </button>
             </form>
 
-            {# ── Link ke halaman Login ── #}
             <p class="text-center mb-0">
               <span>Sudah punya akun?</span>
               <a href="{% url 'login' %}">
@@ -157,11 +142,10 @@
 
           </div>
         </div>
-        {# ── /CARD WRAPPER ── #}
-
+        
       </div>
     </div>
-    {# ── /Form Registrasi ── #}
+    
   </div>
 </div>
 {% endblock %}

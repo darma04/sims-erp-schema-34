@@ -89,15 +89,16 @@ def cancel_service_payment_accounting(order, user=None, reason="Pembatalan accou
     from apps.akuntansi.services import create_reversal_jurnal
     from apps.kas_bank.models import KasBankTransaction
 
-    for journal in _active_service_journals(order).select_for_update():
-        create_reversal_jurnal(journal, alasan=reason, user=user)
+    with transaction.atomic():
+        for journal in _active_service_journals(order).select_for_update():
+            create_reversal_jurnal(journal, alasan=reason, user=user)
 
-    KasBankTransaction.objects.filter(
-        sumber_app=SERVICE_SOURCE_APP,
-        sumber_model=SERVICE_SOURCE_MODEL,
-        sumber_id=order.pk,
-        status="posted",
-    ).update(status="cancelled")
+        KasBankTransaction.objects.filter(
+            sumber_app=SERVICE_SOURCE_APP,
+            sumber_model=SERVICE_SOURCE_MODEL,
+            sumber_id=order.pk,
+            status="posted",
+        ).update(status="cancelled")
 
 
 def sync_service_payment_accounting(order, user=None):
@@ -221,8 +222,8 @@ def sync_service_payment_accounting(order, user=None):
                     source_id=str(order.pk),
                     source_repr=order.nomor_service,
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Gagal mencatat activity log: %s", e)
             raise
 
         create_operational_mutation(

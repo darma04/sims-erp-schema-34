@@ -32,6 +32,7 @@ from apps.akuntansi.services import create_reversal_jurnal
 logger = logging.getLogger(__name__)
 
 
+@transaction.atomic
 def transition_po_status(purchase_order, new_status, user=None):
     """
     Atomic: validate transition + create/reverse journal + stock + hutang/mutasi.

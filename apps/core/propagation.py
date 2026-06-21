@@ -105,8 +105,8 @@ def handle_document_delete(document, user=None):
                     f'{result["cancelled_mutations"]} mutasi dibatalkan.'
                 ),
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Gagal mencatat activity log: %s", e)
 
     parts = []
     if result['reversed_jurnals']:
@@ -128,16 +128,16 @@ def _cancel_related_hutang_piutang(document, model_name):
             ).exclude(status__in=['lunas', 'dihapuskan']).update(
                 status='dihapuskan'
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
     elif model_name == 'PurchaseOrder':
         try:
             from apps.hutang.models import Hutang
             Hutang.objects.filter(
                 sumber='po', purchase_order=document
             ).exclude(status='lunas').update(status='macet')
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
     elif model_name == 'POSTransaction':
         try:
             from apps.piutang.models import Piutang
@@ -146,8 +146,8 @@ def _cancel_related_hutang_piutang(document, model_name):
             ).exclude(status__in=['lunas', 'dihapuskan']).update(
                 status='dihapuskan'
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
 
 
 def recalculate_document_totals(document):
@@ -258,8 +258,8 @@ def handle_document_edit(document, old_total, user=None):
                     f'{result["reversed"]} jurnal di-reverse, jurnal baru dibuat otomatis.'
                 ),
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Gagal mencatat activity log: %s", e)
 
     result['message'] = f'{result["reversed"]} jurnal di-reverse, jurnal baru dibuat otomatis.'
     return result

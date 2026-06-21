@@ -24,7 +24,7 @@
     </div>
 
     <div class="row">
-        <!-- Informasi PO -->
+        
         <div class="col-md-6 mb-4">
             <div class="card h-100">
                 <div class="card-header">
@@ -87,7 +87,6 @@
             </div>
         </div>
 
-        <!-- Ringkasan Harga -->
         <div class="col-md-6 mb-4">
             <div class="card h-100">
                 <div class="card-header">
@@ -100,8 +99,8 @@
                             <td class="text-end"><strong>{{ purchase_order.subtotal|rupiah }}</strong></td>
                         </tr>
                         <tr>
-                            <th>Diskon</th>
-                            <td class="text-end text-danger">{{ purchase_order.diskon|rupiah }}</td>
+                            <th>Biaya Pengiriman</th>
+                            <td class="text-end">{{ purchase_order.biaya_pengiriman|rupiah }}</td>
                         </tr>
                         <tr>
                             <th>Pajak</th>
@@ -124,7 +123,6 @@
         </div>
     </div>
 
-    <!-- Item Produk -->
     <div class="card mb-4">
         <div class="card-header">
             <h5 class="mb-0"><i class="ri-box-3-line me-2"></i>Detail Produk</h5>
@@ -137,7 +135,6 @@
                             <th>Produk</th>
                             <th>Qty</th>
                             <th>Harga Satuan</th>
-                            <th>Diskon</th>
                             <th>Total</th>
                         </tr>
                     </thead>
@@ -147,12 +144,11 @@
                             <td><strong>{{ item.produk.nama }}</strong><br><small class="text-muted">{{ item.produk.sku }}</small></td>
                             <td>{{ item.jumlah|floatformat:0 }} {{ item.produk.satuan.singkatan }}</td>
                             <td>{{ item.harga_satuan|rupiah }}</td>
-                            <td class="text-danger">{{ item.diskon|rupiah }}</td>
-                            <td><strong>{{ item.total|rupiah }}</strong></td>
+                            <td><strong>{{ item.subtotal|rupiah }}</strong></td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="5" class="text-center text-muted">Belum ada item produk</td>
+                            <td colspan="4" class="text-center text-muted">Belum ada item produk</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -161,7 +157,6 @@
         </div>
     </div>
 
-    <!-- Riwayat Aktivitas -->
     <div class="card mb-4">
         <div class="card-header">
             <h5 class="mb-0"><i class="ri-history-line me-2"></i>Riwayat Aktivitas Purchase Order</h5>

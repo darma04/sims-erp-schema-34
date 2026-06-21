@@ -11,8 +11,54 @@
  Kirim ringkasan ke AI → AI merapikan teks → Return ke user
 ==========================================================================
 """
-import json
+
 import logging
+logger = logging.getLogger(__name__)
+
+# ==========================================================================
+# PANDUAN DJANGO UNTUK DEVELOPER PEMULA (baca ini sebelum mempelajari views)
+# ==========================================================================
+#
+# APA ITU CLASS-BASED VIEW (CBV)?
+# - CBV = class Python yang menangani HTTP request dan return response
+# - Django menyediakan CBV bawaan: ListView, CreateView, UpdateView, DeleteView
+# - Setiap CBV punya "lifecycle" (siklus hidup) yang bisa di-customize
+#
+# SIKLUS HIDUP CBV (urutan method yang dipanggil):
+# 1. as_view()     → Entry point, dipanggil oleh URL router
+# 2. dispatch()    → Tentukan method (GET/POST) → panggil get() atau post()
+# 3. get()/post()  → Handle request, kumpulkan data
+# 4. get_queryset()→ Ambil data dari database (bisa di-filter/optimasi)
+# 5. get_context_data() → Siapkan data untuk template (variabel {{ }})
+# 6. render()      → Gabungkan template + context → HTML response
+#
+# METHOD PENTING YANG SERING DI-OVERRIDE:
+# - get_queryset()     → Optimasi query (prefetch_related, select_related)
+# - get_context_data() → Tambah variabel ke template (self.context)
+# - form_valid()       → Proses setelah form divalidasi (sebelum save)
+# - get_success_url()  → URL redirect setelah operasi berhasil
+#
+# DECORATOR YANG SERING DIGUNAKAN:
+# @login_required       → User HARUS login, jika tidak → redirect ke /login/
+# @permission_required  → User harus punya permission tertentu (RBAC)
+# @require_http_methods → Batasi method yang diterima (GET, POST, dll)
+# @never_cache          → Response tidak boleh di-cache oleh browser
+#
+# POLA UMUM VIEW DI PROYEK INI:
+# class MyListView(SubModulePermissionMixin, ListView):
+#     module_name = 'nama_modul'          # Untuk pengecekan RBAC
+#     sub_module_name = 'nama_sub_modul'  # Sub-modul yang diakses
+#     model = MyModel                      # Model database yang dipakai
+#     template_name = 'modul/page.html'    # File HTML template
+#
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         context = TemplateLayout.init(self, context)  # WAJIB: setup layout
+#         context['data_tambahan'] = ...    # Tambah data custom
+#         return context
+# ==========================================================================
+
+import json
 import ssl
 import urllib.request
 import urllib.error
@@ -28,6 +74,7 @@ from django.views.generic import TemplateView
 from django.contrib.auth.decorators import login_required
 # Import dari framework Django
 from django.contrib.auth.mixins import LoginRequiredMixin
+from apps.core.mixins import ReadPermissionMixin
 # Import dari framework Django
 from django.utils.decorators import method_decorator
 # Import dari framework Django
@@ -44,8 +91,8 @@ from .intents import detect_intent, gather_data
 from web_project import TemplateLayout
 from apps.core.permissions import has_exact_submodule_permission
 from django.db import transaction
+from apps.ai_assistant.utils import get_ai_system_prompt
 
-logger = logging.getLogger(__name__)
 
 
 def _can_use_ai_chat_widget(user):
@@ -65,110 +112,9 @@ def _get_ssl_context():
     except Exception:
         # Fallback: skip SSL verification (untuk development)
         ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
         return ctx
 
 
-# ═══════════════════════════════════════════════════════════════
-# SYSTEM PROMPT — Konteks ERP untuk AI
-# ═══════════════════════════════════════════════════════════════
-SYSTEM_PROMPT = """Kamu adalah AI Business Intelligence Assistant profesional untuk sistem ERP SERPTECH.
-Tugasmu: menganalisa data bisnis, membuat laporan, memberikan insight strategis, dan rekomendasi aksi.
-
-ATURAN UTAMA:
-1. Gunakan Bahasa Indonesia profesional dan mudah dipahami
-2. Berikan analisa mendalam + insight + rekomendasi aksi yang konkret
-3. WAJIB gunakan tabel markdown untuk data angka/perbandingan:
-   | Kolom 1 | Kolom 2 | Kolom 3 |
-   |---------|---------|---------|
-   | data    | data    | data    |
-4. Selalu tampilkan data dalam tabel jika ada >1 item
-5. Jika data menunjukkan tren positif, berikan apresiasi + saran scale up
-6. Jika ada masalah, berikan saran perbaikan dengan prioritas (Tinggi/Sedang/Rendah)
-7. Jangan mengarang data — hanya analisa data yang diberikan
-8. Jawab informatif dan komprehensif (maksimal 500 kata)
-9. Gunakan emoji untuk memperjelas kategori dan status
-10. Untuk laporan meeting/executive summary: gunakan format narasi profesional + tabel
-11. Untuk SWOT: buat 4 kategori (S/W/O/T) masing-masing 2-3 poin dalam tabel
-12. Untuk forecasting: berikan prediksi dengan confidence level
-13. Untuk analisa risiko: gunakan level 🔴Tinggi/🟡Sedang/🟢Rendah
-14. Untuk rencana aksi: buat tabel dengan kolom Aksi, Prioritas, Target, Deadline
-15. Ikuti INSTRUKSI khusus yang diberikan bersama data
-
-QUICK ACTIONS — LINK NAVIGASI:
-Sertakan link ke halaman ERP yang relevan di akhir respons menggunakan format markdown.
-Contoh: → [Lihat Daftar Produk](/produk/list/) atau → [Buka POS Kasir](/pos/)
-Gunakan peta URL berikut untuk menentukan link yang tepat:
-
-PETA URL HALAMAN ERP:
-- Dashboard utama: /
-- Daftar Produk: /produk/list/
-- Tambah Produk: /produk/tambah/
-- Kategori Produk: /produk/kategori/
-- Stok Inventory: /inventory/stok/
-- Gudang: /inventory/gudang/
-- Transfer Stok: /inventory/transfer/
-- Adjustment Stok: /inventory/adjustment/
-- Supplier: /pembelian/supplier/
-- Purchase Order: /pembelian/purchase-order/
-- Customer: /penjualan/customer/
-- Sales Order: /penjualan/sales-order/
-- POS Kasir: /pos/
-- Biaya Operasional: /biaya/
-- Laporan: /laporan/
-- Karyawan HR: /hr/karyawan/
-- AI Dashboard: /ai/dashboard/
-- AI Pengaturan: /ai/
-- Dashboard Fraud: /fraud/
-- Daftar Anomali: /fraud/alerts/
-- Rekonsiliasi Kas: /fraud/cash/
-- Pengaturan Fraud: /fraud/settings/
-- Kas & Bank Dashboard: /kas-bank/
-- Akun Kas & Bank: /kas-bank/akun/
-- Mutasi Kas & Bank: /kas-bank/mutasi/
-- Transfer Kas & Bank: /kas-bank/transfer/
-- Rekonsiliasi Bank: /kas-bank/rekonsiliasi/
-- Chart of Accounts: /akuntansi/coa/
-- Jurnal Umum: /akuntansi/jurnal/
-- Buku Besar: /akuntansi/buku-besar/
-- Periode Akuntansi: /akuntansi/periode/
-- Neraca: /akuntansi/neraca/
-- Laba Rugi: /akuntansi/laba-rugi/
-- Arus Kas: /akuntansi/arus-kas/
-- Trial Balance: /akuntansi/trial-balance/
-- Rekonsiliasi Keuangan: /akuntansi/rekonsiliasi-keuangan/
-- Daftar Piutang: /piutang/
-- Aging Piutang: /piutang/aging/
-- Daftar Hutang: /hutang/
-- Aging Hutang: /hutang/aging/
-- Daftar Aset Tetap: /aset/
-- Dashboard Penyusutan: /aset/penyusutan/
-- Faktur Pajak: /pajak/
-- Rekap PPN: /pajak/rekap/
-
-SELALU sertakan 1-3 link relevan di akhir setiap jawaban dalam format:
-📌 **Quick Actions:**
-→ [Label Link](/url-terkait/)
-
-KONTEKS WAKTU:
-Jika user bertanya tentang periode waktu tertentu (minggu ini, bulan lalu, kemarin, dll),
-data yang diberikan SUDAH difilter sesuai periode tersebut. Analisa sesuai periode yang diminta.
-
-KAPABILITAS:
-- Laporan meeting otomatis, Executive summary, Analisa SWOT
-- Forecasting/prediksi, Analisa risiko, Rencana aksi
-- Perbandingan periode, Stok kritis, Analisa margin produk
-- Rekomendasi restock, bundling, strategi harga
-- Analisa pelanggan: top customer, customer tidak aktif, frekuensi beli
-
-KONTEKS ERP:
-- Modul Operasional: Produk, Inventory, Pembelian (PO), Penjualan (SO), POS/Kasir, Biaya, Laporan, HR, Automasi, Fraud Detection
-- Modul Keuangan: Kas & Bank (Treasury), Akuntansi (CoA, Jurnal, Buku Besar, Neraca, Laba Rugi, Arus Kas, Trial Balance), Piutang (AR), Hutang (AP), Aset Tetap (Penyusutan), Pajak (PPN), Rekonsiliasi Keuangan
-- Standar Akuntansi: Double-entry bookkeeping (PSAK/IFRS), jurnal otomatis dari semua transaksi operasional
-- Mata uang: Rupiah (IDR), Multi-gudang, Multi-metode pembayaran
-- Integrasi: Setiap transaksi operasional otomatis membuat jurnal akuntansi + mutasi kas/bank
-"""
 
 
 def _call_gemini(api_key, model, prompt, system_prompt, config):
@@ -238,7 +184,7 @@ def _call_gemini_urllib(api_key, model, prompt, system_prompt, config):
     import time
 
     # DIPERBAIKI: API key tidak lagi terekspos di log — disimpan di variabel terpisah
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
     payload = {
         "contents": [
@@ -259,6 +205,7 @@ def _call_gemini_urllib(api_key, model, prompt, system_prompt, config):
     for attempt in range(max_retries):
         req = urllib.request.Request(url, data=data, headers={
             'Content-Type': 'application/json',
+            'x-goog-api-key': api_key,
         })
 
         # Blok penanganan error — coba jalankan kode di bawah
@@ -478,8 +425,7 @@ def ai_chat_api(request):
     if config.api_key:
         # Blok penanganan error — coba jalankan kode di bawah
         try:
-            extra_prompt = f"\\n{config.system_prompt}" if config.system_prompt else ""
-            full_system = SYSTEM_PROMPT + extra_prompt
+            full_system = get_ai_system_prompt(request.user)
 
             prompt = f"""Pertanyaan user: "{user_message}"
 {context_text}
@@ -711,9 +657,10 @@ def clear_history(request):
 # AI DASHBOARD — Halaman Analytics /ai/dashboard/
 # ═══════════════════════════════════════════════════════════════
 
-class AIDashboardView(LoginRequiredMixin, TemplateView):
+class AIDashboardView(LoginRequiredMixin, ReadPermissionMixin, TemplateView):
     """Dashboard AI dengan skor kesehatan bisnis, prediksi, dan anomali."""
     template_name = 'ai_assistant/dashboard.html'
+    permission_module = 'ai_assistant'
 
     # Menambahkan data konteks tambahan ke template
     def get_context_data(self, **kwargs):
@@ -940,8 +887,8 @@ class AIDashboardView(LoginRequiredMixin, TemplateView):
                 from apps.kas_bank.models import KasBankAccount
                 for acc in KasBankAccount.objects.filter(aktif=True):
                     total_saldo_kas += acc.saldo_terhitung
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Error tidak terduga: %s", e)
             try:
                 from apps.piutang.models import Piutang
                 piutang_qs = Piutang.objects.exclude(status='lunas')
@@ -951,8 +898,8 @@ class AIDashboardView(LoginRequiredMixin, TemplateView):
                     t=Sum('jumlah_dibayar'))['t'] or Decimal('0')
                 piutang_overdue_count = piutang_qs.filter(
                     jatuh_tempo__lt=today, status='belum_bayar').count()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Error tidak terduga: %s", e)
             try:
                 from apps.hutang.models import Hutang
                 hutang_qs = Hutang.objects.exclude(status='lunas')
@@ -962,8 +909,8 @@ class AIDashboardView(LoginRequiredMixin, TemplateView):
                     t=Sum('jumlah_dibayar'))['t'] or Decimal('0')
                 hutang_overdue_count = hutang_qs.filter(
                     jatuh_tempo__lt=today, status='belum_bayar').count()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Error tidak terduga: %s", e)
 
             # Tambah anomali keuangan
             if piutang_overdue_count > 0:
@@ -1024,11 +971,12 @@ class AIDashboardView(LoginRequiredMixin, TemplateView):
 # PENGATURAN VIEW — CRUD Halaman Pengaturan AI Assistant
 # ═══════════════════════════════════════════════════════════════
 
-class AIAssistantSettingsView(LoginRequiredMixin, TemplateView):
+class AIAssistantSettingsView(LoginRequiredMixin, ReadPermissionMixin, TemplateView):
     """Halaman pengaturan AI Assistant (GET = tampilkan, POST = simpan)."""
     template_name = 'ai_assistant/index.html'
+    permission_module = 'ai_assistant'
 
-    # Menambahkan data konteks tambahan ke template
+    # Menambahkan data konteks tambahkan ke template
     def get_context_data(self, **kwargs):
         # TemplateLayout.init → menyuntikkan is_menu, is_navbar, menu_data, dll
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))

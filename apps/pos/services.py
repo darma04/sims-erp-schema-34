@@ -20,6 +20,7 @@ from apps.akuntansi.models import JurnalEntry
 from apps.akuntansi.services import create_jurnal
 
 
+@transaction.atomic
 def ensure_pos_kasbon_accounting(pos_transaction, user=None):
     """
     Pastikan POS kasbon (unpaid) memiliki jurnal dan piutang.
@@ -264,6 +265,7 @@ def _ensure_piutang_for_kasbon(pos_transaction, user=None):
     return piutang
 
 
+@transaction.atomic
 def handle_pos_kasbon_payment(pos_transaction, user=None):
     """
     Dipanggil saat POS kasbon dilunasi via PembayaranPiutang.
@@ -282,6 +284,7 @@ def handle_pos_kasbon_payment(pos_transaction, user=None):
     pos_transaction.save(update_fields=['status'])
 
 
+@transaction.atomic
 def transition_pos_status(pos_transaction, new_status, user=None):
     """
     Atomic: validate transition + create/reverse journal + stock + piutang/mutasi.

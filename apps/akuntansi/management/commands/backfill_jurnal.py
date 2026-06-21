@@ -15,7 +15,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             '--module',
-            choices=['biaya', 'penjualan', 'pembelian', 'pos', 'hr', 'service', 'all'],
+            choices=['biaya', 'penjualan', 'pembelian', 'pos', 'hr', 'all'],
             default='all',
             help='Modul yang akan di-backfill (default: all)'
         )
@@ -58,10 +58,6 @@ class Command(BaseCommand):
 
         if module in ('hr', 'all'):
             created = self._backfill_hr(dry_run)
-            total_created += created
-
-        if module in ('service', 'all'):
-            created = self._backfill_service(dry_run)
             total_created += created
 
         self.stdout.write("")
@@ -217,41 +213,6 @@ class Command(BaseCommand):
                 self.stdout.write(
                     self.style.ERROR(
                         f"    GAGAL: {p.karyawan.nama} {p.periode_bulan}/{p.periode_tahun} - {e}"
-                    )
-                )
-        return created
-
-    def _backfill_service(self, dry_run):
-        from apps.service_center.models import OrderService
-        from apps.service_center.services import sync_service_payment_accounting
-
-        orphans = OrderService.objects.filter(
-            status_bayar__in=['dp', 'lunas']
-        ).exclude(
-            status='dibatalkan'
-        ).exclude(
-            pk__in=JurnalEntry.objects.filter(
-                sumber='service',
-                is_reversed=False,
-            ).exclude(
-                sumber_ref__endswith='_reversal'
-            ).values_list('sumber_id', flat=True)
-        )
-        count = orphans.count()
-        self.stdout.write(f"  Service DP/lunas tanpa jurnal: {count}")
-
-        if count == 0 or dry_run:
-            return count
-
-        created = 0
-        for order in orphans:
-            try:
-                sync_service_payment_accounting(order, user=order.diterima_oleh)
-                created += 1
-            except Exception as e:
-                self.stdout.write(
-                    self.style.ERROR(
-                        f"    GAGAL: {order.nomor_service} - {e}"
                     )
                 )
         return created

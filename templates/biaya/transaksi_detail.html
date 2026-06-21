@@ -27,7 +27,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    <!-- Header -->
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <nav aria-label="breadcrumb">
@@ -68,7 +68,6 @@
         </div>
     </div>
 
-    <!-- Main Card -->
     <div class="row">
         <div class="col-12">
             <div class="card mb-4">
@@ -132,7 +131,6 @@
                 </div>
             </div>
 
-            <!-- Description Card -->
             {% if transaksi.deskripsi %}
             <div class="card">
                 <div class="card-header">
@@ -144,7 +142,6 @@
             </div>
             {% endif %}
 
-            <!-- Riwayat Aktivitas Transaksi Biaya -->
             <div class="card mt-4">
                 <div class="card-header">
                     <h5 class="mb-0"><i class="ri-history-line me-2"></i>Riwayat Aktivitas Transaksi Biaya</h5>
@@ -205,7 +202,6 @@
     </div>
 </div>
 
-<!-- Modal Konfirmasi Approve -->
 <div class="modal fade" id="approveModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -230,7 +226,6 @@
     </div>
 </div>
 
-<!-- Modal Konfirmasi Reject -->
 <div class="modal fade" id="rejectModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -260,9 +255,6 @@
 
 {% block page_js %}
 <script>
-// ═══════════════════════════════════════════════════════════════
-// APPROVE / REJECT / CANCEL TRANSAKSI BIAYA — AJAX
-// ═══════════════════════════════════════════════════════════════
 
 function confirmApprove() {
     var modal = new bootstrap.Modal(document.getElementById('approveModal'));
@@ -316,7 +308,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!csrfToken) return;
     var token = csrfToken.value;
 
-    // Approve handler
     var btnApprove = document.getElementById('btnApproveConfirm');
     if (btnApprove) {
         btnApprove.addEventListener('click', function () {
@@ -349,7 +340,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Reject handler
     var btnReject = document.getElementById('btnRejectConfirm');
     if (btnReject) {
         btnReject.addEventListener('click', function () {
@@ -384,4 +374,3 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 {% endblock page_js %}
-

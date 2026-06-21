@@ -31,6 +31,7 @@ from django.contrib.auth.models import User             # Model User bawaan Djan
 from django.contrib import messages                     # Framework pesan flash Django
 from django.utils.decorators import method_decorator    # Decorator untuk CBV
 from auth.views import AuthView                         # Base class untuk view autentikasi
+from django.utils.http import url_has_allowed_host_and_scheme  # Validasi URL redirect
 from auth.rate_limit import rate_limit_view             # Rate limit decorator
 
 
@@ -149,7 +150,11 @@ class LoginView(AuthView):
                 # Contoh: user akses /produk/ tapi belum login → redirect ke /login/?next=/produk/
                 # Setelah login → redirect kembali ke /produk/
                 if "next" in request.POST:
-                    return redirect(request.POST["next"])
+                    next_url = request.POST["next"]
+                    if url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+                        return redirect(next_url)
+                    else:
+                        return redirect("dashboard:index")
                 else:
                     # Tidak ada 'next' → redirect ke dashboard
                     return redirect("dashboard:index")

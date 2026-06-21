@@ -32,6 +32,53 @@
 ==========================================================================
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
+# ==========================================================================
+# PANDUAN DJANGO UNTUK DEVELOPER PEMULA (baca ini sebelum mempelajari views)
+# ==========================================================================
+#
+# APA ITU CLASS-BASED VIEW (CBV)?
+# - CBV = class Python yang menangani HTTP request dan return response
+# - Django menyediakan CBV bawaan: ListView, CreateView, UpdateView, DeleteView
+# - Setiap CBV punya "lifecycle" (siklus hidup) yang bisa di-customize
+#
+# SIKLUS HIDUP CBV (urutan method yang dipanggil):
+# 1. as_view()     → Entry point, dipanggil oleh URL router
+# 2. dispatch()    → Tentukan method (GET/POST) → panggil get() atau post()
+# 3. get()/post()  → Handle request, kumpulkan data
+# 4. get_queryset()→ Ambil data dari database (bisa di-filter/optimasi)
+# 5. get_context_data() → Siapkan data untuk template (variabel {{ }})
+# 6. render()      → Gabungkan template + context → HTML response
+#
+# METHOD PENTING YANG SERING DI-OVERRIDE:
+# - get_queryset()     → Optimasi query (prefetch_related, select_related)
+# - get_context_data() → Tambah variabel ke template (self.context)
+# - form_valid()       → Proses setelah form divalidasi (sebelum save)
+# - get_success_url()  → URL redirect setelah operasi berhasil
+#
+# DECORATOR YANG SERING DIGUNAKAN:
+# @login_required       → User HARUS login, jika tidak → redirect ke /login/
+# @permission_required  → User harus punya permission tertentu (RBAC)
+# @require_http_methods → Batasi method yang diterima (GET, POST, dll)
+# @never_cache          → Response tidak boleh di-cache oleh browser
+#
+# POLA UMUM VIEW DI PROYEK INI:
+# class MyListView(SubModulePermissionMixin, ListView):
+#     module_name = 'nama_modul'          # Untuk pengecekan RBAC
+#     sub_module_name = 'nama_sub_modul'  # Sub-modul yang diakses
+#     model = MyModel                      # Model database yang dipakai
+#     template_name = 'modul/page.html'    # File HTML template
+#
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         context = TemplateLayout.init(self, context)  # WAJIB: setup layout
+#         context['data_tambahan'] = ...    # Tambah data custom
+#         return context
+# ==========================================================================
+
+
 # ═══════════════════════════════════════════════════════════════
 #  IMPORTS — Library dan modul yang dibutuhkan
 # ═══════════════════════════════════════════════════════════════
@@ -69,6 +116,9 @@ from apps.fraud_detection.models import FraudRule, FraudAlert, CashReconciliatio
 # Model Activity Log — untuk menampilkan riwayat aktivitas user
 from apps.activity_log.models import UserActivity
 from django.db import transaction
+
+
+
 
 
 # ╔══════════════════════════════════════════════════════════════╗
@@ -121,18 +171,6 @@ class FraudDashboardView(SubModulePermissionMixin, TemplateView):
         from apps.pos.models import POSTransactionItem
 
         total_aset = Decimal('0')
-        # Qty sparepart terpakai dari Service Center — kumulatif historis
-        sc_used_by_produk = {}
-        try:
-            from apps.service_center.models import PenggunaanSparepart as SC_SP_Fraud
-            for item in SC_SP_Fraud.objects.values('produk_id').annotate(
-                total_qty=Sum('jumlah')
-            ):
-                if item['produk_id']:
-                    sc_used_by_produk[item['produk_id']] = item['total_qty'] or 0
-        except Exception:
-            pass
-
         for produk in Produk.objects.all():
             # Stok fisik saat ini di semua gudang
             stok_sekarang = Stok.objects.filter(produk=produk).aggregate(
@@ -152,9 +190,7 @@ class FraudDashboardView(SubModulePermissionMixin, TemplateView):
                 produk=produk, tipe='out'
             ).aggregate(total=Sum('jumlah'))['total'] or 0
             # Total kuantitas seharusnya = semua stok + semua yang keluar
-            # Qty sparepart terpakai di Service Center
-            qty_sc_used = sc_used_by_produk.get(produk.pk, 0)
-            qty_total = stok_sekarang + total_terjual_so + total_terjual_pos + total_adj_out + qty_sc_used
+            qty_total = stok_sekarang + total_terjual_so + total_terjual_pos + total_adj_out
             # Nilai aset = kuantitas × harga beli per unit
             total_aset += Decimal(str(qty_total)) * produk.harga_beli
         context['total_aset_asli'] = total_aset
@@ -166,7 +202,7 @@ class FraudDashboardView(SubModulePermissionMixin, TemplateView):
         from apps.pembelian.models import PurchaseOrder
         from apps.biaya.models import TransaksiBiaya
 
-        # Total pemasukan: POS (lunas) + Sales Order (terkonfirmasi/selesai) + Service (lunas)
+        # Total pemasukan: POS (lunas) + Sales Order (terkonfirmasi/selesai)
         # DIPERBAIKI: Menggunakan aggregate_sales_amounts()['net'] agar konsisten
         # dengan Dashboard utama dan Laporan Keuangan (tanpa PPN, setelah diskon)
         from apps.core.finance_metrics import aggregate_sales_amounts, aggregate_purchase_amounts
@@ -176,14 +212,8 @@ class FraudDashboardView(SubModulePermissionMixin, TemplateView):
         total_pemasukan_so = aggregate_sales_amounts(
             SalesOrder.objects.filter(status__in=['confirmed', 'delivered', 'completed'])
         )['net']
-        # Service Center: order service yang lunas
-        from apps.service_center.models import OrderService
-        total_pemasukan_service = OrderService.objects.filter(
-            status_bayar='lunas'
-        ).aggregate(total=Sum('biaya_akhir'))['total'] or Decimal('0')
-        total_pemasukan = total_pemasukan_pos + total_pemasukan_so + total_pemasukan_service
+        total_pemasukan = total_pemasukan_pos + total_pemasukan_so
         context['total_pemasukan'] = total_pemasukan
-        context['total_pemasukan_service'] = total_pemasukan_service
 
         # Total pengeluaran: Purchase Order (subtotal tanpa PPN) + Biaya operasional (disetujui)
         total_pengeluaran_po = aggregate_purchase_amounts(
@@ -397,14 +427,8 @@ class FraudAlertDetailView(SubModulePermissionMixin, TemplateView):
                 elif alert.model_name == 'CashReconciliation':
                     from apps.fraud_detection.models import CashReconciliation
                     context['related_object_cash'] = CashReconciliation.objects.filter(id=alert.object_id).first()
-                elif alert.model_name == 'OrderService':
-                    from apps.service_center.models import OrderService
-                    context['related_object_service'] = OrderService.objects.filter(pk=alert.object_id).first()
-                elif alert.model_name == 'PenggunaanSparepart':
-                    from apps.service_center.models import PenggunaanSparepart
-                    context['related_object_sparepart'] = PenggunaanSparepart.objects.filter(pk=alert.object_id).first()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Error tidak terduga: %s", e)
 
         return context
 

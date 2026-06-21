@@ -17,16 +17,13 @@
 {% load static %}
 {% load i18n %}
 
-{# ── Title Halaman ── #}
 {% block title %}Verifikasi Email - {{ system_title|default:"ERP System" }}{% endblock %}
 
-{# ── Page CSS: Styling khusus halaman auth ── #}
 {% block page_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/css/pages/page-auth.css' %}" />
 {% endblock page_css %}
 
-{# ── Page JS: Script untuk tombol loading ── #}
 {% block page_js %}
 {{ block.super }}
 <script src="{% static 'js/auth-click-loader.js' %}"></script>
@@ -34,14 +31,14 @@
 
 {% block content %}
 <div class="authentication-wrapper authentication-cover">
-  {# ── Logo & Nama Sistem (dinamis dari Pengaturan) ── #}
+  
   <a href="{% url 'dashboard:index' %}" class="auth-cover-brand d-flex align-items-center gap-2">
     <span class="app-brand-logo demo">{% include 'partials/logo.html' %}</span>
     <span class="app-brand-text demo text-heading fw-semibold">{{ system_title|default:"ERP System" }}</span>
   </a>
 
   <div class="authentication-inner row m-0">
-    {# ── Ilustrasi Kiri (hanya desktop ≥ lg) ── #}
+    
     <div class="d-none d-lg-flex col-lg-7 col-xl-8 align-items-center justify-content-center p-12 pb-2">
       {% if pengaturan.auth_image %}
       <img src="{{ pengaturan.auth_image.url }}"
@@ -63,7 +60,6 @@
       {% endif %}
     </div>
 
-    {# ── Konten Verifikasi Email (kolom kanan) ── #}
     <div
       class="d-flex col-12 col-lg-5 col-xl-4 align-items-center authentication-bg position-relative py-sm-5 px-4 py-4">
       <div class="w-px-400 mx-auto pt-5 pt-lg-0">
@@ -79,22 +75,19 @@
         <div class="card shadow-lg border-0">
           <div class="card-body p-4 p-sm-5">
 
-            {# ── Judul ── #}
             <h3 class="mb-2">Verifikasi Email Anda ✉️</h3>
 
-            {# ── Skenario 1: User sudah login ── #}
             {% if request.user.is_authenticated %}
             <p class="text-start mb-4">
               Link verifikasi akan dikirim ke email: <strong>{{ request.user.email }}</strong>
             </p>
             {% else %}
-            {# ── Skenario 2: User belum login (baru registrasi) ── #}
+            
             <p class="text-start mb-4">
               Link verifikasi telah dikirim ke alamat email Anda.
             </p>
             {% endif %}
 
-            {# ── Pesan Flash (sukses/error/warning) ── #}
             {% if messages %}
             {% for message in messages %}
             <div
@@ -105,9 +98,8 @@
             {% endfor %}
             {% endif %}
 
-            {# ── Tombol Aksi (berbeda per skenario) ── #}
             {% if request.user.is_authenticated %}
-            {# Skenario 1: Tombol Verifikasi + Kembali #}
+            
             <a id="btnSubmit" class="btn btn-primary w-100" href="{% url 'send-verification' %}" style="margin-bottom: 1rem !important;">
               <span id="btnText" class="me-1">Verifikasi Email</span>
               <span id="btnLoader" class="spinner-border spinner-border-sm visually-hidden" role="status"
@@ -117,7 +109,7 @@
               Kembali ke Dashboard
             </a>
             {% else %}
-            {# Skenario 2: Tombol Lewati + Link Kirim Ulang #}
+            
             <a class="btn btn-primary w-100" href="{% url 'login' %}" style="margin-bottom: 1.5rem !important;">
               Lewati & Masuk
             </a>
@@ -132,11 +124,10 @@
 
           </div>
         </div>
-        {# ── /CARD WRAPPER ── #}
-
+        
       </div>
     </div>
-    {# ── /Konten Verifikasi Email ── #}
+    
   </div>
 </div>
 {% endblock %}

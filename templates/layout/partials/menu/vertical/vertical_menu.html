@@ -7,7 +7,7 @@
 ==========================================================================
 {% endcomment %}
 <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
-  <!-- ! Hide app brand if navbar-full -->
+  
   {% if not navbar_full %}
   <div class="app-brand demo">
     <a href="{% url 'dashboard:index' %}" class="app-brand-link">
@@ -45,6 +45,5 @@
     {% endif %}
     {% endfor %}
   </ul>
-
 
 </aside>

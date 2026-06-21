@@ -2,8 +2,31 @@
 {% load static %}
 {% load currency_filters %}
 
+{% comment %}
+  ==========================================================================
+  ASET - Detail Aset
+  ==========================================================================
+  Menampilkan informasi lengkap satu aset termasuk data relasi.
+  Detail page biasanya menampilkan data read-only (tidak bisa diedit langsung).
+
+  FLOW DATA:
+  - URL: /aset/aset/<pk>/- View: DetailView mengambil 1 object berdasarkan primary key- Context: object + data relasi (items, history, dll)- Template: Render semua informasi ke HTML
+
+  RELASI KE MODUL LAIN:
+  - apps/aset/views.py -> AsetDetailView- apps/aset/models.py -> Model Aset- get_context_data(): Menambahkan data relasi ke context
+
+  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
+  - BOLEH diubah: Layout detail, urutan informasi- BOLEH ditambah: Informasi baru dari relasi- JANGAN diubah: {% extends %} dan {% block %} structure
+
+  TIPS & DEBUGGING:
+  - Error 'DoesNotExist'? Primary key tidak ditemukan di database- Data relasi kosong? Cek get_context_data() di views.py
+
+  ==========================================================================
+{% endcomment %}
+
+
 {% block title %}{{ aset.kode }} - Detail Aset{% endblock title %}
-{% block vendor_js %}{{ block.super }}<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>{% endblock vendor_js %}
+{% block vendor_js %}{{ block.super }}<script src="{% static 'vendor/libs/chartjs/chartjs.js' %}"></script>{% endblock vendor_js %}
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
@@ -47,7 +70,14 @@
             {% endif %}
         </div>
     </div>
-    {% if chart_labels %}<div class="card mb-4"><div class="card-header"><h5 class="mb-0"><i class="ri-line-chart-line me-2"></i>Grafik Penyusutan</h5></div><div class="card-body"><canvas id="depChart" height="80"></canvas></div></div>{% endif %}
+    {% if chart_labels %}<div class="card mb-4"><div class="card-header d-flex flex-nowrap align-items-center justify-content-between"><h5 class="mb-0 me-2"><i class="ri-line-chart-line me-2"></i>Grafik Penyusutan</h5>
+                    <div class="dropdown flex-shrink-0">
+                        <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a>
+                            <a class="dropdown-item" href="javascript:void(0)" onclick="if(window.__depChart){var c=window.__depChart.canvas||document.getElementById('depChart');if(c&&c.toBlob){c.toBlob(function(b){var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='chart.png';a.click();});}}"><i class="ri-download-2-line me-2"></i>Unduh Grafik</a>
+                        </div>
+                    </div></div><div class="card-body"><canvas id="depChart" height="80"></canvas></div></div>{% endif %}
     <div class="row">
         <div class="col-md-{% if aset.status == 'aktif' %}7{% else %}12{% endif %}">
             <div class="card mb-4">
@@ -64,6 +94,7 @@
                 <div class="alert alert-info py-2 mb-3"><small>Per bulan: <strong>{{ aset.penyusutan_per_bulan|rupiah }}</strong> | Sisa: {{ aset.sisa_umur_bulan }} bln</small></div>
                 <form id="penyForm">{% csrf_token %}<div class="row mb-3"><div class="col-6"><label class="form-label">Bulan</label><select class="form-select" name="bulan" id="blnP">{% for m in "123456789"|make_list %}<option value="{{ m }}">{{ m }}</option>{% endfor %}<option value="10">10</option><option value="11">11</option><option value="12">12</option></select></div><div class="col-6"><label class="form-label">Tahun</label><input type="number" class="form-control" name="tahun" id="thnP" value="2026"></div></div>
                 <button type="button" class="btn btn-warning w-100" onclick="prosesPeny()"><i class="ri-arrow-down-circle-line me-1"></i>Proses</button></form></div></div>
+            
             <div class="card mb-4"><div class="card-header bg-danger"><h5 class="mb-0 text-white"><i class="ri-delete-bin-line me-2"></i>Disposal</h5></div><form method="post" action="{% url 'aset:disposal' aset.pk %}">{% csrf_token %}<div class="card-body">
                 <div class="alert alert-warning py-2 mb-3"><small>Nilai buku: <strong>{{ aset.nilai_buku|rupiah }}</strong></small></div>
                 <div class="mb-3"><label class="form-label">Tipe</label>{{ disposal_form.tipe }}</div><div class="mb-3"><label class="form-label">Tanggal</label>{{ disposal_form.tanggal }}</div><div class="mb-3"><label class="form-label">Harga Jual</label>{{ disposal_form.harga_jual }}</div><div class="mb-3"><label class="form-label">Keterangan</label>{{ disposal_form.keterangan }}</div>
@@ -75,7 +106,7 @@
 {% endblock content %}
 {% block page_js %}
 <script>
-{% if chart_labels %}new Chart(document.getElementById('depChart').getContext('2d'),{type:'line',data:{labels:{{ chart_labels|safe }},datasets:[{label:'Akumulasi',data:{{ chart_akumulasi|safe }},borderColor:'#FFAB00',fill:true,tension:.3},{label:'Nilai Buku',data:{{ chart_nilai_buku|safe }},borderColor:'#03C3EC',fill:true,tension:.3}]},options:{responsive:true,scales:{y:{ticks:{callback:v=>'Rp '+v.toLocaleString('id-ID')}}}}});{% endif %}
+{% if chart_labels %}var __depChartInst = new Chart(document.getElementById('depChart').getContext('2d'),{type:'line',data:{labels:{{ chart_labels|safe }},datasets:[{label:'Akumulasi',data:{{ chart_akumulasi|safe }},borderColor:'#FFAB00',fill:true,tension:.3},{label:'Nilai Buku',data:{{ chart_nilai_buku|safe }},borderColor:'#03C3EC',fill:true,tension:.3}]},options:{responsive:true,plugins:{legend:{display:true}},scales:{y:{ticks:{callback:v=>'Rp '+v.toLocaleString('id-ID')}}}}}); window.__depChart = __depChartInst;{% endif %}
 function prosesPeny(){const b=$('#blnP').val(),t=$('#thnP').val();if(!confirm('Proses penyusutan '+b+'/'+t+'?'))return;const fd=new FormData();fd.append('bulan',b);fd.append('tahun',t);fd.append('csrfmiddlewaretoken',document.querySelector('[name=csrfmiddlewaretoken]').value);fetch('{% url "aset:susutkan" aset.pk %}',{method:'POST',body:fd}).then(r=>r.json()).then(d=>{alert(d.message);if(d.success)location.reload();}).catch(()=>alert('Gagal'));}
 </script>
 {% endblock page_js %}

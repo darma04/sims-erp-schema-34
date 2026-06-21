@@ -16,6 +16,7 @@
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from decimal import Decimal
+from django.db import IntegrityError
 import logging
 
 logger = logging.getLogger(__name__)
@@ -77,6 +78,10 @@ def create_pos_journal(sender, instance, created, **kwargs):
         try:
             from apps.pos.services import ensure_pos_kasbon_accounting
             ensure_pos_kasbon_accounting(instance, user=instance.kasir)
+        except IntegrityError as exc:
+            logger.warning(
+                f'[POS] Duplicate jurnal kasbon untuk {instance.nomor_transaksi}: {exc}',
+            )
         except Exception as exc:
             logger.error(
                 f'[POS] Failed to create kasbon accounting for {instance.nomor_transaksi}: {exc}',
@@ -96,9 +101,9 @@ def create_pos_journal(sender, instance, created, **kwargs):
                     source_id=str(instance.pk),
                     source_repr=instance.nomor_transaksi,
             )
-            except Exception:
-                pass
-            raise
+            except Exception as e:
+                logger.warning("Gagal mencatat activity log: %s", e)
+            # raise  # Disabled: transaksi tetap tersimpan meskipun jurnal gagal
         return  # Don't continue to paid handling
 
     # Hanya buat jurnal jika status = paid
@@ -109,145 +114,160 @@ def create_pos_journal(sender, instance, created, **kwargs):
     pajak = instance.pajak or Decimal('0')
     diskon = instance.diskon or Decimal('0')
 
-    # Cek apakah sudah ada jurnal untuk transaksi ini
+    # ── FIX BUG-02: wrap duplicate check + creation in atomic + select_for_update ──
     from apps.akuntansi.models import JurnalEntry
-    existing = JurnalEntry.objects.filter(
-        sumber='pos',
-        sumber_id=instance.pk
-    ).exists()
-    
-    if existing:
-        ensure_pos_faktur_pajak(instance, subtotal, diskon, pajak)
-        return
-    
-    # Hitung total
-    total = instance.total_harga or Decimal('0')
-    hpp_total = sum(
-        (item.hpp_subtotal or (
-            (item.produk.harga_beli or Decimal('0')) *
-            (item.jumlah_konversi or item.jumlah or Decimal('0'))
-        ))
-        for item in instance.items.select_related('produk')
-    )
-    
-    # Validasi: total harus > 0
-    if total <= 0:
-        logger.warning(f"[POS] Skip auto-jurnal untuk {instance.nomor_transaksi}: total = {total}")
-        return
-    
-    from apps.kas_bank.services import create_operational_mutation, resolve_kas_bank_mapping
-    kas_bank_account, _, akun_kas = resolve_kas_bank_mapping(instance.metode_pembayaran)
-    
-    # Build lines data
-    # Pendapatan dicatat sebesar subtotal (sebelum diskon)
-    # Diskon dicatat terpisah sebagai contra-pendapatan (akun 4-1002)
-    # Total yang masuk kas = subtotal - diskon + pajak
-    lines_data = [
-        {
-            'akun_kode': akun_kas,
-            'debit': total,
-            'kredit': Decimal('0'),
-            'keterangan': f'Penerimaan kas dari POS {instance.nomor_transaksi}'
-        },
-        {
-            'akun_kode': '4-1000',  # Pendapatan Penjualan
-            'debit': Decimal('0'),
-            'kredit': subtotal,
-            'keterangan': f'Pendapatan penjualan POS {instance.nomor_transaksi}'
-        }
-    ]
+    from django.db import transaction as db_transaction
 
-    # Tambah Diskon Penjualan jika ada (contra-pendapatan)
-    if diskon > 0:
-        lines_data.append({
-            'akun_kode': '4-1002',  # Diskon Penjualan (contra pendapatan)
-            'debit': diskon,
-            'kredit': Decimal('0'),
-            'keterangan': f'Diskon penjualan POS {instance.nomor_transaksi}'
-        })
-    
-    # Tambah PPN jika ada
-    if pajak > 0:
-        lines_data.append({
-            'akun_kode': '2-2000',  # PPN Keluaran
-            'debit': Decimal('0'),
-            'kredit': pajak,
-            'keterangan': f'PPN Keluaran POS {instance.nomor_transaksi}'
-        })
-
-    if hpp_total > 0:
-        lines_data.extend([
-            {
-                'akun_kode': '5-1000',
-                'debit': hpp_total,
-                'kredit': Decimal('0'),
-                'keterangan': f'HPP penjualan POS {instance.nomor_transaksi}'
-            },
-            {
-                'akun_kode': '1-3000',
-                'debit': Decimal('0'),
-                'kredit': hpp_total,
-                'keterangan': f'Pengurangan persediaan POS {instance.nomor_transaksi}'
-            },
-        ])
-    
-    # Create jurnal
-    try:
-        from apps.akuntansi.services import create_jurnal
-        
-        jurnal = create_jurnal(
-            tanggal=instance.tanggal.date() if hasattr(instance.tanggal, 'date') else instance.tanggal,
-            deskripsi=f'Penjualan POS - {instance.nomor_transaksi}',
-            lines_data=lines_data,
+    with db_transaction.atomic():
+        # Lock to prevent concurrent duplicate journal creation
+        existing = JurnalEntry.objects.select_for_update().filter(
             sumber='pos',
-            sumber_id=instance.pk,
-            sumber_ref=instance.nomor_transaksi,
-            cabang=instance.gudang,
-            user=instance.kasir,
-            auto_post=True,
-        )
-        create_operational_mutation(
-            akun_kas_bank=kas_bank_account,
-            tipe='masuk',
-            tanggal=instance.tanggal,
-            jumlah=total,
-            deskripsi=f'Penerimaan POS {instance.nomor_transaksi}',
-            akun_lawan=None,
-            cabang=instance.gudang,
-            metode_pembayaran=instance.metode_pembayaran,
-            sumber_app='pos',
-            sumber_model='POSTransaction',
-            sumber_id=instance.pk,
-            sumber_ref=instance.nomor_transaksi,
-            jurnal_entry=jurnal,
-            user=instance.kasir,
+            sumber_id=instance.pk
+        ).exists()
+
+        if existing:
+            ensure_pos_faktur_pajak(instance, subtotal, diskon, pajak)
+            return
+
+        # Hitung total
+        total = instance.total_harga or Decimal('0')
+        hpp_total = sum(
+            (item.hpp_subtotal or (
+                (item.produk.harga_beli or Decimal('0')) *
+                (item.jumlah_konversi or item.jumlah or Decimal('0'))
+            ))
+            for item in instance.items.select_related('produk')
         )
 
-        ensure_pos_faktur_pajak(instance, subtotal, diskon, pajak)
-        
-        logger.info(f'[POS] Auto-jurnal created for {instance.nomor_transaksi}: {jurnal.nomor}')
-        
-    except Exception as e:
-        logger.error(f'[POS] Failed to create auto-jurnal for {instance.nomor_transaksi}: {e}', exc_info=True)
-        # Catat kegagalan ke activity log agar terdeteksi di Rekonsiliasi Keuangan
+        # Validasi: total harus > 0
+        if total <= 0:
+            logger.warning(f"[POS] Skip auto-jurnal untuk {instance.nomor_transaksi}: total = {total}")
+            return
+
+        from apps.kas_bank.services import create_operational_mutation, resolve_kas_bank_mapping
+        kas_bank_account, _, akun_kas = resolve_kas_bank_mapping(instance.metode_pembayaran)
+
+        # Build lines data
+        # ══════════════════════════════════════════════════════════════
+        # TREATMENT DISKON POS (CONTRA-PENDAPATAN)
+        # ══════════════════════════════════════════════════════════════
+        # Pendapatan dicatat sebesar subtotal (sebelum diskon) pada akun 4-1000.
+        # Diskon dicatat terpisah sebagai contra-pendapatan (akun 4-1002, saldo_normal=debit)
+        # yang MENGURANGI total pendapatan di laporan Laba Rugi.
+        #
+        # Alasan desain (sesuai PSAK 23):
+        # - Pendapatan bruto tetap tercatat penuh untuk audit trail
+        # - Diskon sebagai contra-pendapatan (bukan beban) agar margin kotor
+        #   mencerminkan efek diskon secara langsung
+        # - Di Laba Rugi: Pendapatan Bruto - Diskon = Pendapatan Bersih
+        #
+        # Total kas yang diterima = subtotal - diskon + pajak
+        # ══════════════════════════════════════════════════════════════
+        lines_data = [
+            {
+                'akun_kode': akun_kas,
+                'debit': total,
+                'kredit': Decimal('0'),
+                'keterangan': f'Penerimaan kas dari POS {instance.nomor_transaksi}'
+            },
+            {
+                'akun_kode': '4-1000',
+                'debit': Decimal('0'),
+                'kredit': subtotal,
+                'keterangan': f'Pendapatan penjualan POS {instance.nomor_transaksi}'
+            }
+        ]
+
+        if diskon > 0:
+            lines_data.append({
+                'akun_kode': '4-1002',
+                'debit': diskon,
+                'kredit': Decimal('0'),
+                'keterangan': f'Diskon penjualan POS {instance.nomor_transaksi}'
+            })
+
+        if pajak > 0:
+            lines_data.append({
+                'akun_kode': '2-2000',
+                'debit': Decimal('0'),
+                'kredit': pajak,
+                'keterangan': f'PPN Keluaran POS {instance.nomor_transaksi}'
+            })
+
+        if hpp_total > 0:
+            lines_data.extend([
+                {
+                    'akun_kode': '5-1000',
+                    'debit': hpp_total,
+                    'kredit': Decimal('0'),
+                    'keterangan': f'HPP penjualan POS {instance.nomor_transaksi}'
+                },
+                {
+                    'akun_kode': '1-3000',
+                    'debit': Decimal('0'),
+                    'kredit': hpp_total,
+                    'keterangan': f'Pengurangan persediaan POS {instance.nomor_transaksi}'
+                },
+            ])
+
+        # Create jurnal
         try:
-            from apps.activity_log.models import UserActivity
-            UserActivity.objects.create(
+            from apps.akuntansi.services import create_jurnal
+
+            jurnal = create_jurnal(
+                tanggal=instance.tanggal.date() if hasattr(instance.tanggal, 'date') else instance.tanggal,
+                deskripsi=f'Penjualan POS - {instance.nomor_transaksi}',
+                lines_data=lines_data,
+                sumber='pos',
+                sumber_id=instance.pk,
+                sumber_ref=instance.nomor_transaksi,
+                cabang=instance.gudang,
                 user=instance.kasir,
-                action='create',
-                model_name='JurnalEntry',
-                object_id=str(instance.pk),
-                object_repr=f'GAGAL: Jurnal POS {instance.nomor_transaksi}',
-                description=f'[JURNAL GAGAL] Auto-jurnal untuk POS {instance.nomor_transaksi} gagal dibuat. '
-                            f'Error: {str(e)[:200]}. Transaksi tetap berstatus paid tapi TIDAK memiliki jurnal. '
-                            f'Perbaiki via Rekonsiliasi Keuangan.',
-                source_type='pos',
-                source_id=str(instance.pk),
-                source_repr=instance.nomor_transaksi,
+                auto_post=True,
             )
-        except Exception:
-            pass
-        raise
+            create_operational_mutation(
+                akun_kas_bank=kas_bank_account,
+                tipe='masuk',
+                tanggal=instance.tanggal,
+                jumlah=total,
+                deskripsi=f'Penerimaan POS {instance.nomor_transaksi}',
+                akun_lawan=None,
+                cabang=instance.gudang,
+                metode_pembayaran=instance.metode_pembayaran,
+                sumber_app='pos',
+                sumber_model='POSTransaction',
+                sumber_id=instance.pk,
+                sumber_ref=instance.nomor_transaksi,
+                jurnal_entry=jurnal,
+                user=instance.kasir,
+            )
+
+            ensure_pos_faktur_pajak(instance, subtotal, diskon, pajak)
+
+            logger.info(f'[POS] Auto-jurnal created for {instance.nomor_transaksi}: {jurnal.nomor}')
+
+        except IntegrityError as e:
+            logger.warning(f"[POS] Duplicate jurnal untuk {instance.nomor_transaksi}: {e}")
+        except Exception as e:
+            logger.error(f'[POS] Failed to create auto-jurnal for {instance.nomor_transaksi}: {e}', exc_info=True)
+            try:
+                from apps.activity_log.models import UserActivity
+                UserActivity.objects.create(
+                    user=instance.kasir,
+                    action='create',
+                    model_name='JurnalEntry',
+                    object_id=str(instance.pk),
+                    object_repr=f'GAGAL: Jurnal POS {instance.nomor_transaksi}',
+                    description=f'[JURNAL GAGAL] Auto-jurnal untuk POS {instance.nomor_transaksi} gagal dibuat. '
+                                f'Error: {str(e)[:200]}. Transaksi tetap berstatus paid tapi TIDAK memiliki jurnal. '
+                                f'Perbaiki via Rekonsiliasi Keuangan.',
+                    source_type='pos',
+                    source_id=str(instance.pk),
+                    source_repr=instance.nomor_transaksi,
+                )
+            except Exception as e:
+                logger.warning("Gagal mencatat activity log: %s", e)
+            # raise  # Disabled: transaksi tetap tersimpan meskipun jurnal gagal
 
 
 @receiver(post_delete, sender='pos.POSTransactionItem')

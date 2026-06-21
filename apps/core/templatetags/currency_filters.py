@@ -71,3 +71,21 @@ def rupiah_k(value):
 def replace_underscore(value, arg):
     """Mengganti underscore dengan spasi atau karakter lain"""
     return value.replace("_", arg)
+
+@register.filter
+def multiply(value, arg):
+    """Mengalikan dua angka (value * arg)"""
+    try:
+        from decimal import Decimal
+        return Decimal(str(value)) * Decimal(str(arg))
+    except (ValueError, TypeError, Decimal.InvalidOperation):
+        return 0
+
+@register.filter
+def subtract(value, arg):
+    """Mengurangi dua angka (value - arg)"""
+    try:
+        from decimal import Decimal
+        return Decimal(str(value)) - Decimal(str(arg))
+    except (ValueError, TypeError, Decimal.InvalidOperation):
+        return 0

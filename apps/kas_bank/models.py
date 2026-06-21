@@ -66,6 +66,13 @@ class KasBankAccount(models.Model):
         return self.saldo_awal + self.total_masuk - self.total_keluar
 
 
+# =====================================================================
+    # REKOMENDASI PRODUCTION: Pertimbangkan soft delete untuk model ini.
+    # Soft delete (is_deleted = BooleanField) menjaga audit trail dan
+    # mencegah kehilangan data saat record dihapus secara tidak sengaja.
+    # Implementasi: tambahkan is_deleted=True/False dan override delete()
+    # atau gunakan Django manager dengan filter is_deleted=False.
+    # =====================================================================
 class KasBankTransaction(models.Model):
     TIPE_CHOICES = [
         ("masuk", "Masuk"),
@@ -145,6 +152,13 @@ class KasBankTransaction(models.Model):
             models.Index(fields=["cabang", "tanggal"], name="kb_mut_cabang_tgl_idx"),
             models.Index(fields=["metode_pembayaran", "status", "tanggal"], name="kb_mut_metode_status_idx"),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['sumber_app', 'sumber_model', 'sumber_id', 'tipe', 'akun_kas_bank'],
+                condition=models.Q(status='posted'),
+                name='unique_posted_kas_bank_mutation'
+            ),
+        ]
 
     def __str__(self):
         return f"{self.nomor} - {self.get_tipe_display()} - {self.jumlah:,.0f}"
@@ -156,7 +170,7 @@ class KasBankTransaction(models.Model):
 
     def generate_nomor(self):
         prefix = f"KB/{timezone.now().year}/{timezone.now().month:02d}"
-        last = KasBankTransaction.objects.filter(nomor__startswith=prefix).order_by("-nomor").first()
+        last = KasBankTransaction.objects.select_for_update().filter(nomor__startswith=prefix).order_by("-nomor").first()
         if last:
             try:
                 number = int(last.nomor.split("/")[-1]) + 1
@@ -175,6 +189,13 @@ class KasBankTransaction(models.Model):
         return self.tipe in ["masuk", "transfer_masuk", "penyesuaian_masuk"]
 
 
+# =====================================================================
+    # REKOMENDASI PRODUCTION: Pertimbangkan soft delete untuk model ini.
+    # Soft delete (is_deleted = BooleanField) menjaga audit trail dan
+    # mencegah kehilangan data saat record dihapus secara tidak sengaja.
+    # Implementasi: tambahkan is_deleted=True/False dan override delete()
+    # atau gunakan Django manager dengan filter is_deleted=False.
+    # =====================================================================
 class KasBankTransfer(models.Model):
     STATUS_CHOICES = [
         ("draft", "Draft"),
@@ -244,19 +265,25 @@ class KasBankTransfer(models.Model):
         super().save(*args, **kwargs)
 
     def generate_nomor(self):
+        # FIXED: Added transaction.atomic() + select_for_update() to prevent
+        # race conditions when concurrent transfers are created simultaneously
+        from django.db import transaction as db_transaction
         prefix = f"TRF/{timezone.now().year}/{timezone.now().month:02d}"
-        last = KasBankTransfer.objects.filter(nomor__startswith=prefix).order_by("-nomor").first()
-        if last:
-            try:
-                number = int(last.nomor.split("/")[-1]) + 1
-            except (ValueError, IndexError):
-                number = KasBankTransfer.objects.filter(nomor__startswith=prefix).count() + 1
-        else:
-            number = 1
-        nomor = f"{prefix}/{number:04d}"
-        while KasBankTransfer.objects.filter(nomor=nomor).exists():
-            number += 1
+        with db_transaction.atomic():
+            last = KasBankTransfer.objects.select_for_update().filter(
+                nomor__startswith=prefix
+            ).order_by("-nomor").first()
+            if last:
+                try:
+                    number = int(last.nomor.split("/")[-1]) + 1
+                except (ValueError, IndexError):
+                    number = KasBankTransfer.objects.filter(nomor__startswith=prefix).count() + 1
+            else:
+                number = 1
             nomor = f"{prefix}/{number:04d}"
+            while KasBankTransfer.objects.filter(nomor=nomor).exists():
+                number += 1
+                nomor = f"{prefix}/{number:04d}"
         return nomor
 
 

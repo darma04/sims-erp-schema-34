@@ -33,7 +33,7 @@
 ==========================================================================
 """
 
-from django.db import models, transaction   # Django ORM + atomic transaction
+from django.db import models, transaction, OperationalError   # Django ORM + atomic + lock error
 from django.contrib.auth.models import User  # Model User bawaan Django
 from apps.produk.models import Produk, Gudang, Stok  # Model master produk
 
@@ -143,8 +143,8 @@ class TransferStok(models.Model):
 
         Return: String nomor transfer — contoh 'TRF/2024/01/0001'
         """
-        from datetime import datetime
-        today = datetime.now()
+        from django.utils import timezone
+        today = timezone.now()
         # Format prefix: TRF/2024/01 (per bulan)
         prefix = f"TRF/{today.year}/{today.month:02d}"
 
@@ -210,11 +210,11 @@ class TransferStok(models.Model):
         # untuk mencegah race condition saat multiple user approve bersamaan
         with transaction.atomic():
             # TAHAP 1: Validasi ketersediaan stok di gudang asal (cek semua dulu)
-            # select_for_update() mengunci baris stok agar thread lain menunggu
+            # select_for_update(nowait=True) mengunci baris stok, gagal cepat jika terkunci
             for item in self.items.select_related('produk'):
                 try:
                     # Lock baris stok untuk mencegah concurrent read/write
-                    stok_asal = Stok.objects.select_for_update().get(
+                    stok_asal = Stok.objects.select_for_update(nowait=True).get(
                         produk=item.produk, gudang=self.gudang_asal
                     )
                     # Cek apakah stok mencukupi untuk di-transfer
@@ -418,21 +418,25 @@ class AdjustmentStok(models.Model):
             stok_before = 0
             if is_new:
                 try:
-                    # select_for_update() mengunci baris stok
-                    existing_stok = Stok.objects.select_for_update().get(
+                    # select_for_update(nowait=True) → gagal cepat jika terkunci
+                    existing_stok = Stok.objects.select_for_update(nowait=True).get(
                         produk=self.produk, gudang=self.gudang
                     )
                     stok_before = existing_stok.jumlah  # Simpan jumlah stok saat ini
                 except Stok.DoesNotExist:
                     stok_before = 0  # Belum ada record stok
+                except OperationalError:
+                    raise ValueError(
+                        f"Stok {self.produk.nama} sedang diproses pengguna lain. Coba lagi."
+                    )
 
             # Simpan record adjustment ke database
             super().save(*args, **kwargs)
 
             # Update stok HANYA jika record baru (hindari double update saat edit)
             if is_new:
-                # get_or_create + select_for_update: lock baris stok
-                stok, _ = Stok.objects.select_for_update().get_or_create(
+                # get_or_create + select_for_update(nowait=True): lock baris stok
+                stok, _ = Stok.objects.select_for_update(nowait=True).get_or_create(
                     produk=self.produk,
                     gudang=self.gudang,
                     defaults={'jumlah': 0}     # Default 0 jika baru dibuat
@@ -486,8 +490,8 @@ class AdjustmentStok(models.Model):
 
         Return: String nomor adjustment — contoh 'ADJ/2024/01/0001'
         """
-        from datetime import datetime
-        today = datetime.now()
+        from django.utils import timezone
+        today = timezone.now()
         # Format prefix: ADJ/2024/01 (per bulan)
         prefix = f"ADJ/{today.year}/{today.month:02d}"
 

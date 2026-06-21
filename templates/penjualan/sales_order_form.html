@@ -26,6 +26,7 @@
             <div class="card mb-4">
                 <h5 class="card-header">{{ title }}</h5>
                 <div class="card-body">
+                    
                     <form method="post" id="so-form">
                         {% csrf_token %}
 
@@ -124,7 +125,17 @@
 
                         <hr class="my-4">
 
-                        <h5 class="mb-3"><i class="ri-shopping-cart-2-line me-2"></i>Produk yang Dipesan</h5>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0"><i class="ri-shopping-cart-2-line me-2"></i>Produk yang Dipesan</h5>
+                            <div class="d-flex align-items-center gap-2">
+                                <label class="form-label mb-0 text-nowrap"><i class="ri-filter-line me-1"></i>Tipe:</label>
+                                <select class="form-select form-select-sm" style="width:150px" onchange="filterByTipe(this.value)">
+                                    {% for val, label in tipe_choices %}
+                                    <option value="{{ val }}" {% if tipe_filter == val %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
 
                         {{ formset.management_form }}
 
@@ -234,13 +245,12 @@
         $('.select2').select2({ placeholder: 'Pilih...', allowClear: true });
         $('.select2-item').select2({ placeholder: 'Pilih Produk', allowClear: true });
 
-        // ===== GUDANG → PPN MAPPING (dari backend) =====
         const gudangPajakMap = {};
         {% for g in gudang_pajak_list %}
         gudangPajakMap[{{ g.id }}] = {{ g.pajak_persen }};
         {% endfor %}
 
-        let pajakManualOverride = false; // Track jika user manual override pajak
+        let pajakManualOverride = false; 
 
         function formatRupiah(amount) {
             return 'Rp ' + new Intl.NumberFormat('id-ID').format(amount);
@@ -269,7 +279,6 @@
             const diskon = parseFloat(diskonInput);
             const ongkir = parseFloat($('[name="biaya_pengiriman"]').val()) || 0;
 
-            // Auto-hitung pajak dari gudang jika user belum manual override
             if (!pajakManualOverride) {
                 const pajakPersen = getGudangPajakPersen();
                 const subtotalAfterDiskon = subtotal - diskon + ongkir;
@@ -286,7 +295,6 @@
             $('#tax-amount').text(formatRupiah(pajak));
             $('#total').text(formatRupiah(total));
 
-            // Update label pajak persen
             const currentPersen = getGudangPajakPersen();
             if (currentPersen > 0) {
                 $('#pajak-persen-label').text('(' + currentPersen + '%)').show();
@@ -295,13 +303,11 @@
             }
         }
 
-        // Saat gudang berubah → recalculate pajak otomatis
         $(document).on('change', '[name="gudang"]', function() {
-            pajakManualOverride = false; // Reset override saat gudang berubah
+            pajakManualOverride = false; 
             calculateTotals();
         });
 
-        // Saat user manual edit field pajak → set override flag
         $(document).on('focus', '[name="pajak"]', function() {
             $(this).data('before', $(this).val());
         });
@@ -309,7 +315,7 @@
             if ($(this).data('before') !== $(this).val()) {
                 pajakManualOverride = true;
             }
-            // Recalculate display only
+            
             const diskon = parseFloat($('[name="diskon"]').val()) || 0;
             const ongkir = parseFloat($('[name="biaya_pengiriman"]').val()) || 0;
             const pajak = parseFloat($(this).val()) || 0;
@@ -333,7 +339,6 @@
             const totalForms = $('[name$="TOTAL_FORMS"]');
             const formIdx = parseInt(totalForms.val());
 
-            // Bangun HTML form baru menggunakan template string (lebih reliable dari clone)
             const newFormHTML = `
             <div class="formset-row border rounded p-3 mb-3">
                 <div class="row g-2 g-lg-3 align-items-end">
@@ -345,7 +350,7 @@
                             {% for produk in produk_list %}
                             <option value="{{ produk.id }}" data-harga="{{ produk.harga_jual }}" data-satuan-id="{{ produk.satuan.id }}">{{ produk.nama }}</option>
                             {% empty %}
-                            <!-- No products available, copy from first select -->
+                            
                             {% endfor %}
                         </select>
                     </div>
@@ -389,13 +394,10 @@
             </div>
         `;
 
-            // Append new form at the end of container
             formsetContainer.append(newFormHTML);
 
-            // Inisialisasi Select2 dan isi dengan opsi produk yang ada
             const newSelect = $(`#id_items-${formIdx}-produk`);
 
-            // If produk_list is empty, copy options from first select
             {% if not produk_list %}
             const firstSelect = $('.select2-item:first');
             if (firstSelect.length && firstSelect.find('option').length > 1) {
@@ -405,13 +407,11 @@
             }
             {% endif %}
 
-            // Inisialisasi Select2
             newSelect.select2({
                 placeholder: 'Pilih Produk',
                 allowClear: true
             });
 
-            // Auto-fill harga jual when produk is selected
             newSelect.on('change', function() {
                 const selectedOption = $(this).find(':selected');
                 const harga = selectedOption.data('harga');
@@ -421,7 +421,6 @@
                 }
             });
 
-            // Update jumlah total forms
             totalForms.val(formIdx + 1);
             calculateTotals();
         });
@@ -438,6 +437,16 @@
             }
             calculateTotals();
         });
+
+        window.filterByTipe = function(value) {
+            var params = new URLSearchParams(window.location.search);
+            if (value) {
+                params.set('tipe', value);
+            } else {
+                params.delete('tipe');
+            }
+            window.location.href = window.location.pathname + '?' + params.toString();
+        };
 
         calculateTotals();
     });

@@ -369,8 +369,8 @@ class Karyawan(models.Model):
 
         Return: String NIK â€” contoh 'EMP20240001'
         """
-        from datetime import datetime
-        today = datetime.now()
+        from django.utils import timezone
+        today = timezone.now()
         prefix = f"EMP{today.year}"   # Prefix berdasarkan tahun: 'EMP2024'
 
         # Cari karyawan dengan NIK paling besar yang dimulai dengan prefix ini

@@ -29,7 +29,7 @@
 
 from decimal import Decimal
 
-from django.db import models, transaction    # Django ORM + atomic transaction
+from django.db import models, transaction, OperationalError    # Django ORM + atomic + lock error
 from django.contrib.auth.models import User  # Model User bawaan Django (akun login)
 from apps.produk.models import Produk, Gudang, Stok  # Import model dari modul Produk untuk relasi FK
 
@@ -81,6 +81,13 @@ class Customer(models.Model):
         return f"{self.kode} - {self.nama}"
 
 
+# =====================================================================
+    # REKOMENDASI PRODUCTION: Pertimbangkan soft delete untuk model ini.
+    # Soft delete (is_deleted = BooleanField) menjaga audit trail dan
+    # mencegah kehilangan data saat record dihapus secara tidak sengaja.
+    # Implementasi: tambahkan is_deleted=True/False dan override delete()
+    # atau gunakan Django manager dengan filter is_deleted=False.
+    # =====================================================================
 class SalesOrder(models.Model):
     """
     Model untuk SALES ORDER (SO) — dokumen penjualan barang.
@@ -244,8 +251,8 @@ class SalesOrder(models.Model):
 
         Return: String nomor SO — contoh 'SO/2024/01/0001'
         """
-        from datetime import datetime
-        today = datetime.now()
+        from django.utils import timezone
+        today = timezone.now()
         # Format prefix: SO/2024/01 (per bulan)
         prefix = f"SO/{today.year}/{today.month:02d}"
 
@@ -337,8 +344,8 @@ class SalesOrder(models.Model):
             # LANGKAH 2 & 3: Validasi dan kurangi stok (dalam satu atomic block)
             for item in self.items.select_related('produk'):
                 try:
-                    # Lock baris stok untuk mencegah concurrent read/write
-                    stok = Stok.objects.select_for_update().get(
+                    # Lock baris stok, nowait=True → gagal cepat jika terkunci
+                    stok = Stok.objects.select_for_update(nowait=True).get(
                         produk=item.produk, gudang=self.gudang
                     )
 
@@ -365,6 +372,8 @@ class SalesOrder(models.Model):
                 except Stok.DoesNotExist:
                     # Produk tidak punya record stok di gudang ini
                     raise ValueError(f"Stok {item.produk.nama} tidak ditemukan di gudang {self.gudang.nama}")
+                except OperationalError:
+                    raise ValueError(f"Stok {item.produk.nama} sedang diproses pengguna lain. Coba lagi.")
 
             # LANGKAH 4: Update status menjadi 'confirmed'
             self.status = 'confirmed'

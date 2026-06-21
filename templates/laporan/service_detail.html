@@ -1,0 +1,196 @@
+{% extends 'layout/layout_vertical.html' %}
+{% load static %}
+{% load currency_filters %}
+
+{% comment %}
+  ==========================================================================
+  LAPORAN - Detail Service
+  ==========================================================================
+  Menampilkan informasi lengkap satu service termasuk data relasi.
+  Detail page biasanya menampilkan data read-only (tidak bisa diedit langsung).
+
+  FLOW DATA:
+  - URL: /laporan/service/<pk>/- View: DetailView mengambil 1 object berdasarkan primary key- Context: object + data relasi (items, history, dll)- Template: Render semua informasi ke HTML
+
+  RELASI KE MODUL LAIN:
+  - apps/laporan/views.py -> ServiceDetailView- apps/laporan/models.py -> Model Service- get_context_data(): Menambahkan data relasi ke context
+
+  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
+  - BOLEH diubah: Layout detail, urutan informasi- BOLEH ditambah: Informasi baru dari relasi- JANGAN diubah: {% extends %} dan {% block %} structure
+
+  TIPS & DEBUGGING:
+  - Error 'DoesNotExist'? Primary key tidak ditemukan di database- Data relasi kosong? Cek get_context_data() di views.py
+
+  ==========================================================================
+{% endcomment %}
+
+
+{% block title %}Detail Order Service - {{ order.nomor_service }} - ERP{% endblock title %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="ri-tools-line me-2"></i>Detail Order Service: {{ order.nomor_service }}</h4>
+            <p class="text-muted mb-0">Informasi lengkap order service dengan riwayat aktivitas dan data terhubung</p>
+        </div>
+        <a href="{% url 'laporan:service' %}" class="btn btn-label-secondary">
+            <i class="ri-arrow-left-line me-1"></i> Kembali
+        </a>
+    </div>
+
+    <div class="row">
+        
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="ri-information-line me-2"></i>Informasi Order</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless mb-0">
+                        <tr><td class="text-muted">No. Service</td><td class="text-end"><code>{{ order.nomor_service }}</code></td></tr>
+                        <tr><td class="text-muted">Kode Tracking</td><td class="text-end"><code>{{ order.kode_unik }}</code></td></tr>
+                        <tr><td class="text-muted">Tanggal Masuk</td><td class="text-end">{{ order.tanggal_masuk|date:"d M Y H:i" }}</td></tr>
+                        <tr><td class="text-muted">Status</td><td class="text-end"><span class="badge bg-label-{{ order.status_badge_class }}">{{ order.get_status_display }}</span></td></tr>
+                        <tr><td class="text-muted">Prioritas</td><td class="text-end"><span class="badge bg-label-{{ order.prioritas_badge_class }}">{{ order.get_prioritas_display }}</span></td></tr>
+                        <tr><td class="text-muted">Status Bayar</td><td class="text-end">
+                            {% if order.status_bayar == 'lunas' %}<span class="badge bg-label-success">Lunas</span>
+                            {% elif order.status_bayar == 'dp' %}<span class="badge bg-label-warning">DP</span>
+                            {% else %}<span class="badge bg-label-secondary">Belum Bayar</span>{% endif %}
+                        </td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header py-2">
+                    <h6 class="mb-0"><i class="ri-user-line me-2"></i>Pelanggan</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1"><strong>{{ order.pelanggan.nama }}</strong></p>
+                    <p class="mb-0 text-muted small">{{ order.pelanggan.telepon }}</p>
+                    {% if order.pelanggan.email %}<p class="mb-0 text-muted small">{{ order.pelanggan.email }}</p>{% endif %}
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header py-2">
+                    <h6 class="mb-0"><i class="ri-smartphone-line me-2"></i>Perangkat</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1"><strong>{{ order.jenis_perangkat.nama }}</strong></p>
+                    <p class="mb-0">Merek: {{ order.merek }}</p>
+                    {% if order.model_tipe %}<p class="mb-0 text-muted small">Model: {{ order.model_tipe }}</p>{% endif %}
+                    {% if order.nomor_seri %}<p class="mb-0 text-muted small">IMEI/Seri: {{ order.nomor_seri }}</p>{% endif %}
+                    {% if order.keluhan %}<p class="mb-0 mt-2"><strong>Keluhan:</strong><br>{{ order.keluhan|linebreaksbr }}</p>{% endif %}
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header py-2">
+                    <h6 class="mb-0"><i class="ri-user-settings-line me-2"></i>Petugas</h6>
+                </div>
+                <div class="card-body">
+                    {% if order.teknisi %}<p class="mb-1"><strong>Teknisi:</strong> {{ order.teknisi.get_full_name|default:order.teknisi.username }}</p>{% endif %}
+                    <p class="mb-0"><strong>Diterima:</strong> {{ order.diterima_oleh.get_full_name|default:order.diterima_oleh.username }}</p>
+                    {% if order.tanggal_selesai %}<p class="mb-0 mt-2"><strong>Selesai:</strong> {{ order.tanggal_selesai|date:"d M Y H:i" }}</p>{% endif %}
+                    {% if order.tanggal_diambil %}<p class="mb-0"><strong>Diambil:</strong> {{ order.tanggal_diambil|date:"d M Y H:i" }}</p>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8 mb-4">
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="ri-service-line me-2"></i>Layanan Perbaikan</h5>
+                    <span class="badge bg-label-primary">{{ total_layanan|rupiah }}</span>
+                </div>
+                <div class="card-datatable table-responsive">
+                    <table class="table table-hover">
+                        <thead><tr><th>Nama Layanan</th><th>Jenis Service</th><th>Biaya</th><th>Catatan</th></tr></thead>
+                        <tbody>
+                            {% for item in items_layanan %}
+                            <tr>
+                                <td>{{ item.nama_layanan }}</td>
+                                <td>{% if item.jenis_service %}{{ item.jenis_service.nama }}{% else %}-{% endif %}</td>
+                                <td class="fw-medium">{{ item.biaya|rupiah }}</td>
+                                <td><small class="text-muted">{{ item.catatan|default:'-' }}</small></td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center py-4 text-muted">Belum ada layanan</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="ri-cpu-line me-2"></i>Sparepart Digunakan</h5>
+                    <span class="badge bg-label-danger">{{ total_sparepart|rupiah }}</span>
+                </div>
+                <div class="card-datatable table-responsive">
+                    <table class="table table-hover">
+                        <thead><tr><th>Sparepart</th><th>Gudang</th><th>SKU</th><th>Qty</th><th>Harga Satuan</th><th>Subtotal</th></tr></thead>
+                        <tbody>
+                            {% for sp in items_sparepart %}
+                            <tr>
+                                <td><a href="{% url 'laporan:sparepart-detail' sp.produk.pk %}">{{ sp.produk.nama }}</a></td>
+                                <td>{{ sp.gudang.nama }}</td>
+                                <td><code>{{ sp.produk.sku }}</code></td>
+                                <td>{{ sp.jumlah }}</td>
+                                <td>{{ sp.harga_satuan|rupiah }}</td>
+                                <td class="text-danger fw-medium">{{ sp.subtotal|rupiah }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center py-4 text-muted">Tidak ada sparepart digunakan</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8"></div>
+                        <div class="col-md-4">
+                            <table class="table table-sm table-borderless mb-0">
+                                <tr><td>Layanan</td><td class="text-end">{{ total_layanan|rupiah }}</td></tr>
+                                <tr><td>Sparepart</td><td class="text-end text-danger">{{ total_sparepart|rupiah }}</td></tr>
+                                <tr><td>Pajak</td><td class="text-end">{{ order.pajak|rupiah }}</td></tr>
+                                <tr class="table-active"><th>Total Biaya</th><th class="text-end">{{ order.total_biaya|rupiah }}</th></tr>
+                                {% if order.dp_bayar %}<tr><td>DP Dibayar</td><td class="text-end text-success">{{ order.dp_bayar|rupiah }}</td></tr>{% endif %}
+                                <tr><td>Sisa Bayar</td><td class="text-end fw-bold text-primary">{{ order.sisa_bayar|rupiah }}</td></tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="ri-history-line me-2"></i>Riwayat Aktivitas</h5>
+                </div>
+                <div class="card-datatable table-responsive">
+                    <table class="table table-hover">
+                        <thead><tr><th>Waktu</th><th>User</th><th>Aksi</th><th>Detail</th></tr></thead>
+                        <tbody>
+                            {% for log in activity_logs %}
+                            <tr>
+                                <td><small>{{ log.timestamp|date:"d M Y H:i" }}</small></td>
+                                <td>{% if log.user %}{{ log.user.get_full_name|default:log.user.username }}{% else %}Sistem{% endif %}</td>
+                                <td><span class="badge bg-label-info">{{ log.action }}</span></td>
+                                <td><small class="text-muted">{{ log.remarks|default:log.object_repr|truncatewords:15 }}</small></td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center py-4 text-muted">Belum ada aktivitas</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

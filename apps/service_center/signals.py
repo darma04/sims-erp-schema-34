@@ -31,9 +31,15 @@ def sync_service_accounting_on_save(sender, instance, **kwargs):
     if kwargs.get('raw'):
         return
 
+    # Lazy import — accounting modules mungkin tidak ada (v39 SIMS tanpa akuntansi)
+    try:
+        from apps.service_center.services import cancel_service_payment_accounting
+        from apps.service_center.services import sync_service_payment_accounting
+    except ImportError:
+        return
+
     try:
         if instance.status == 'dibatalkan':
-            from apps.service_center.services import cancel_service_payment_accounting
             cancel_service_payment_accounting(
                 instance,
                 user=instance.diterima_oleh,
@@ -42,7 +48,6 @@ def sync_service_accounting_on_save(sender, instance, **kwargs):
             return
 
         if instance.status_bayar in ('dp', 'lunas'):
-            from apps.service_center.services import sync_service_payment_accounting
             sync_service_payment_accounting(instance, user=instance.diterima_oleh)
 
     except Exception as exc:
@@ -68,6 +73,6 @@ def sync_service_accounting_on_save(sender, instance, **kwargs):
                 source_id=str(instance.pk),
                 source_repr=instance.nomor_service,
             )
-        except Exception:
-            pass
-        raise
+        except Exception as e:
+            logger.warning("Gagal mencatat activity log: %s", e)
+        # raise  # Disabled: transaksi tetap tersimpan meskipun sinyal gagal

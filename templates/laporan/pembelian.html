@@ -27,15 +27,14 @@
 <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="mb-4"><i class="ri-shopping-bag-line me-2"></i>Laporan Pembelian</h4>
 
-    <!-- 4 Summary Cards -->
     <div class="row g-2 g-md-3 mb-4">
         <div class="col-6 col-lg-3">
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div class="card-info">
-                            <p class="card-text text-muted">DPP Pembelian</p>
-                            <h4 class="mb-0 text-danger summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Purchase Order dihitung dari DPP/subtotal pembelian + ongkir, tanpa PPN Masukan.<br><br><b>Sumber:</b> PurchaseOrder.<br><b>Catatan:</b> PPN Masukan dicatat sebagai pajak masukan/aset pajak, bukan beban pembelian.">{{ total_pembelian|rupiah }}</h4>
+                            <p class="card-text text-muted">Total Pembelian</p>
+                            <h4 class="mb-0 text-danger summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Σ total_harga Purchase Order (approved/received).<br><br><b>Sumber:</b> Tabel PurchaseOrder.<br>Mendukung filter tanggal.">{{ total_pembelian|rupiah }}</h4>
                         </div>
                         <div class="card-icon">
                             <span class="badge bg-label-danger rounded p-2">
@@ -86,7 +85,7 @@
                     <div class="d-flex justify-content-between">
                         <div class="card-info">
                             <p class="card-text text-muted">Rata-rata PO</p>
-                            <h4 class="mb-0 text-warning summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>DPP pembelian termasuk ongkir / jumlah PO.<br><br><b>Sumber:</b> Rata-rata nilai DPP Purchase Order termasuk ongkir, tanpa PPN Masukan.">{{ rata_rata_po|rupiah }}</h4>
+                            <h4 class="mb-0 text-warning summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Total Pembelian / Jumlah PO.<br><br><b>Sumber:</b> Rata-rata nilai per Purchase Order.">{{ rata_rata_po|rupiah }}</h4>
                         </div>
                         <div class="card-icon">
                             <span class="badge bg-label-warning rounded p-2">
@@ -97,9 +96,26 @@
                 </div>
             </div>
         </div>
+        <div class="col-6 col-lg-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div class="card-info">
+                            <p class="card-text text-muted">Total Ongkir PO</p>
+                            <h4 class="mb-0 text-primary summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Σ biaya_pengiriman dari PO yang sudah received.<br><br><b>Sumber:</b> PurchaseOrder.biaya_pengiriman (status=received).">{{ total_ongkir_po|rupiah }}</h4>
+                            <small class="text-muted">Ongkir PO diterima</small>
+                        </div>
+                        <div class="card-icon">
+                            <span class="badge bg-label-primary rounded p-2">
+                                <i class="ri-truck-line ri-24px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -212,8 +228,8 @@
                         <th>Supplier</th>
                         <th>Produk</th>
                         <th>Stok</th>
-                        <th>DPP Pembelian</th>
-                        <th>PPN Masukan</th>
+                        <th>Total</th>
+                        <th>Pajak</th>
                         <th>Status</th>
                         <th>Aksi</th>
                     </tr>
@@ -226,7 +242,7 @@
                         <td>{{ po.supplier.nama }}</td>
                         <td><small>{{ po.produk_list|truncatechars:40 }}</small></td>
                         <td class="text-center">{{ po.stok_total|floatformat:0 }}</td>
-                        <td>{{ po.nilai_laporan|rupiah }}</td>
+                        <td>{{ po.total_harga|rupiah }}</td>
                         <td>{{ po.pajak_display|rupiah }}</td>
                         <td>
                             {% if po.status == 'draft' %}
@@ -270,10 +286,11 @@
                                 <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
                                 <div class="text-start">
                                     <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
-                                    <small class="text-muted" style="font-size: 0.75rem;">{{ total_po }} Purchase Order</small>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ total_po }} Purchase
+                                        Order</small>
                                 </div>
                             </div>
-                        </td>
+                        </td><td class="py-3"></td><td class="py-3"></td>
                         <td class="py-3" style="vertical-align: middle;">
                             <small class="text-muted fw-medium">Produk</small>
                         </td>
@@ -294,7 +311,7 @@
                                     <i class="ri-money-dollar-circle-line"></i>
                                     <span>{{ total_pembelian|rupiah }}</span>
                                 </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">DPP Pembelian</small>
+                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Total Pembelian</small>
                             </div>
                         </td>
                         <td class="py-3" style="vertical-align: middle;">
@@ -304,7 +321,7 @@
                                     <i class="ri-percent-line"></i>
                                     <span>{{ total_pajak|rupiah }}</span>
                                 </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">PPN Masukan</small>
+                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Total Pajak</small>
                             </div>
                         </td>
                         <td class="py-3"></td>
@@ -341,16 +358,6 @@
         {% endif %}
     });
 
-                // Template Data for Independent Headers/Footers
-                // Template Data for Independent Headers/Footers
-                // Template Data for Independent Headers/Footers
-                // Template Data for Independent Headers/Footers
-                // Template Data for Independent Headers/Footers
-                // Template Data for Independent Headers/Footers
-                // Template Data for Independent Headers/Footers
-                // Template Data for Independent Headers/Footers
-                // Template Data for Independent Headers/Footers
-                // Template Data for Independent Headers/Footers
     const EXCEL_INFO = {
         name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
         address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -369,14 +376,12 @@
         copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
     };
 
-
-    // === FOOTER DATA: Explicit summary values per column index ===
     const FOOTER_DATA = { 4: "{{ total_stok|floatformat:0 }}", 5: "{{ total_pembelian|escapejs }}", 6: "{{ total_pajak|escapejs }}" };
     const FOOTER_LABEL = 'RINGKASAN';
 
 function exportToExcel() {
         const table = document.getElementById('poTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#poTable');
         
@@ -396,13 +401,12 @@ function exportToExcel() {
         html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
         html += '<body>';
         
-        // --- ADD EXCEL HEADER (Company Info) ---
         html += '<table border="0">';
         if (typeof EXCEL_INFO !== 'undefined') {
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
-            html += `<tr><td colspan="${colCount}"></td></tr>`; // empty row for spacing
+            html += `<tr><td colspan="${colCount}"></td></tr>`; 
         }
         html += '</table>';
 
@@ -425,7 +429,6 @@ function exportToExcel() {
             html += '</tr>';
         });
 
-        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
             let footerCells = [];
@@ -436,7 +439,7 @@ function exportToExcel() {
                     html += `<td>${FOOTER_DATA[colIdx]}</td>`;
                     ri++;
                 } else {
-                    // Count consecutive non-data columns for colspan (RINGKASAN label)
+                    
                     let spanCount = 0;
                     let si = ri;
                     while (si < visibleColumns.length && FOOTER_DATA[visibleColumns[si].index] === undefined) {
@@ -455,9 +458,8 @@ function exportToExcel() {
         }
         html += '</tbody></table>';
 
-        // --- ADD EXCEL FOOTER ---
         html += '<table border="0">';
-        html += `<tr><td colspan="${colCount}"></td></tr>`; // empty spacer
+        html += `<tr><td colspan="${colCount}"></td></tr>`; 
         if (typeof EXCEL_INFO !== 'undefined') {
             html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</td></tr>`;
             html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">${EXCEL_INFO.copyright}</td></tr>`;
@@ -476,7 +478,7 @@ function exportToExcel() {
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('poTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#poTable');
         
@@ -510,7 +512,6 @@ function exportToExcel() {
             if (row.length > 0) body.push(row);
         });
 
-        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             const summaryRow = [];
             let ri = 0;
@@ -520,7 +521,7 @@ function exportToExcel() {
                     summaryRow.push({ text: String(FOOTER_DATA[colIdx]), bold: true, fillColor: '#f8f9fa' });
                     ri++;
                 } else {
-                    // Count consecutive non-data columns for colspan (RINGKASAN label)
+                    
                     let spanCount = 0;
                     let si = ri;
                     while (si < visibleColumns.length && FOOTER_DATA[visibleColumns[si].index] === undefined) {
@@ -625,7 +626,7 @@ function exportToExcel() {
     }
 </script>
 <script>
-    // Inisialisasi Bootstrap Tooltip
+    
     document.addEventListener('DOMContentLoaded', function() {
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         tooltipTriggerList.forEach(function(el) {
@@ -682,4 +683,42 @@ function exportToExcel() {
     }
 }
 </style>
+
+<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning align-items-center py-3">
+                <h5 class="modal-title text-dark mb-0">
+                    <i class="ri-error-warning-line me-2"></i>Export Gagal
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center py-3">
+                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
+                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
+                    <i class="ri-close-line me-1"></i>Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+function showExportError() {
+    var modal = document.getElementById('exportErrorModal');
+    if (modal) {
+        new bootstrap.Modal(modal).show();
+    } else {
+        alert('Tabel tidak ditemukan!');
+    }
+}
+</script>
+
 {% endblock page_js %}

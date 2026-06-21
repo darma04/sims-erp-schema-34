@@ -1,0 +1,262 @@
+{% extends 'layout/layout_vertical.html' %}
+{% load static %}
+{% load currency_filters %}
+
+{% comment %}
+  ==========================================================================
+  LAPORAN - Detail Sparepart
+  ==========================================================================
+  Menampilkan informasi lengkap satu sparepart termasuk data relasi.
+  Detail page biasanya menampilkan data read-only (tidak bisa diedit langsung).
+
+  FLOW DATA:
+  - URL: /laporan/sparepart/<pk>/- View: DetailView mengambil 1 object berdasarkan primary key- Context: object + data relasi (items, history, dll)- Template: Render semua informasi ke HTML
+
+  RELASI KE MODUL LAIN:
+  - apps/laporan/views.py -> SparepartDetailView- apps/laporan/models.py -> Model Sparepart- get_context_data(): Menambahkan data relasi ke context
+
+  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
+  - BOLEH diubah: Layout detail, urutan informasi- BOLEH ditambah: Informasi baru dari relasi- JANGAN diubah: {% extends %} dan {% block %} structure
+
+  TIPS & DEBUGGING:
+  - Error 'DoesNotExist'? Primary key tidak ditemukan di database- Data relasi kosong? Cek get_context_data() di views.py
+
+  ==========================================================================
+{% endcomment %}
+
+
+{% block title %}Detail Sparepart - {{ sparepart.nama }} - ERP{% endblock title %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="ri-cpu-line me-2"></i>Detail Sparepart: {{ sparepart.nama }}</h4>
+            <p class="text-muted mb-0">Informasi lengkap sparepart dengan stok, riwayat pemakaian, dan data terhubung</p>
+        </div>
+        <a href="{% url 'laporan:sparepart' %}" class="btn btn-label-secondary">
+            <i class="ri-arrow-left-line me-1"></i> Kembali
+        </a>
+    </div>
+
+    <div class="row">
+        
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="ri-information-line me-2"></i>Informasi Sparepart</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless mb-0">
+                        <tr><td class="text-muted">SKU</td><td class="text-end"><code>{{ sparepart.sku }}</code></td></tr>
+                        <tr><td class="text-muted">Kategori</td><td class="text-end">{% if sparepart.kategori %}{{ sparepart.kategori.nama }}{% else %}-{% endif %}</td></tr>
+                        <tr><td class="text-muted">Satuan</td><td class="text-end">{{ sparepart.satuan.nama|default:'-' }}</td></tr>
+                        <tr><td class="text-muted">Harga Beli</td><td class="text-end text-danger">{{ sparepart.harga_beli|rupiah }}</td></tr>
+                        <tr><td class="text-muted">Harga Jual</td><td class="text-end text-success">{{ sparepart.harga_jual|rupiah }}</td></tr>
+                        <tr><td class="text-muted">Margin</td><td class="text-end fw-bold">{% with untung=sparepart.harga_jual|subtract:sparepart.harga_beli %}{% widthratio untung sparepart.harga_beli 100 %}{% endwith %}%</td></tr>
+                        <tr><td class="text-muted">Status</td><td class="text-end">{% if sparepart.aktif %}<span class="badge bg-label-success">Aktif</span>{% else %}<span class="badge bg-label-secondary">Nonaktif</span>{% endif %}</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header py-2">
+                    <h6 class="mb-0"><i class="ri-archive-line me-2"></i>Stok di Gudang</h6>
+                </div>
+                <div class="card-body">
+                    {% if stok_list %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-borderless mb-0">
+                            <tbody>
+                                {% for stok in stok_list %}
+                                <tr>
+                                    <td><strong>{{ stok.gudang.nama }}</strong></td>
+                                    <td class="text-end">
+                                        <span class="badge bg-label-primary">{{ stok.jumlah|floatformat:0 }} {{ sparepart.satuan.singkatan|default:"pcs" }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-active">
+                                    <th>Total</th>
+                                    <th class="text-end"><span class="badge bg-primary">{{ sparepart.stok_total|floatformat:0 }} {{ sparepart.satuan.singkatan|default:"pcs" }}</span></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center mb-0 small">Stok kosong di semua gudang</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if sparepart.barcode %}
+            <div class="card mt-3">
+                <div class="card-header py-2">
+                    <h6 class="mb-0"><i class="ri-barcode-line me-2"></i>Barcode</h6>
+                </div>
+                <div class="card-body text-center">
+                    <svg id="detailBarcodePreview" class="mb-2"></svg>
+                    <div><code>{{ sparepart.barcode }}</code></div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-8 mb-4">
+            
+            <ul class="nav nav-tabs mb-3" role="tablist">
+                <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" role="tab" href="#tab-pemakaian"><i class="ri-tools-line me-1"></i>Pemakaian Service</a></li>
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" role="tab" href="#tab-pembelian"><i class="ri-shopping-cart-line me-1"></i>Pembelian (PO)</a></li>
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" role="tab" href="#tab-penjualan"><i class="ri-money-dollar-circle-line me-1"></i>Penjualan (SO)</a></li>
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" role="tab" href="#tab-pos"><i class="ri-shopping-bag-line me-1"></i>Penjualan (POS)</a></li>
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" role="tab" href="#tab-aktivitas"><i class="ri-history-line me-1"></i>Aktivitas</a></li>
+            </ul>
+
+            <div class="tab-content">
+                
+                <div class="tab-pane fade show active" id="tab-pemakaian" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header"><h5 class="mb-0">Riwayat Pemakaian di Service Center</h5></div>
+                        <div class="card-datatable table-responsive">
+                            <table class="table table-hover">
+                                <thead><tr><th>No. Service</th><th>Tanggal</th><th>Pelanggan</th><th>Gudang</th><th>Qty</th><th>Harga Satuan</th><th>Subtotal</th></tr></thead>
+                                <tbody>
+                                    {% for sp in riwayat_pemakaian %}
+                                    <tr>
+                                        <td><code>{{ sp.order_service.nomor_service }}</code></td>
+                                        <td>{{ sp.dibuat_pada|date:"d M Y" }}</td>
+                                        <td>{{ sp.order_service.pelanggan.nama }}</td>
+                                        <td>{{ sp.gudang.nama }}</td>
+                                        <td>{{ sp.jumlah }}</td>
+                                        <td>{{ sp.harga_satuan|rupiah }}</td>
+                                        <td class="text-danger fw-medium">{{ sp.subtotal|rupiah }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="7" class="text-center py-4 text-muted">Belum ada pemakaian</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="tab-pembelian" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header"><h5 class="mb-0">Riwayat Pembelian (Purchase Order)</h5></div>
+                        <div class="card-datatable table-responsive">
+                            <table class="table table-hover">
+                                <thead><tr><th>No. PO</th><th>Tanggal</th><th>Supplier</th><th>Qty</th><th>Harga Satuan</th><th>Subtotal</th></tr></thead>
+                                <tbody>
+                                    {% for item in riwayat_pembelian %}
+                                    <tr>
+                                        <td><code>{{ item.purchase_order.nomor_po }}</code></td>
+                                        <td>{{ item.purchase_order.tanggal|date:"d M Y" }}</td>
+                                        <td>{{ item.purchase_order.supplier.nama }}</td>
+                                        <td>{{ item.jumlah }}</td>
+                                        <td>{{ item.harga_satuan|rupiah }}</td>
+                                        <td class="text-danger fw-medium">{{ item.subtotal|rupiah }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="6" class="text-center py-4 text-muted">Belum ada pembelian</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="tab-penjualan" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header"><h5 class="mb-0">Riwayat Penjualan (Sales Order)</h5></div>
+                        <div class="card-datatable table-responsive">
+                            <table class="table table-hover">
+                                <thead><tr><th>No. SO</th><th>Tanggal</th><th>Customer</th><th>Qty</th><th>Harga</th><th>Subtotal</th></tr></thead>
+                                <tbody>
+                                    {% for item in riwayat_penjualan %}
+                                    <tr>
+                                        <td><code>{{ item.sales_order.nomor_so }}</code></td>
+                                        <td>{{ item.sales_order.tanggal|date:"d M Y" }}</td>
+                                        <td>{{ item.sales_order.customer.nama }}</td>
+                                        <td>{{ item.jumlah }}</td>
+                                        <td>{{ item.harga_satuan|rupiah }}</td>
+                                        <td class="text-success fw-medium">{{ item.subtotal|rupiah }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="6" class="text-center py-4 text-muted">Belum ada penjualan via SO</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="tab-pos" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header"><h5 class="mb-0">Riwayat Penjualan (POS)</h5></div>
+                        <div class="card-datatable table-responsive">
+                            <table class="table table-hover">
+                                <thead><tr><th>No. Invoice</th><th>Tanggal</th><th>Gudang</th><th>Qty</th><th>Harga</th><th>Subtotal</th></tr></thead>
+                                <tbody>
+                                    {% for item in riwayat_pos %}
+                                    <tr>
+                                        <td><code>{{ item.transaction.nomor_transaksi }}</code></td>
+                                        <td>{{ item.transaction.tanggal|date:"d M Y" }}</td>
+                                        <td>{{ item.transaction.gudang.nama }}</td>
+                                        <td>{{ item.jumlah }}</td>
+                                        <td>{{ item.harga_satuan|rupiah }}</td>
+                                        <td class="text-success fw-medium">{{ item.subtotal|rupiah }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="6" class="text-center py-4 text-muted">Belum ada penjualan via POS</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="tab-aktivitas" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header"><h5 class="mb-0">Riwayat Aktivitas</h5></div>
+                        <div class="card-datatable table-responsive">
+                            <table class="table table-hover">
+                                <thead><tr><th>Waktu</th><th>User</th><th>Aksi</th><th>Detail</th></tr></thead>
+                                <tbody>
+                                    {% for log in activity_logs %}
+                                    <tr>
+                                        <td><small>{{ log.timestamp|date:"d M Y H:i" }}</small></td>
+                                        <td>{% if log.user %}{{ log.user.get_full_name|default:log.user.username }}{% else %}Sistem{% endif %}</td>
+                                        <td><span class="badge bg-label-info">{{ log.action }}</span></td>
+                                        <td><small class="text-muted">{{ log.remarks|default:log.object_repr|truncatewords:15 }}</small></td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="4" class="text-center py-4 text-muted">Belum ada aktivitas</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block page_js %}
+{% if sparepart.barcode %}
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        JsBarcode('#detailBarcodePreview', '{{ sparepart.barcode }}', {
+            format: 'CODE128',
+            width: 2,
+            height: 50,
+            displayValue: false
+        });
+    });
+</script>
+{% endif %}
+{% endblock page_js %}

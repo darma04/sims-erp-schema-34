@@ -27,6 +27,26 @@ def create_penyusutan_journal(sender, instance, **kwargs):
             exc,
             exc_info=True,
         )
+        try:
+            from apps.activity_log.models import UserActivity
+            UserActivity.objects.create(
+                user=instance.created_by,
+                action="create",
+                model_name="JurnalEntry",
+                object_id=str(instance.pk),
+                object_repr=f"GAGAL: Jurnal Penyusutan {instance.aset.kode} {instance.bulan:02d}/{instance.tahun}",
+                description=(
+                    f"[JURNAL GAGAL] Auto-jurnal penyusutan {instance.aset.kode} "
+                    f"{instance.bulan:02d}/{instance.tahun} gagal dibuat. "
+                    f"Error: {str(exc)[:200]}."
+                ),
+                source_type="aset",
+                source_id=str(instance.pk),
+                source_repr=f"{instance.aset.kode}-{instance.bulan:02d}/{instance.tahun}",
+            )
+        except Exception as e:
+            logger.warning("Gagal mencatat activity log: %s", e)
+        # raise  # Disabled: transaksi tetap tersimpan meskipun sinyal gagal
 
 
 @receiver(post_save, sender=DisposalAset)
@@ -44,3 +64,22 @@ def create_disposal_journal(sender, instance, **kwargs):
             exc,
             exc_info=True,
         )
+        try:
+            from apps.activity_log.models import UserActivity
+            UserActivity.objects.create(
+                user=instance.created_by,
+                action="create",
+                model_name="JurnalEntry",
+                object_id=str(instance.pk),
+                object_repr=f"GAGAL: Jurnal Disposal {instance.aset.kode}",
+                description=(
+                    f"[JURNAL GAGAL] Auto-jurnal disposal {instance.aset.kode} "
+                    f"gagal dibuat. Error: {str(exc)[:200]}."
+                ),
+                source_type="aset",
+                source_id=str(instance.pk),
+                source_repr=f"{instance.aset.kode}-DISPOSAL",
+            )
+        except Exception as e:
+            logger.warning("Gagal mencatat activity log: %s", e)
+        # raise  # Disabled: transaksi tetap tersimpan meskipun sinyal gagal

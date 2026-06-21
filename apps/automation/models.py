@@ -125,12 +125,6 @@ class PengaturanTelegram(models.Model):
         verbose_name="Notifikasi Slip Gaji"
     )
 
-    # Notifikasi saat order service baru diterima / status berubah
-    notif_service_order = models.BooleanField(
-        default=True,
-        verbose_name="Notifikasi Order Service"
-    )
-
     # Toggle kirim PDF — jika True, setiap notifikasi juga mengirim file PDF
     kirim_pdf = models.BooleanField(
         default=True,
@@ -225,7 +219,6 @@ class TemplatePesan(models.Model):
         ('purchase_order', 'Purchase Order'),# Pembelian dari supplier
         ('biaya', 'Transaksi Biaya'),        # Pencatatan biaya operasional
         ('penggajian', 'Slip Gaji'),         # Slip gaji karyawan
-        ('order_service', 'Order Service'),  # Order service center
     ]
 
     # ═══ FIELD: Jenis Transaksi ═══
@@ -421,29 +414,6 @@ class TemplatePesan(models.Model):
                 "━━━━━━━━━━━━━━━\n"
                 "💵 *Gaji Bersih: Rp {{gaji_bersih}}*\n"
                 "📊 Status: {{status}}"
-            ),
-            # ═══ Template Order Service ═══
-            'order_service': (
-                "🔧 *ORDER SERVICE*\n"
-                "━━━━━━━━━━━━━━━\n"
-                "📋 No: {{nomor_service}}\n"
-                "🔑 Tracking: {{kode_tracking}}\n"
-                "📅 Tanggal: {{tanggal_masuk}}\n"
-                "━━━━━━━━━━━━━━━\n"
-                "👤 Pelanggan: {{pelanggan}}\n"
-                "📱 Telepon: {{telepon}}\n"
-                "📲 Perangkat: {{perangkat}} ({{jenis_perangkat}})\n"
-                "📝 Keluhan: {{keluhan}}\n"
-                "━━━━━━━━━━━━━━━\n"
-                "🔨 Layanan:\n{{detail_items}}\n"
-                "🔩 Sparepart:\n{{detail_sparepart}}\n"
-                "━━━━━━━━━━━━━━━\n"
-                "💵 *Total: Rp {{biaya_akhir}}*\n"
-                "💳 DP: Rp {{dp_bayar}}\n"
-                "📊 Status: {{status}}\n"
-                "🔄 Bayar: {{status_bayar}}\n"
-                "👨‍🔧 Teknisi: {{teknisi}}\n"
-                "👤 Diterima: {{diterima_oleh}}"
             ),
         }
         # Jika jenis tidak dikenali, gunakan template minimal

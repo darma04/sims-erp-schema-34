@@ -22,7 +22,7 @@
 """
 
 from decimal import Decimal
-from django.db import transaction
+from django.db import IntegrityError, connection, transaction
 from django.db.models import Sum, Q
 from apps.akuntansi.models import Akun, JurnalEntry, JurnalLine, PeriodeAkuntansi
 
@@ -99,35 +99,49 @@ def create_jurnal(tanggal, deskripsi, lines_data, sumber='manual',
             f"Jurnal tidak balance! Debit: {total_debit:,.0f} ≠ Kredit: {total_kredit:,.0f}"
         )
 
+    # Idempotency check: prevent duplicate journals for the same source transaction
+    if sumber != 'manual' and sumber_id is not None:
+        existing = JurnalEntry.objects.filter(sumber=sumber, sumber_id=sumber_id).first()
+        if existing:
+            return existing
+
     with transaction.atomic():
-        # Create header
-        jurnal = JurnalEntry.objects.create(
-            tanggal=tanggal,
-            deskripsi=deskripsi,
-            sumber=sumber,
-            sumber_id=sumber_id,
-            sumber_ref=sumber_ref,
-            cabang=cabang,
-            periode=periode,
-            created_by=user,
-            is_posted=auto_post,
-        )
-
-        # Create lines
-        for line_data in lines_data:
-            akun_kode = line_data.get('akun_kode', '')
-            akun = line_data.get('akun') or get_akun_by_kode(akun_kode)
-
-            if not akun:
-                raise ValueError(f"Akun dengan kode '{akun_kode}' tidak ditemukan.")
-
-            JurnalLine.objects.create(
-                jurnal=jurnal,
-                akun=akun,
-                debit=Decimal(str(line_data.get('debit', 0))),
-                kredit=Decimal(str(line_data.get('kredit', 0))),
-                keterangan=line_data.get('keterangan', ''),
+        try:
+            # Create header
+            jurnal = JurnalEntry.objects.create(
+                tanggal=tanggal,
+                deskripsi=deskripsi,
+                sumber=sumber,
+                sumber_id=sumber_id,
+                sumber_ref=sumber_ref,
+                cabang=cabang,
+                periode=periode,
+                created_by=user,
+                is_posted=auto_post,
             )
+
+            # Create lines
+            for line_data in lines_data:
+                akun_kode = line_data.get('akun_kode', '')
+                akun = line_data.get('akun') or get_akun_by_kode(akun_kode)
+
+                if not akun:
+                    raise ValueError(f"Akun dengan kode '{akun_kode}' tidak ditemukan.")
+
+                JurnalLine.objects.create(
+                    jurnal=jurnal,
+                    akun=akun,
+                    debit=Decimal(str(line_data.get('debit', 0))),
+                    kredit=Decimal(str(line_data.get('kredit', 0))),
+                    keterangan=line_data.get('keterangan', ''),
+                )
+        except IntegrityError:
+            # Duplicate journal detected - rollback and return existing
+            connection.close()
+            existing = JurnalEntry.objects.filter(sumber=sumber, sumber_id=sumber_id).first()
+            if existing:
+                return existing
+            raise
 
     return jurnal
 
@@ -169,9 +183,14 @@ def create_jurnal_pembalik(jurnal_asal, user=None):
         auto_post=True,
     )
 
-    # Set reference balik
-    pembalik.jurnal_asal = jurnal_asal
-    pembalik.save()
+    # Set reference balik + mark asal as reversed — must be atomic together
+    with transaction.atomic():
+        pembalik.jurnal_asal = jurnal_asal
+        pembalik.save()
+
+        # Mark jurnal asal sebagai sudah di-reverse
+        jurnal_asal.is_reversed = True
+        jurnal_asal.save(update_fields=['is_reversed'])
 
     return pembalik
 
@@ -392,6 +411,17 @@ def get_neraca(tanggal, cabang=None):
     _, total_beban = get_group('beban')
     laba_bersih = total_pendapatan - total_hpp - total_beban
 
+    # Safeguard: if closing entries have been done for this period, laba bersih
+    # is already transferred to Laba Ditahan — don't add it again (double counting).
+    # Check for actual closing journal entries instead of relying on laba ditahan balance.
+    closing_entries_exist = JurnalEntry.objects.filter(
+        sumber='closing',
+        is_posted=True,
+        tanggal__year=tanggal.year,
+    ).exists()
+    if closing_entries_exist:
+        laba_bersih = Decimal('0')
+
     total_aktiva = total_aset_lancar + total_aset_tetap
     total_pasiva = total_kewajiban + total_modal + laba_bersih
 
@@ -417,10 +447,19 @@ def get_laba_rugi(tanggal_mulai, tanggal_akhir, cabang=None):
     # Satu kali query untuk semua saldo akun pada periode
     bulk_data = _get_saldo_bulk(tanggal_akhir=tanggal_akhir, tanggal_mulai=tanggal_mulai, cabang=cabang)
 
-    def get_group(tipe):
+    # FIXED: Fetch all income/expense accounts in 1 query instead of 3 separate queries
+    all_akun = Akun.objects.filter(
+        is_active=True, tipe__in=['pendapatan', 'hpp', 'beban']
+    ).order_by('tipe', 'kode')
+
+    grouped = {'pendapatan': [], 'hpp': [], 'beban': []}
+    for akun in all_akun:
+        grouped[akun.tipe].append(akun)
+
+    def get_group(tipe, akun_list):
         items = []
         total = Decimal('0')
-        for akun in Akun.objects.filter(is_active=True, tipe=tipe).order_by('kode'):
+        for akun in akun_list:
             raw_saldo = _calc_saldo_from_bulk(akun, bulk_data)
             saldo = _display_saldo_laporan(akun, raw_saldo) if tipe == 'pendapatan' else raw_saldo
             if raw_saldo != 0:
@@ -428,9 +467,9 @@ def get_laba_rugi(tanggal_mulai, tanggal_akhir, cabang=None):
                 total += saldo
         return items, total
 
-    pendapatan_items, total_pendapatan = get_group('pendapatan')
-    hpp_items, total_hpp = get_group('hpp')
-    beban_items, total_beban = get_group('beban')
+    pendapatan_items, total_pendapatan = get_group('pendapatan', grouped['pendapatan'])
+    hpp_items, total_hpp = get_group('hpp', grouped['hpp'])
+    beban_items, total_beban = get_group('beban', grouped['beban'])
     total_pendapatan_bruto = sum(
         item['raw_saldo'] for item in pendapatan_items
         if item['akun'].sub_tipe != 'contra_pendapatan'

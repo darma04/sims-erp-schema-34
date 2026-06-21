@@ -2,6 +2,29 @@
 {% load static %}
 {% load currency_filters %}
 
+{% comment %}
+  ==========================================================================
+  AKUNTANSI - Rekonsiliasi Keuangan
+  ==========================================================================
+  Halaman Rekonsiliasi Keuangan untuk modul Akuntansi.
+  Template ini merender data dari view ke HTML yang ditampilkan di browser.
+
+  FLOW DATA:
+  - URL: /akuntansi/ -> View di apps/akuntansi/views.py- View: Mengambil data, menyiapkan context, render template ini- Template: File ini (HTML + Django template tags)- Response: HTML yang ditampilkan di browser user
+
+  RELASI KE MODUL LAIN:
+  - apps/akuntansi/views.py -> View (handler untuk halaman ini)- apps/akuntansi/models.py -> Model (sumber data)- apps/akuntansi/urls.py -> URL routing- layout/ -> Template induk (sidebar, header, footer)
+
+  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
+  - BOLEH diubah: Tampilan HTML, CSS inline, JavaScript- JANGAN diubah: {% extends %} dan {% block %} structure- JANGAN dihapus: {% csrf_token %} di form
+
+  TIPS & DEBUGGING:
+  - Error 'TemplateDoesNotExist'? Cek template_name di views.py- Variabel {{ }} kosong? Cek get_context_data() di views.py- Layout rusak? Pastikan TemplateLayout.init() dipanggil di view
+
+  ==========================================================================
+{% endcomment %}
+
+
 {% block title %}Rekonsiliasi Keuangan - Akuntansi ERP{% endblock title %}
 
 {% block vendor_css %}{{ block.super }}
@@ -20,7 +43,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    <!-- Header -->
+    
     <div class="d-flex justify-content-between align-items-center mb-1">
         <div>
             <h4 class="mb-1"><i class="ri-git-merge-line me-2"></i>Rekonsiliasi Keuangan</h4>
@@ -32,13 +55,11 @@
         <small class="text-muted ms-2" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="right" title="Membandingkan data operasional dengan jurnal akuntansi posted. Penjualan operasional memakai pendapatan bersih setelah diskon termasuk ongkir dan tanpa PPN. PO memakai DPP/subtotal termasuk ongkir tanpa PPN Masukan. Selisih dapat berasal dari jurnal non-operasional, penyusutan, penggajian, jurnal manual, atau settlement PPN."><i class="ri-information-line"></i> Apa artinya?</small>
     </div>
 
-    <!-- Status -->
     <div class="alert {% if is_reconciled %}alert-success{% else %}alert-warning{% endif %} d-flex align-items-center mb-4">
         <i class="{% if is_reconciled %}ri-checkbox-circle-line{% else %}ri-error-warning-line{% endif %} me-2 ri-22px"></i>
         <div>{% if is_reconciled %}<strong>Rekonsiliasi Seimbang</strong> — Data operasional dan akuntansi konsisten.{% else %}<strong>Terdapat Selisih</strong> — Ada perbedaan. Lihat detail penyebab di bawah.{% endif %}</div>
     </div>
 
-    <!-- Summary Cards -->
     <div class="row g-6 mb-4">
         <div class="col-sm-6 col-lg-3">
             <div class="card h-100"><div class="card-body"><div class="d-flex align-items-center gap-3"><div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-success"><i class="ri-arrow-down-circle-line ri-24px"></i></span></div><div><span class="d-block text-muted small">Pendapatan Operasional Bersih</span><h5 class="mb-0 fw-bold" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>SalesOrder dihitung dari subtotal setelah diskon + ongkir, POS dari subtotal setelah diskon, tanpa PPN Keluaran.<br><br><b>Sumber Tabel:</b><br>SalesOrder + POSTransaction<br><br><b>Filter:</b> tanggal & cabang">{{ ops_total_pemasukan|rupiah }}</h5></div></div></div></div>
@@ -54,16 +75,15 @@
         </div>
     </div>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <form method="get">
-                <!-- Baris 1: Dari Tanggal + Sampai Tanggal (lebar penuh sebaris) -->
+                
                 <div class="row g-3">
                     <div class="col-md-6"><label class="form-label">Dari Tanggal</label><input type="date" name="start" class="form-control" value="{{ selected_start }}"></div>
                     <div class="col-md-6"><label class="form-label">Sampai Tanggal</label><input type="date" name="end" class="form-control" value="{{ selected_end }}"></div>
                 </div>
-                <!-- Baris 2: Cabang (kiri) + spacer + Tombol Filter (kanan) -->
+                
                 <div class="row g-3 mt-2 align-items-end">
                     <div class="col-md-3"><label class="form-label">Cabang</label><select name="cabang" class="form-select"><option value="">Semua Cabang</option>{% for gudang in cabang_list %}<option value="{{ gudang.pk }}" {% if selected_cabang == gudang.pk|stringformat:'d' %}selected{% endif %}>{{ gudang.nama }}</option>{% endfor %}</select></div>
                     <div class="col-md-6"></div>
@@ -73,11 +93,17 @@
         </div>
     </div>
 
-    <!-- Perbandingan Detail + Chart -->
     <div class="row g-3 mb-4">
         <div class="col-lg-6">
             <div class="card h-100">
-                <div class="card-header"><h5 class="mb-0"><i class="ri-bar-chart-grouped-line me-2"></i>Grafik Perbandingan</h5></div>
+                <div class="card-header d-flex flex-nowrap align-items-center justify-content-between"><h5 class="mb-0 me-2"><i class="ri-bar-chart-grouped-line me-2"></i>Grafik Perbandingan</h5>
+                    <div class="dropdown flex-shrink-0">
+                        <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a>
+                            <a class="dropdown-item" href="javascript:void(0)" onclick="if(window.__rekonChart) window.__rekonChart.exportTo({type:'png'});"><i class="ri-download-2-line me-2"></i>Unduh Grafik</a>
+                        </div>
+                    </div></div>
                 <div class="card-body"><div id="rekonChart" style="min-height: 350px;"></div></div>
             </div>
         </div>
@@ -102,7 +128,6 @@
         </div>
     </div>
 
-    <!-- Tabel Penyebab Selisih -->
     {% if penyebab_selisih %}
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -137,7 +162,6 @@
     </div>
     {% endif %}
 
-    <!-- Tabel Detail Jurnal Non-Operasional -->
     {% if detail_jurnal_non_ops %}
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -185,9 +209,6 @@
     </div>
     {% endif %}
 
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- SECTION: Treasury vs Accounting (Saldo Kas/Bank)              -->
-    <!-- ═══════════════════════════════════════════════════════════════ -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <div>
@@ -240,11 +261,8 @@
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- SECTION: System Health Check (Trial Balance + Orphan)          -->
-    <!-- ═══════════════════════════════════════════════════════════════ -->
     <div class="row g-3 mb-4">
-        <!-- Trial Balance Status -->
+        
         <div class="col-lg-4">
             <div class="card h-100">
                 <div class="card-body text-center">
@@ -264,7 +282,7 @@
                 </div>
             </div>
         </div>
-        <!-- Orphan Mutasi -->
+        
         <div class="col-lg-4">
             <div class="card h-100">
                 <div class="card-body text-center">
@@ -284,7 +302,7 @@
                 </div>
             </div>
         </div>
-        <!-- Orphan Jurnal -->
+        
         <div class="col-lg-4">
             <div class="card h-100">
                 <div class="card-body text-center">
@@ -306,7 +324,6 @@
         </div>
     </div>
 
-    <!-- Detail Orphan Mutasi -->
     {% if orphan_mutasi %}
     <div class="card mb-4">
         <div class="card-header">
@@ -333,7 +350,6 @@
     </div>
     {% endif %}
 
-    <!-- Detail Orphan Jurnal -->
     {% if orphan_jurnal %}
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -365,7 +381,6 @@
     </div>
     {% endif %}
 
-    <!-- Jurnal Failure Log -->
     {% if jurnal_failures_count > 0 %}
     <div class="card mb-4">
         <div class="card-header">
@@ -408,7 +423,7 @@
     .datatables-penyebab thead th, .datatables-detail thead th, .datatables-orphan-jurnal thead th, #tabelTreasury thead th { font-weight: 600; font-size: 0.8125rem; text-transform: none; letter-spacing: 0; }
 </style>
 <script>
-// ═══ EXPORT TEMPLATE INFO (dari context processor) ═══
+
 const EXCEL_INFO = {
     name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
     address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -427,7 +442,7 @@ const PDF_INFO = {
 };
 
 $(document).ready(function() {
-    // ═══ CHART: Perbandingan Operasional vs Akuntansi ═══
+    
     var chartEl = document.querySelector('#rekonChart');
     if (chartEl) {
         var chartDataOps = {{ chart_operasional }};
@@ -437,7 +452,7 @@ $(document).ready(function() {
                 { name: 'Operasional', data: chartDataOps },
                 { name: 'Akuntansi', data: chartDataAkun }
             ],
-            chart: { type: 'bar', height: 350, toolbar: { show: true }, fontFamily: 'inherit' },
+            chart: { type: 'bar', height: 350, toolbar: { show: false }, fontFamily: 'inherit' },
             plotOptions: { bar: { horizontal: false, columnWidth: '55%', borderRadius: 4 } },
             dataLabels: { enabled: false },
             stroke: { show: true, width: 2, colors: ['transparent'] },
@@ -461,10 +476,11 @@ $(document).ready(function() {
         };
         var chart = new ApexCharts(chartEl, options);
         chart.render();
+        window.__rekonChart = chart;
     }
 
-    // ═══ DATATABLES: Tabel Treasury vs Accounting ═══
-    if ($('#tabelTreasury tbody tr').length > 0) {
+    var $tr = $('#tabelTreasury tbody tr:first');
+    if ($tr.length && $tr.children('td').length > 1) {
         $('#tabelTreasury').DataTable({
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia",
@@ -485,8 +501,7 @@ $(document).ready(function() {
         });
     }
 
-    // ═══ DATATABLES: Tabel Penyebab Selisih ═══
-    if ($('#tabelPenyebab tbody tr').length > 0) {
+    if ($('#tabelPenyebab tbody tr:first td').length > 1) {
         $('#tabelPenyebab').DataTable({
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia",
@@ -507,8 +522,7 @@ $(document).ready(function() {
         });
     }
 
-    // ═══ DATATABLES: Tabel Detail Jurnal ═══
-    if ($('#tabelDetail tbody tr').length > 0) {
+    if ($('#tabelDetail tbody tr:first td').length > 1) {
         $('#tabelDetail').DataTable({
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia",
@@ -529,8 +543,7 @@ $(document).ready(function() {
         });
     }
 
-    // DATATABLES: Tabel Jurnal Akun Kas Tanpa Mutasi Treasury
-    if ($('#tabelOrphanJurnal tbody tr').length > 0) {
+    if ($('#tabelOrphanJurnal tbody tr:first td').length > 1) {
         $('#tabelOrphanJurnal').DataTable({
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia",
@@ -551,14 +564,11 @@ $(document).ready(function() {
         });
     }
 
-    // ═══ TOOLTIPS ═══
     [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]')).map(function(el) { return new bootstrap.Tooltip(el); });
 });
 
-// ═══════════════════════════════════════════════════════════════
-// GENERIC EXPORT FUNCTIONS — Identik dengan Invoice (header + footer)
-// ═══════════════════════════════════════════════════════════════
 function _doExportExcel(tableId, filename, documentTitle) {
+    if (!$.fn.dataTable.isDataTable('#' + tableId)) { alert('Tidak ada data untuk di-export.'); return; }
     const tableObj = new $.fn.dataTable.Api('#' + tableId);
     let colCount = 0, visibleColumns = [];
     tableObj.columns().every(function(index) {
@@ -573,7 +583,6 @@ function _doExportExcel(tableId, filename, documentTitle) {
     let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
     html += '<head><meta charset="utf-8"></head><body>';
 
-    // HEADER PERUSAHAAN
     html += '<table border="0">';
     html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
     html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
@@ -582,11 +591,11 @@ function _doExportExcel(tableId, filename, documentTitle) {
     html += `<tr><td colspan="${colCount}"></td></tr>`;
     html += '</table>';
 
-    // TABEL DATA
     html += '<table border="1"><thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;">';
     visibleColumns.forEach(col => { html += `<th>${col.text}</th>`; });
     html += '</tr></thead><tbody>';
-    tableObj.rows({ search: 'applied' }).every(function(rowIdx) {
+
+          tableObj.rows({ search: 'applied' }).every(function(rowIdx) {
         html += '<tr>';
         visibleColumns.forEach(col => {
             const cellNode = tableObj.cell(rowIdx, col.index).node();
@@ -597,7 +606,6 @@ function _doExportExcel(tableId, filename, documentTitle) {
     });
     html += '</tbody></table>';
 
-    // FOOTER COPYRIGHT
     html += '<table border="0">';
     html += `<tr><td colspan="${colCount}"></td></tr>`;
     html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</td></tr>`;
@@ -614,6 +622,7 @@ function _doExportExcel(tableId, filename, documentTitle) {
 
 function _doExportPDF(tableId, filename, documentTitle) {
     if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
+    if (!$.fn.dataTable.isDataTable('#' + tableId)) { alert('Tidak ada data untuk di-export.'); return; }
     const tableObj = new $.fn.dataTable.Api('#' + tableId);
     const headers = []; let visibleColumns = [];
     tableObj.columns().every(function(index) {
@@ -691,7 +700,6 @@ function _doExportPDF(tableId, filename, documentTitle) {
     pdfMake.createPdf(docDefinition).download(filename + '_' + new Date().toISOString().slice(0, 10) + '.pdf');
 }
 
-// Wrapper functions per tabel
 function exportTreasuryExcel() { _doExportExcel('tabelTreasury', 'Rekonsiliasi_Treasury_vs_Accounting', 'SINKRONISASI TREASURY vs ACCOUNTING'); }
 function exportTreasuryPDF() { _doExportPDF('tabelTreasury', 'Rekonsiliasi_Treasury_vs_Accounting', 'SINKRONISASI TREASURY vs ACCOUNTING'); }
 function exportPenyebabExcel() { _doExportExcel('tabelPenyebab', 'Rekonsiliasi_Penyebab_Selisih', 'PENYEBAB SELISIH REKONSILIASI KEUANGAN'); }

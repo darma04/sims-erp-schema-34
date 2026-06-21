@@ -295,6 +295,24 @@
     min-height: 2.25rem !important;   /* tinggi minimum 36px */
   }
 
+  /* Chart card-headers: flex-nowrap exception (specificity 0,4,0 > 0,3,0) */
+  .card-header.flex-nowrap.d-flex.justify-content-between {
+    flex-wrap: nowrap !important;
+  }
+  .card-header.flex-nowrap.d-flex.justify-content-between > h5,
+  .card-header.flex-nowrap.d-flex.justify-content-between > h6 {
+    width: auto !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  .card-header.flex-nowrap.d-flex.justify-content-between > .dropdown {
+    flex: 0 0 auto !important;
+    width: auto !important;
+  }
+
   /* ═══════════════════════════════════════════════
      2d. TOMBOL UMUM — Ukuran Mobile Compact
      ═══════════════════════════════════════════════

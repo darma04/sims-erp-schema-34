@@ -42,5 +42,6 @@ def create_adjustment_journal(sender, instance, created, **kwargs):
                 source_id=str(instance.pk),
                 source_repr=instance.nomor_adjustment,
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Gagal mencatat activity log: %s", e)
+        # raise  # Disabled: transaksi tetap tersimpan meskipun jurnal gagal

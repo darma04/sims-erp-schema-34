@@ -1,0 +1,22 @@
+{% extends layout_path %}
+{% load static %}
+
+{% comment %}
+   ==========================================================================
+   SYSTEM - Halaman 404 Not Found
+   Halaman error yang ditampilkan saat URL tidak ditemukan.
+   Menggunakan layout_blank tanpa navigasi.
+   ==========================================================================
+{% endcomment %}
+
+{% block title %}Tidak Ditemukan{% endblock %}
+{% block content %}
+<div class="container-xxl d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+  <div class="text-center">
+    <h1 class="display-1 fw-bold text-danger">{{ status|default:"404" }}</h1>
+    <h2 class="mb-3">Halaman Tidak Ditemukan</h2>
+    <p class="text-muted mb-4">Halaman yang Anda cari tidak tersedia.</p>
+    <a href="/" class="btn btn-primary">Kembali ke Beranda</a>
+  </div>
+</div>
+{% endblock %}

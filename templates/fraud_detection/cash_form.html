@@ -1,6 +1,15 @@
 {% extends layout_path %}
 {% load static %}
 
+{% comment %}
+   ==========================================================================
+   FRAUD DETECTION - Form Input Transaksi Kas
+   Form untuk menambah atau mengedit transaksi kas.
+   Terhubung dengan modul akuntansi untuk posting jurnal.
+   ==========================================================================
+{% endcomment %}
+
+
 {% block title %}Tutup Shift Kasir - Fraud Detection{% endblock title %}
 
 {% block content %}
@@ -19,8 +28,9 @@
                     <h5 class="mb-0 text-white"><i class="ri-lock-2-line me-2"></i>Input Uang Fisik Di Laci</h5>
                     <small class="text-white-50">Hitung uang fisik di laci kasir, lalu masukkan nominalnya. Sistem akan mencocokkan otomatis.</small>
                 </div>
-                {# Diberi padding-top lebih agar ada jarak antara header card dan form pertama #}
+                
                 <div class="card-body pt-4">
+                    
                     <form method="post" id="formBlindClose">
                         {% csrf_token %}
                         <div class="row g-3">
@@ -34,7 +44,7 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <!-- Empty for spacing -->
+                                
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Waktu Mulai Shift <span class="text-danger">*</span></label>
