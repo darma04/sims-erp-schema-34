@@ -191,6 +191,8 @@ Fitur: filter tanggal/sumber/cabang/status, export Excel & PDF, cards.
                 <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
+        {% if jurnal_list %}
+
         <div class="card-datatable table-responsive">
             <table class="datatables-jurnal accounting-data-table table table-hover" id="jurnalTable"
                 data-accounting-primary="true"
@@ -211,7 +213,6 @@ Fitur: filter tanggal/sumber/cabang/status, export Excel & PDF, cards.
                     </tr>
                 </thead>
                 <tbody>
-                    {% if jurnal_list %}
                     {% for j in jurnal_list %}
                     <tr>
                         <td><a href="{% url 'akuntansi:jurnal_detail' j.pk %}" class="fw-semibold text-primary">{{ j.nomor }}</a></td>
@@ -268,14 +269,6 @@ Fitur: filter tanggal/sumber/cabang/status, export Excel & PDF, cards.
                         </td>
                     </tr>
                     {% endfor %}
-                    {% else %}
-                    <tr>
-                        <td colspan="8" class="text-center py-5">
-                            <i class="ri-file-text-line ri-3x text-muted mb-3 d-block"></i>
-                            <p class="text-muted mb-0">Belum ada jurnal entry</p>
-                        </td>
-                    </tr>
-                    {% endif %}
                 </tbody>
                 <tfoot class="table-footer-summary">
                     <tr>
@@ -308,6 +301,38 @@ Fitur: filter tanggal/sumber/cabang/status, export Excel & PDF, cards.
                 </tfoot>
             </table>
         </div>
+
+        {% else %}
+
+        <div class="card-body">
+
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                <div class="mb-4">
+
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                         style="width: 88px; height: 88px;">
+
+                        <i class="ri-article-line" style="font-size: 2.8rem;"></i>
+
+                    </div>
+
+                </div>
+
+                <h5 class="mb-3">Belum Ada Jurnal</h5>
+
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                    Daftar jurnal masih kosong.
+
+                </p>
+
+            </div>
+
+        </div>
+
+        {% endif %}
     </div>
 
     <!-- Delete Modal -->

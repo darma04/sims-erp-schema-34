@@ -169,6 +169,8 @@ Fitur: filter, export Excel & PDF, delete modal.
                 </button>
             </div>
         </div>
+        {% if transaksi_list %}
+
         <div class="card-datatable table-responsive">
             <table class="datatables-biaya table table-hover" id="biayaTable">
                 <thead>
@@ -186,7 +188,6 @@ Fitur: filter, export Excel & PDF, delete modal.
                     </tr>
                 </thead>
                 <tbody>
-                    {% if transaksi_list %}
                     {% for trx in transaksi_list %}
                     <tr>
                         <td>
@@ -287,14 +288,6 @@ Fitur: filter, export Excel & PDF, delete modal.
                         </td>
                     </tr>
                     {% endfor %}
-                    {% else %}
-                    <tr>
-                        <td colspan="9" class="text-center py-5">
-                            <i class="ri-money-dollar-circle-line ri-3x text-muted mb-3 d-block"></i>
-                            <p class="text-muted mb-0">Belum ada transaksi biaya</p>
-                        </td>
-                    </tr>
-                    {% endif %}
                 </tbody>
                 <tfoot class="table-footer-summary">
                     <tr>
@@ -323,6 +316,38 @@ Fitur: filter, export Excel & PDF, delete modal.
                 </tfoot>
             </table>
         </div>
+
+        {% else %}
+
+        <div class="card-body">
+
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                <div class="mb-4">
+
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                         style="width: 88px; height: 88px;">
+
+                        <i class="ri-exchange-dollar-line" style="font-size: 2.8rem;"></i>
+
+                    </div>
+
+                </div>
+
+                <h5 class="mb-3">Belum Ada Transaksi</h5>
+
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                    Daftar transaksi masih kosong.
+
+                </p>
+
+            </div>
+
+        </div>
+
+        {% endif %}
     </div>
 
     <!-- Delete Confirmation Modal -->
