@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded',function(){
         }
     }
     
-    {% if order_list %}$('#laporanTable').DataTable({language:{"sLengthMenu":"Tampilkan _MENU_","sSearch":"Cari:","sInfo":"_START_-_END_ dari _TOTAL_","oPaginate":{"sPrevious":"Sebelumnya","sNext":"Selanjutnya"}},order:[[5,'desc']],pageLength:25,dom:'<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'});{% endif %}
+    {% if order_list %}$('#laporanTable').DataTable({language:{"sLengthMenu":"Tampilkan _MENU_","sSearch":"Cari:","sInfo":"_START_-_END_ dari _TOTAL_","oPaginate":{"sPrevious":"Sebelumnya","sNext":"Selanjutnya"}},order:[[5,'desc']],pageLength:25,dom:'<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'});{% endif %}
 });
     function toggleColumns() {
         {% if order_list %}
