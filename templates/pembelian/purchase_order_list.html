@@ -175,6 +175,8 @@ Fitur: export Excel & PDF, filter.
                 </button>
             </div>
         </div>
+        {% if purchase_order_list %}
+
         <div class="card-datatable table-responsive">
             <table class="datatables-po table table-hover" id="poTable">
                 <thead>
@@ -190,7 +192,7 @@ Fitur: export Excel & PDF, filter.
                     </tr>
                 </thead>
                 <tbody>
-                    {% if purchase_order_list %}
+
                     {% for po in purchase_order_list %}
                     <tr>
                         <td>
@@ -213,81 +215,7 @@ Fitur: export Excel & PDF, filter.
                                 <span class="badge bg-label-info">+{{ po.items.all.count|add:"-3" }} lainnya</span>
                                 {% endif %}
                             </div>
-                            {% else %}
-                            <small class="text-muted">Belum ada produk</small>
-                            {% endif %}
-                        </td>
-                        <td><span class="badge bg-label-info">{{ po.gudang.nama }}</span></td>
-                        <td class="fw-bold">
-                            {{ po.total_harga|rupiah }}
-                            {% if po.biaya_pengiriman > 0 %}
-                            <br><small class="text-muted">Ongkir: {{ po.biaya_pengiriman|rupiah }}</small>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if po.status == 'draft' %}
-                            <span class="badge bg-label-secondary">Draft</span>
-                            {% elif po.status == 'submitted' %}
-                            <span class="badge bg-label-info">Diajukan</span>
-                            {% elif po.status == 'approved' %}
-                            <span class="badge bg-label-success">Disetujui</span>
-                            {% elif po.status == 'received' %}
-                            <span class="badge bg-label-primary">Diterima</span>
-                            {% elif po.status == 'cancelled' %}
-                            <span class="badge bg-label-danger">Dibatalkan</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if can_edit.pembelian or can_delete.pembelian %}
-                            <div class="dropdown">
-                                <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow"
-                                    data-bs-toggle="dropdown">
-                                    <i class="ri-more-2-line"></i>
-                                </button>
-                                <div class="dropdown-menu">
-                                    {% if can_view.pembelian %}
-                                    <a class="dropdown-item" href="{% url 'pembelian:purchase-order-detail' po.pk %}">
-                                        <i class="ri-eye-line me-2"></i>Lihat Detail
-                                    </a>
-                                    {% endif %}
-                                    {% if can_edit.pembelian %}
-                                    <a class="dropdown-item" href="{% url 'pembelian:purchase-order-edit' po.pk %}">
-                                        <i class="ri-edit-line me-2"></i>Edit
-                                    </a>
-                                    {% endif %}
-                                    {% if can_view.pembelian %}
-                                    <a class="dropdown-item" href="#" onclick="printPO({{ po.pk }})">
-                                        <i class="ri-printer-line me-2"></i>Cetak PO
-                                    </a>
-                                    {% endif %}
-                                    {% if can_delete.pembelian %}
-                                    {% if can_view.pembelian or can_edit.pembelian %}
-                                    <div class="dropdown-divider"></div>
-                                    {% endif %}
-                                    <a class="dropdown-item text-danger" href="#"
-                                        onclick="confirmDeletePO({{ po.pk }}, '{{ po.nomor_po }}'); return false;">
-                                        <i class="ri-delete-bin-line me-2"></i>Hapus
-                                    </a>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            {% else %}
-                            <span class="badge bg-label-secondary">
-                                <i class="ri-eye-line me-1"></i>View Only
-                            </span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                    {% else %}
-                    <tr>
-                        <td colspan="8" class="text-center py-5">
-                            <i class="ri-shopping-cart-2-line ri-3x text-muted mb-3 d-block"></i>
-                            <p class="text-muted mb-0">Belum ada purchase order</p>
-                        </td>
-                    </tr>
-                    {% endif %}
-                </tbody>
+                            </tbody>
                 <tfoot class="table-footer-summary">
                     <tr>
                         <td class="text-start ps-4 py-3" style="vertical-align: middle;">
@@ -320,6 +248,38 @@ Fitur: export Excel & PDF, filter.
                 </tfoot>
             </table>
         </div>
+
+        {% else %}
+
+        <div class="card-body">
+
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                <div class="mb-4">
+
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                         style="width: 88px; height: 88px;">
+
+                        <i class="ri-shopping-cart-line" style="font-size: 2.8rem;"></i>
+
+                    </div>
+
+                </div>
+
+                <h5 class="mb-3">Belum Ada Purchase Order</h5>
+
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                    Daftar purchase order masih kosong.
+
+                </p>
+
+            </div>
+
+        </div>
+
+        {% endif %}
     </div>
 
     <!-- Delete Confirmation Modal -->

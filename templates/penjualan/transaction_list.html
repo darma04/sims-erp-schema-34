@@ -172,6 +172,8 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
                 </button>
             </div>
         </div>
+        {% if transaction_list %}
+
         <div class="card-datatable table-responsive">
             <table class="datatables-transaction table table-hover" id="transactionTable">
                 <thead>
@@ -188,7 +190,7 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
                     </tr>
                 </thead>
                 <tbody>
-                    {% if transaction_list %}
+
                     {% for trans in transaction_list %}
                     <tr>
                         <td>
@@ -223,66 +225,7 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
                         <td>
                             {% if trans.metode_pembayaran %}
                             <span class="badge bg-label-secondary">{{ trans.metode_pembayaran.nama }}</span>
-                            {% else %}
-                            <span class="text-muted">-</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if trans.status == 'paid' %}
-                            <span class="badge bg-label-success">Lunas</span>
-                            {% elif trans.status == 'pending' or trans.status == 'unpaid' %}
-                            <span class="badge bg-label-warning">Belum Lunas</span>
-                            {% elif trans.status == 'cancelled' %}
-                            <span class="badge bg-label-danger">Dibatalkan</span>
-                            {% else %}
-                            <span class="badge bg-label-secondary">{{ trans.status }}</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if can_view.penjualan or can_delete.penjualan %}
-                            <div class="dropdown">
-                                <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow"
-                                    data-bs-toggle="dropdown">
-                                    <i class="ri-more-2-line"></i>
-                                </button>
-                                <div class="dropdown-menu">
-                                    {% if can_view.penjualan %}
-                                    <a class="dropdown-item" href="{% url 'penjualan:transaksi-detail' trans.pk %}">
-                                        <i class="ri-eye-line me-2"></i>Lihat Detail
-                                    </a>
-                                    <a class="dropdown-item" href="{% url 'penjualan:transaksi-print' trans.pk %}"
-                                        target="_blank">
-                                        <i class="ri-printer-line me-2"></i>Cetak Struk
-                                    </a>
-                                    {% endif %}
-                                    {% if can_view.penjualan and can_delete.penjualan %}
-                                    <div class="dropdown-divider"></div>
-                                    {% endif %}
-                                    {% if can_delete.penjualan %}
-                                    <a class="dropdown-item text-danger" href="javascript:void(0);"
-                                        onclick="confirmDelete('{{ trans.pk }}', '{{ trans.nomor_transaksi }}')">
-                                        <i class="ri-delete-bin-line me-2"></i>Hapus Transaksi
-                                    </a>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            {% else %}
-                            <span class="badge bg-label-secondary">
-                                <i class="ri-eye-line me-1"></i>View Only
-                            </span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                    {% else %}
-                    <tr>
-                        <td colspan="9" class="text-center py-5">
-                            <i class="ri-store-2-line ri-3x text-muted mb-3 d-block"></i>
-                            <p class="text-muted mb-0">Belum ada transaksi POS</p>
-                        </td>
-                    </tr>
-                    {% endif %}
-                </tbody>
+                            </tbody>
                 <tfoot class="table-footer-summary">
                     <tr>
                         <td colspan="4" class="text-start ps-4 py-3" style="vertical-align: middle;">
@@ -321,6 +264,38 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
                 </tfoot>
             </table>
         </div>
+
+        {% else %}
+
+        <div class="card-body">
+
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                <div class="mb-4">
+
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                         style="width: 88px; height: 88px;">
+
+                        <i class="ri-shopping-bag-line" style="font-size: 2.8rem;"></i>
+
+                    </div>
+
+                </div>
+
+                <h5 class="mb-3">Belum Ada Penjualan</h5>
+
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                    Daftar penjualan masih kosong.
+
+                </p>
+
+            </div>
+
+        </div>
+
+        {% endif %}
     </div>
 
     <!-- Delete Confirmation Modal -->

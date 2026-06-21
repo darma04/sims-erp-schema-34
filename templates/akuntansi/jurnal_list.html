@@ -191,6 +191,8 @@ Fitur: filter tanggal/sumber/cabang/status, export Excel & PDF, cards.
                 <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
+        {% if jurnal_list %}
+
         <div class="card-datatable table-responsive">
             <table class="datatables-jurnal accounting-data-table table table-hover" id="jurnalTable"
                 data-accounting-primary="true"
@@ -211,7 +213,7 @@ Fitur: filter tanggal/sumber/cabang/status, export Excel & PDF, cards.
                     </tr>
                 </thead>
                 <tbody>
-                    {% if jurnal_list %}
+
                     {% for j in jurnal_list %}
                     <tr>
                         <td><a href="{% url 'akuntansi:jurnal_detail' j.pk %}" class="fw-semibold text-primary">{{ j.nomor }}</a></td>
@@ -226,57 +228,7 @@ Fitur: filter tanggal/sumber/cabang/status, export Excel & PDF, cards.
                             {% elif j.sumber == 'po' %}<span class="badge bg-label-warning">Purchase Order</span>
                             {% elif j.sumber == 'biaya' %}<span class="badge bg-label-danger">Biaya</span>
                             {% elif j.sumber == 'pembalik' %}<span class="badge bg-label-dark">Pembalik</span>
-                            {% else %}<span class="badge bg-label-secondary">{{ j.get_sumber_display }}</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if j.cabang %}<span class="badge bg-label-info">{{ j.cabang.nama }}</span>
-                            {% else %}<span class="text-muted">Pusat</span>{% endif %}
-                        </td>
-                        <td>
-                            {% if j.is_posted %}<span class="badge bg-label-success">Posted</span>
-                            {% else %}<span class="badge bg-label-warning">Draft</span>{% endif %}
-                        </td>
-                        <td>{{ j.created_by.username|default:"-" }}</td>
-                        <td>
-                            <div class="dropdown">
-                                <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
-                                    <i class="ri-more-2-line"></i>
-                                </button>
-                                <div class="dropdown-menu">
-                                    <a class="dropdown-item" href="{% url 'akuntansi:jurnal_detail' j.pk %}">
-                                        <i class="ri-eye-line me-2"></i>Lihat Detail
-                                    </a>
-                                    {% if not j.is_posted and rbac_can_edit %}
-                                    <a class="dropdown-item text-success" href="javascript:void(0);" onclick="postJurnal({{ j.pk }}, '{{ j.nomor }}')">
-                                        <i class="ri-checkbox-circle-line me-2"></i>Posting
-                                    </a>
-                                    {% endif %}
-                                    {% if j.is_posted and rbac_can_edit %}
-                                    <a class="dropdown-item text-info" href="javascript:void(0);" onclick="reverseJurnal({{ j.pk }}, '{{ j.nomor }}')">
-                                        <i class="ri-arrow-go-back-line me-2"></i>Jurnal Pembalik
-                                    </a>
-                                    {% endif %}
-                                    {% if not j.is_posted and rbac_can_delete %}
-                                    <div class="dropdown-divider"></div>
-                                    <a class="dropdown-item text-danger" href="javascript:void(0);" onclick="confirmDelete({{ j.pk }}, '{{ j.nomor }}')">
-                                        <i class="ri-delete-bin-line me-2"></i>Hapus
-                                    </a>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                    {% else %}
-                    <tr>
-                        <td colspan="8" class="text-center py-5">
-                            <i class="ri-file-text-line ri-3x text-muted mb-3 d-block"></i>
-                            <p class="text-muted mb-0">Belum ada jurnal entry</p>
-                        </td>
-                    </tr>
-                    {% endif %}
-                </tbody>
+                            </tbody>
                 <tfoot class="table-footer-summary">
                     <tr>
                         <td colspan="3" class="text-start ps-4 py-3">
@@ -308,6 +260,38 @@ Fitur: filter tanggal/sumber/cabang/status, export Excel & PDF, cards.
                 </tfoot>
             </table>
         </div>
+
+        {% else %}
+
+        <div class="card-body">
+
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                <div class="mb-4">
+
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                         style="width: 88px; height: 88px;">
+
+                        <i class="ri-article-line" style="font-size: 2.8rem;"></i>
+
+                    </div>
+
+                </div>
+
+                <h5 class="mb-3">Belum Ada Jurnal</h5>
+
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                    Daftar jurnal masih kosong.
+
+                </p>
+
+            </div>
+
+        </div>
+
+        {% endif %}
     </div>
 
     <!-- Delete Modal -->

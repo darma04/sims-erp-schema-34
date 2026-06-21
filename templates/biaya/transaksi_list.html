@@ -169,6 +169,8 @@ Fitur: filter, export Excel & PDF, delete modal.
                 </button>
             </div>
         </div>
+        {% if transaksi_list %}
+
         <div class="card-datatable table-responsive">
             <table class="datatables-biaya table table-hover" id="biayaTable">
                 <thead>
@@ -186,7 +188,7 @@ Fitur: filter, export Excel & PDF, delete modal.
                     </tr>
                 </thead>
                 <tbody>
-                    {% if transaksi_list %}
+
                     {% for trx in transaksi_list %}
                     <tr>
                         <td>
@@ -207,95 +209,7 @@ Fitur: filter, export Excel & PDF, delete modal.
                         <td>
                             {% if trx.cabang %}
                             <span class="badge bg-label-info">{{ trx.cabang.nama }}</span>
-                            {% else %}
-                            <span class="text-muted">-</span>
-                            {% endif %}
-                        </td>
-                        <td class="fw-bold text-danger">{{ trx.jumlah|rupiah }}</td>
-                        <td>
-                            {% if trx.metode_pembayaran %}
-                            <span class="badge bg-label-primary">{{ trx.metode_pembayaran.nama }}</span>
-                            {% else %}
-                            <span class="text-muted">-</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <div>{{ trx.deskripsi|truncatewords:8 }}</div>
-                        </td>
-                        <td>{{ trx.dibuat_oleh.username|default:"-" }}</td>
-                        <td>
-                            {% if trx.status == 'draft' %}
-                            <span class="badge bg-label-secondary">Draft</span>
-                            {% elif trx.status == 'submitted' %}
-                            <span class="badge bg-label-info">Diajukan</span>
-                            {% elif trx.status == 'approved' %}
-                            <span class="badge bg-label-success">Disetujui</span>
-                            {% elif trx.status == 'rejected' %}
-                            <span class="badge bg-label-danger">Ditolak</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if can_view.biaya or can_edit.biaya or can_delete.biaya %}
-                            <div class="dropdown">
-                                <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow"
-                                    data-bs-toggle="dropdown">
-                                    <i class="ri-more-2-line"></i>
-                                </button>
-                                <div class="dropdown-menu">
-                                    {% if can_view.biaya %}
-                                    <a class="dropdown-item" href="#" onclick="viewDetail({{ trx.pk }})">
-                                        <i class="ri-eye-line me-2"></i>Lihat Detail
-                                    </a>
-                                    {% endif %}
-                                    {% if can_edit.biaya %}
-                                    <a class="dropdown-item" href="#" onclick="editTransaksi({{ trx.pk }})">
-                                        <i class="ri-edit-line me-2"></i>Edit
-                                    </a>
-                                    {% endif %}
-                                    {% if can_view.biaya %}
-                                    <a class="dropdown-item" href="#" onclick="printBukti({{ trx.pk }})">
-                                        <i class="ri-printer-line me-2"></i>Cetak Bukti
-                                    </a>
-                                    {% endif %}
-                                    {% if can_edit.biaya and trx.status == 'draft' or trx.status == 'submitted' %}
-                                    <div class="dropdown-divider"></div>
-                                    <a class="dropdown-item text-success" href="javascript:void(0);"
-                                        onclick="confirmApprove({{ trx.pk }}, '{{ trx.nomor_transaksi }}')">
-                                        <i class="ri-check-double-line me-2"></i>Setujui
-                                    </a>
-                                    <a class="dropdown-item text-warning" href="javascript:void(0);"
-                                        onclick="confirmReject({{ trx.pk }}, '{{ trx.nomor_transaksi }}')">
-                                        <i class="ri-close-circle-line me-2"></i>Tolak
-                                    </a>
-                                    {% endif %}
-                                    {% if can_delete.biaya %}
-                                    {% if can_view.biaya or can_edit.biaya %}
-                                    <div class="dropdown-divider"></div>
-                                    {% endif %}
-                                    <a class="dropdown-item text-danger" href="javascript:void(0);"
-                                        onclick="confirmDelete({{ trx.pk }}, '{{ trx.nomor_transaksi }}')">
-                                        <i class="ri-delete-bin-line me-2"></i>Hapus
-                                    </a>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            {% else %}
-                            <span class="badge bg-label-secondary">
-                                <i class="ri-eye-line me-1"></i>View Only
-                            </span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                    {% else %}
-                    <tr>
-                        <td colspan="9" class="text-center py-5">
-                            <i class="ri-money-dollar-circle-line ri-3x text-muted mb-3 d-block"></i>
-                            <p class="text-muted mb-0">Belum ada transaksi biaya</p>
-                        </td>
-                    </tr>
-                    {% endif %}
-                </tbody>
+                            </tbody>
                 <tfoot class="table-footer-summary">
                     <tr>
                         <td colspan="4" class="text-start ps-4 py-3" style="vertical-align: middle;">
@@ -323,6 +237,38 @@ Fitur: filter, export Excel & PDF, delete modal.
                 </tfoot>
             </table>
         </div>
+
+        {% else %}
+
+        <div class="card-body">
+
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                <div class="mb-4">
+
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                         style="width: 88px; height: 88px;">
+
+                        <i class="ri-exchange-dollar-line" style="font-size: 2.8rem;"></i>
+
+                    </div>
+
+                </div>
+
+                <h5 class="mb-3">Belum Ada Transaksi</h5>
+
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                    Daftar transaksi masih kosong.
+
+                </p>
+
+            </div>
+
+        </div>
+
+        {% endif %}
     </div>
 
     <!-- Delete Confirmation Modal -->
