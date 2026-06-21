@@ -103,7 +103,7 @@
                             <span class="badge bg-label-secondary"><i class="ri-eye-line me-1"></i>View Only</span>
                             {% endif %}
                         </td>
-                    </tr>
+                    <td>-</td></tr>
                     {% empty %}
                     <tr>
                         <td colspan="6" class="text-center py-5">
@@ -113,7 +113,7 @@
                     </tr>
                     {% endfor %}
                 </tbody>
-                <tfoot class="table-footer-summary"><tr><td colspan="4" class="text-start ps-4 py-3"><div class="d-flex align-items-center"><i class="ri-calculator-line me-2 text-primary" style="font-size:1.5rem"></i><div><strong>RINGKASAN</strong><br><small class="text-muted">{{ total_kategori }} Kategori Terdaftar</small></div></div></td><td colspan="2"></td></tr></tfoot>
+                <tfoot class="table-footer-summary"><tr><td colspan="4" class="text-start ps-4 py-3"><div class="d-flex align-items-center"><i class="ri-calculator-line me-2 text-primary" style="font-size:1.5rem"></i><div><strong>RINGKASAN</strong><br><small class="text-muted">{{ total_kategori }} Kategori Terdaftar</small></div></div></td><td colspan="2"></td><td class="py-3"></td></tr></tfoot>
             </table>
         </div>
     </div>
