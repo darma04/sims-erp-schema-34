@@ -247,6 +247,13 @@
                 <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
                     Daftar aset masih kosong.
                 </p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
+                    {% if can_create.aset %}
+                    <a href="{% url 'aset:aset_add' %}" class="btn btn-primary btn-lg">
+                        <i class="ri-add-line me-1"></i>Tambah Aset
+                    </a>
+                    {% endif %}
+                </div>
             </div>
         </div>
         {% endif %}

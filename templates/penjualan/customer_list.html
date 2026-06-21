@@ -241,6 +241,16 @@ Fitur: tambah, edit, hapus customer. Tabel: nama, kontak, alamat, aksi.
                     Daftar customer masih kosong. Tambahkan customer untuk memulai transaksi.
 
                 </p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
+                    {% if can_create.penjualan %}
+                    <a href="{% url 'penjualan:customer_add' %}" class="btn btn-primary btn-lg">
+                        <i class="ri-add-line me-1"></i>Tambah Customer
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'penjualan:customer_import' %}" class="btn btn-label-success btn-lg">
+                        <i class="ri-upload-2-line me-1"></i>Import dari Excel
+                    </a>
+                </div>
 
             </div>
 

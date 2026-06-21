@@ -218,6 +218,13 @@ Fitur: tambah, edit, hapus satuan.
                     Daftar satuan masih kosong. Tambahkan satuan untuk unit pengukuran produk.
 
                 </p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
+                    {% if can_create.produk %}
+                    <a href="{% url 'produk:satuan_add' %}" class="btn btn-primary btn-lg">
+                        <i class="ri-add-line me-1"></i>Tambah Satuan
+                    </a>
+                    {% endif %}
+                </div>
 
             </div>
 

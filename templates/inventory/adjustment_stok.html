@@ -294,6 +294,13 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
                     Data stok masih kosong.
 
                 </p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
+                    {% if can_create.inventory %}
+                    <a href="{% url 'inventory:adjustment_add' %}" class="btn btn-primary btn-lg">
+                        <i class="ri-add-line me-1"></i>Tambah Adjustment
+                    </a>
+                    {% endif %}
+                </div>
 
             </div>
 

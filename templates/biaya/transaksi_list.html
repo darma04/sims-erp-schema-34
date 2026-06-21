@@ -342,6 +342,13 @@ Fitur: filter, export Excel & PDF, delete modal.
                     Daftar transaksi masih kosong.
 
                 </p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
+                    {% if can_create.biaya %}
+                    <a href="{% url 'biaya:transaksi_add' %}" class="btn btn-primary btn-lg">
+                        <i class="ri-add-line me-1"></i>Tambah Transaksi
+                    </a>
+                    {% endif %}
+                </div>
 
             </div>
 

@@ -248,6 +248,13 @@
                     Daftar departemen masih kosong. Tambahkan departemen untuk struktur organisasi.
 
                 </p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
+                    {% if can_create.hr %}
+                    <a href="{% url 'hr:departemen_add' %}" class="btn btn-primary btn-lg">
+                        <i class="ri-add-line me-1"></i>Tambah Departemen
+                    </a>
+                    {% endif %}
+                </div>
 
             </div>
 

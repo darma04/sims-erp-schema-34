@@ -275,6 +275,13 @@
                     Daftar jabatan masih kosong. Tambahkan jabatan untuk struktur organisasi.
 
                 </p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
+                    {% if can_create.hr %}
+                    <a href="{% url 'hr:jabatan_add' %}" class="btn btn-primary btn-lg">
+                        <i class="ri-add-line me-1"></i>Tambah Jabatan
+                    </a>
+                    {% endif %}
+                </div>
 
             </div>
 
