@@ -128,7 +128,7 @@
                         <td>{{ order.biaya_akhir|rupiah }}</td>
                         <td>{{ order.tanggal_masuk|date:"d/m/Y" }}</td>
                     </tr>
-                    {% empty %}<tr><td colspan="6" class="text-center py-5 text-muted">Tidak ada data</td></tr>{% endfor %}
+                    {% empty %}<tr><td colspan="6" class="text-center py-5 text-muted">Tidak ada data</td><td></td><td></td><td></td><td></td><td></td></tr>{% endfor %}
                 </tbody>
                 <tfoot class="table-footer-summary">
                     <tr>
