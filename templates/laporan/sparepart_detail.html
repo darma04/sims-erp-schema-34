@@ -68,7 +68,7 @@
                     <div class="table-responsive">
                         <table class="table table-sm table-borderless mb-0">
                             <tbody>
-                    {% for stok in stok_list %}
+                                {% for stok in stok_list %}
                                 <tr>
                                     <td><strong>{{ stok.gudang.nama }}</strong></td>
                                     <td class="text-end">
@@ -121,9 +121,6 @@
                         <div class="card-header"><h5 class="mb-0">Riwayat Pemakaian di Service Center</h5></div>
                         {% if stok_list %}
 
-                        {% if stok_list %}
-
-
                         <div class="card-datatable table-responsive">
                             <table class="table table-hover">
                                 <thead><tr><th>No. Service</th><th>Tanggal</th><th>Pelanggan</th><th>Gudang</th><th>Qty</th><th>Harga Satuan</th><th>Subtotal</th></tr></thead>
@@ -142,54 +139,6 @@
                                 </tbody>
                             </table>
                         </div>
-
-
-                        {% else %}
-
-
-                        <div class="card-body">
-
-
-                            <div class="text-center py-4 py-md-5 px-3 px-md-4">
-
-
-                                <div class="mb-4">
-
-
-                                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
-
-
-                                         style="width: 88px; height: 88px;">
-
-
-                                        <i class="ri-tools-line" style="font-size: 2.8rem;"></i>
-
-
-                                    </div>
-
-
-                                </div>
-
-
-                                <h5 class="mb-3">Belum Ada Sparepart</h5>
-
-
-                                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
-
-
-                                    Daftar data masih kosong.
-
-
-                                </p>
-
-
-                            </div>
-
-
-                        </div>
-
-
-                        {% endif %}
 
                         {% else %}
 
@@ -228,6 +177,7 @@
                 <div class="tab-pane fade" id="tab-pembelian" role="tabpanel">
                     <div class="card">
                         <div class="card-header"><h5 class="mb-0">Riwayat Pembelian (Purchase Order)</h5></div>
+                        {% if riwayat_pembelian %}
                         <div class="card-datatable table-responsive">
                             <table class="table table-hover">
                                 <thead><tr><th>No. PO</th><th>Tanggal</th><th>Supplier</th><th>Qty</th><th>Harga Satuan</th><th>Subtotal</th></tr></thead>
@@ -242,9 +192,25 @@
                                         <td class="text-danger fw-medium">{{ item.subtotal|rupiah }}</td>
                                     </tr>
                                     {% endfor %}
-                </tbody>
+                                </tbody>
                             </table>
                         </div>
+                        {% else %}
+                        <div class="card-body">
+                            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+                                <div class="mb-4">
+                                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                                         style="width: 88px; height: 88px;">
+                                        <i class="ri-shopping-cart-line" style="font-size: 2.8rem;"></i>
+                                    </div>
+                                </div>
+                                <h5 class="mb-3">Belum Ada Riwayat Pembelian</h5>
+                                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+                                    Daftar data masih kosong.
+                                </p>
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -252,7 +218,6 @@
                     <div class="card">
                         <div class="card-header"><h5 class="mb-0">Riwayat Penjualan (Sales Order)</h5></div>
                         {% if riwayat_penjualan %}
-
                         <div class="card-datatable table-responsive">
                             <table class="table table-hover">
                                 <thead><tr><th>No. SO</th><th>Tanggal</th><th>Customer</th><th>Qty</th><th>Harga</th><th>Subtotal</th></tr></thead>
@@ -266,41 +231,25 @@
                                         <td>{{ item.harga_satuan|rupiah }}</td>
                                         <td class="text-success fw-medium">{{ item.subtotal|rupiah }}</td>
                                     </tr>
-                              for %}
+                                    {% endfor %}
                                 </tbody>
                             </table>
                         </div>
-
                         {% else %}
-
                         <div class="card-body">
-
                             <div class="text-center py-4 py-md-5 px-3 px-md-4">
-
                                 <div class="mb-4">
-
                                     <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
-
                                          style="width: 88px; height: 88px;">
-
-                                        <i class="ri-file-list-3-line" style="font-size: 2.8rem;"></i>
-
+                                        <i class="ri-shopping-bag-line" style="font-size: 2.8rem;"></i>
                                     </div>
-
                                 </div>
-
-                                <h5 class="mb-3">Belum Ada Data</h5>
-
+                                <h5 class="mb-3">Belum Ada Riwayat Penjualan</h5>
                                 <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
-
                                     Daftar data masih kosong.
-
                                 </p>
-
                             </div>
-
                         </div>
-
                         {% endif %}
                     </div>
                 </div>
@@ -308,10 +257,11 @@
                 <div class="tab-pane fade" id="tab-pos" role="tabpanel">
                     <div class="card">
                         <div class="card-header"><h5 class="mb-0">Riwayat Penjualan (POS)</h5></div>
-                        {% if activity_logs %}
-
+                        {% if riwayat_pos %}
                         <div class="card-datatable table-responsive">
-                            <table class="table table-hovbody>
+                            <table class="table table-hover">
+                                <thead><tr><th>No. Invoice</th><th>Tanggal</th><th>Gudang</th><th>Qty</th><th>Harga</th><th>Subtotal</th></tr></thead>
+                                <tbody>
                                     {% for item in riwayat_pos %}
                                     <tr>
                                         <td><code>{{ item.transaction.nomor_transaksi }}</code></td>
@@ -321,43 +271,25 @@
                                         <td>{{ item.harga_satuan|rupiah }}</td>
                                         <td class="text-success fw-medium">{{ item.subtotal|rupiah }}</td>
                                     </tr>
-                                    {% empty %}
-                                    <tr><td colspan="6" class="text-center py-4 text-muted">Belum ada penjualan via POS</td></tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
                         </div>
-
                         {% else %}
-
                         <div class="card-body">
-
                             <div class="text-center py-4 py-md-5 px-3 px-md-4">
-
                                 <div class="mb-4">
-
                                     <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
-
                                          style="width: 88px; height: 88px;">
-
-                                        <i class="ri-file-list-3-line" style="font-size: 2.8rem;"></i>
-
+                                        <i class="ri-store-2-line" style="font-size: 2.8rem;"></i>
                                     </div>
-
                                 </div>
-
-                                <h5 class="mb-3">Belum Ada Data</h5>
-
+                                <h5 class="mb-3">Belum Ada Penjualan POS</h5>
                                 <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
-
                                     Daftar data masih kosong.
-
                                 </p>
-
                             </div>
-
                         </div>
-
                         {% endif %}
                     </div>
                 </div>
@@ -365,20 +297,38 @@
                 <div class="tab-pane fade" id="tab-aktivitas" role="tabpanel">
                     <div class="card">
                         <div class="card-header"><h5 class="mb-0">Riwayat Aktivitas</h5></div>
+                        {% if activity_logs %}
                         <div class="card-datatable table-responsive">
                             <table class="table table-hover">
                                 <thead><tr><th>Waktu</th><th>User</th><th>Aksi</th><th>Detail</th></tr></thead>
-      <td><small>{{ log.timestamp|date:"d M Y H:i" }}</small></td>
+                                <tbody>
+                                    {% for log in activity_logs %}
+                                    <tr>
+                                        <td><small>{{ log.timestamp|date:"d M Y H:i" }}</small></td>
                                         <td>{% if log.user %}{{ log.user.get_full_name|default:log.user.username }}{% else %}Sistem{% endif %}</td>
                                         <td><span class="badge bg-label-info">{{ log.action }}</span></td>
                                         <td><small class="text-muted">{{ log.remarks|default:log.object_repr|truncatewords:15 }}</small></td>
                                     </tr>
-                                    {% empty %}
-                                    <tr><td colspan="4" class="text-center py-4 text-muted">Belum ada aktivitas</td></tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
                         </div>
+                        {% else %}
+                        <div class="card-body">
+                            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+                                <div class="mb-4">
+                                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                                         style="width: 88px; height: 88px;">
+                                        <i class="ri-history-line" style="font-size: 2.8rem;"></i>
+                                    </div>
+                                </div>
+                                <h5 class="mb-3">Belum Ada Riwayat Aktivitas</h5>
+                                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+                                    Daftar data masih kosong.
+                                </p>
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
