@@ -189,6 +189,10 @@ LAPORAN CABANG - Laporan Performa per Cabang/Gudang
         {% if gudang_list %}
 
 
+        {% if summary_cabang %}
+
+
+
         <div class="card-datatable table-responsive">
             <table class="datatables-cabang table table-hover" id="tabelCabang">
                 <thead>
@@ -267,6 +271,70 @@ LAPORAN CABANG - Laporan Performa per Cabang/Gudang
                 </tfoot>
             </table>
         </div>
+
+
+
+        {% else %}
+
+
+
+        <div class="card-body">
+
+
+
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+
+
+                <div class="mb-4">
+
+
+
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+
+
+                         style="width: 88px; height: 88px;">
+
+
+
+                        <i class="ri-bar-chart-box-line" style="font-size: 2.8rem;"></i>
+
+
+
+                    </div>
+
+
+
+                </div>
+
+
+
+                <h5 class="mb-3">Belum Ada Laporan</h5>
+
+
+
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+
+
+                    Daftar data masih kosong.
+
+
+
+                </p>
+
+
+
+            </div>
+
+
+
+        </div>
+
+
+
+        {% endif %}
 
 
         {% else %}
@@ -468,259 +536,6 @@ LAPORAN CABANG - Laporan Performa per Cabang/Gudang
                         <span class="badge bg-label-info" data-bs-toggle="tooltip" data-bs-placement="left"
                             title="Total terjual dari SO + POS di cabang ini">{{ p.qty|floatformat:0 }} unit</span>
                     </div>
-                    {% empty %}
-                    <div class="text-center text-muted py-4"><i class="ri-box-3-line ri-2x mb-2 d-block"></i>Belum ada data penjualan produk</div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Row: Inventori + Pengeluaran -->
-    <div class="row g-2 g-md-3 mb-4">
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header"><h6 class="mb-0" data-bs-toggle="tooltip" data-bs-placement="top"
-                    title="Ringkasan inventori gudang cabang ini: jumlah item, total unit stok, aktivitas transfer masuk/keluar, dan penyesuaian stok (adjustment)."><i class="ri-stack-line me-2"></i>Inventori & Mutasi Stok</h6></div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-6"><div class="border rounded p-3 text-center" data-bs-toggle="tooltip" data-bs-placement="top"
-                            title="Jumlah jenis item unik (Produk) yang memiliki record stok di gudang ini."><i class="ri-inbox-archive-line ri-24px text-primary mb-2 d-block"></i><h5 class="mb-0">{{ total_item_stok }}</h5><small class="text-muted">Jenis Item</small></div></div>
-                        <div class="col-6"><div class="border rounded p-3 text-center" data-bs-toggle="tooltip" data-bs-placement="top"
-                            title="Total kuantitas seluruh item (Produk) yang tersimpan di gudang ini."><i class="ri-hashtag ri-24px text-info mb-2 d-block"></i><h5 class="mb-0">{{ total_stok_qty }}</h5><small class="text-muted">Total Unit Stok</small></div></div>
-                        <div class="col-4"><div class="border rounded p-3 text-center" data-bs-toggle="tooltip" data-bs-placement="top"
-                            title="Jumlah transaksi Transfer Stok yang masuk ke gudang ini (gudang tujuan = cabang ini)."><i class="ri-arrow-down-line ri-24px text-success mb-2 d-block"></i><h5 class="mb-0">{{ transfer_in_count }}</h5><small class="text-muted">Transfer Masuk</small></div></div>
-                        <div class="col-4"><div class="border rounded p-3 text-center" data-bs-toggle="tooltip" data-bs-placement="top"
-                            title="Jumlah transaksi Transfer Stok yang keluar dari gudang ini (gudang asal = cabang ini)."><i class="ri-arrow-up-line ri-24px text-danger mb-2 d-block"></i><h5 class="mb-0">{{ transfer_out_count }}</h5><small class="text-muted">Transfer Keluar</small></div></div>
-                        <div class="col-4"><div class="border rounded p-3 text-center" data-bs-toggle="tooltip" data-bs-placement="top"
-                            title="Jumlah transaksi Adjustment Stok (penyesuaian manual) yang dilakukan di gudang ini."><i class="ri-scales-3-line ri-24px text-warning mb-2 d-block"></i><h5 class="mb-0">{{ adjustment_count }}</h5><small class="text-muted">Adjustment</small></div></div>
-                    </div>
-                    <hr>
-                    <div class="d-flex justify-content-between"><span data-bs-toggle="tooltip" data-bs-placement="left"
-                        title="Sum(harga beli x jumlah stok) untuk semua Produk di gudang ini. Menunjukkan total modal yang diinvestasikan.">Nilai Aset (Harga Beli)</span><strong class="text-primary">{{ total_aset_cabang|rupiah }}</strong></div>
-                    <div class="d-flex justify-content-between mt-1"><span data-bs-toggle="tooltip" data-bs-placement="left"
-                        title="Sum(harga jual x jumlah stok) untuk semua Produk di gudang ini. Menunjukkan potensi pendapatan jika semua terjual.">Nilai Jual (Harga Jual)</span><strong class="text-info">{{ total_nilai_jual_cabang|rupiah }}</strong></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header"><h6 class="mb-0" data-bs-toggle="tooltip" data-bs-placement="top"
-                    title="Rincian pengeluaran cabang dari 3 sumber: Purchase Order termasuk ongkir, Transaksi Biaya, dan Modal Produk (harga beli x stok)."><i class="ri-wallet-line me-2"></i>Breakdown Pengeluaran</h6></div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-4" data-bs-toggle="tooltip" data-bs-placement="top"
-                        title="Total nilai Purchase Order (status approved/received) termasuk ongkir yang ditujukan ke gudang cabang ini.">
-                        <div><i class="ri-truck-line me-2 text-primary ri-24px"></i><span class="fw-medium">Purchase Order</span></div>
-                        <div class="text-end"><strong class="text-danger">{{ total_po_cabang|rupiah }}</strong><br><small class="text-muted">{{ po_count }} PO</small></div>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mb-4" data-bs-toggle="tooltip" data-bs-placement="top"
-                        title="Total nilai Transaksi Biaya (status approved) yang tercatat di cabang ini, seperti biaya operasional, sewa, dll.">
-                        <div><i class="ri-file-list-3-line me-2 text-warning ri-24px"></i><span class="fw-medium">Transaksi Biaya</span></div>
-                        <div class="text-end"><strong class="text-danger">{{ total_biaya_cabang|rupiah }}</strong><br><small class="text-muted">{{ biaya_count }} transaksi</small></div>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mb-4" data-bs-toggle="tooltip" data-bs-placement="top"
-                        title="Total modal produk di gudang ini. Dihitung dari harga beli x jumlah stok untuk setiap produk.">
-                        <div><i class="ri-box-3-line me-2 text-info ri-24px"></i><span class="fw-medium">Modal Produk</span></div>
-                        <div class="text-end"><strong class="text-danger">{{ total_tambah_produk|rupiah }}</strong><br><small class="text-muted">{{ tambah_produk_count }} jenis produk</small></div>
-                    </div>
-                    <hr>
-                    <div class="d-flex justify-content-between" data-bs-toggle="tooltip" data-bs-placement="top"
-                        title="PO termasuk ongkir + Biaya + Modal Produk"><strong>Total Pengeluaran</strong><strong class="text-danger">{{ total_pengeluaran_cabang|rupiah }}</strong></div>
-                    <div class="mt-4 p-3 rounded {% if laba_rugi_cabang >= 0 %}bg-label-success{% else %}bg-label-danger{% endif %}">
-                        <div class="d-flex justify-content-between align-items-center" data-bs-toggle="tooltip" data-bs-placement="top"
-                            title="Pemasukan (SO termasuk ongkir + POS) dikurangi Pengeluaran (PO termasuk ongkir + Biaya + Modal Produk). Hijau = untung, Merah = rugi.">
-                            <div><i class="ri-line-chart-line me-2"></i><strong>Estimasi Laba/Rugi</strong></div>
-                            <h5 class="mb-0 {% if laba_rugi_cabang >= 0 %}text-success{% else %}text-danger{% endif %}">{{ laba_rugi_cabang|rupiah }}</h5>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ═══════════════════════════════════════════════════ -->
-    <!-- REKONSILIASI: OPERASIONAL vs ACCOUNTING CABANG     -->
-    <!-- ═══════════════════════════════════════════════════ -->
-    {% if has_accounting_data %}
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <div>
-                <h5 class="mb-1"><i class="ri-git-merge-line me-2"></i>Rekonsiliasi Keuangan Cabang</h5>
-                <small class="text-muted">Perbandingan data Operasional vs Accounting (jurnal posted) untuk cabang ini.</small>
-            </div>
-            <span class="badge {% if is_cabang_balanced %}bg-success{% else %}bg-warning{% endif %}">
-                {% if is_cabang_balanced %}✓ Balance{% else %}⚠ Ada Selisih{% endif %}
-            </span>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Komponen</th>
-                            <th class="text-end" data-bs-toggle="tooltip" data-bs-placement="top" title="Data dari transaksi langsung (POS, SO termasuk ongkir, PO termasuk ongkir, Biaya) - tanpa PPN">Operasional</th>
-                            <th class="text-end" data-bs-toggle="tooltip" data-bs-placement="top" title="Data dari jurnal posted (double-entry) — sumber kebenaran akuntansi">Accounting</th>
-                            <th class="text-end" data-bs-toggle="tooltip" data-bs-placement="top" title="Selisih = Accounting − Operasional. Selisih bisa dari jurnal non-operasional (gaji, penyusutan, manual, dll)">Selisih</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><i class="ri-arrow-down-circle-line me-1 text-success"></i>Pendapatan Bersih</td>
-                            <td class="text-end fw-semibold text-success">{{ total_pemasukan_cabang|rupiah }}</td>
-                            <td class="text-end fw-semibold text-success">{{ akun_pendapatan_cabang|rupiah }}</td>
-                            <td class="text-end fw-semibold {% if selisih_pendapatan_cabang != 0 %}text-warning{% endif %}">{{ selisih_pendapatan_cabang|rupiah }}</td>
-                        </tr>
-                        <tr>
-                            <td><i class="ri-price-tag-3-line me-1 text-warning"></i>HPP (Harga Pokok Penjualan)</td>
-                            <td class="text-end text-muted">—</td>
-                            <td class="text-end fw-semibold text-danger">{{ akun_hpp_cabang|rupiah }}</td>
-                            <td class="text-end text-muted">—</td>
-                        </tr>
-                        <tr>
-                            <td><i class="ri-arrow-up-circle-line me-1 text-danger"></i>Beban Operasional</td>
-                            <td class="text-end fw-semibold text-danger">{{ total_pengeluaran_cabang|rupiah }}</td>
-                            <td class="text-end fw-semibold text-danger">{{ akun_beban_cabang|rupiah }}</td>
-                            <td class="text-end text-muted">—</td>
-                        </tr>
-                        <tr class="table-light fw-bold">
-                            <td><i class="ri-funds-line me-1 text-primary"></i>Laba / Rugi Bersih</td>
-                            <td class="text-end {% if laba_rugi_cabang >= 0 %}text-success{% else %}text-danger{% endif %}">{{ laba_rugi_cabang|rupiah }}</td>
-                            <td class="text-end {% if akun_laba_bersih_cabang >= 0 %}text-success{% else %}text-danger{% endif %}">{{ akun_laba_bersih_cabang|rupiah }}</td>
-                            <td class="text-end {% if selisih_laba_cabang != 0 %}text-warning{% endif %}">{{ selisih_laba_cabang|rupiah }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            {% if not is_cabang_balanced %}
-            <div class="alert alert-warning mt-3 mb-0 d-flex align-items-start gap-2">
-                <i class="ri-information-line ri-20px mt-1"></i>
-                <div>
-                    <strong>Penyebab selisih yang umum:</strong> Jurnal manual, penyusutan aset, penggajian, pelunasan piutang/hutang, atau jurnal pembalik yang tercatat di cabang ini. Lihat detail di halaman <a href="{% url 'akuntansi:rekonsiliasi_keuangan' %}?cabang={{ selected_gudang.pk }}">Rekonsiliasi Keuangan</a>.
-                </div>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-    {% endif %}
-
-    </div>
-
-    <!-- ═══════════════════════════════════════════════════ -->
-    <!-- KARYAWAN & ABSENSI PER CABANG -->
-    <!-- ═══════════════════════════════════════════════════ -->
-    <div data-section="karyawan">
-
-    <!-- Banner HR -->
-    <div class="row g-2 g-md-3 mb-4">
-        <div class="col-12">
-            <div class="alert alert-warning d-flex align-items-center mb-0" role="alert">
-                <i class="ri-group-line me-2 ri-24px"></i>
-                <div>Karyawan & Absensi untuk: <strong>{{ selected_gudang.nama }}</strong> ({{ selected_gudang.kode }})</div>
-            </div>
-        </div>
-
-        <!-- 4 Summary Cards: HR -->
-        <div class="col-6 col-lg-3">
-            <div class="card"><div class="card-body"><div class="d-flex justify-content-between">
-                <div class="card-info">
-                    <p class="card-text text-muted">Total Karyawan</p>
-                    <h4 class="mb-0 text-primary summary-nominal">{{ total_karyawan_cabang }}</h4>
-                    <small class="text-muted">Karyawan aktif di cabang ini</small>
-                </div>
-                <div class="card-icon"><span class="badge bg-label-primary rounded p-2"><i class="ri-group-line ri-24px"></i></span></div>
-            </div></div></div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="card"><div class="card-body"><div class="d-flex justify-content-between">
-                <div class="card-info">
-                    <p class="card-text text-muted">Hadir Hari Ini</p>
-                    <h4 class="mb-0 text-success summary-nominal">{{ karyawan_hadir_hari_ini }}</h4>
-                    <small class="text-muted">Sudah clock in hari ini</small>
-                </div>
-                <div class="card-icon"><span class="badge bg-label-success rounded p-2"><i class="ri-checkbox-circle-line ri-24px"></i></span></div>
-            </div></div></div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="card"><div class="card-body"><div class="d-flex justify-content-between">
-                <div class="card-info">
-                    <p class="card-text text-muted">Terlambat Hari Ini</p>
-                    <h4 class="mb-0 text-warning summary-nominal">{{ karyawan_terlambat_hari_ini }}</h4>
-                    <small class="text-muted">Clock in melebihi toleransi</small>
-                </div>
-                <div class="card-icon"><span class="badge bg-label-warning rounded p-2"><i class="ri-alarm-warning-line ri-24px"></i></span></div>
-            </div></div></div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="card"><div class="card-body"><div class="d-flex justify-content-between">
-                <div class="card-info">
-                    <p class="card-text text-muted">Tingkat Kehadiran</p>
-                    <h4 class="mb-0 text-info summary-nominal">{{ tingkat_kehadiran }}%</h4>
-                    <small class="text-muted">{{ total_absensi_record }} record absensi</small>
-                </div>
-                <div class="card-icon"><span class="badge bg-label-info rounded p-2"><i class="ri-bar-chart-box-line ri-24px"></i></span></div>
-            </div></div></div>
-        </div>
-    </div>
-
-    <!-- Tabel Daftar Karyawan Cabang -->
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <div>
-                <h5 class="mb-1"><i class="ri-group-line me-2"></i>Daftar Karyawan — {{ selected_gudang.nama }}</h5>
-                <small class="text-muted"><i class="ri-information-line me-1"></i>Menampilkan karyawan yang terdaftar di cabang ini</small>
-            </div>
-            <div class="d-flex gap-2">
-                <span class="badge bg-label-primary">{{ total_karyawan_cabang }} Karyawan</span>
-            </div>
-        </div>
-        <div class="card-datatable table-responsive">
-            <table class="datatables-karyawan-cabang table table-hover" id="tabelKaryawanCabang">
-                <thead>
-                    <tr>
-                        <th>No</th>
-                        <th>NIK</th>
-                        <th>Nama</th>
-                        <th>Jabatan</th>
-                        <th>Departemen</th>
-                        <th>Status</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for k in karyawan_list_cabang %}
-                    <tr>
-                        <td>{{ forloop.counter }}</td>
-                        <td><span class="badge bg-label-secondary">{{ k.nik }}</span></td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                {% if k.foto %}
-                                <div class="avatar avatar-sm me-2"><img src="{{ k.foto.url }}" alt="{{ k.nama }}" class="rounded-circle" style="width:32px;height:32px;object-fit:cover;"></div>
-                                {% else %}
-                                <div class="avatar avatar-sm me-2"><span class="avatar-initial rounded-circle bg-label-primary">{{ k.nama|first }}</span></div>
-                                {% endif %}
-                                <div>
-                                    <span class="fw-medium">{{ k.nama }}</span>
-                                    {% if k.email %}<br><small class="text-muted">{{ k.email }}</small>{% endif %}
-                                </div>
-                            </div>
-                        </td>
-                        <td>{{ k.jabatan.nama|default:"-" }}</td>
-                        <td>{{ k.departemen.nama|default:"-" }}</td>
-                        <td>
-                            {% if k.status == 'aktif' %}<span class="badge bg-label-success">Aktif</span>
-                            {% elif k.status == 'cuti' %}<span class="badge bg-label-warning">Cuti</span>
-                            {% elif k.status == 'resign' %}<span class="badge bg-label-danger">Resign</span>
-                            {% else %}<span class="badge bg-label-secondary">{{ k.status }}</span>{% endif %}
-                        </td>
-                        <td>
-                            <div class="dropdown">
-                                <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ri-more-2-line"></i></button>
-                                <div class="dropdown-menu">
-                                    <a class="dropdown-item" href="{% url 'hr:karyawan-detail' k.pk %}"><i class="ri-eye-line me-2"></i>Lihat Detail</a>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
                     {% endfor %}
                 </tbody>
             </table>

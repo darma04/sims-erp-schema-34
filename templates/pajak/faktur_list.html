@@ -87,7 +87,8 @@
     </div>
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center"><h5 class="mb-0">Daftar Faktur</h5><div class="d-flex gap-2"><button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button><button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button></div></div>
-        <div class="card-datatable table-responsive"><table class="accounting-data-table table table-hover" id="fakturTable" data-accounting-primary="true" data-export-title="Daftar Faktur Pajak" data-search-placeholder="Cari faktur..."><thead><tr><th>No. Seri</th><th>Tipe</th><th>Tanggal</th><th>Lawan Transaksi</th><th class="text-end">DPP</th><th class="text-end">PPN</th><th class="text-end">Total</th><th>Status</th><th data-export-ignore="true" data-action-icon="ri-more-2-line">Aksi</th></tr></thead><tbody>
+                {% if faktur_list %}
+<div class="card-datatable table-responsive"><table class="accounting-data-table table table-hover" id="fakturTable" data-accounting-primary="true" data-export-title="Daftar Faktur Pajak" data-search-placeholder="Cari faktur..."><thead><tr><th>No. Seri</th><th>Tipe</th><th>Tanggal</th><th>Lawan Transaksi</th><th class="text-end">DPP</th><th class="text-end">PPN</th><th class="text-end">Total</th><th>Status</th><th data-export-ignore="true" data-action-icon="ri-more-2-line">Aksi</th></tr></thead><tbody>
             {% for f in faktur_list %}<tr>
                 <td class="fw-semibold">{{ f.nomor_seri }}</td>
                 <td>{% if f.tipe == 'masukan' %}<span class="badge bg-label-warning">Masukan</span>{% else %}<span class="badge bg-label-success">Keluaran</span>{% endif %}</td>
@@ -107,6 +108,23 @@
             </tr>{% endfor %}
             {# Tidak ada baris empty colspan — DataTables handle via language.sEmptyTable #}
         </tbody><tfoot class="table-footer-summary"><tr><td colspan="4" class="text-start ps-4 py-3"><div class="d-flex align-items-center justify-content-start"><i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i><div class="text-start"><strong class="d-block" style="font-size: 0.875rem;">RINGKASAN</strong><small class="text-muted">{{ count_total }} faktur</small></div></div></td><td colspan="2" class="py-3"><div class="text-center"><span class="badge bg-label-warning">{{ ppn_masukan|rupiah }}</span><small class="d-block text-muted mt-1">PPN Masukan</small></div></td><td class="py-3"><div class="text-center"><span class="badge bg-label-success">{{ ppn_keluaran|rupiah }}</span><small class="d-block text-muted mt-1">PPN Keluaran</small></div></td><td class="py-3"><div class="text-center"><span class="badge bg-label-{% if ppn_setor > 0 %}danger{% else %}info{% endif %}">{{ ppn_setor|rupiah }}</span><small class="d-block text-muted mt-1">Selisih PPN</small></div></td><td></td></tr></tfoot></table></div>
+        {% else %}
+        <div class="card-body">
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+                <div class="mb-4">
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                         style="width: 88px; height: 88px;">
+                        <i class="ri-inbox-line" style="font-size: 2.8rem;"></i>
+                    </div>
+                </div>
+                <h5 class="mb-3">Belum Ada Data Faktur</h5>
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+                    Daftar faktur masih kosong.
+                </p>
+            </div>
+        </div>
+        {% endif %}
+
     </div>
 </div>
 {% endblock content %}

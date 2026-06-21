@@ -200,7 +200,10 @@ Filter akun/periode/cabang, tabel mutasi D/K/saldo berjalan, export.
                 <span class="ms-3 text-muted small">— periode sebelum filter yang dipilih</span>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+                {% if buku_besar.mutasi %}
+{% if akun_list %}
+
+<div class="card-datatable table-responsive">
             <table class="accounting-data-table table table-hover" id="bukuBesarTable"
                 data-accounting-primary="true"
                 data-export-title="Buku Besar - {{ buku_besar.akun.kode }} {{ buku_besar.akun.nama }}"
@@ -246,6 +249,55 @@ Filter akun/periode/cabang, tabel mutasi D/K/saldo berjalan, export.
                 </tfoot>
             </table>
         </div>
+
+{% else %}
+
+<div class="card-body">
+
+    <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+        <div class="mb-4">
+
+            <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                 style="width: 88px; height: 88px;">
+
+                <i class="ri-book-open-line" style="font-size: 2.8rem;"></i>
+
+            </div>
+
+        </div>
+
+        <h5 class="mb-3">Belum Ada CoA</h5>
+
+        <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+            Daftar data masih kosong.
+
+        </p>
+
+    </div>
+
+</div>
+
+{% endif %}
+        {% else %}
+        <div class="card-body">
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+                <div class="mb-4">
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                         style="width: 88px; height: 88px;">
+                        <i class="ri-inbox-line" style="font-size: 2.8rem;"></i>
+                    </div>
+                </div>
+                <h5 class="mb-3">Belum Ada Data Buku Besar</h5>
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+                    Daftar buku besar masih kosong.
+                </p>
+            </div>
+        </div>
+        {% endif %}
+
     </div>
     {% elif selected_akun %}
     <div class="card">
