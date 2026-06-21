@@ -550,33 +550,6 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                     </tr>
                     {% endif %}
                 </tbody>
-                <tfoot class="table-footer-summary">
-                    <tr>
-                        <td colspan="5" class="text-start ps-4 py-3" style="vertical-align: middle;">
-                            <div class="d-flex align-items-center justify-content-start">
-                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
-                                <div class="text-start">
-                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN PEMASUKAN</strong>
-                                    <small class="text-muted" style="font-size: 0.75rem;">SO: {{ total_sales_order|rupiah }} | POS: {{ total_pos|rupiah }}</small>
-                                    <small class="text-muted d-block" style="font-size: 0.7rem;">Diskon: {{ total_diskon|rupiah }} | PPN: {{ total_pajak_penjualan|rupiah }}</small>
-                                    <small class="text-muted d-block" style="font-size: 0.7rem;">Biaya Pengiriman SO: {{ total_ongkir_so|rupiah }}</small>
-                                </div>
-                            </div>
-                        </td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td>
-                        <td class="py-3" style="vertical-align: middle;">
-                            <div class="d-flex flex-column align-items-center">
-                                <span class="badge bg-label-success d-flex align-items-center gap-1 mb-2"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 140px;">
-                                    <i class="ri-arrow-down-circle-line"></i>
-                                    <span>{{ total_pemasukan|rupiah }}</span>
-                                </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Pemasukan</small>
-                            </div>
-                        </td>
-                        <td class="py-3"></td>
-                        <td class="py-3"></td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
     </div>
@@ -705,33 +678,6 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                     </tr>
                     {% endif %}
                 </tbody>
-                <tfoot class="table-footer-summary">
-                    <tr>
-                        <td colspan="5" class="text-start ps-4 py-3" style="vertical-align: middle;">
-                            <div class="d-flex align-items-center justify-content-start">
-                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
-                                <div class="text-start">
-                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN PENGELUARAN</strong>
-                                    <small class="text-muted" style="font-size: 0.75rem;">PO: {{ total_pembelian|rupiah }} | Biaya: {{ total_biaya|rupiah }} | Gaji: {{ total_penggajian|rupiah }} | Produk: {{ total_produk_pengeluaran|rupiah }}</small>
-                                    <small class="text-muted d-block" style="font-size: 0.7rem;">PPN Pembelian: {{ total_pajak_pembelian|rupiah }}</small>
-                                    <small class="text-muted d-block" style="font-size: 0.7rem;">Biaya Pengiriman PO: {{ total_ongkir_po|rupiah }}</small>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="py-3" style="vertical-align: middle;">
-                            <div class="d-flex flex-column align-items-center">
-                                <span class="badge bg-label-danger d-flex align-items-center gap-1 mb-2"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 140px;">
-                                    <i class="ri-arrow-up-circle-line"></i>
-                                    <span>{{ total_pengeluaran|rupiah }}</span>
-                                </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Total
-                                    Pengeluaran</small>
-                            </div>
-                        </td>
-                        <td class="py-3"></td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
     </div>

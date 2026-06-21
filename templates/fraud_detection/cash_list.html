@@ -356,52 +356,6 @@
                     <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
                     {% endfor %}
                 </tbody>
-                
-                <tfoot class="table-footer-summary">
-                    <tr>
-                        <td colspan="4" class="text-start ps-4 py-3" style="vertical-align: middle;">
-                            <div class="d-flex align-items-center justify-content-start">
-                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
-                                <div class="text-start">
-                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
-                                    <small class="text-muted" style="font-size: 0.75rem;">{{ total_records }} Record Tercatat</small>
-                                </div>
-                            </div>
-                        </td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td>
-                        <td class="py-3" style="vertical-align: middle;">
-                            <div class="d-flex flex-column align-items-center">
-                                <span class="badge bg-label-info d-flex align-items-center gap-1 mb-2"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 120px;">
-                                    <i class="ri-money-dollar-circle-line"></i>
-                                    <span>{{ total_expected|rupiah }}</span>
-                                </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Sistem</small>
-                            </div>
-                        </td>
-                        <td class="py-3" style="vertical-align: middle;">
-                            <div class="d-flex flex-column align-items-center">
-                                <span class="badge bg-label-primary d-flex align-items-center gap-1 mb-2"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 120px;">
-                                    <i class="ri-wallet-line"></i>
-                                    <span>{{ total_actual|rupiah }}</span>
-                                </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Fisik</small>
-                            </div>
-                        </td>
-                        <td class="py-3" style="vertical-align: middle;">
-                            <div class="d-flex flex-column align-items-center">
-                                <span class="badge bg-label-danger d-flex align-items-center gap-1 mb-2"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 120px;">
-                                    <i class="ri-exchange-funds-line"></i>
-                                    <span>{{ total_discrepancy|rupiah }}</span>
-                                </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Selisih</small>
-                            </div>
-                        </td>
-                        <td class="py-3"></td>
-                        <td class="py-3"></td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
     </div>

@@ -232,26 +232,6 @@
                     <td></td><td></td><td></td><td></td><td></td><td></td></tr>
                     {% endfor %}
                 </tbody>
-                <tfoot class="table-footer-summary">
-                    <tr>
-                        <td colspan="4" class="text-start ps-4 py-3">
-                            <div class="d-flex align-items-center">
-                                <span class="d-inline-flex align-items-center justify-content-center bg-label-warning rounded-circle me-2" style="width: 40px; height: 40px;">
-                                    <i class="ri-calculator-line" style="font-size: 1.25rem;"></i>
-                                </span>
-                                <div>
-                                    <strong>RINGKASAN</strong>
-                                    <br><small class="text-muted">Total {{ total_jabatan|default:0 }} Jabatan</small>
-                                </div>
-                            </div>
-                        </td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td>
-                        <td class="py-3 text-center">
-                            <strong class="text-success">Rp {{ total_gaji|floatformat:0|default:0 }}</strong>
-                            <br><small class="text-muted">Total Gaji Pokok</small>
-                        </td>
-                        <td colspan="2"></td><td class="py-3"></td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
     </div>

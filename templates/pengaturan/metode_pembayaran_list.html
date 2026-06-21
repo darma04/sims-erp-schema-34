@@ -309,32 +309,6 @@
                     <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
                     {% endfor %}
                 </tbody>
-                <tfoot class="table-footer-summary">
-                    <tr>
-                        <td class="py-3 ps-4" colspan="2" style="vertical-align: middle;">
-                            <div class="d-flex align-items-center">
-                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.25rem;"></i>
-                                <div>
-                                    <strong style="font-size: 0.9rem;">RINGKASAN</strong>
-                                    <br><small class="text-muted" style="font-size: 0.7rem;">{{ metode_list|length }} Metode Terdaftar</small>
-                                </div>
-                            </div>
-                        </td><td class="py-3"></td>
-                        <td class="py-3"></td>
-                        <td class="py-3"></td>
-                        <td class="py-3">
-                            <strong class="{% if ringkasan_saldo >= 0 %}text-success{% else %}text-danger{% endif %}">
-                                {{ ringkasan_saldo|rupiah }}
-                            </strong>
-                        </td>
-                        <td class="py-3 text-success fw-bold">{{ ringkasan_pendapatan|rupiah }}</td>
-                        <td class="py-3 text-danger fw-bold">{{ ringkasan_pengeluaran|rupiah }}</td>
-                        <td class="py-3 text-center">
-                            <span class="badge bg-label-info">{{ ringkasan_transaksi }}</span>
-                        </td>
-                        <td class="py-3 text-center py-5" colspan="3"></td><td class="py-3"></td><td class="py-3"></td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
     </div>

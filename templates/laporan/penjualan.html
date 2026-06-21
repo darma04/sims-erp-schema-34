@@ -421,52 +421,6 @@
                     <td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
                     {% endfor %}
                 </tbody>
-                <tfoot class="table-footer-summary">
-                    <tr>
-                        <td colspan="3" class="text-start ps-4 py-3" style="vertical-align: middle;">
-                            <div class="d-flex align-items-center justify-content-start">
-                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
-                                <div class="text-start">
-                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
-                                    <small class="text-muted" style="font-size: 0.75rem;">{{ so_count }} Sales Order</small>
-                                    <small class="text-muted d-block" style="font-size: 0.7rem;">Diskon: {{ total_diskon_so|rupiah }} | PPN: {{ total_pajak_so|rupiah }}</small>
-                                </div>
-                            </div>
-                        </td><td class="py-3"></td><td class="py-3"></td>
-                        <td class="py-3" style="vertical-align: middle;">
-                            <div class="d-flex flex-column align-items-center">
-                                <span class="badge bg-label-success d-flex align-items-center gap-1 mb-1"
-                                    style="font-size: 0.85rem; padding: 0.4rem 0.6rem;">
-                                    <i class="ri-money-dollar-circle-line"></i>
-                                    <span>{{ so_total|rupiah }}</span>
-                                </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Harga Jual</small>
-                            </div>
-                        </td>
-                        <td class="py-3" style="vertical-align: middle;">
-                            <div class="d-flex flex-column align-items-center">
-                                <span class="badge bg-label-info d-flex align-items-center gap-1 mb-1"
-                                    style="font-size: 0.85rem; padding: 0.4rem 0.6rem;">
-                                    <i class="ri-shopping-bag-line"></i>
-                                    <span>{{ so_harga_beli_total|rupiah }}</span>
-                                </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Harga Beli</small>
-                            </div>
-                        </td>
-                        <td class="py-3" style="vertical-align: middle;">
-                            <div class="d-flex flex-column align-items-center">
-                                <span class="badge bg-label-{% if so_keuntungan_total >= 0 %}success{% else %}danger{% endif %} d-flex align-items-center gap-1 mb-1"
-                                    style="font-size: 0.85rem; padding: 0.4rem 0.6rem;">
-                                    <i class="ri-bar-chart-grouped-line"></i>
-                                    <span>{{ so_keuntungan_total|rupiah }}</span>
-                                </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Keuntungan</small>
-                            </div>
-                        </td>
-                        <td class="py-3"></td>
-                        <td class="py-3"></td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
     </div>
@@ -532,52 +486,6 @@
                     <td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
                     {% endfor %}
                 </tbody>
-                <tfoot class="table-footer-summary">
-                    <tr>
-                        <td colspan="3" class="text-start ps-4 py-3" style="vertical-align: middle;">
-                            <div class="d-flex align-items-center justify-content-start">
-                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
-                                <div class="text-start">
-                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN POS</strong>
-                                    <small class="text-muted" style="font-size: 0.75rem;">{{ pos_count }} Transaksi</small>
-                                    <small class="text-muted d-block" style="font-size: 0.7rem;">Diskon: {{ total_diskon_pos|rupiah }} | PPN: {{ total_pajak_pos|rupiah }}</small>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="py-3" style="vertical-align: middle;">
-                            <div class="d-flex flex-column align-items-center">
-                                <span class="badge bg-label-success d-flex align-items-center gap-1 mb-1"
-                                    style="font-size: 0.85rem; padding: 0.4rem 0.6rem;">
-                                    <i class="ri-money-dollar-circle-line"></i>
-                                    <span>{{ pos_total|rupiah }}</span>
-                                </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Harga Jual</small>
-                            </div>
-                        </td>
-                        <td class="py-3" style="vertical-align: middle;">
-                            <div class="d-flex flex-column align-items-center">
-                                <span class="badge bg-label-info d-flex align-items-center gap-1 mb-1"
-                                    style="font-size: 0.85rem; padding: 0.4rem 0.6rem;">
-                                    <i class="ri-shopping-bag-line"></i>
-                                    <span>{{ pos_harga_beli_total|rupiah }}</span>
-                                </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Harga Beli</small>
-                            </div>
-                        </td>
-                        <td class="py-3" style="vertical-align: middle;">
-                            <div class="d-flex flex-column align-items-center">
-                                <span class="badge bg-label-{% if pos_keuntungan_total >= 0 %}success{% else %}danger{% endif %} d-flex align-items-center gap-1 mb-1"
-                                    style="font-size: 0.85rem; padding: 0.4rem 0.6rem;">
-                                    <i class="ri-bar-chart-grouped-line"></i>
-                                    <span>{{ pos_keuntungan_total|rupiah }}</span>
-                                </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Keuntungan</small>
-                            </div>
-                        </td>
-                        <td class="py-3"></td>
-                        <td class="py-3"></td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
     </div>

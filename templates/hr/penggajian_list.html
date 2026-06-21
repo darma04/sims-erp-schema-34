@@ -342,36 +342,6 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
                     <td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
                     {% endfor %}
                 </tbody>
-                <tfoot class="table-footer-summary">
-                    <tr>
-                        <td colspan="3" class="text-start ps-4 py-3">
-                            <div class="d-flex align-items-center">
-                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
-                                <div>
-                                    <strong>RINGKASAN</strong>
-                                    <br><small class="text-muted">{{ total_slip|default:0 }} Slip Gaji</small>
-                                </div>
-                            </div>
-                        </td><td class="py-3"></td><td class="py-3"></td>
-                        <td class="py-3 text-center">
-                            <strong class="text-primary">Rp {{ total_gaji_pokok|floatformat:0|default:"0" }}</strong>
-                            <br><small class="text-muted">Total Gaji Pokok</small>
-                        </td>
-                        <td class="py-3 text-center">
-                            <strong class="text-info">Rp {{ total_tunjangan|floatformat:0|default:"0" }}</strong>
-                            <br><small class="text-muted">Total Tunjangan</small>
-                        </td>
-                        <td class="py-3 text-center">
-                            <strong class="text-danger">Rp {{ total_potongan|floatformat:0|default:"0" }}</strong>
-                            <br><small class="text-muted">Total Potongan</small>
-                        </td>
-                        <td class="py-3 text-center">
-                            <strong class="text-success">Rp {{ grand_total|floatformat:0|default:"0" }}</strong>
-                            <br><small class="text-muted">Total Gaji Bersih</small>
-                        </td>
-                        <td></td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
     </div>

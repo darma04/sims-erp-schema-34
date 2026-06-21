@@ -236,40 +236,6 @@
                     <td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
                     {% endfor %}
                 </tbody>
-                <tfoot class="table-footer-summary">
-                    <tr>
-                        <td colspan="5" class="text-start ps-4 py-3" style="vertical-align: middle;">
-                            <div class="d-flex align-items-center justify-content-start">
-                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
-                                <div class="text-start">
-                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
-                                    <small class="text-muted" style="font-size: 0.75rem;">{{ total_penggunaan }} penggunaan sparepart</small>
-                                </div>
-                            </div>
-                        </td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td>
-                        <td class="py-3" style="vertical-align: middle;">
-                            <div class="d-flex flex-column align-items-center">
-                                <span class="badge bg-label-info d-flex align-items-center gap-1 mb-1"
-                                    style="font-size: 0.8rem; padding: 0.4rem 0.6rem;">
-                                    <i class="ri-stack-line"></i>
-                                    <span>{{ total_qty|floatformat:0 }}</span>
-                                </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Total Qty</small>
-                            </div>
-                        </td>
-                        <td class="py-3"></td>
-                        <td class="py-3" style="vertical-align: middle;">
-                            <div class="d-flex flex-column align-items-center">
-                                <span class="badge bg-label-danger d-flex align-items-center gap-1 mb-1"
-                                    style="font-size: 0.8rem; padding: 0.4rem 0.6rem;">
-                                    <i class="ri-money-dollar-circle-line"></i>
-                                    <span>{{ total_cogs|rupiah }}</span>
-                                </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Total COGS</small>
-                            </div>
-                        </td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
     </div>

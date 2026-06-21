@@ -239,25 +239,6 @@
                     {% endif %}
                     {% endfor %}
                 </tbody>
-                <tfoot class="table-footer-summary">
-                    <tr>
-                        <td colspan="3" class="text-start ps-4 py-3">
-                            <div class="d-flex align-items-center justify-content-start">
-                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
-                                <div class="text-start">
-                                    <strong class="d-block" style="font-size: 0.875rem;">RINGKASAN</strong>
-                                    <small class="text-muted">Total debit dan kredit</small>
-                                </div>
-                            </div>
-                        </td><td class="py-3"></td><td class="py-3"></td>
-                        <td class="text-end py-3">
-                            <span class="badge bg-label-primary">{{ total_debit|rupiah }}</span>
-                        </td>
-                        <td class="text-end py-3">
-                            <span class="badge bg-label-success">{{ total_kredit|rupiah }}</span>
-                        </td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
     </div>
