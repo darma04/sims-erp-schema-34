@@ -223,7 +223,7 @@ Filter: gudang, kategori. Export Excel & PDF.
                         class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
-        {% if gudang_list %}
+        {% if stok_list %}
 
         <div class="card-datatable table-responsive">
             <table class="datatables-stok table table-hover" id="stokTable">
@@ -403,7 +403,6 @@ Filter: gudang, kategori. Export Excel & PDF.
 <script>
     $(document).ready(function () {
         {% if stok_list %}
-        {% if gudang_list %}
         $('#stokTable').DataTable({
             language: { "sEmptyTable": "Tidak ada data", "sProcessing": "Proses...", "sLengthMenu": "Tampilkan _MENU_ data", "sZeroRecords": "Tidak ditemukan", "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data", "sInfoEmpty": "0 data", "sInfoFiltered": "(disaring dari _MAX_ total)", "sSearch": "Cari:", "oPaginate": { "sFirst": "Pertama", "sPrevious": "Sebelumnya", "sNext": "Selanjutnya", "sLast": "Terakhir" } },
             order: [[0, 'asc']],
@@ -412,7 +411,6 @@ Filter: gudang, kategori. Export Excel & PDF.
             responsive: false,
             dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
         });
-        {% endif %}
         {% endif %}
     });
 
