@@ -2,30 +2,13 @@
 {% load static %}
 {% load currency_filters %}
 
-{% comment %}
-  ==========================================================================
-  AKUNTANSI - Laba Rugi
-  ==========================================================================
-  Halaman Laba Rugi untuk modul Akuntansi.
-  Template ini merender data dari view ke HTML yang ditampilkan di browser.
-
-  FLOW DATA:
-  - URL: /akuntansi/ -> View di apps/akuntansi/views.py- View: Mengambil data, menyiapkan context, render template ini- Template: File ini (HTML + Django template tags)- Response: HTML yang ditampilkan di browser user
-
-  RELASI KE MODUL LAIN:
-  - apps/akuntansi/views.py -> View (handler untuk halaman ini)- apps/akuntansi/models.py -> Model (sumber data)- apps/akuntansi/urls.py -> URL routing- layout/ -> Template induk (sidebar, header, footer)
-
-  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
-  - BOLEH diubah: Tampilan HTML, CSS inline, JavaScript- JANGAN diubah: {% extends %} dan {% block %} structure- JANGAN dihapus: {% csrf_token %} di form
-
-  TIPS & DEBUGGING:
-  - Error 'TemplateDoesNotExist'? Cek template_name di views.py- Variabel {{ }} kosong? Cek get_context_data() di views.py- Layout rusak? Pastikan TemplateLayout.init() dipanggil di view
-
-  ==========================================================================
-{% endcomment %}
-
-
 {% block title %}Laba Rugi (Income Statement) - Akuntansi ERP{% endblock title %}
+
+
+
+
+
+
 
 {% block vendor_css %}{{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/libs/apex-charts/apex-charts.css' %}" />
@@ -39,14 +22,14 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-1">
         <div>
             <h4 class="mb-1"><i class="ri-line-chart-line me-2"></i>Laba Rugi (Income Statement)</h4>
             <p class="text-muted mb-0">{{ tanggal_mulai|date:"d F Y" }} — {{ tanggal_akhir|date:"d F Y" }}</p>
         </div>
     </div>
-    
+    <!-- Label Sumber Data -->
     <div class="mb-4">
         <span class="badge bg-label-primary rounded-pill px-3 py-2">
             <i class="ri-book-2-line me-1"></i>Laporan Akuntansi Resmi
@@ -56,6 +39,7 @@
         </small>
     </div>
 
+    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <form method="get">
@@ -78,7 +62,7 @@
                         </select>
                     </div>
                 </div>
-                
+                <!-- Baris kedua: Cari (kiri) + spacer + Tombol Filter (kanan) — standar 3+6+3 -->
                 <div class="row g-3 mt-2 align-items-end">
                     <div class="col-md-3">
                         <label class="form-label">Cari di Laporan</label>
@@ -104,6 +88,7 @@
         </div>
     </div>
 
+    <!-- Summary Cards -->
     <div class="row g-3 mb-4">
         <div class="col-sm-6 col-lg-3">
             <div class="card">
@@ -163,18 +148,13 @@
         </div>
     </div>
 
+    <!-- Trend Chart -->
     <div class="card mb-4">
-        <div class="card-header d-flex flex-nowrap align-items-center justify-content-between"><h5 class="mb-0 me-2"><i class="ri-bar-chart-2-line me-2"></i>Trend 6 Bulan Terakhir</h5>
-                    <div class="dropdown flex-shrink-0">
-                        <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button>
-                        <div class="dropdown-menu dropdown-menu-end">
-                            <a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a>
-                            <a class="dropdown-item" href="javascript:void(0)" onclick="if(window.__labaRugiTrendChart) window.__labaRugiTrendChart.exportTo({type:'png'});"><i class="ri-download-2-line me-2"></i>Unduh Grafik</a>
-                        </div>
-                    </div></div>
+        <div class="card-header"><h5 class="mb-0"><i class="ri-bar-chart-2-line me-2"></i>Trend 6 Bulan Terakhir</h5></div>
         <div class="card-body"><div id="trendChart" style="min-height:320px;"></div></div>
     </div>
 
+    <!-- Report Table Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="ri-file-list-3-line me-2"></i>Laporan Laba Rugi</h5>
@@ -298,6 +278,10 @@
     }
 </style>
 <script>
+// ═══════════════════════════════════════════════════════════════
+// EXPORT EXCEL & PDF - STANDARD TEMPLATE (Support Android)
+// Konsisten dengan: Produk, POS, Sales Order, Purchase Order
+// ═══════════════════════════════════════════════════════════════
 
 const EXCEL_INFO = {
     name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
@@ -315,27 +299,30 @@ const PDF_INFO = {
     copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
 };
 
+// GLOBAL FUNCTIONS - Defined outside DOMContentLoaded so onclick can access them
 function exportExcel() {
     var tbl = document.getElementById('labaRugiTable');
-    if (!tbl) { showExportError(); return; }
+    if (!tbl) { alert('Tabel tidak ditemukan!'); return; }
 
     let colCount = 2;
     let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
     html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
     html += '<body>';
 
+    // --- ADD EXCEL HEADER (Company Info) ---
     html += '<table border="0">';
     if (typeof EXCEL_INFO !== 'undefined') {
         html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
         html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
         html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
-        html += `<tr><td colspan="${colCount}"></td></tr>`; 
+        html += `<tr><td colspan="${colCount}"></td></tr>`; // empty row for spacing
         html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:14px; font-weight:bold;">LAPORAN LABA RUGI</td></tr>`;
         html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">Periode: {{ tanggal_mulai|date:"d F Y" }} - {{ tanggal_akhir|date:"d F Y" }}</td></tr>`;
         html += `<tr><td colspan="${colCount}"></td></tr>`;
     }
     html += '</table>';
 
+    // --- TABLE: Data ---
     html += '<table border="1">';
     html += '<thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;"><th>Akun</th><th>Nominal</th></tr></thead>';
     html += '<tbody>';
@@ -362,8 +349,9 @@ function exportExcel() {
     
     html += '</tbody></table>';
 
+    // --- ADD EXCEL FOOTER ---
     html += '<table border="0">';
-    html += `<tr><td colspan="${colCount}"></td></tr>`; 
+    html += `<tr><td colspan="${colCount}"></td></tr>`; // empty spacer
     if (typeof EXCEL_INFO !== 'undefined') {
         html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</td></tr>`;
         html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">${EXCEL_INFO.copyright}</td></tr>`;
@@ -382,7 +370,7 @@ function exportPDF() {
     if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
     var tbl = document.getElementById('labaRugiTable');
-    if (!tbl) { showExportError(); return; }
+    if (!tbl) { alert('Tabel tidak ditemukan!'); return; }
 
     const headers = [
         {
@@ -419,7 +407,7 @@ function exportPDF() {
                 row.push(text);
             }
         });
-        
+        // Pad row if total cells < colCount
         while (row.length < 2) row.push('');
         if (row.length > 0) {
             if (isBold && !row[0].colSpan) {
@@ -506,21 +494,25 @@ function searchPage(q) {
     });
 }
 
+// Initialize Chart on DOM Ready
 document.addEventListener('DOMContentLoaded', function () {
     var el = document.getElementById('trendChart');
     if (!el) return;
     var seriesData = [{name:'Pendapatan Bersih', data: {{ trend_pendapatan|safe }}},{name:'Laba Bersih', data: {{ trend_laba|safe }}}];
     var hasData = seriesData.some(function(s){ return s.data && s.data.some(function(v){return v>0;}); });
-    
+    if (!hasData) {
+        el.innerHTML = '<div class="text-center text-muted py-5"><i class="ri-bar-chart-2-line ri-3x d-block mb-2" style="opacity:0.3"></i><small>Belum ada data untuk ditampilkan</small></div>';
+        return;
+    }
     var isDark = typeof isDarkStyle !== 'undefined' ? isDarkStyle : document.documentElement.classList.contains('dark-style');
     var gridColor  = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
     var labelColor = isDark ? '#b4b5ba' : '#a5a3ae';
     var chartColors = ['#28c76f','#7367f0'];
-    var __chartInst = new ApexCharts(el, {
+    new ApexCharts(el, {
         chart: {
             type: 'area', height: 300,
             fontFamily: 'Inter, -apple-system, sans-serif', background: 'transparent',
-            toolbar: { show: false },
+            toolbar: { show: true, tools: { download: '<i class="ri-download-2-line" style="font-size:16px"></i>', selection:false,zoom:false,zoomin:false,zoomout:false,pan:false,reset:false } },
             animations: { enabled:true, easing:'easeinout', speed:800, dynamicAnimation:{enabled:true,speed:350} },
             dropShadow: { enabled:true, top:6, left:0, blur:6, opacity:isDark?0.15:0.08, color:chartColors }
         },
@@ -546,47 +538,7 @@ document.addEventListener('DOMContentLoaded', function () {
         markers: { size:0, hover:{size:6,sizeOffset:3}, strokeWidth:2, strokeColors:isDark?'#2b2c40':'#fff' },
         grid: { borderColor:gridColor, strokeDashArray:4, padding:{top:-10,left:10,right:10,bottom:0}, xaxis:{lines:{show:false}}, yaxis:{lines:{show:true}} },
         responsive: [{ breakpoint:768, options:{ chart:{height:240}, legend:{fontSize:'11px'}, stroke:{width:2} } }]
-    });
-    __chartInst.render();
-    window.__labaRugiTrendChart = __chartInst;
+    }).render();
 });
 </script>
-
-<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-warning align-items-center py-3">
-                <h5 class="modal-title text-dark mb-0">
-                    <i class="ri-error-warning-line me-2"></i>Export Gagal
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center py-3">
-                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
-                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
-                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
-                    <i class="ri-close-line me-1"></i>Tutup
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-
-function showExportError() {
-    var modal = document.getElementById('exportErrorModal');
-    if (modal) {
-        new bootstrap.Modal(modal).show();
-    } else {
-        alert('Tabel tidak ditemukan!');
-    }
-}
-</script>
-
 {% endblock page_js %}

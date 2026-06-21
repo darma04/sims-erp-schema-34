@@ -1,29 +1,6 @@
 {% extends 'layout/layout_vertical.html' %}
 {% load static %}
 
-{% comment %}
-  ==========================================================================
-  PAJAK - Setting Pajak
-  ==========================================================================
-  Halaman Setting Pajak untuk modul Pajak.
-  Template ini merender data dari view ke HTML yang ditampilkan di browser.
-
-  FLOW DATA:
-  - URL: /pajak/ -> View di apps/pajak/views.py- View: Mengambil data, menyiapkan context, render template ini- Template: File ini (HTML + Django template tags)- Response: HTML yang ditampilkan di browser user
-
-  RELASI KE MODUL LAIN:
-  - apps/pajak/views.py -> View (handler untuk halaman ini)- apps/pajak/models.py -> Model (sumber data)- apps/pajak/urls.py -> URL routing- layout/ -> Template induk (sidebar, header, footer)
-
-  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
-  - BOLEH diubah: Tampilan HTML, CSS inline, JavaScript- JANGAN diubah: {% extends %} dan {% block %} structure- JANGAN dihapus: {% csrf_token %} di form
-
-  TIPS & DEBUGGING:
-  - Error 'TemplateDoesNotExist'? Cek template_name di views.py- Variabel {{ }} kosong? Cek get_context_data() di views.py- Layout rusak? Pastikan TemplateLayout.init() dipanggil di view
-
-  ==========================================================================
-{% endcomment %}
-
-
 {% block title %}Setting PPN & Pajak{% endblock title %}
 
 {% block content %}
@@ -33,7 +10,6 @@
         <div class="col-12">
             <div class="card mb-4">
                 <h5 class="card-header"><i class="ri-settings-3-line me-2"></i>Setting PPN & Pajak</h5>
-                
                 <form method="post">{% csrf_token %}
                     <div class="card-body">
                         {% if form.errors %}<div class="alert alert-danger">{{ form.errors }}</div>{% endif %}

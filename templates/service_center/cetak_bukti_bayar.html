@@ -1,27 +1,4 @@
 <!DOCTYPE html>
-
-{% comment %}
-  ==========================================================================
-  SERVICE CENTER - Cetak Bukti Bayar
-  ==========================================================================
-  Halaman Cetak Bukti Bayar untuk modul Service Center.
-  Template ini merender data dari view ke HTML yang ditampilkan di browser.
-
-  FLOW DATA:
-  - URL: /service_center/ -> View di apps/service_center/views.py- View: Mengambil data, menyiapkan context, render template ini- Template: File ini (HTML + Django template tags)- Response: HTML yang ditampilkan di browser user
-
-  RELASI KE MODUL LAIN:
-  - apps/service_center/views.py -> View (handler untuk halaman ini)- apps/service_center/models.py -> Model (sumber data)- apps/service_center/urls.py -> URL routing- layout/ -> Template induk (sidebar, header, footer)
-
-  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
-  - BOLEH diubah: Tampilan HTML, CSS inline, JavaScript- JANGAN diubah: {% extends %} dan {% block %} structure- JANGAN dihapus: {% csrf_token %} di form
-
-  TIPS & DEBUGGING:
-  - Error 'TemplateDoesNotExist'? Cek template_name di views.py- Variabel {{ }} kosong? Cek get_context_data() di views.py- Layout rusak? Pastikan TemplateLayout.init() dipanggil di view
-
-  ==========================================================================
-{% endcomment %}
-
 <html lang="id">
 <head>
   <meta charset="UTF-8">
@@ -32,8 +9,10 @@
     body { font-family: 'Segoe UI', -apple-system, Arial, sans-serif; font-size: 11px; color: #2b2c40; background: #fff; line-height: 1.5; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     .nota { max-width: 780px; margin: 0 auto; padding: 15px; position: relative; overflow: hidden; }
 
+    /* Stamp lunas */
     .nota.stamp-lunas::after { content: "LUNAS"; display: block; position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%) rotate(-25deg); font-size: 80px; font-weight: 900; color: rgba(40,199,111,0.08); letter-spacing: 12px; pointer-events: none; white-space: nowrap; }
 
+    /* ===== Header ===== */
     .header-table { width: 100%; border-bottom: 2.5px solid #28c76f; margin-bottom: 18px; }
     .header-table td { padding-bottom: 15px; }
     .header-logo { width: 52px; height: 52px; object-fit: contain; border-radius: 6px; }
@@ -43,27 +22,32 @@
     .doc-label { display: inline-block; color: #28c76f; font-weight: 800; font-size: 16px; letter-spacing: 0.5px; }
     .doc-no { font-size: 13px; font-weight: 700; color: #2b2c40; margin-top: 2px; }
 
+    /* ===== Terms ===== */
     .terms { margin-top: 16px; font-size: 9px; color: #697a8d; line-height: 1.5; }
     .terms h4 { font-size: 9px; font-weight: 700; margin-bottom: 5px; text-transform: uppercase; }
     .terms .term-item { margin-bottom: 2px; padding-left: 10px; }
 
+    /* ===== QR Section ===== */
     .qr-table { width: 100%; margin: 0 0 18px 0; border: 1px dashed #28c76f; border-radius: 6px; }
     .qr-section { text-align: left; }
     .qr-section .code { font-size: 15px; font-weight: 700; color: #28c76f; letter-spacing: 2px; }
     .qr-section .qr-label { font-size: 8px; color: #a5a3ae; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 2px; }
     .qr-section .qr-desc { font-size: 8px; color: #a5a3ae; margin: 0; padding: 0; display: block; text-align: left; }
 
+    /* ===== Info Table (Order + Pelanggan + Perangkat) ===== */
     .info-table { width: 100%; margin-bottom: 16px; font-size: 10.5px; }
     .info-table th.section-header { background-color: #f5f5f9; border: 1px solid #d9dee3; padding: 7px 10px 3px 10px; font-weight: 700; text-align: center; color: #2b2c40; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
     .info-table td { border: 1px solid #d9dee3; padding: 7px 10px 3px 10px; vertical-align: middle; }
     .info-table .lbl { font-weight: 700; color: #2b2c40; width: 18%; background-color: #fafafa; }
     .info-table .val { color: #2b2c40; width: 32%; }
 
+    /* ===== Payment Status ===== */
     .pay-status { display: inline-block; padding: 3px 14px; border-radius: 20px; font-weight: 700; font-size: 11px; letter-spacing: 0.3px; }
     .pay-lunas { background: rgba(40,199,111,0.12); color: #28c76f; border: 1.5px solid #28c76f; }
     .pay-dp { background: rgba(255,159,67,0.12); color: #ff9f43; border: 1.5px solid #ff9f43; }
     .pay-belum { background: rgba(234,84,85,0.12); color: #ea5455; border: 1.5px solid #ea5455; }
 
+    /* ===== Items Table (Layanan + Total digabung) ===== */
     .items-table { width: 100%; margin-bottom: 16px; font-size: 10.5px; }
     .items-table th { background-color: #f5f5f9; border: 1px solid #d9dee3; padding: 7px 10px 3px 10px; font-weight: 700; text-align: left; color: #2b2c40; font-size: 10px; text-transform: uppercase; }
     .items-table td { border: 1px solid #d9dee3; padding: 7px 10px 3px 10px; vertical-align: middle; }
@@ -75,8 +59,10 @@
     .items-table .sisa-row td { color: #ea5455; font-weight: 700; font-size: 12px; background-color: #f5f5f9; }
     .items-table .sp-header th { background-color: #e8faf0; color: #28c76f; }
 
+    /* ===== Signatures ===== */
     .signatures-table { width: 100%; margin-top: 35px; margin-bottom: 25px; }
 
+    /* ===== Footer ===== */
     .print-footer { text-align: center; margin-top: 20px; font-size: 9px; color: #a5a3ae; border-top: 1px solid #d9dee3; padding-top: 15px; }
 
     .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 10px; font-weight: 600; }
@@ -92,7 +78,7 @@
 </head>
 <body>
   <div class="nota {% if order.status_bayar == 'lunas' %}stamp-lunas{% endif %}">
-    
+    <!-- Header -->
     <table class="header-table" cellpadding="0" cellspacing="0">
       <tr>
         <td style="width:65px; vertical-align:middle;">
@@ -110,6 +96,7 @@
       </tr>
     </table>
 
+    <!-- QR Code + Kode Tracking -->
     <table class="qr-table" cellpadding="0" cellspacing="0">
       <tr>
         <td style="width:90px; vertical-align:middle; padding: 8px 5px;" align="center">
@@ -133,6 +120,7 @@
       </tr>
     </table>
 
+    <!-- Informasi Order & Pelanggan (Tabel Rapi) -->
     <table class="info-table" cellpadding="0" cellspacing="0">
       <tr><th class="section-header" colspan="4">Informasi Order & Pelanggan</th></tr>
       <tr>
@@ -161,6 +149,7 @@
       </tr>
     </table>
 
+    <!-- Info Perangkat Singkat -->
     <table class="info-table" cellpadding="0" cellspacing="0">
       <tr><th class="section-header" colspan="4">Informasi Perangkat</th></tr>
       <tr>
@@ -177,6 +166,7 @@
       </tr>
     </table>
 
+    <!-- Tabel Layanan + Sparepart + Total (Digabung Menjadi 1 Tabel) -->
     <table class="items-table" cellpadding="0" cellspacing="0">
       <thead>
         <tr><th class="text-center" style="width:35px">No</th><th>Layanan / Perbaikan</th><th>Catatan</th><th class="text-right" style="width:130px">Biaya</th></tr>
@@ -197,7 +187,7 @@
       </tbody>
 
       {% if spareparts_used %}
-      
+      <!-- Sub-header Sparepart -->
       <thead>
         <tr class="sp-header"><th class="text-center" style="width:35px">No</th><th>Sparepart</th><th class="text-right">Qty & Harga</th><th class="text-right" style="width:130px">Subtotal</th></tr>
       </thead>
@@ -213,6 +203,7 @@
       </tbody>
       {% endif %}
 
+      <!-- Total (bagian dari tabel yang sama) -->
       <tfoot>
         {% if spareparts_used %}
         <tr class="total-row">
@@ -246,6 +237,7 @@
       </tfoot>
     </table>
 
+    <!-- Tanda Tangan -->
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 30px; margin-bottom: 20px;">
       <tr>
         <td width="33%" align="center" valign="bottom">
@@ -260,6 +252,7 @@
       </tr>
     </table>
 
+    <!-- Footer -->
     <div class="print-footer">
       {% if template %}{{ template.footer_ucapan }}{% else %}Terima kasih atas kepercayaan Anda.{% endif %}
       · {% if template %}{{ template.footer_keterangan }}{% else %}Dokumen ini merupakan bukti pembayaran resmi.{% endif %}
@@ -268,6 +261,7 @@
     </div>
   </div>
 
+  <!-- QR Code Library -->
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <script>
     try {
@@ -281,6 +275,7 @@
     } catch(e) { console.error('QR Error:', e); }
   </script>
 
+  <!-- Tombol Kembali -->
   <div id="backBtnWrap" class="no-print" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:9999;">
     <a id="backBtn" href="javascript:void(0)" style="display:inline-block; padding:12px 32px; background:#28c76f; color:#fff; text-decoration:none; border-radius:8px; font-size:14px; font-weight:bold; box-shadow:0 4px 12px rgba(0,0,0,0.2);">
       ← Kembali
@@ -288,7 +283,7 @@
   </div>
 
   <script>
-    
+    // Smart Print Handler — Universal: Browser + Capacitor Android (SerpApp.triggerPrint)
     (function() {
         var printed = false;
 

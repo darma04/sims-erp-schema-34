@@ -1,16 +1,5 @@
 {% extends 'layout/layout_vertical.html' %}
-{% load static %}
-{% load currency_filters %}
-
-{% comment %}
-   ==========================================================================
-   PRODUK - Daftar Produk (List View)
-   Menampilkan daftar semua produk dengan DataTables.
-   Fitur: search, filter kategori/gudang, sorting,
-   export PDF/Excel, dan aksi cepat (edit/hapus/duplikat).
-   ==========================================================================
-{% endcomment %}
-
+{% load static %}`r`n{% load currency_filters %}
 
 {% block title %}Daftar Produk - ERP{% endblock title %}
 
@@ -30,13 +19,13 @@
 <script src="{% static 'vendor/libs/sweetalert2/sweetalert2.js' %}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-
+<!-- JsBarcode: Library untuk generate gambar barcode (EAN-13, Code128, dll) -->
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 {% endblock vendor_js %}
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -56,6 +45,7 @@
         </div>
     </div>
 
+    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -95,7 +85,7 @@
                     </select>
                 </div>
             </div>
-            
+            <!-- Baris kedua: Pilih Kolom (kiri) dan Tombol Filter (kanan) -->
             <div class="row g-3 mt-2 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
@@ -176,6 +166,7 @@
         </div>
     </div>
 
+    <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Data Produk</h5>
@@ -188,8 +179,8 @@
                 </button>
             </div>
         </div>
-        <div class="card-datatable">
-            <table class="datatables-produk table table-hover" id="produkTable" style="width:100%">
+        <div class="card-datatable table-responsive">
+            <table class="datatables-produk table table-hover" id="produkTable">
                 <thead>
                     <tr>
                         <th>Gambar</th>
@@ -293,17 +284,63 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="9" class="text-center py-5">
+                        <td colspan="8" class="text-center py-5">
                             <i class="ri-inbox-line ri-3x text-muted mb-3 d-block"></i>
                             <p class="text-muted mb-0">Belum ada data produk</p>
                         </td>
-                    <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="5" class="text-start ps-4 py-3" style="vertical-align: middle;">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ total_produk }} Produk
+                                        Terdaftar</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3" style="vertical-align: middle;">
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="badge bg-label-success d-flex align-items-center gap-1 mb-2"
+                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    <i class="ri-shopping-cart-line"></i>
+                                    <span>{{ total_nilai_beli|rupiah }}</span>
+                                </span>
+                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Nilai Beli</small>
+                            </div>
+                        </td>
+                        <td class="py-3" style="vertical-align: middle;">
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="badge bg-label-primary d-flex align-items-center gap-1 mb-2"
+                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    <i class="ri-price-tag-3-line"></i>
+                                    <span>{{ total_nilai_jual|rupiah }}</span>
+                                </span>
+                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Nilai Jual</small>
+                            </div>
+                        </td>
+                        <td class="py-3" style="vertical-align: middle;">
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="badge bg-label-info d-flex align-items-center gap-1 mb-2"
+                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 100px;">
+                                    <i class="ri-stack-line"></i>
+                                    <span>{{ total_stok|floatformat:0 }}</span>
+                                </span>
+                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Stok</small>
+                            </div>
+                        </td>
+                        <td class="py-3"></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
     <div class="modal fade" id="deleteProdukModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -335,6 +372,12 @@
 </div>
 {% csrf_token %}
 
+<!-- ═══════════════════════════════════════════════════════════════
+     MODAL: Generator & Cetak Label Barcode
+     Muncul saat klik "Cetak Barcode" di dropdown aksi produk.
+     Menggunakan JsBarcode untuk render preview barcode EAN-13.
+     Permission: Tombol dikendalikan oleh can_edit/can_view produk.
+     ═══════════════════════════════════════════════════════════════ -->
 <div class="modal fade" id="barcodeModal" tabindex="-1" aria-labelledby="barcodeModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -345,7 +388,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                
+                <!-- Info Produk -->
                 <div class="d-flex align-items-center gap-3 mb-4 p-3 rounded border" style="background: #f8f9ff;">
                     <div class="flex-shrink-0">
                         <div class="avatar avatar-md bg-label-primary rounded">
@@ -361,6 +404,7 @@
                     </div>
                 </div>
 
+                <!-- Input Kode Barcode -->
                 <div class="mb-4">
                     <label class="form-label fw-medium" for="bcInputKode">
                         <i class="ri-barcode-box-line me-1 text-primary"></i>Kode Barcode
@@ -378,6 +422,7 @@
                     </div>
                 </div>
 
+                <!-- Preview Barcode -->
                 <div class="mb-3">
                     <label class="form-label fw-medium">
                         <i class="ri-eye-line me-1 text-primary"></i>Preview Barcode
@@ -412,7 +457,7 @@
 
 {% block page_js %}
 <style>
-    
+    /* DataTables Custom Styling - Materialize Style */
     .dataTables_wrapper .dataTables_info {
         padding: 1rem 1.5rem;
         font-size: 0.875rem;
@@ -477,6 +522,7 @@
         letter-spacing: 0;
     }
 
+    /* Mobile Responsiveness - Horizontal Scroll */
     @media (max-width: 768px) {
         .card-datatable {
             overflow-x: hidden !important;
@@ -484,27 +530,36 @@
             max-width: 100%;
         }
 
-        {% if produk_list %}.datatables-produk { min-width: 1200px !important; }{% endif %}
+        .datatables-produk {
+            min-width: 1200px !important;
+            width: 1200px !important;
+            table-layout: auto !important;
+        }
 
+        /* Ensure DataTables wrapper doesn't restrict width */
         .dataTables_wrapper {
             overflow-x: hidden !important;
             max-width: 100% !important;
         }
 
+        /* Ensure tfoot stays fixed in layout */
         .datatables-produk tfoot td {
             white-space: nowrap;
         }
 
+        /* Make badges slightly smaller on mobile */
         .datatables-produk tfoot .badge {
             font-size: 0.8rem !important;
             min-width: 100px !important;
         }
 
+        /* Ensure all columns are visible */
         .datatables-produk th,
         .datatables-produk td {
             min-width: 100px;
         }
 
+        /* Wider columns for text content */
         .datatables-produk th:nth-child(2),
         .datatables-produk td:nth-child(2) {
             min-width: 180px;
@@ -514,12 +569,13 @@
 
 <script>
     $(document).ready(function () {
-        
-        flatpickr('#searchProduct', {  });
+        // Inisialisasi Flatpickr (saat ini tidak aktif digunakan, dimuat untuk konsistensi)
+        flatpickr('#searchProduct', { /* Optional date picker if needed */ });
 
+        // Inisialisasi DataTable
         {% if produk_list %}
+        {% if kategori_list %}
         const table = $('#produkTable').DataTable({
-            scrollX: true,
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini",
                 "sProcessing": "Sedang memproses...",
@@ -538,18 +594,19 @@
                     "sLast": "Terakhir"
                 }
             },
-            order: [[1, 'asc']], 
+            order: [[1, 'asc']], // Sort by nama produk
             pageLength: 25,
             lengthMenu: [[10, 25, 50, 75, 100, -1], ['10', '25', '50', '75', '100', 'Semua']],
-            responsive: false, 
+            responsive: false, // Nonaktifkan responsive agar tabel bisa scroll horizontal
             columnDefs: [
-                { orderable: false, targets: [0, 8] } 
+                { orderable: false, targets: [0, 8] } // Nonaktifkan sort untuk kolom gambar dan aksi
             ],
-            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             initComplete: function () {
                 $('.dataTables_filter input').attr('placeholder', 'Cari produk...');
             }
         });
+        {% endif %}
         {% endif %}
     });
 
@@ -566,19 +623,24 @@
         window.location.href = '{% url "produk:list" %}';
     }
 
+    // Template Data for Independent Headers/Footers
+    // Toggle visibilitas kolom menggunakan DataTables API (sama seperti Laporan Produk)
     function toggleColumns() {
         const checkboxes = document.querySelectorAll('.column-checkbox');
         const table = new $.fn.dataTable.Api('#produkTable');
 
+        // Map checkbox values to actual DataTable column indices
+        // Nilai checkbox: 0=Gambar, 1=Nama, 2=SKU, 3=Kategori, 4=Stok Per Gudang, 5=Harga Beli, 6=Harga Jual, 7=Stok
+        // DataTable cols: 0=Gambar, 1=Nama, 2=SKU, 3=Kategori, 4=Stok Per Gudang, 5=Harga Beli, 6=Harga Jual, 7=Stok, 8=Aksi
         const columnMap = {
-            '0': 0, 
-            '1': 1, 
-            '2': 2, 
-            '3': 3, 
-            '4': 4, 
-            '5': 5, 
-            '6': 6, 
-            '7': 7  
+            '0': 0, // Gambar
+            '1': 1, // Nama
+            '2': 2, // SKU
+            '3': 3, // Kategori
+            '4': 4, // Stok Per Gudang
+            '5': 5, // Harga Beli
+            '6': 6, // Harga Jual
+            '7': 7  // Stok
         };
 
         checkboxes.forEach(cb => {
@@ -591,6 +653,7 @@
         });
     }
 
+    // Centang semua checkbox kolom
     function selectAllColumns() {
         document.querySelectorAll('.column-checkbox').forEach(cb => {
             cb.checked = true;
@@ -598,6 +661,7 @@
         toggleColumns();
     }
 
+    // Batalkan semua centang checkbox kolom
     function deselectAllColumns() {
         document.querySelectorAll('.column-checkbox').forEach(cb => {
             cb.checked = false;
@@ -605,6 +669,8 @@
         toggleColumns();
     }
 
+    // Standardized Product Export - Excel Format (.xls) untuk kolom RAPI
+    // Template Data for Independent Headers/Footers
     const EXCEL_INFO = {
         name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
         address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -623,12 +689,14 @@
         copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
     };
 
+
+    // === FOOTER DATA: Explicit summary values per column index ===
     const FOOTER_DATA = { 5: "{{ total_nilai_beli|escapejs }}", 6: "{{ total_nilai_jual|escapejs }}", 7: "{{ total_stok|floatformat:0 }}" };
     const FOOTER_LABEL = 'RINGKASAN';
 
     function exportToExcel() {
         const table = document.getElementById('produkTable');
-        if (!table) { showExportError(); return; }
+        if (!table) { alert('Tabel tidak ditemukan!'); return; }
 
         const tableObj = new $.fn.dataTable.Api('#produkTable');
 
@@ -648,12 +716,13 @@
         html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
         html += '<body>';
 
+        // --- ADD EXCEL HEADER (Company Info) ---
         html += '<table border="0">';
         if (typeof EXCEL_INFO !== 'undefined') {
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
-            html += `<tr><td colspan="${colCount}"></td></tr>`; 
+            html += `<tr><td colspan="${colCount}"></td></tr>`; // empty row for spacing
         }
         html += '</table>';
 
@@ -666,7 +735,7 @@
 
         html += '</tr></thead><tbody>';
 
-          tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
+        tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
             html += '<tr>';
             visibleColumns.forEach(col => {
                 let cellNode = tableObj.cell(rowIdx, col.index).node();
@@ -676,6 +745,7 @@
             html += '</tr>';
         });
 
+        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
             let footerCells = [];
@@ -686,7 +756,7 @@
                     html += `<td>${FOOTER_DATA[colIdx]}</td>`;
                     ri++;
                 } else {
-                    
+                    // Count consecutive non-data columns for colspan (RINGKASAN label)
                     let spanCount = 0;
                     let si = ri;
                     while (si < visibleColumns.length && FOOTER_DATA[visibleColumns[si].index] === undefined) {
@@ -705,8 +775,9 @@
         }
         html += '</tbody></table>';
 
+        // --- ADD EXCEL FOOTER ---
         html += '<table border="0">';
-        html += `<tr><td colspan="${colCount}"></td></tr>`; 
+        html += `<tr><td colspan="${colCount}"></td></tr>`; // empty spacer
         if (typeof EXCEL_INFO !== 'undefined') {
             html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</td></tr>`;
             html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">${EXCEL_INFO.copyright}</td></tr>`;
@@ -721,11 +792,13 @@
         link.click();
     }
 
+
+    // Enhanced Export to PDF with Company Branding
     function exportToPDF() {
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('produkTable');
-        if (!table) { showExportError(); return; }
+        if (!table) { alert('Tabel tidak ditemukan!'); return; }
 
         const tableObj = new $.fn.dataTable.Api('#produkTable');
 
@@ -759,6 +832,7 @@
             if (row.length > 0) body.push(row);
         });
 
+        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             const summaryRow = [];
             let ri = 0;
@@ -768,7 +842,7 @@
                     summaryRow.push({ text: String(FOOTER_DATA[colIdx]), bold: true, fillColor: '#f8f9fa' });
                     ri++;
                 } else {
-                    
+                    // Count consecutive non-data columns for colspan (RINGKASAN label)
                     let spanCount = 0;
                     let si = ri;
                     while (si < visibleColumns.length && FOOTER_DATA[visibleColumns[si].index] === undefined) {
@@ -849,6 +923,7 @@
         pdfMake.createPdf(docDefinition).download('Daftar_Produk' + '_' + new Date().toISOString().slice(0, 10) + '.pdf');
     }
 
+    // Tangani Hapus Produk
     let deleteProdukId = null;
 function confirmDelete(id, name) {
     deleteProdukId = id;
@@ -886,9 +961,20 @@ $('#confirmDeleteBtn').on('click', function() {
 });
 });
 
+// ╔══════════════════════════════════════════════════════════════╗
+// ║      BARCODE GENERATOR & CETAK LABEL (JsBarcode + EAN-13)     ║
+// ║      Fungsi-fungsi ini HARUS di luar $(document).ready()      ║
+// ║      agar bisa dipanggil dari onclick="..." di HTML.          ║
+// ╚══════════════════════════════════════════════════════════════╝
+
 let currentBarcodeProductId = null;
 var _pendingBarcodeData = null;
 
+/**
+ * LANGKAH 1: Tangkap data dari tombol "Cetak Barcode" saat diklik.
+ * Event click pada document memastikan data ditangkap SEBELUM dropdown
+ * Bootstrap menutup dan menghilangkan elemen trigger.
+ */
 document.addEventListener('click', function(e) {
     var trigger = e.target.closest('[data-bs-target="#barcodeModal"]');
     if (!trigger) return;
@@ -901,6 +987,11 @@ document.addEventListener('click', function(e) {
     };
 });
 
+/**
+ * LANGKAH 2: Saat modal SUDAH TAMPIL (shown.bs.modal), isi data produk.
+ * Menggunakan 'shown' bukan 'show' agar DOM modal sudah fully visible
+ * ketika kita set textContent dan panggil JsBarcode.
+ */
 var barcodeModalEl = document.getElementById('barcodeModal');
 if (barcodeModalEl) {
     barcodeModalEl.addEventListener('shown.bs.modal', function(event) {
@@ -921,14 +1012,17 @@ if (barcodeModalEl) {
 
         currentBarcodeProductId = data.id;
 
+        // Set info produk di modal
         document.getElementById('bcProdukNama').textContent = data.nama || '-';
         document.getElementById('bcProdukSKU').textContent = data.sku || '-';
         var hargaNum = parseFloat(data.harga) || 0;
         document.getElementById('bcProdukHarga').textContent = 'Rp ' + hargaNum.toLocaleString('id-ID');
 
+        // Tentukan kode barcode: gunakan barcode yang ada, atau fallback ke SKU
         var kodeBarcode = (data.barcode && data.barcode.trim() !== '' && data.barcode !== 'None') ? data.barcode : data.sku;
         document.getElementById('bcInputKode').value = kodeBarcode;
 
+        // Generate preview barcode (delay kecil agar DOM ready)
         setTimeout(function() {
             generateBarcode(kodeBarcode);
         }, 100);
@@ -937,6 +1031,10 @@ if (barcodeModalEl) {
     });
 }
 
+/**
+ * Generate gambar barcode di SVG menggunakan JsBarcode.
+ * Mencoba EAN-13 terlebih dahulu (jika 13 digit angka), fallback ke CODE128.
+ */
 function generateBarcode(code) {
     const svgEl = document.getElementById('barcodePreviewSVG');
     const errorEl = document.getElementById('barcodeError');
@@ -950,7 +1048,7 @@ function generateBarcode(code) {
     }
 
     try {
-        
+        // Cek apakah bisa menggunakan EAN-13 (harus 12 atau 13 digit angka)
         const cleanCode = code.trim();
         const isEAN13 = /^\d{12,13}$/.test(cleanCode);
 
@@ -965,7 +1063,7 @@ function generateBarcode(code) {
             background: '#ffffff'
         });
     } catch (e) {
-        
+        // Fallback ke CODE128 jika EAN-13 gagal
         try {
             JsBarcode(svgEl, code.trim(), {
                 format: 'CODE128',
@@ -985,6 +1083,10 @@ function generateBarcode(code) {
     }
 }
 
+/**
+ * Simpan kode barcode ke database via AJAX POST.
+ * @param {HTMLElement} btn - Tombol yang diklik (diterima dari onclick="saveBarcodeToProduct(this)")
+ */
 function saveBarcodeToProduct(btn) {
     var barcodeValue = document.getElementById('bcInputKode').value.trim();
     var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
@@ -1038,6 +1140,18 @@ function saveBarcodeToProduct(btn) {
     });
 }
 
+/**
+ * Cetak label barcode — buka window print khusus.
+ * Format label standar retail (58mm x 40mm):
+ * - Baris 1: Nama perusahaan/toko
+ * - Baris 2: Nama produk
+ * - Baris 3: Gambar Barcode (SVG)
+ * - Baris 4: Harga
+ *
+ * KOMPATIBILITAS MOBILE (Capacitor WebView):
+ * - window.open() bisa diblokir oleh WebView → fallback ke iframe
+ * - Iframe digunakan untuk render label dan trigger window.print()
+ */
 function printBarcodeLabel() {
     const svgEl = document.getElementById('barcodePreviewSVG');
     const nama = document.getElementById('bcProdukNama').textContent;
@@ -1115,18 +1229,19 @@ function printBarcodeLabel() {
         </html>
     `;
 
+    // Coba window.open dulu (browser desktop)
     var printWindow = null;
     try {
         printWindow = window.open('', '_blank', 'width=450,height=400');
     } catch(e) { printWindow = null; }
 
     if (printWindow && !printWindow.closed && typeof printWindow.document !== 'undefined') {
-        
+        // Browser desktop — jalur normal
         printWindow.document.write(labelHTML);
         printWindow.document.close();
         printWindow.onload = function() { printWindow.print(); };
     } else {
-        
+        // WebView / mobile — popup diblokir, gunakan iframe
         var iframe = document.createElement('iframe');
         iframe.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:99999;border:none;background:#fff;';
         document.body.appendChild(iframe);
@@ -1139,7 +1254,7 @@ function printBarcodeLabel() {
             } catch(e) {
                 console.warn('[Barcode] Print via iframe gagal:', e);
             }
-            
+            // Hapus iframe setelah dialog print ditutup
             setTimeout(function() {
                 if (iframe.parentElement) document.body.removeChild(iframe);
             }, 2000);
@@ -1147,17 +1262,24 @@ function printBarcodeLabel() {
     }
 }
 
+/**
+ * Download barcode sebagai gambar PNG dengan label lengkap.
+ * Konversi SVG → Canvas → PNG blob → download.
+ * Gambar menyertakan: nama perusahaan, nama produk, barcode, harga.
+ */
 function downloadBarcodePNG() {
     const svgEl = document.getElementById('barcodePreviewSVG');
     const nama = document.getElementById('bcProdukNama').textContent;
     const harga = document.getElementById('bcProdukHarga').textContent;
     const namaPerusahaan = '{{ pengaturan.nama_perusahaan|default:"SERPTECH"|escapejs }}';
 
+    // Serialize SVG ke string
     const serializer = new XMLSerializer();
     const svgStr = serializer.serializeToString(svgEl);
     const svgBlob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(svgBlob);
 
+    // Draw ke canvas dengan label lengkap
     const img = new Image();
     img.onload = function() {
         const paddingX = 40;
@@ -1173,19 +1295,23 @@ function downloadBarcodePNG() {
         canvas.height = canvasHeight;
         const ctx = canvas.getContext('2d');
 
+        // Background putih
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+        // Nama perusahaan (atas)
         ctx.fillStyle = '#555555';
         ctx.font = 'bold 14px Arial, Helvetica, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(namaPerusahaan.toUpperCase(), canvasWidth / 2, 20);
 
+        // Nama produk
         ctx.fillStyle = '#000000';
         ctx.font = '600 16px Arial, Helvetica, sans-serif';
         var displayNama = nama.length > 35 ? nama.substring(0, 35) + '...' : nama;
         ctx.fillText(displayNama, canvasWidth / 2, 42);
 
+        // Garis pemisah tipis
         ctx.strokeStyle = '#eeeeee';
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -1193,20 +1319,23 @@ function downloadBarcodePNG() {
         ctx.lineTo(canvasWidth - paddingX, 50);
         ctx.stroke();
 
+        // Gambar barcode (tengah)
         const barcodeX = (canvasWidth - barcodeWidth) / 2;
         ctx.drawImage(img, barcodeX, paddingTop - 10, barcodeWidth, barcodeHeight);
 
+        // Harga (bawah)
         ctx.fillStyle = '#000000';
         ctx.font = 'bold 18px Arial, Helvetica, sans-serif';
         ctx.fillText(harga, canvasWidth / 2, paddingTop + barcodeHeight + 25);
 
+        // Download — kompatibel dengan Capacitor WebView via _downloadBlob
         var filename = 'barcode_' + nama.replace(/[^a-zA-Z0-9]/g, '_') + '.png';
         canvas.toBlob(function(blob) {
             if (typeof window._isWebView === 'function' && window._isWebView() && typeof window._downloadBlob === 'function') {
-                
+                // Mobile WebView — gunakan native bridge (SerpApp)
                 window._downloadBlob(blob, filename);
             } else {
-                
+                // Browser desktop — jalur normal
                 var link = document.createElement('a');
                 link.download = filename;
                 link.href = URL.createObjectURL(blob);
@@ -1220,42 +1349,4 @@ function downloadBarcodePNG() {
     img.src = url;
 }
 </script>
-
-<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-warning align-items-center py-3">
-                <h5 class="modal-title text-dark mb-0">
-                    <i class="ri-error-warning-line me-2"></i>Export Gagal
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center py-3">
-                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
-                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
-                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
-                    <i class="ri-close-line me-1"></i>Tutup
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-
-function showExportError() {
-    var modal = document.getElementById('exportErrorModal');
-    if (modal) {
-        new bootstrap.Modal(modal).show();
-    } else {
-        alert('Tabel tidak ditemukan!');
-    }
-}
-</script>
-
 {% endblock page_js %}

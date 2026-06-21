@@ -12,7 +12,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -33,11 +33,11 @@
         </div>
     </div>
 
+    <!-- Form Card -->
     <div class="row">
         <div class="col-xl-8 col-lg-10 mx-auto">
             <div class="card">
                 <div class="card-body">
-                    
                     <form method="post" class="needs-validation" novalidate>
                         {% csrf_token %}
                         
@@ -60,6 +60,7 @@
                         </div>
                         {% endif %}
 
+                        <!-- Role & Module (only for create) -->
                         {% if not is_edit %}
                         <div class="row g-3 mb-4">
                             <div class="col-md-6">
@@ -84,6 +85,7 @@
                         </div>
                         {% endif %}
 
+                        <!-- Permissions -->
                         <div class="card bg-light-gray border mb-4">
                             <div class="card-header bg-label-primary">
                                 <h5 class="card-title mb-0">
@@ -136,6 +138,7 @@
                             </div>
                         </div>
 
+                        <!-- Description -->
                         <div class="mb-4">
                             <label class="form-label" for="id_description">
                                 Deskripsi / Catatan
@@ -144,6 +147,7 @@
                             <div class="form-text">Catatan tambahan tentang permission ini (optional)</div>
                         </div>
 
+                        <!-- Actions -->
                         <div class="d-flex justify-content-between align-items-center">
                             <a href="{% url 'permission_management:permission_list' %}" class="btn btn-label-secondary">
                                 <i class="ri-close-line me-2"></i>Batal
@@ -163,18 +167,20 @@
 
 {% block page_js %}
 <script>
-
+// Add Bootstrap classes to form fields
 document.addEventListener('DOMContentLoaded', function() {
-    
+    // Select fields
     document.querySelectorAll('select').forEach(el => {
         el.classList.add('form-select');
     });
     
+    // Textarea
     document.querySelectorAll('textarea').forEach(el => {
         el.classList.add('form-control');
         el.rows = 3;
     });
     
+    // Checkbox switches
     document.querySelectorAll('input[type="checkbox"]').forEach(el => {
         el.classList.add('form-check-input');
     });

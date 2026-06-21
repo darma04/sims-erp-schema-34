@@ -22,7 +22,6 @@
             <div class="card mb-4">
                 <h5 class="card-header">Formulir Produk</h5>
                 <div class="card-body">
-                    
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         
@@ -111,7 +110,7 @@
                         <div class="row">
                             <div class="col-md-12 mb-3">
                                 {% if stok_per_cabang %}
-                                
+                                {# ===== MODE EDIT: Stok Per-Cabang ===== #}
                                 <label class="form-label fw-bold mb-3">
                                     <i class="ri-stack-line me-1"></i>Stok Per Cabang/Gudang
                                 </label>
@@ -157,7 +156,7 @@
                                 </div>
                                 {% endif %}
                                 {% else %}
-                                
+                                {# ===== MODE TAMBAH / PRODUK BELUM PUNYA STOK ===== #}
                                 <label class="form-label" for="stok_awal">Stok Awal</label>
                                 <div class="input-group input-group-merge">
                                     <span class="input-group-text"><i class="ri-stack-line"></i></span>
@@ -231,13 +230,14 @@
 
 {% block page_js %}
 <script>
-    
+    // Initialize Select2 untuk dropdown kategori dan satuan
     $(document).ready(function() {
         $('.select2').select2({
             placeholder: 'Pilih...',
             allowClear: true
         });
 
+        // ===== HITUNG ULANG TOTAL STOK SAAT INPUT BERUBAH =====
         const stokInputs = document.querySelectorAll('.stok-cabang-input');
         const totalDisplay = document.getElementById('totalStokDisplay');
 
@@ -249,7 +249,7 @@
                         const val = parseFloat(inp.value) || 0;
                         total += val;
                     });
-                    
+                    // Tampilkan total dengan 2 desimal jika perlu
                     totalDisplay.textContent = total % 1 === 0 ? total.toString() : total.toFixed(2);
                 });
             });

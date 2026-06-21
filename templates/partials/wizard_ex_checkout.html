@@ -7,6 +7,7 @@
 {% endcomment %}
 {% load static %}
 
+<!-- Checkout Wizard -->
 <div id="wizard-checkout" class="bs-stepper wizard-icons wizard-icons-example">
   <div class="bs-stepper-header m-auto border-0">
     <div class="step" data-target="#checkout-cart">
@@ -62,11 +63,13 @@
   <div class="bs-stepper-content border-top rounded-0">
     <form id="wizard-checkout-form" onSubmit="return false">
 
+      <!-- Cart -->
       <div id="checkout-cart" class="content">
         <div class="row">
-          
+          <!-- Cart left -->
           <div class="col-xl-8 mb-4 mb-xl-0">
 
+            <!-- Offer alert -->
             <div class="alert alert-success mb-4" role="alert">
               <div class="d-flex">
                 <div class="flex-shrink-0">
@@ -85,6 +88,7 @@
               <button type="button" class="btn-close btn-pinned" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
 
+            <!-- Shopping bag -->
             <h5>My Shopping Bag (2 Items)</h5>
             <ul class="list-group mb-4">
               <li class="list-group-item p-5">
@@ -145,6 +149,7 @@
               </li>
             </ul>
 
+            <!-- Wishlist -->
             <div class="list-group">
               <a href="javascript:void(0)" class="list-group-item text-primary d-flex justify-content-between border-primary rounded-3">
                 <span class="fw-medium">Add more products from wishlist</span>
@@ -153,9 +158,11 @@
             </div>
           </div>
 
+          <!-- Cart right -->
           <div class="col-xl-4">
             <div class="border rounded-4 p-5 mb-4">
 
+              <!-- Offer -->
               <h6>Offer</h6>
               <div class="row g-4 mb-4">
                 <div class="col-sm-8 col-xxl-8 col-xl-12">
@@ -168,6 +175,7 @@
                 </div>
               </div>
 
+              <!-- Gift wrap -->
               <div class="bg-lighter rounded-4 p-5">
                 <h6 class="mb-2">Buying gift for a loved one?</h6>
                 <p class="mb-2">Gift wrap and personalized message on card, Only for $2.</p>
@@ -175,6 +183,7 @@
               </div>
               <hr class="mx-n5 my-5">
 
+              <!-- Price Details -->
               <h6>Price Details</h6>
               <dl class="row mb-0">
                 <dt class="col-6 fw-normal text-heading">Bag Total</dt>
@@ -203,11 +212,13 @@
         </div>
       </div>
 
+      <!-- Address -->
       <div id="checkout-address" class="content">
         <div class="row">
-          
+          <!-- Address left -->
           <div class="col-xl-8 mb-4 mb-xl-0">
 
+            <!-- Select address -->
             <h6>Select your preferable address</h6>
             <div class="row mb-4 g-6">
               <div class="col-md">
@@ -249,6 +260,7 @@
             </div>
             <button type="button" class="btn btn-sm btn-outline-primary mb-6" data-bs-toggle="modal" data-bs-target="#addNewAddress">Add new address</button>
 
+            <!-- Choose Delivery -->
             <h6>Choose Delivery Speed</h6>
             <div class="row">
               <div class="col-md mb-md-0 mb-2">
@@ -293,9 +305,11 @@
             </div>
           </div>
 
+          <!-- Address right -->
           <div class="col-xl-4">
             <div class="border rounded-4 p-5 mb-4">
 
+              <!-- Estimated Delivery -->
               <h6>Estimated Delivery Date</h6>
               <ul class="list-unstyled">
                 <li class="d-flex gap-4 mb-4">
@@ -320,6 +334,7 @@
 
               <hr class="mx-n5 mt-2">
 
+              <!-- Price Details -->
               <h6>Price Details</h6>
               <dl class="row mb-0">
 
@@ -343,11 +358,12 @@
         </div>
       </div>
 
+      <!-- Payment -->
       <div id="checkout-payment" class="content">
         <div class="row">
-          
+          <!-- Payment left -->
           <div class="col-xl-8 mb-4 mb-xl-0">
-            
+            <!-- Offer alert -->
             <div class="alert alert-success mb-6" role="alert">
               <div class="d-flex gap-4">
                 <div class="alert-icon flex-shrink-0 rounded-3 me-0">
@@ -364,6 +380,7 @@
               <button type="button" class="btn-close btn-pinned" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
 
+            <!-- Payment Tabs -->
             <div class="col-xxl-7 col-lg-8">
               <div class="nav-align-top">
                 <ul class="nav nav-pills mb-6 row-gap-2" id="paymentTabs" role="tablist">
@@ -379,7 +396,7 @@
                 </ul>
               </div>
               <div class="tab-content p-0" id="paymentTabsContent">
-                
+                <!-- Credit card -->
                 <div class="tab-pane fade show active" id="pills-cc" role="tabpanel" aria-labelledby="pills-cc-tab">
                   <div class="row g-5">
                     <div class="col-12">
@@ -425,11 +442,13 @@
                   </div>
                 </div>
 
+                <!-- COD -->
                 <div class="tab-pane fade" id="pills-cod" role="tabpanel" aria-labelledby="pills-cod-tab">
                   <p>Cash on Delivery is a type of payment method where the recipient make payment for the order at the time of delivery rather than in advance.</p>
                   <button type="button" class="btn btn-primary btn-next">Pay On Delivery</button>
                 </div>
 
+                <!-- Gift card -->
                 <div class="tab-pane fade" id="pills-gift-card" role="tabpanel" aria-labelledby="pills-gift-card-tab">
                   <h6>Enter Gift Card Details</h6>
                   <div class="row g-5">
@@ -454,10 +473,11 @@
             </div>
 
           </div>
-          
+          <!-- Address right -->
           <div class="col-xl-4">
             <div class="border rounded-3 p-5">
 
+              <!-- Price Details -->
               <h6>Price Details</h6>
               <dl class="row mb-0">
 
@@ -476,7 +496,7 @@
                 <dt class="col-6 text-heading">Deliver to:</dt>
                 <dd class="col-6 fw-medium text-end mb-0"><span class="badge bg-label-primary rounded-pill">Home</span></dd>
               </dl>
-              
+              <!-- Address Details -->
               <address>
                 <span class="fw-medium text-heading"> John Doe (Default),</span><br />
                 4135 Parkway Street, <br />
@@ -489,6 +509,7 @@
         </div>
       </div>
 
+      <!-- Confirmation -->
       <div id="checkout-confirmation" class="content">
         <div class="row mb-6">
           <div class="col-12 col-lg-8 mx-auto text-center mb-2">
@@ -497,7 +518,7 @@
             <p>We sent an email to <a href="mailto:john.doe@example.com" class="h6 mb-0">john.doe@example.com</a> with your order confirmation and receipt. If the email hasn't arrived within two minutes, please check your spam folder to see if the email was routed there.</p>
             <p class="d-flex align-items-center justify-content-center"><span><i class="ri-time-line ri-20px text-heading me-1"></i></span>Time placed: 25/05/2020 13:35pm</p>
           </div>
-          
+          <!-- Confirmation details -->
           <div class="col-12">
             <ul class="list-group list-group-horizontal-md">
               <li class="list-group-item flex-fill p-5">
@@ -533,7 +554,7 @@
         </div>
 
         <div class="row">
-          
+          <!-- Confirmation items -->
           <div class="col-xl-9 mb-4 mb-xl-0">
             <ul class="list-group">
               <li class="list-group-item p-5">
@@ -583,10 +604,10 @@
               </li>
             </ul>
           </div>
-          
+          <!-- Confirmation total -->
           <div class="col-xl-3">
             <div class="border rounded-4 p-5">
-              
+              <!-- Price Details -->
               <h6>Price Details</h6>
               <dl class="row mb-0">
 
@@ -609,3 +630,4 @@
     </form>
   </div>
 </div>
+<!--/ Checkout Wizard -->

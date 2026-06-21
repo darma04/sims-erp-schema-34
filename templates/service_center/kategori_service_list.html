@@ -1,29 +1,5 @@
 {% extends 'layout/layout_vertical.html' %}
 {% load static %}
-
-{% comment %}
-  ==========================================================================
-  SERVICE CENTER - Daftar Kategori Service (List View)
-  ==========================================================================
-  Menampilkan daftar semua kategori_service menggunakan DataTables (tabel interaktif).
-  DataTables menyediakan: search, sorting, pagination, dan export PDF/Excel
-  secara otomatis tanpa perlu coding JavaScript tambahan.
-
-  FLOW DATA:
-  - URL: /service_center/ -> service_center.views.Kategori ServiceListView- View: Mengambil data dari database via model Kategori Service- Template: File ini merender data ke HTML- Response: Browser menampilkan tabel + tombol aksi (edit/hapus/detail)
-
-  RELASI KE MODUL LAIN:
-  - apps/service_center/models.py -> Model Kategori Service (sumber data)- apps/service_center/views.py -> Kategori ServiceListView (handler)- apps/service_center/urls.py -> URL routing ke view ini- apps/core/mixins.py -> ReadPermissionMixin (cek hak akses)- layout/layout_vertical.html -> Template induk (sidebar, header)
-
-  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
-  - BOLEH diubah: Tampilan kolom tabel, tombol aksi, filter- BOLEH diubah: Tambah kolom baru (sesuaikan juga di views.py queryset)- JANGAN diubah: {% extends %} dan {% block %} structure- JANGAN diubah: class DataTables (break JavaScript)
-
-  TIPS & DEBUGGING:
-  - Error 'TemplateDoesNotExist'? Cek path di views.py template_name- Data tidak muncul? Cek get_queryset() di views.py- Tambah kolom? Edit <th> di <thead> dan <td> di <tbody>- Export gagal? Cek fungsi export_di_service_center_list() di <script>
-
-  ==========================================================================
-{% endcomment %}
-
 {% block title %}Kategori Service{% endblock %}
 {% block vendor_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" /><link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />{% endblock %}
 {% block vendor_js %}{{ block.super }}<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
@@ -36,56 +12,13 @@
         <a href="{% url 'service_center:kategori_create' %}" class="btn btn-primary"><i class="ri-add-line me-1"></i>Tambah Kategori</a>
         {% endif %}
     </div>
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-12 col-md">
-                    <label class="form-label">Cari Kategori</label>
-                    <div class="input-group input-group-merge">
-                        <span class="input-group-text"><i class="ri-search-line"></i></span>
-                        <input type="text" class="form-control" id="searchInput" placeholder="Nama kategori...">
-                    </div>
-                </div>
-            </div>
-            <div class="row g-3 mt-2 align-items-end">
-                <div class="col-md-3">
-                    <label class="form-label">Pilih Kolom</label>
-                    <div class="dropdown">
-                        <button class="btn btn-label-secondary dropdown-toggle w-100" type="button" id="columnFilterDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside">
-                            <i class="ri-layout-column-line me-1"></i>Pilih Kolom yang Ditampilkan
-                        </button>
-                        <div class="dropdown-menu p-3" aria-labelledby="columnFilterDropdown" style="min-width:280px">
-                            <h6 class="dropdown-header px-0 mb-2">Kolom Tabel</h6>
-                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="0" checked onchange="toggleColumns()"><label class="form-check-label">Icon</label></div>
-                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="1" checked onchange="toggleColumns()"><label class="form-check-label">Nama Kategori</label></div>
-                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="2" checked onchange="toggleColumns()"><label class="form-check-label">Deskripsi</label></div>
-                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="3" checked onchange="toggleColumns()"><label class="form-check-label">Jenis Service</label></div>
-                            <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="4" checked onchange="toggleColumns()"><label class="form-check-label">Status</label></div>
-                            <div class="dropdown-divider my-2"></div>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-primary flex-fill" onclick="selectAllColumns()">Semua</button>
-                                <button class="btn btn-sm btn-label-secondary flex-fill" onclick="deselectAllColumns()">Kosongkan</button>
-                            </div>
-                        </div>
-                    </div>
-                    <small class="text-muted d-block mt-1">Klik untuk memilih kolom</small>
-                </div>
-                <div class="col-md-6"></div>
-                <div class="col-md-3">
-                    <div class="d-grid gap-2">
-                        <button class="btn btn-primary" onclick="applyFilter()"><i class="ri-filter-3-line me-1"></i>Terapkan</button>
-                        <button class="btn btn-label-secondary" onclick="resetFilter()"><i class="ri-refresh-line me-1"></i>Reset</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <div class="card mb-4"><div class="card-body"><div class="row g-3"><div class="col-md-6"><label class="form-label">Cari Kategori</label><input type="text" class="form-control" id="searchInput" placeholder="Nama kategori..."></div></div><div class="row g-3 mt-2 align-items-end"><div class="col-md-3"><div class="d-grid gap-2"><button class="btn btn-primary" onclick="applyFilter()"><i class="ri-filter-3-line me-1"></i>Terapkan</button><button class="btn btn-label-secondary" onclick="resetFilter()"><i class="ri-refresh-line me-1"></i>Reset</button></div></div></div></div></div>
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Daftar Kategori</h5>
             <div class="d-flex gap-2"><button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button><button class="btn btn-sm btn-label-danger" onclick="exportToPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button></div>
         </div>
-        <div class="card-datatable">
+        <div class="card-datatable table-responsive">
             <table class="table table-hover" id="dataTable">
                 <thead><tr><th>Icon</th><th>Nama Kategori</th><th>Deskripsi</th><th>Jenis Service</th><th>Status</th><th>Aksi</th></tr></thead>
                 <tbody>
@@ -103,16 +36,10 @@
                             <span class="badge bg-label-secondary"><i class="ri-eye-line me-1"></i>View Only</span>
                             {% endif %}
                         </td>
-                    <td>-</td></tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="text-center py-5">
-                            <i class="ri-folder-settings-line ri-3x text-muted mb-3 d-block"></i>
-                            <p class="text-muted">Belum ada kategori</p>
-                        </td>
                     </tr>
-                    {% endfor %}
+                    {% empty %}<tr><td colspan="6" class="text-center py-5"><i class="ri-folder-settings-line ri-3x text-muted d-block mb-2"></i><p class="text-muted">Belum ada kategori</p></td></tr>{% endfor %}
                 </tbody>
+                <tfoot class="table-footer-summary"><tr><td colspan="4" class="text-start ps-4 py-3"><div class="d-flex align-items-center"><i class="ri-calculator-line me-2 text-primary" style="font-size:1.5rem"></i><div><strong>RINGKASAN</strong><br><small class="text-muted">{{ total_kategori }} Kategori Terdaftar</small></div></div></td><td colspan="2"></td></tr></tfoot>
             </table>
         </div>
     </div>
@@ -120,17 +47,11 @@
 </div>{% csrf_token %}
 {% endblock %}
 {% block page_js %}
-<style>.dataTables_wrapper .dataTables_info{padding:1rem 1.5rem;font-size:.875rem;color:#697a8d}.dataTables_wrapper .dataTables_paginate{padding:1rem 1.5rem}.dataTables_wrapper .dataTables_length,.dataTables_wrapper .dataTables_filter{padding:0 1.5rem 1rem}.dataTables_wrapper .dataTables_filter input{border:1px solid #d9dee3;border-radius:.375rem;padding:.4375rem .875rem}.dataTables_wrapper .dataTables_length select{border:1px solid #d9dee3;border-radius:.375rem;padding:.4375rem 2rem .4375rem .875rem}.dataTables_wrapper .dataTables_paginate .paginate_button{padding:.438rem .875rem;border-radius:.375rem;margin:0 .125rem;border:none;background:transparent;color:#697a8d}.dataTables_wrapper .dataTables_paginate .paginate_button.current{background:#696cff!important;color:white!important;border:none}.dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.disabled){background:rgba(105,108,255,.08)!important;color:#696cff!important;border:none}.card-datatable{padding-bottom:0}
-@media (max-width: 768px) {
-    .card-datatable { overflow-x: hidden !important; -webkit-overflow-scrolling: touch; max-width: 100%; }
-    {% if kategori_list %}.table-hover { min-width: 600px !important; }{% endif %}
-    .dataTables_wrapper { overflow-x: hidden !important; max-width: 100% !important; }
-}</style>
+<style>.dataTables_wrapper .dataTables_info{padding:1rem 1.5rem;font-size:.875rem;color:#697a8d}.dataTables_wrapper .dataTables_paginate{padding:1rem 1.5rem}.dataTables_wrapper .dataTables_length,.dataTables_wrapper .dataTables_filter{padding:0 1.5rem 1rem}.dataTables_wrapper .dataTables_filter input{border:1px solid #d9dee3;border-radius:.375rem;padding:.4375rem .875rem}.dataTables_wrapper .dataTables_length select{border:1px solid #d9dee3;border-radius:.375rem;padding:.4375rem 2rem .4375rem .875rem}.dataTables_wrapper .dataTables_paginate .paginate_button{padding:.438rem .875rem;border-radius:.375rem;margin:0 .125rem;border:none;background:transparent;color:#697a8d}.dataTables_wrapper .dataTables_paginate .paginate_button.current{background:#696cff!important;color:white!important;border:none}.dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.disabled){background:rgba(105,108,255,.08)!important;color:#696cff!important;border:none}.card-datatable{padding-bottom:0}</style>
 <script>
 $(document).ready(function(){
     {% if kategori_list %}
-    $('#dataTable').DataTable({
-            scrollX: true,language:{"sEmptyTable":"Tidak ada data","sLengthMenu":"Tampilkan _MENU_ data","sZeroRecords":"Tidak ditemukan","sInfo":"Menampilkan _START_-_END_ dari _TOTAL_","sInfoEmpty":"0 data","sSearch":"Cari:","oPaginate":{"sPrevious":"Sebelumnya","sNext":"Selanjutnya"}},order:[[1,'asc']],pageLength:25,responsive:false,columnDefs:[{orderable:false,targets:[0,5]}],dom:'<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'});
+    $('#dataTable').DataTable({language:{"sEmptyTable":"Tidak ada data","sLengthMenu":"Tampilkan _MENU_ data","sZeroRecords":"Tidak ditemukan","sInfo":"Menampilkan _START_-_END_ dari _TOTAL_","sInfoEmpty":"0 data","sSearch":"Cari:","oPaginate":{"sPrevious":"Sebelumnya","sNext":"Selanjutnya"}},order:[[1,'asc']],pageLength:25,responsive:false,columnDefs:[{orderable:false,targets:[0,5]}],dom:'<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'});
     {% endif %}
 });
 function resetFilter(){
@@ -147,20 +68,12 @@ function applyFilter(){
         email:   "{{ export_pdf_template.header_email|default:'' }}"
     };
 
-function toggleColumns(){
-    {% if kategori_list %}
-    var dt=$('#dataTable').DataTable();
-    document.querySelectorAll('.column-checkbox').forEach(function(cb){
-        var col=dt.column(parseInt(cb.value));
-        col.visible(cb.checked);
-    });
-    {% endif %}
-}
-function selectAllColumns(){document.querySelectorAll('.column-checkbox').forEach(c=>c.checked=true);toggleColumns()}
-function deselectAllColumns(){document.querySelectorAll('.column-checkbox').forEach(c=>c.checked=false);toggleColumns()}
+    
+
 let deleteId=null;function confirmDelete(id,name){deleteId=id;document.getElementById('deleteName').textContent=name;new bootstrap.Modal(document.getElementById('deleteModal')).show()}
 document.getElementById('confirmDeleteBtn').addEventListener('click',function(){if(!deleteId)return;const btn=this;btn.disabled=true;btn.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>Menghapus...';$.ajax({url:`/service/kategori/${deleteId}/delete/`,type:'DELETE',headers:{'X-CSRFToken':document.querySelector('[name=csrfmiddlewaretoken]').value},success:function(r){if(r.success){$('#deleteModal').modal('hide');location.reload()}},error:function(){alert('Gagal menghapus!')},complete:function(){btn.disabled=false;btn.innerHTML='Ya, Hapus'}})});
 
+    // Standardized Export - Excel Format (.xls)
     const EXCEL_INFO = {
         name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
         address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -215,6 +128,7 @@ document.getElementById('confirmDeleteBtn').addEventListener('click',function(){
             html += '</tr>';
         });
 
+        // Add tfoot summary
         html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
         html += `<td colspan="${colCount}">RINGKASAN: {{ total_kategori }} Kategori Terdaftar</td>`;
         html += '</tr>';
@@ -263,6 +177,7 @@ document.getElementById('confirmDeleteBtn').addEventListener('click',function(){
             body.push(rowData);
         });
 
+        // Add tfoot summary
         const summaryRow = [];
         for (let i = 0; i < visibleColumns.length; i++) {
             if (i === 0) {

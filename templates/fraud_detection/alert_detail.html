@@ -23,7 +23,7 @@ Terhubung dengan:
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    
+    {# ─── HEADER HALAMAN ─── #}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1"><i class="ri-shield-keyhole-line me-2"></i>Detail Anomali #{{ alert.pk }}</h4>
@@ -34,8 +34,10 @@ Terhubung dengan:
         </a>
     </div>
 
+    {# ─── SUMMARY BADGES ─── #}
+    {# Baris badge cepat untuk melihat jenis, severity, status dalam 1 baris #}
     <div class="d-flex flex-wrap gap-2 mb-4">
-        
+        {# Badge Jenis Anomali #}
         {% if alert.jenis == 'hapus_lunas' %}
         <span class="badge bg-label-danger px-3 py-2"><i class="ri-delete-bin-line me-1"></i>{{ alert.get_jenis_display }}</span>
         {% elif alert.jenis == 'diskon_besar' %}
@@ -48,6 +50,7 @@ Terhubung dengan:
         <span class="badge bg-label-secondary px-3 py-2"><i class="ri-error-warning-line me-1"></i>{{ alert.get_jenis_display }}</span>
         {% endif %}
 
+        {# Badge Severity #}
         {% if alert.severity == 'critical' %}
         <span class="badge bg-danger px-3 py-2"><i class="ri-fire-line me-1"></i>{{ alert.get_severity_display }}</span>
         {% elif alert.severity == 'high' %}
@@ -58,6 +61,7 @@ Terhubung dengan:
         <span class="badge bg-label-info px-3 py-2"><i class="ri-arrow-down-line me-1"></i>{{ alert.get_severity_display }}</span>
         {% endif %}
 
+        {# Badge Status #}
         {% if alert.status == 'pending' %}
         <span class="badge bg-label-warning px-3 py-2"><i class="ri-time-line me-1"></i>{{ alert.get_status_display }}</span>
         {% elif alert.status == 'investigated' %}
@@ -68,20 +72,21 @@ Terhubung dengan:
         <span class="badge bg-label-danger px-3 py-2"><i class="ri-close-circle-line me-1"></i>{{ alert.get_status_display }}</span>
         {% endif %}
 
+        {# Badge Nominal #}
         <span class="badge bg-danger px-3 py-2"><i class="ri-money-dollar-circle-line me-1"></i>{{ alert.nominal|rupiah }}</span>
     </div>
 
     <div class="row g-4">
-        
+        {# ═══ KOLOM KIRI: Informasi Detail ═══ #}
         <div class="col-lg-8">
-            
+            {# ─── CARD: INFORMASI ANOMALI ─── #}
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0"><i class="ri-information-line me-2"></i>Informasi Anomali</h5>
                 </div>
                 <div class="card-body">
                     <div class="row g-4">
-                        
+                        {# Baris 1: Jenis + Severity #}
                         <div class="col-md-6">
                             <label class="form-label text-muted small text-uppercase">Jenis Anomali</label>
                             <p class="fw-semibold mb-0">
@@ -112,7 +117,7 @@ Terhubung dengan:
                                 {% endif %}
                             </p>
                         </div>
-                        
+                        {# Baris 2: User + Nominal #}
                         <div class="col-md-6">
                             <label class="form-label text-muted small text-uppercase">User Terkait</label>
                             <p class="fw-semibold mb-0">
@@ -125,7 +130,7 @@ Terhubung dengan:
                             <label class="form-label text-muted small text-uppercase">Nominal Terkait</label>
                             <p class="fw-bold text-danger mb-0" style="font-size: 1.1rem;">{{ alert.nominal|rupiah }}</p>
                         </div>
-                        
+                        {# Baris 3: Tanggal + Status #}
                         <div class="col-md-6">
                             <label class="form-label text-muted small text-uppercase">Tanggal Terdeteksi</label>
                             <p class="mb-0"><i class="ri-calendar-line me-1 text-muted"></i>{{ alert.created_at|date:"d M Y H:i:s" }}</p>
@@ -144,14 +149,14 @@ Terhubung dengan:
                                 {% endif %}
                             </p>
                         </div>
-                        
+                        {# Baris 4: Deskripsi (full width) #}
                         <div class="col-12">
                             <label class="form-label text-muted small text-uppercase">Deskripsi Lengkap</label>
                             <div class="bg-lighter rounded p-3">
                                 <p class="mb-0" style="line-height: 1.6;">{{ alert.deskripsi }}</p>
                             </div>
                         </div>
-                        
+                        {# Baris 5: Referensi Model/Objek (opsional) #}
                         {% if alert.model_name or alert.object_id %}
                         <div class="col-12">
                             <hr class="my-1">
@@ -169,6 +174,7 @@ Terhubung dengan:
                             <p class="mb-0"><code class="text-primary">{{ alert.object_id }}</code></p>
                         </div>
                         
+                        {# NEW REALTIME DATALINK #}
                         <div class="col-12 mt-3">
                             {% if related_object_pos %}
                                 <a href="{% url 'pos:invoice_detail' related_object_pos.id %}" class="btn btn-sm btn-outline-primary" target="_blank"><i class="ri-external-link-line me-1"></i>Lihat Data POS Terkait (Realtime)</a>
@@ -187,6 +193,7 @@ Terhubung dengan:
                 </div>
             </div>
 
+            {# ─── CARD: DATA SNAPSHOT (Before/After) ─── #}
             {% if snapshot_pretty %}
             <div class="card mb-4">
                 <div class="card-header">
@@ -198,6 +205,7 @@ Terhubung dengan:
             </div>
             {% endif %}
 
+            {# ─── CARD: RIWAYAT AKTIVITAS USER ─── #}
             {% if user_activities %}
             <div class="card">
                 <div class="card-header">
@@ -229,14 +237,15 @@ Terhubung dengan:
             {% endif %}
         </div>
 
+        {# ═══ KOLOM KANAN: Sidebar Aksi & Review ═══ #}
         <div class="col-lg-4">
-            
+            {# ─── CARD: TINDAK LANJUT — hanya muncul jika pending/investigated ─── #}
             {% if alert.status == 'pending' or alert.status == 'investigated' %}
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0 text-white"><i class="ri-tools-line me-2"></i>Tindak Lanjut</h5>
                 </div>
-                
+                {# Diberi pt-4 agar ada jarak antara header "Tindak Lanjut" dan "Catatan Owner/SPV" #}
                 <div class="card-body pt-4">
                     <div class="mb-4">
                         <label class="form-label fw-semibold">Catatan Owner/SPV</label>
@@ -244,7 +253,7 @@ Terhubung dengan:
                         <div class="form-text">Tambahkan catatan untuk dokumentasi audit.</div>
                     </div>
                     <div class="d-grid gap-2">
-                        
+                        {# Tombol aksi — masing-masing membuka modal konfirmasi #}
                         <button class="btn btn-success" onclick="openActionModal('cleared')">
                             <i class="ri-check-double-line me-1"></i>Tandai Aman / Wajar
                         </button>
@@ -259,6 +268,7 @@ Terhubung dengan:
             </div>
             {% endif %}
 
+            {# ─── CARD: INFO REVIEW — muncul jika sudah di-review ─── #}
             {% if alert.reviewed_by %}
             <div class="card mb-4">
                 <div class="card-header">
@@ -288,6 +298,7 @@ Terhubung dengan:
             </div>
             {% endif %}
 
+            {# ─── CARD: INFORMASI SISTEM ─── #}
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0"><i class="ri-database-2-line me-2"></i>Informasi Sistem</h5>
@@ -319,6 +330,8 @@ Terhubung dengan:
     </div>
 </div>
 
+{# ═══ MODAL KONFIRMASI AKSI — Pop up untuk setiap tindak lanjut ═══ #}
+{# Modal yang sama seperti di alert_list.html, konsisten dan profesional #}
 <div class="modal fade" id="actionModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -329,9 +342,9 @@ Terhubung dengan:
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
             </div>
             <div class="modal-body">
-                
+                {# Hidden input untuk menyimpan status baru yang dipilih #}
                 <input type="hidden" id="modalNewStatus">
-                
+                {# Pesan konfirmasi yang berubah sesuai aksi #}
                 <div class="text-center mb-3" id="actionModalIcon"></div>
                 <p class="text-center fw-semibold" id="actionModalMessage"></p>
                 <div class="alert alert-light d-flex align-items-start" id="actionModalInfo">
@@ -354,11 +367,14 @@ Terhubung dengan:
 
 {% block page_js %}
 <script>
-    
+    // ═══════════════════════════════════════════════════════════════
+    // MODAL KONFIRMASI — Membuka modal dan mengatur konten sesuai aksi
+    // ═══════════════════════════════════════════════════════════════
     function openActionModal(newStatus) {
-        
+        // Simpan status baru ke hidden input
         document.getElementById('modalNewStatus').value = newStatus;
 
+        // Konfigurasi tampilan modal berdasarkan status
         const config = {
             'cleared': {
                 icon: '<i class="ri-check-double-line text-success" style="font-size: 3rem;"></i>',
@@ -392,6 +408,7 @@ Terhubung dengan:
         const cfg = config[newStatus];
         if (!cfg) return;
 
+        // Terapkan konfigurasi ke elemen modal
         document.getElementById('actionModalIcon').innerHTML = cfg.icon;
         document.getElementById('actionModalTitle').innerHTML = cfg.title;
         document.getElementById('actionModalMessage').innerHTML = cfg.message;
@@ -400,13 +417,18 @@ Terhubung dengan:
         confirmBtn.className = 'btn ' + cfg.btnClass;
         confirmBtn.innerHTML = cfg.btnText;
 
+        // Tampilkan modal Bootstrap
         new bootstrap.Modal(document.getElementById('actionModal')).show();
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // SUBMIT AKSI — Kirim request AJAX ke backend
+    // ═══════════════════════════════════════════════════════════════
     function submitAction() {
         const newStatus = document.getElementById('modalNewStatus').value;
         const catatan = document.getElementById('catatanReview').value;
 
+        // Kirim POST request ke endpoint update status
         fetch('{% url "fraud_detection:alert_update_status" alert.pk %}', {
             method: 'POST',
             headers: {
@@ -418,7 +440,7 @@ Terhubung dengan:
         .then(r => r.json())
         .then(data => {
             if (data.success) {
-                
+                // Tutup modal dan reload halaman untuk menampilkan status baru
                 bootstrap.Modal.getInstance(document.getElementById('actionModal')).hide();
                 location.reload();
             } else {

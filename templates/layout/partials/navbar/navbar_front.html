@@ -9,21 +9,22 @@
 
 <nav class="layout-navbar container shadow-none py-0">
   <div class="navbar navbar-expand-lg landing-navbar border-top-0 px-4 px-md-8">
-    
+    <!-- Menu logo wrapper: Start -->
     <div class="navbar-brand app-brand demo d-flex py-0 py-lg-2 me-6">
-      
+      <!-- Mobile menu toggle: Start-->
       <button class="navbar-toggler border-0 px-0 me-2" type="button" data-bs-toggle="collapse"
         data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false"
         aria-label="Toggle navigation">
         <i class="tf-icons ri-menu-fill ri-24px align-middle"></i>
       </button>
-      
-      <a href="#" class="app-brand-link">
+      <!-- Mobile menu toggle: End-->
+      <a href="{% url 'landing-page' %}" class="app-brand-link">
         <span class="app-brand-logo demo">{% include 'partials/logo.html' %}</span>
         <span class="app-brand-text demo menu-text fw-semibold ms-2 ps-1">{{ system_title|default:"ERP System" }}</span>
       </a>
     </div>
-    
+    <!-- Menu logo wrapper: End -->
+    <!-- Menu wrapper: Start -->
     <div class="collapse navbar-collapse landing-nav-menu" id="navbarSupportedContent">
       <button class="navbar-toggler border-0 text-heading position-absolute end-0 top-0 scaleX-n1-rtl" type="button"
         data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
@@ -32,19 +33,19 @@
       </button>
       <ul class="navbar-nav me-auto p-4 p-lg-0">
         <li class="nav-item">
-          <a class="nav-link fw-medium" aria-current="page" href="#landingHero">Home</a>
+          <a class="nav-link fw-medium" aria-current="page" href="{% url 'landing-page' %}#landingHero">Home</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link fw-medium" href="#landingFeatures">Features</a>
+          <a class="nav-link fw-medium" href="{% url 'landing-page' %}#landingFeatures">Features</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link fw-medium" href="#landingTeam">Team</a>
+          <a class="nav-link fw-medium" href="{% url 'landing-page' %}#landingTeam">Team</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link fw-medium" href="#landingFAQ">FAQ</a>
+          <a class="nav-link fw-medium" href="{% url 'landing-page' %}#landingFAQ">FAQ</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link fw-medium text-nowrap" href="#landingContact">Contact us</a>
+          <a class="nav-link fw-medium text-nowrap" href="{% url 'landing-page' %}#landingContact">Contact us</a>
         </li>
         <li
           class="nav-item mega-dropdown {% if '/front/pricing/' in active_url or '/front/payment/' in active_url or '/front/checkout/' in active_url or '/front/help_center/' in active_url %}active{% endif %}">
@@ -65,28 +66,28 @@
                 <ul class="nav flex-column">
                   <li class="nav-item">
                     <a class="nav-link mega-dropdown-link {% if '/front/pricing/' in active_url %}active{% endif %}"
-                      href="javascript:void(0);">
+                      href="{% url 'pricing-page' %}">
                       <i class='menu-icon tf-icons ri-circle-line me-2'></i>
                       <span data-i18n="Pricing">Pricing</span>
                     </a>
                   </li>
                   <li class="nav-item">
                     <a class="nav-link mega-dropdown-link {% if '/front/payment/' in active_url %}active{% endif %}"
-                      href="javascript:void(0);">
+                      href="{% url 'payment-page' %}">
                       <i class='menu-icon tf-icons ri-circle-line me-2'></i>
                       <span data-i18n="Payment">Payment</span>
                     </a>
                   </li>
                   <li class="nav-item">
                     <a class="nav-link mega-dropdown-link {% if '/front/checkout/' in active_url %}active{% endif %}"
-                      href="javascript:void(0);">
+                      href="{% url 'checkout-page' %}">
                       <i class='menu-icon tf-icons ri-circle-line me-2'></i>
                       <span data-i18n="Checkout">Checkout</span>
                     </a>
                   </li>
                   <li class="nav-item">
                     <a class="nav-link mega-dropdown-link {% if '/front/help_center/' in active_url %}active{% endif %}"
-                      href="javascript:void(0);">
+                      href="{% url 'help-center-landing' %}">
                       <i class='menu-icon tf-icons ri-circle-line me-2'></i>
                       <span data-i18n="Help Center">Help Center</span>
                     </a>
@@ -102,14 +103,14 @@
                 </div>
                 <ul class="nav flex-column">
                   <li class="nav-item">
-                    <a class="nav-link mega-dropdown-link d-flex align-items-center" href="javascript:void(0);"
+                    <a class="nav-link mega-dropdown-link d-flex align-items-center" href="{% url 'auth-login-basic' %}"
                       target="_blank">
                       <i class='menu-icon tf-icons ri-circle-line me-2'></i>
                       Login (Basic)
                     </a>
                   </li>
                   <li class="nav-item">
-                    <a class="nav-link mega-dropdown-link d-flex align-items-center" href="javascript:void(0);"
+                    <a class="nav-link mega-dropdown-link d-flex align-items-center" href="{% url 'auth-login-cover' %}"
                       target="_blank">
                       <i class='menu-icon tf-icons ri-circle-line me-2'></i>
                       Login (Cover)
@@ -117,49 +118,49 @@
                   </li>
                   <li class="nav-item">
                     <a class="nav-link mega-dropdown-link d-flex align-items-center"
-                      href="javascript:void(0);" target="_blank">
+                      href="{% url 'auth-register-basic' %}" target="_blank">
                       <i class='menu-icon tf-icons ri-circle-line me-2'></i>
                       Register (Basic)
                     </a>
                   </li>
                   <li class="nav-item">
                     <a class="nav-link mega-dropdown-link d-flex align-items-center"
-                      href="javascript:void(0);" target="_blank">
+                      href="{% url 'auth-register-cover' %}" target="_blank">
                       <i class='menu-icon tf-icons ri-circle-line me-2'></i>
                       Register (Cover)
                     </a>
                   </li>
                   <li class="nav-item">
                     <a class="nav-link mega-dropdown-link d-flex align-items-center"
-                      href="javascript:void(0);" target="_blank">
+                      href="{% url 'auth-register-multisteps' %}" target="_blank">
                       <i class='menu-icon tf-icons ri-circle-line me-2'></i>
                       Register (Multi-steps)
                     </a>
                   </li>
                   <li class="nav-item">
                     <a class="nav-link mega-dropdown-link d-flex align-items-center"
-                      href="javascript:void(0);" target="_blank">
+                      href="{% url 'auth-forgot-password-basic' %}" target="_blank">
                       <i class='menu-icon tf-icons ri-circle-line me-2'></i>
                       Forgot Password (Basic)
                     </a>
                   </li>
                   <li class="nav-item">
                     <a class="nav-link mega-dropdown-link d-flex align-items-center"
-                      href="javascript:void(0);" target="_blank">
+                      href="{% url 'auth-forgot-password-cover' %}" target="_blank">
                       <i class='menu-icon tf-icons ri-circle-line me-2'></i>
                       Forgot Password (Cover)
                     </a>
                   </li>
                   <li class="nav-item">
                     <a class="nav-link mega-dropdown-link d-flex align-items-center"
-                      href="javascript:void(0);" target="_blank">
+                      href="{% url 'auth-reset-password-basic' %}" target="_blank">
                       <i class='menu-icon tf-icons ri-circle-line me-2'></i>
                       Reset Password (Basic)
                     </a>
                   </li>
                   <li class="nav-item">
                     <a class="nav-link mega-dropdown-link d-flex align-items-center"
-                      href="javascript:void(0);" target="_blank">
+                      href="{% url 'auth-reset-password-cover' %}" target="_blank">
                       <i class='menu-icon tf-icons ri-circle-line me-2'></i>
                       Reset Password (Cover)
                     </a>
@@ -204,28 +205,28 @@
                   </li>
                   <li class="nav-item">
                     <a class="nav-link mega-dropdown-link d-flex align-items-center"
-                      href="javascript:void(0);" target="_blank">
+                      href="{% url 'auth-verify-email-basic' %}" target="_blank">
                       <i class='menu-icon tf-icons ri-circle-line me-2'></i>
                       Verify Email (Basic)
                     </a>
                   </li>
                   <li class="nav-item">
                     <a class="nav-link mega-dropdown-link d-flex align-items-center"
-                      href="javascript:void(0);" target="_blank">
+                      href="{% url 'auth-verify-email-cover' %}" target="_blank">
                       <i class='menu-icon tf-icons ri-circle-line me-2'></i>
                       Verify Email (Cover)
                     </a>
                   </li>
                   <li class="nav-item">
                     <a class="nav-link mega-dropdown-link d-flex align-items-center"
-                      href="javascript:void(0);" target="_blank">
+                      href="{% url 'auth-two-steps-basic' %}" target="_blank">
                       <i class='menu-icon tf-icons ri-circle-line me-2'></i>
                       Two Steps (Basic)
                     </a>
                   </li>
                   <li class="nav-item">
                     <a class="nav-link mega-dropdown-link d-flex align-items-center"
-                      href="javascript:void(0);" target="_blank">
+                      href="{% url 'auth-two-steps-cover' %}" target="_blank">
                       <i class='menu-icon tf-icons ri-circle-line me-2'></i>
                       Two Steps (Cover)
                     </a>
@@ -249,10 +250,11 @@
       </ul>
     </div>
     <div class="landing-menu-overlay d-lg-none"></div>
-    
+    <!-- Menu wrapper: End -->
+    <!-- Toolbar: Start -->
     <ul class="navbar-nav flex-row align-items-center ms-auto">
       {% if has_customizer %}
-      
+      <!-- Style Switcher -->
       <li class="nav-item dropdown-style-switcher dropdown me-2 me-xl-0">
         <a class="nav-link btn btn-text-secondary rounded-pill btn-icon dropdown-toggle hide-arrow me-sm-4"
           href="javascript:void(0);" data-bs-toggle="dropdown">
@@ -276,15 +278,16 @@
           </li>
         </ul>
       </li>
-      
+      <!-- / Style Switcher-->
       {% endif %}
 
+      <!-- navbar button: Start -->
       {% if request.user.is_authenticated %}
 
       <li class="nav-item navbar-dropdown dropdown-user dropdown">
         <a class="nav-link dropdown-toggle hide-arrow p-0" href="javascript:void(0);" data-bs-toggle="dropdown">
           <div class="avatar avatar-online">
-            
+            <!-- Moke condition for displaying user avatar -->
             {% if request.user|has_group:"admin" %}
             <img src="{% static 'img/avatars/1.png' %}" alt class="w-px-40 h-auto rounded-circle">
             {% else %}
@@ -294,11 +297,11 @@
         </a>
         <ul class="dropdown-menu dropdown-menu-end">
           <li>
-            <a class="dropdown-item" href="javascript:void(0);">
+            <a class="dropdown-item" href="{% url 'pages-account-settings-account' %}">
               <div class="d-flex">
                 <div class="flex-shrink-0 me-2">
                   <div class="avatar avatar-online">
-                    
+                    <!-- Moke condition for displaying user avatar -->
                     {% if request.user|has_group:"admin" %}
                     <img src="{% static 'img/avatars/1.png' %}" alt class="w-px-40 h-auto rounded-circle">
                     {% else %}
@@ -352,8 +355,8 @@
             class="tf-icons ri-user-line me-md-1"></span><span class="d-none d-md-block">Login/Register</span></a>
       </li>
       {% endif %}
-      
+      <!-- navbar button: End -->
     </ul>
-    
+    <!-- Toolbar: End -->
   </div>
 </nav>

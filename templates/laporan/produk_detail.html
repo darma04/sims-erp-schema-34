@@ -24,7 +24,7 @@
     </div>
 
     <div class="row">
-        
+        <!-- Foto & Informasi Dasar Produk -->
         <div class="col-md-4 mb-4">
             <div class="card">
                 <div class="card-header">
@@ -46,6 +46,7 @@
                 </div>
             </div>
 
+            <!-- Stok di Gudang -->
             <div class="card mt-3">
                 <div class="card-header py-2">
                     <h6 class="mb-0"><i class="ri-archive-line me-2"></i>Stok di Gudang</h6>
@@ -78,6 +79,7 @@
                 </div>
             </div>
 
+            <!-- Barcode Produk Card -->
             <div class="card mt-3">
                 <div class="card-header py-2">
                     <h6 class="mb-0"><i class="ri-barcode-line me-2"></i>Barcode Produk</h6>
@@ -102,6 +104,7 @@
             </div>
         </div>
 
+        <!-- Informasi Produk Detail -->
         <div class="col-md-8 mb-4">
             <div class="card h-100">
                 <div class="card-header">
@@ -200,6 +203,7 @@
         </div>
     </div>
 
+    <!-- Riwayat Aktivitas Lengkap -->
     <div class="card mb-4">
         <div class="card-header">
             <h5 class="mb-0"><i class="ri-history-line me-2"></i>Riwayat Aktivitas & Perubahan Data</h5>
@@ -290,6 +294,7 @@
         </div>
     </div>
 
+    <!-- Data Terhubung: Purchase Orders -->
     {% if po_items %}
     <div class="card mb-4">
         <div class="card-header">
@@ -326,6 +331,7 @@
     </div>
     {% endif %}
 
+    <!-- Data Terhubung: Sales Orders -->
     {% if so_items %}
     <div class="card mb-4">
         <div class="card-header">

@@ -15,13 +15,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Struk {{ transaction.nomor_transaksi }}</title>
     <style>
-        
+        /* ===== RESET ===== */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        /* ===== BASE — ukuran kertas thermal ===== */
         body {
             font-family: 'Courier New', 'Consolas', 'Lucida Console', monospace;
             font-size: 11px;
@@ -33,9 +34,9 @@
 
         .receipt {
             {% if paper_width == '58' %}
-            width: 48mm;      
+            width: 48mm;      /* 58mm - margin */
             {% else %}
-            width: 72mm;      
+            width: 72mm;      /* 80mm - margin */
             {% endif %}
             margin: 0 auto;
             background: #fff;
@@ -43,6 +44,7 @@
             border: 1px dashed #ccc;
         }
 
+        /* ===== HEADER TOKO ===== */
         .receipt-header {
             text-align: center;
             padding-bottom: 8px;
@@ -68,6 +70,7 @@
             color: #333;
         }
 
+        /* ===== INFO TRANSAKSI ===== */
         .receipt-info {
             font-size: 10px;
             padding-bottom: 6px;
@@ -84,6 +87,7 @@
             color: #555;
         }
 
+        /* ===== DAFTAR ITEM ===== */
         .receipt-items {
             padding-bottom: 6px;
             border-bottom: 1px dashed #000;
@@ -111,6 +115,7 @@
             color: #555;
         }
 
+        /* ===== RINGKASAN TOTAL ===== */
         .receipt-totals {
             padding-bottom: 6px;
             border-bottom: 1px dashed #000;
@@ -136,6 +141,7 @@
             color: #c00;
         }
 
+        /* ===== PEMBAYARAN ===== */
         .receipt-payment {
             padding-bottom: 6px;
             border-bottom: 1px dashed #000;
@@ -154,6 +160,7 @@
             font-size: 12px;
         }
 
+        /* ===== FOOTER ===== */
         .receipt-footer {
             text-align: center;
             font-size: 9px;
@@ -174,6 +181,7 @@
             margin-top: 4px;
         }
 
+        /* ===== CATATAN ===== */
         .receipt-notes {
             font-size: 9px;
             color: #555;
@@ -186,12 +194,14 @@
             color: #000;
         }
 
+        /* ===== SEPARATOR LINE ===== */
         .dashed-line {
             border: none;
             border-top: 1px dashed #000;
             margin: 6px 0;
         }
 
+        /* ===== PRINT STYLES ===== */
         @media print {
             body {
                 padding: 0;
@@ -224,6 +234,7 @@
             }
         }
 
+        /* ===== TOMBOL KONTROL (tidak tercetak) ===== */
         .print-controls {
             display: flex;
             justify-content: center;
@@ -253,6 +264,7 @@
             opacity: 0.85;
         }
 
+        /* ===== PAPER SIZE SELECTOR ===== */
         .paper-selector {
             text-align: center;
             margin-bottom: 10px;
@@ -288,12 +300,14 @@
 
     <div class="receipt">
 
+        <!-- HEADER TOKO -->
         <div class="receipt-header">
             <div class="shop-name">{{ template.header_nama_perusahaan }}</div>
             <div class="shop-address">{{ template.header_alamat }}</div>
             <div class="shop-phone">Telp: {{ template.header_telepon }}</div>
         </div>
 
+        <!-- INFO TRANSAKSI -->
         <div class="receipt-info">
             <div class="info-row">
                 <span class="info-label">No:</span>
@@ -319,6 +333,7 @@
             </div>
         </div>
 
+        <!-- DAFTAR ITEM -->
         <div class="receipt-items">
             {% for item in transaction.items.all %}
             <div class="receipt-item">
@@ -339,6 +354,7 @@
             {% endfor %}
         </div>
 
+        <!-- RINGKASAN TOTAL -->
         <div class="receipt-totals">
             {% if transaction.diskon > 0 %}
             <div class="total-row diskon">
@@ -358,6 +374,7 @@
             </div>
         </div>
 
+        <!-- PEMBAYARAN -->
         <div class="receipt-payment">
             <div class="payment-row">
                 <span>Bayar ({{ transaction.metode_pembayaran.nama|default:"-" }}):</span>
@@ -369,12 +386,14 @@
             </div>
         </div>
 
+        <!-- CATATAN -->
         {% if transaction.catatan %}
         <div class="receipt-notes">
             <strong>Catatan:</strong> {{ transaction.catatan }}
         </div>
         {% endif %}
 
+        <!-- FOOTER -->
         <div class="receipt-footer">
             <div class="footer-thanks">{{ template.footer_ucapan }}</div>
             <div>{{ template.footer_keterangan }}</div>
@@ -383,6 +402,7 @@
 
     </div>
 
+    <!-- Tombol Kembali (ditampilkan setelah native Android print dialog) -->
     <div id="backBtnWrap" class="no-print" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:9999;">
         <a id="backBtn" href="javascript:void(0)" style="display:inline-block; padding:12px 32px; background:#696cff; color:#fff; text-decoration:none; border-radius:8px; font-size:14px; font-weight:bold; box-shadow:0 4px 12px rgba(0,0,0,0.2);">
             ← Kembali
@@ -390,7 +410,7 @@
     </div>
 
     <script>
-        
+        // Smart Print Handler — Universal: Browser + Capacitor Android (SerpApp.triggerPrint)
         (function() {
             var printed = false;
             function goBack() {

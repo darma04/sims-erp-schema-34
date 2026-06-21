@@ -2,30 +2,6 @@
 {% load static %}
 {% load currency_filters %}
 
-{% comment %}
-  ==========================================================================
-  PAJAK - Daftar Setor (List View)
-  ==========================================================================
-  Menampilkan daftar semua setor menggunakan DataTables (tabel interaktif).
-  DataTables menyediakan: search, sorting, pagination, dan export PDF/Excel
-  secara otomatis tanpa perlu coding JavaScript tambahan.
-
-  FLOW DATA:
-  - URL: /pajak/ -> pajak.views.SetorListView- View: Mengambil data dari database via model Setor- Template: File ini merender data ke HTML- Response: Browser menampilkan tabel + tombol aksi (edit/hapus/detail)
-
-  RELASI KE MODUL LAIN:
-  - apps/pajak/models.py -> Model Setor (sumber data)- apps/pajak/views.py -> SetorListView (handler)- apps/pajak/urls.py -> URL routing ke view ini- apps/core/mixins.py -> ReadPermissionMixin (cek hak akses)- layout/layout_vertical.html -> Template induk (sidebar, header)
-
-  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
-  - BOLEH diubah: Tampilan kolom tabel, tombol aksi, filter- BOLEH diubah: Tambah kolom baru (sesuaikan juga di views.py queryset)- JANGAN diubah: {% extends %} dan {% block %} structure- JANGAN diubah: class DataTables (break JavaScript)
-
-  TIPS & DEBUGGING:
-  - Error 'TemplateDoesNotExist'? Cek path di views.py template_name- Data tidak muncul? Cek get_queryset() di views.py- Tambah kolom? Edit <th> di <thead> dan <td> di <tbody>- Export gagal? Cek fungsi export_di_pajak_list() di <script>
-
-  ==========================================================================
-{% endcomment %}
-
-
 {% block title %}Setor / Restitusi PPN - Akuntansi ERP{% endblock title %}
 
 {% block vendor_css %}{{ block.super }}
@@ -47,6 +23,7 @@
         </div>
     </div>
 
+    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <form method="get">
@@ -83,6 +60,7 @@
         </div>
     </div>
 
+    <!-- Summary Cards -->
     <div class="row g-3 mb-4">
         <div class="col-sm-6 col-lg-3">
             <div class="card"><div class="card-body"><div class="d-flex align-items-center">
@@ -110,6 +88,7 @@
         </div>
     </div>
 
+    <!-- Table -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="ri-list-check me-2"></i>Daftar Settlement PPN</h5>

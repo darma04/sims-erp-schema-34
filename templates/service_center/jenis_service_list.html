@@ -1,30 +1,6 @@
 {% extends 'layout/layout_vertical.html' %}
 {% load static %}
 {% load currency_filters %}
-
-{% comment %}
-  ==========================================================================
-  SERVICE CENTER - Daftar Jenis Service (List View)
-  ==========================================================================
-  Menampilkan daftar semua jenis_service menggunakan DataTables (tabel interaktif).
-  DataTables menyediakan: search, sorting, pagination, dan export PDF/Excel
-  secara otomatis tanpa perlu coding JavaScript tambahan.
-
-  FLOW DATA:
-  - URL: /service_center/ -> service_center.views.Jenis ServiceListView- View: Mengambil data dari database via model Jenis Service- Template: File ini merender data ke HTML- Response: Browser menampilkan tabel + tombol aksi (edit/hapus/detail)
-
-  RELASI KE MODUL LAIN:
-  - apps/service_center/models.py -> Model Jenis Service (sumber data)- apps/service_center/views.py -> Jenis ServiceListView (handler)- apps/service_center/urls.py -> URL routing ke view ini- apps/core/mixins.py -> ReadPermissionMixin (cek hak akses)- layout/layout_vertical.html -> Template induk (sidebar, header)
-
-  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
-  - BOLEH diubah: Tampilan kolom tabel, tombol aksi, filter- BOLEH diubah: Tambah kolom baru (sesuaikan juga di views.py queryset)- JANGAN diubah: {% extends %} dan {% block %} structure- JANGAN diubah: class DataTables (break JavaScript)
-
-  TIPS & DEBUGGING:
-  - Error 'TemplateDoesNotExist'? Cek path di views.py template_name- Data tidak muncul? Cek get_queryset() di views.py- Tambah kolom? Edit <th> di <thead> dan <td> di <tbody>- Export gagal? Cek fungsi export_di_service_center_list() di <script>
-
-  ==========================================================================
-{% endcomment %}
-
 {% block title %}Jenis Service{% endblock %}
 {% block vendor_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" /><link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />{% endblock %}
 {% block vendor_js %}{{ block.super }}<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
@@ -37,17 +13,18 @@
         <a href="{% url 'service_center:jenis_create' %}" class="btn btn-primary"><i class="ri-add-line me-1"></i>Tambah Jenis Service</a>
         {% endif %}
     </div>
-    
+    <!-- Filter Card -->
     <div class="card mb-4"><div class="card-body">
         <div class="row g-3">
-            <div class="col-12 col-md"><label class="form-label">Cari Layanan</label><div class="input-group input-group-merge"><span class="input-group-text"><i class="ri-search-line"></i></span><input type="text" class="form-control" id="searchInput" placeholder="Nama layanan..."></div></div>
-            <div class="col-12 col-md"><label class="form-label">Filter Kategori</label><select class="form-select" id="filterKategori"><option value="">Semua Kategori</option>{% for k in kategori_list %}<option value="{{ k.nama }}">{{ k.nama }}</option>{% endfor %}</select></div>
+            <div class="col-md-4"><label class="form-label">Cari Layanan</label><input type="text" class="form-control" id="searchInput" placeholder="Nama layanan..."></div>
+            <div class="col-md-3"><label class="form-label">Filter Kategori</label><select class="form-select" id="filterKategori"><option value="">Semua Kategori</option>{% for k in kategori_list %}<option value="{{ k.nama }}">{{ k.nama }}</option>{% endfor %}</select></div>
         </div>
+        <!-- Filter row: Pilih Kolom kiri, Filter & Reset kanan -->
         <div class="row g-3 mt-2 align-items-end">
-            <div class="col-md-3">
+            <div class="col-md-6">
                 <label class="form-label fw-semibold">Pilih Kolom</label>
                 <div class="dropdown">
-                    <button class="btn btn-label-secondary dropdown-toggle w-100" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside"><i class="ri-layout-column-line me-1"></i>Pilih Kolom Yang Ditampilkan</button>
+                    <button class="btn btn-label-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside"><i class="ri-layout-column-line me-1"></i>Pilih Kolom Yang Ditampilkan</button>
                     <div class="dropdown-menu p-3" style="min-width:280px">
                         <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="0" checked onchange="toggleColumns()"><label class="form-check-label">Foto</label></div>
                         <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="1" checked onchange="toggleColumns()"><label class="form-check-label">Kategori</label></div>
@@ -62,7 +39,7 @@
                 </div>
                 <small class="text-muted">Klik untuk memilih kolom</small>
             </div>
-            <div class="col-md-6"></div>
+            <div class="col-md-3"></div>
             <div class="col-md-3">
                 <div class="d-grid gap-2">
                     <button class="btn btn-primary" onclick="applyFilter()"><i class="ri-filter-3-line me-1"></i>Filter</button>
@@ -71,10 +48,10 @@
             </div>
         </div>
     </div></div>
-    
+    <!-- Data Table -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center"><h5 class="mb-0">Daftar Jenis Service</h5><div class="d-flex gap-2"><button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button><button class="btn btn-sm btn-label-danger" onclick="exportToPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button></div></div>
-        <div class="card-datatable">
+        <div class="card-datatable table-responsive">
             <table class="table table-hover" id="dataTable">
                 <thead><tr><th style="width:70px">Foto</th><th>Kategori</th><th>Nama Layanan</th><th>Harga Standar</th><th>Estimasi Waktu</th><th>Digunakan</th><th>Status</th><th>Aksi</th></tr></thead>
                 <tbody>
@@ -100,35 +77,47 @@
                             <span class="badge bg-label-secondary"><i class="ri-eye-line me-1"></i>View Only</span>
                             {% endif %}
                         </td>
-                    <td>-</td></tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="8" class="text-center py-5">
-                            <i class="ri-hammer-line ri-3x text-muted mb-3 d-block"></i>
-                            <p class="text-muted">Belum ada jenis service</p>
-                        </td>
                     </tr>
-                    {% endfor %}
+                    {% empty %}<tr><td colspan="8" class="text-center py-5"><i class="ri-hammer-line ri-3x text-muted d-block mb-2"></i><p class="text-muted">Belum ada jenis service</p></td></tr>{% endfor %}
                 </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="3" class="text-start ps-4 py-3">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ total_jenis }} Jenis Service Terdaftar</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="text-start">
+                                <strong class="d-block text-success" style="font-size: 1rem;">{{ total_harga_standar|rupiah }}</strong>
+                                <small class="text-muted" style="font-size: 0.75rem;">Total Harga Standar</small>
+                            </div>
+                        </td>
+                        <td class="py-3"></td>
+                        <td class="py-3"></td>
+                        <td class="py-3"></td>
+                        <td class="py-3"></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
-    
+    <!-- Delete Modal -->
     <div class="modal fade" id="deleteModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header bg-danger py-3"><h5 class="modal-title text-white mb-0"><i class="ri-delete-bin-line me-2"></i>Konfirmasi Hapus</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body text-center py-4"><i class="ri-error-warning-line text-danger" style="font-size:4rem"></i><h4 class="mt-3">Hapus jenis service ini?</h4><p class="text-muted">Layanan: <strong id="deleteName"></strong></p></div><div class="modal-footer"><button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Batal</button><button type="button" class="btn btn-danger" id="confirmDeleteBtn">Ya, Hapus</button></div></div></div></div>
 </div>{% csrf_token %}
 {% endblock %}
 {% block page_js %}
-<style>.dataTables_wrapper .dataTables_info{padding:1rem 1.5rem;font-size:.875rem;color:#697a8d}.dataTables_wrapper .dataTables_paginate{padding:1rem 1.5rem}.dataTables_wrapper .dataTables_length,.dataTables_wrapper .dataTables_filter{padding:0 1.5rem 1rem}.dataTables_wrapper .dataTables_filter input{border:1px solid #d9dee3;border-radius:.375rem;padding:.4375rem .875rem}.dataTables_wrapper .dataTables_length select{border:1px solid #d9dee3;border-radius:.375rem;padding:.4375rem 2rem .4375rem .875rem}.dataTables_wrapper .dataTables_paginate .paginate_button{padding:.438rem .875rem;border-radius:.375rem;margin:0 .125rem;border:none;background:transparent;color:#697a8d}.dataTables_wrapper .dataTables_paginate .paginate_button.current{background:#696cff!important;color:white!important;border:none}.dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.disabled){background:rgba(105,108,255,.08)!important;color:#696cff!important;border:none}.card-datatable{padding-bottom:0}
-@media (max-width: 768px) {
-    .card-datatable { overflow-x: hidden !important; -webkit-overflow-scrolling: touch; max-width: 100%; }
-    {% if jenis_list %}.table-hover { min-width: 800px !important; }{% endif %}
-    .dataTables_wrapper { overflow-x: hidden !important; max-width: 100% !important; }
-}</style>
+<style>.dataTables_wrapper .dataTables_info{padding:1rem 1.5rem;font-size:.875rem;color:#697a8d}.dataTables_wrapper .dataTables_paginate{padding:1rem 1.5rem}.dataTables_wrapper .dataTables_length,.dataTables_wrapper .dataTables_filter{padding:0 1.5rem 1rem}.dataTables_wrapper .dataTables_filter input{border:1px solid #d9dee3;border-radius:.375rem;padding:.4375rem .875rem}.dataTables_wrapper .dataTables_length select{border:1px solid #d9dee3;border-radius:.375rem;padding:.4375rem 2rem .4375rem .875rem}.dataTables_wrapper .dataTables_paginate .paginate_button{padding:.438rem .875rem;border-radius:.375rem;margin:0 .125rem;border:none;background:transparent;color:#697a8d}.dataTables_wrapper .dataTables_paginate .paginate_button.current{background:#696cff!important;color:white!important;border:none}.dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.disabled){background:rgba(105,108,255,.08)!important;color:#696cff!important;border:none}.card-datatable{padding-bottom:0}</style>
 <script>
 $(document).ready(function(){
     {% if jenis_list %}
-    var dt=$('#dataTable').DataTable({
-            scrollX: true,language:{"sEmptyTable":"Tidak ada data","sLengthMenu":"Tampilkan _MENU_ data","sZeroRecords":"Tidak ditemukan","sInfo":"Menampilkan _START_-_END_ dari _TOTAL_","sInfoEmpty":"0 data","sSearch":"Cari:","oPaginate":{"sPrevious":"Sebelumnya","sNext":"Selanjutnya"}},order:[[1,'asc'],[2,'asc']],pageLength:25,lengthMenu:[[10,25,50,100,-1],['10','25','50','100','Semua']],responsive:false,columnDefs:[{orderable:false,targets:[0,7]}],dom:'<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'});
+    {% if kategori_list %}
+    var dt=$('#dataTable').DataTable({language:{"sEmptyTable":"Tidak ada data","sLengthMenu":"Tampilkan _MENU_ data","sZeroRecords":"Tidak ditemukan","sInfo":"Menampilkan _START_-_END_ dari _TOTAL_","sInfoEmpty":"0 data","sSearch":"Cari:","oPaginate":{"sPrevious":"Sebelumnya","sNext":"Selanjutnya"}},order:[[1,'asc'],[2,'asc']],pageLength:25,lengthMenu:[[10,25,50,100,-1],['10','25','50','100','Semua']],responsive:false,columnDefs:[{orderable:false,targets:[0,7]}],dom:'<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'});
+    {% endif %}
     $('#searchInput').on('keyup',function(){dt.search(this.value).draw()});
     $('#filterKategori').on('change',function(){dt.column(1).search(this.value).draw()});
     {% endif %}
@@ -159,9 +148,12 @@ function deselectAllColumns(){document.querySelectorAll('.column-checkbox').forE
         email:   "{{ export_pdf_template.header_email|default:'' }}"
     };
 
+    
+
 let deleteId=null;function confirmDelete(id,name){deleteId=id;document.getElementById('deleteName').textContent=name;new bootstrap.Modal(document.getElementById('deleteModal')).show()}
 document.getElementById('confirmDeleteBtn').addEventListener('click',function(){if(!deleteId)return;const btn=this;btn.disabled=true;btn.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>Menghapus...';$.ajax({url:`/service/jenis/${deleteId}/delete/`,type:'DELETE',headers:{'X-CSRFToken':document.querySelector('[name=csrfmiddlewaretoken]').value},success:function(r){if(r.success){$('#deleteModal').modal('hide');location.reload()}},error:function(){alert('Gagal menghapus!')},complete:function(){btn.disabled=false;btn.innerHTML='Ya, Hapus'}})});
 
+    // Standardized Export - Excel Format (.xls)
     const EXCEL_INFO = {
         name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
         address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -216,6 +208,7 @@ document.getElementById('confirmDeleteBtn').addEventListener('click',function(){
             html += '</tr>';
         });
 
+        // Add tfoot summary
         html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
         html += `<td colspan="${colCount - 1}">RINGKASAN: {{ total_jenis }} Jenis Service Terdaftar</td>`;
         html += `<td>{{ total_harga_standar|rupiah }}</td>`;
@@ -265,6 +258,7 @@ document.getElementById('confirmDeleteBtn').addEventListener('click',function(){
             body.push(rowData);
         });
 
+        // Add tfoot summary
         const summaryRow = [];
         for (let i = 0; i < visibleColumns.length; i++) {
             if (i === 0) {

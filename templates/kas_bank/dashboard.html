@@ -2,29 +2,6 @@
 {% load static %}
 {% load currency_filters %}
 
-{% comment %}
-  ==========================================================================
-  KAS BANK - Dashboard
-  ==========================================================================
-  Halaman Dashboard untuk modul Kas Bank.
-  Template ini merender data dari view ke HTML yang ditampilkan di browser.
-
-  FLOW DATA:
-  - URL: /kas_bank/ -> View di apps/kas_bank/views.py- View: Mengambil data, menyiapkan context, render template ini- Template: File ini (HTML + Django template tags)- Response: HTML yang ditampilkan di browser user
-
-  RELASI KE MODUL LAIN:
-  - apps/kas_bank/views.py -> View (handler untuk halaman ini)- apps/kas_bank/models.py -> Model (sumber data)- apps/kas_bank/urls.py -> URL routing- layout/ -> Template induk (sidebar, header, footer)
-
-  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
-  - BOLEH diubah: Tampilan HTML, CSS inline, JavaScript- JANGAN diubah: {% extends %} dan {% block %} structure- JANGAN dihapus: {% csrf_token %} di form
-
-  TIPS & DEBUGGING:
-  - Error 'TemplateDoesNotExist'? Cek template_name di views.py- Variabel {{ }} kosong? Cek get_context_data() di views.py- Layout rusak? Pastikan TemplateLayout.init() dipanggil di view
-
-  ==========================================================================
-{% endcomment %}
-
-
 {% block title %}Kas & Bank - Treasury{% endblock title %}
 
 {% block vendor_css %}
@@ -135,17 +112,10 @@
     <div class="row g-6 mb-4">
         <div class="col-lg-8">
             <div class="card h-100">
-                <div class="card-header d-flex flex-nowrap align-items-center justify-content-between">
-                    <h5 class="card-title mb-0 me-2">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h5 class="card-title mb-0">
                         <i class="ri-line-chart-line me-2"></i>Arus Kas Posted
                     </h5>
-                    <div class="dropdown flex-shrink-0">
-                        <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button>
-                        <div class="dropdown-menu dropdown-menu-end">
-                            <a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a>
-                            <a class="dropdown-item" href="javascript:void(0)" onclick="if(window.__cashflowChart) window.__cashflowChart.exportTo({type:'png'});"><i class="ri-download-2-line me-2"></i>Unduh Grafik</a>
-                        </div>
-                    </div>
                 </div>
                 <div class="card-body">
                     <div id="cashflowChart" style="min-height: 320px;"></div>
@@ -154,17 +124,10 @@
         </div>
         <div class="col-lg-4">
             <div class="card h-100">
-                <div class="card-header d-flex flex-nowrap align-items-center justify-content-between">
-                    <h5 class="card-title mb-0 me-2">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
                         <i class="ri-pie-chart-line me-2"></i>Status Mutasi
                     </h5>
-                    <div class="dropdown flex-shrink-0">
-                        <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button>
-                        <div class="dropdown-menu dropdown-menu-end">
-                            <a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a>
-                            <a class="dropdown-item" href="javascript:void(0)" onclick="if(window.__statusMutasiChart&&window.__statusMutasiChart.exportTo){window.__statusMutasiChart.exportTo({type:'png'});}"><i class="ri-download-2-line me-2"></i>Unduh Grafik</a>
-                        </div>
-                    </div>
                 </div>
                 <div class="card-body text-center">
                     <div id="statusChart" style="min-height: 260px;"></div>
@@ -189,7 +152,7 @@
                         Lihat Semua
                     </a>
                 </div>
-                <div class="card-datatable">
+                <div class="card-datatable table-responsive">
                     <table id="accountBalanceTable" class="table table-hover mb-0 dashboard-datatable">
                         <thead>
                             <tr>
@@ -223,7 +186,7 @@
                         Lihat Semua
                     </a>
                 </div>
-                <div class="card-datatable">
+                <div class="card-datatable table-responsive">
                     <table id="recentTransactionTable" class="table table-hover mb-0 dashboard-datatable">
                         <thead>
                             <tr>
@@ -308,8 +271,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (typeof $ !== 'undefined') {
         ['#accountBalanceTable', '#recentTransactionTable'].forEach(function (selector) {
             if ($(selector).length && !$.fn.dataTable.isDataTable(selector)) {
+                {% if account_cards %}
                 $(selector).DataTable({
-            scrollX: true,
                     language: {
                         sEmptyTable: 'Tidak ada data yang tersedia',
                         sProcessing: 'Sedang memproses...',
@@ -331,6 +294,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     order: [],
                     responsive: false
                 });
+                {% endif %}
             }
         });
     }
@@ -341,13 +305,24 @@ document.addEventListener('DOMContentLoaded', function () {
     var cashflowLabels = {{ cashflow_chart_labels|safe }};
     var cashflowValues = {{ cashflow_chart_values|safe }};
     if (cashflowEl) {
-        var __chartInst = new ApexCharts(cashflowEl, {
+        new ApexCharts(cashflowEl, {
             chart: {
                 type: 'area',
                 height: 320,
                 fontFamily: 'Inter, -apple-system, sans-serif',
                 background: 'transparent',
-                toolbar: { show: false },
+                toolbar: {
+                    show: true,
+                    tools: {
+                        download: '<i class="ri-download-2-line" style="font-size:16px"></i>',
+                        selection: false,
+                        zoom: false,
+                        zoomin: false,
+                        zoomout: false,
+                        pan: false,
+                        reset: false
+                    }
+                },
                 animations: { enabled: true, easing: 'easeinout', speed: 800 }
             },
             colors: ['#7367f0'],
@@ -392,9 +367,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 strokeDashArray: 4,
                 padding: { top: -10, left: 10, right: 10, bottom: 0 }
             }
-        });
-        __chartInst.render();
-        window.__cashflowChart = __chartInst;
+        }).render();
     }
 
     var statusEl = document.querySelector('#statusChart');
@@ -405,13 +378,12 @@ document.addEventListener('DOMContentLoaded', function () {
             statusLabels = ['Tidak Ada Data'];
             statusValues = [1];
         }
-        var __chartInst = new ApexCharts(statusEl, {
+        new ApexCharts(statusEl, {
             chart: {
                 type: 'donut',
                 height: 260,
                 fontFamily: 'Inter, -apple-system, sans-serif',
                 background: 'transparent',
-                toolbar: { show: false },
                 animations: { enabled: true, easing: 'easeinout', speed: 800 }
             },
             labels: statusLabels,
@@ -455,9 +427,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 theme: isDark ? 'dark' : 'light',
                 y: { formatter: function (val) { return val + ' mutasi'; } }
             }
-        });
-        __chartInst.render();
-        window.__statusMutasiChart = __chartInst;
+        }).render();
     }
 });
 </script>

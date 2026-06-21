@@ -12,7 +12,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1"><i class="ri-calendar-check-line me-2"></i>Detail Absensi</h4>
@@ -31,9 +31,9 @@
     </div>
 
     <div class="row">
-        
+        <!-- Kolom Kiri: Info Karyawan + Data Absensi -->
         <div class="col-lg-7 mb-4">
-            
+            <!-- Card Info Karyawan -->
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0"><i class="ri-user-line me-2"></i>Informasi Karyawan</h5>
@@ -73,13 +73,14 @@
                 </div>
             </div>
 
+            <!-- Card Data Kehadiran -->
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0"><i class="ri-time-line me-2"></i>Data Kehadiran</h5>
                 </div>
                 <div class="card-body">
                     <div class="row g-4">
-                        
+                        <!-- Clock In -->
                         <div class="col-sm-6">
                             <div class="card bg-label-success h-100">
                                 <div class="card-body py-3">
@@ -109,7 +110,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+                        <!-- Clock Out -->
                         <div class="col-sm-6">
                             <div class="card bg-label-danger h-100">
                                 <div class="card-body py-3">
@@ -141,6 +142,7 @@
                         </div>
                     </div>
 
+                    <!-- Status & Durasi -->
                     <div class="row g-3 mt-2">
                         <div class="col-sm-4">
                             <div class="d-flex justify-content-between align-items-center p-3 rounded bg-lighter">
@@ -190,6 +192,7 @@
                 </div>
             </div>
 
+            <!-- Card Foto Absensi -->
             {% if absensi.foto_masuk or absensi.foto_keluar %}
             <div class="card mb-4">
                 <div class="card-header">
@@ -218,6 +221,7 @@
             </div>
             {% endif %}
 
+            <!-- Catatan -->
             {% if absensi.catatan %}
             <div class="card mb-4">
                 <div class="card-header">
@@ -230,8 +234,9 @@
             {% endif %}
         </div>
 
+        <!-- Kolom Kanan: Peta Lokasi + Pengaturan Absensi -->
         <div class="col-lg-5 mb-4">
-            
+            <!-- Card Peta Lokasi -->
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0"><i class="ri-map-pin-line me-2"></i>Lokasi Absensi</h5>
@@ -251,6 +256,7 @@
                 </div>
             </div>
 
+            <!-- Card Pengaturan Absensi Aktif -->
             {% if pengaturan %}
             <div class="card mb-4">
                 <div class="card-header">
@@ -312,6 +318,7 @@
             </div>
             {% endif %}
 
+            <!-- Card Metadata -->
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0"><i class="ri-information-line me-2"></i>Metadata</h5>
@@ -338,7 +345,7 @@
 
 {% block page_css %}
 <style>
-    
+    /* Pastikan peta Folium mengisi container */
     #mapContainer {
         width: 100%;
         height: 400px;

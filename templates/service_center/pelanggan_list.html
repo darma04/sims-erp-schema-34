@@ -37,15 +37,13 @@
         {% endif %}
     </div>
 
+    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
-                <div class="col-12 col-md">
+                <div class="col-md-6">
                     <label class="form-label">Cari Pelanggan</label>
-                    <div class="input-group input-group-merge">
-                        <span class="input-group-text"><i class="ri-search-line"></i></span>
-                        <input type="text" class="form-control" id="searchPelanggan" placeholder="Nama, telepon, email...">
-                    </div>
+                    <input type="text" class="form-control" id="searchPelanggan" placeholder="Nama, telepon, email...">
                 </div>
             </div>
             <div class="row g-3 mt-2 align-items-end">
@@ -91,8 +89,8 @@
                 <button class="btn btn-sm btn-label-danger" onclick="exportToPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
-        <div class="card-datatable">
-            <table class="datatables-pelanggan table table-hover" id="pelangganTable" style="width:100%">
+        <div class="card-datatable table-responsive">
+            <table class="datatables-pelanggan table table-hover" id="pelangganTable">
                 <thead>
                     <tr>
                         <th>Kode</th>
@@ -105,7 +103,6 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% if pelanggan_list %}
                     {% for p in pelanggan_list %}
                     <tr>
                         <td><code>{{ p.kode }}</code></td>
@@ -141,20 +138,29 @@
                             {% endif %}
                         </td>
                     </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="text-center py-5"><i class="ri-user-3-line ri-3x text-muted mb-3 d-block"></i><p class="text-muted mb-0">Belum ada pelanggan</p></td></tr>
                     {% endfor %}
-                    {% else %}
-                    <tr>
-                        <td colspan="7" class="text-center py-5">
-                            <i class="ri-user-3-line ri-3x text-muted mb-3 d-block"></i>
-                            <p class="text-muted mb-0">Belum ada pelanggan</p>
-                        </td>
-                    </tr>
-                    {% endif %}
                 </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="5" class="text-start ps-4 py-3">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ total_pelanggan }} Pelanggan Terdaftar | {{ pelanggan_aktif }} Aktif</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3" colspan="2"></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
 
+    <!-- Delete Modal -->
     <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -194,21 +200,16 @@
     .dataTables_wrapper .dataTables_paginate .paginate_button.disabled { color: #c7cdd4 !important; cursor: not-allowed }
     .card-datatable { padding-bottom: 0 }
     .datatables-pelanggan thead th { font-weight: 600; font-size: 0.8125rem; text-transform: none }
-    @media (max-width: 768px) {
-        .card-datatable { overflow-x: hidden !important; -webkit-overflow-scrolling: touch; max-width: 100%; }
-        {% if pelanggan_list %}.datatables-pelanggan { min-width: 800px !important; }{% endif %}
-        .dataTables_wrapper { overflow-x: hidden !important; max-width: 100% !important; }
-    }
+    @media (max-width: 768px) { .card-datatable { overflow-x: hidden !important; } .datatables-pelanggan { min-width: 800px !important; } .dataTables_wrapper { overflow-x: hidden !important; max-width: 100% !important; } }
 </style>
 <script>
     $(document).ready(function() {
         {% if pelanggan_list %}
         $('#pelangganTable').DataTable({
-            scrollX: true,
             language: { "sEmptyTable": "Tidak ada data", "sProcessing": "Memproses...", "sLengthMenu": "Tampilkan _MENU_ data", "sZeroRecords": "Tidak ditemukan", "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data", "sInfoEmpty": "0 data", "sInfoFiltered": "(disaring dari _MAX_ total)", "sSearch": "Cari:", "oPaginate": { "sFirst": "Pertama", "sPrevious": "Sebelumnya", "sNext": "Selanjutnya", "sLast": "Terakhir" } },
             order: [[0, 'asc']], pageLength: 25, lengthMenu: [[10,25,50,100,-1],['10','25','50','100','Semua']],
             responsive: false, columnDefs: [{ orderable: false, targets: [6] }],
-            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             initComplete: function() { $('.dataTables_filter input').attr('placeholder', 'Cari pelanggan...') }
         });
         {% endif %}
@@ -219,6 +220,10 @@
     function toggleColumns() { const cbs = document.querySelectorAll('.column-checkbox'); const sel = Array.from(cbs).filter(c=>c.checked).map(c=>c.value); const t = document.getElementById('pelangganTable'); if(!t) return; t.querySelectorAll('thead th').forEach((th,i)=>{if(i===t.querySelectorAll('thead th').length-1) return; th.style.display=sel.includes(i.toString())?'':'none'}); t.querySelectorAll('tbody tr').forEach(tr=>{tr.querySelectorAll('td').forEach((td,i)=>{if(i===tr.querySelectorAll('td').length-1) return; td.style.display=sel.includes(i.toString())?'':'none'})}); }
     function selectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(c=>c.checked=true); toggleColumns() }
     function deselectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(c=>c.checked=false); toggleColumns() }
+
+    
+
+    
 
     let deleteId = null;
     function confirmDelete(id, name) { deleteId=id; document.getElementById('deleteName').textContent=name; new bootstrap.Modal(document.getElementById('deleteModal')).show() }
@@ -232,6 +237,7 @@
         });
     });
 
+    // Standardized Export - Excel Format (.xls)
     const EXCEL_INFO = {
         name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
         address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -286,6 +292,7 @@
             html += '</tr>';
         });
 
+        // Add tfoot summary
         html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
         html += `<td colspan="${colCount}">RINGKASAN: {{ total_pelanggan }} Pelanggan Terdaftar | {{ pelanggan_aktif }} Aktif</td>`;
         html += '</tr>';
@@ -334,6 +341,7 @@
             body.push(rowData);
         });
 
+        // Add tfoot summary
         const summaryRow = [];
         for (let i = 0; i < visibleColumns.length; i++) {
             if (i === 0) {

@@ -1,27 +1,4 @@
 <!DOCTYPE html>
-
-{% comment %}
-  ==========================================================================
-  SERVICE CENTER - Cek Status Publik
-  ==========================================================================
-  Halaman Cek Status Publik untuk modul Service Center.
-  Template ini merender data dari view ke HTML yang ditampilkan di browser.
-
-  FLOW DATA:
-  - URL: /service_center/ -> View di apps/service_center/views.py- View: Mengambil data, menyiapkan context, render template ini- Template: File ini (HTML + Django template tags)- Response: HTML yang ditampilkan di browser user
-
-  RELASI KE MODUL LAIN:
-  - apps/service_center/views.py -> View (handler untuk halaman ini)- apps/service_center/models.py -> Model (sumber data)- apps/service_center/urls.py -> URL routing- layout/ -> Template induk (sidebar, header, footer)
-
-  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
-  - BOLEH diubah: Tampilan HTML, CSS inline, JavaScript- JANGAN diubah: {% extends %} dan {% block %} structure- JANGAN dihapus: {% csrf_token %} di form
-
-  TIPS & DEBUGGING:
-  - Error 'TemplateDoesNotExist'? Cek template_name di views.py- Variabel {{ }} kosong? Cek get_context_data() di views.py- Layout rusak? Pastikan TemplateLayout.init() dipanggil di view
-
-  ==========================================================================
-{% endcomment %}
-
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -35,6 +12,7 @@
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f9; min-height: 100vh; padding: 2rem 1rem; }
         .main-container { max-width: 760px; margin: 0 auto; }
 
+        /* Search Card */
         .search-card { background: #fff; border-radius: 0.5rem; padding: 2.5rem; box-shadow: 0 2px 6px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.05); text-align: center; }
         .logo-icon { width: 72px; height: 72px; background: rgba(var(--primary-rgb), 0.08); border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; }
         .logo-icon i { font-size: 2.2rem; color: var(--primary); }
@@ -52,9 +30,11 @@
         .tip-card i { display: block; font-size: 1.1rem; margin-bottom: 0.25rem; color: var(--primary); }
         .tip-card strong { color: #566a7f; }
 
+        /* Result Card */
         .result-card { background: #fff; border-radius: 0.5rem; padding: 0; margin-top: 1.5rem; box-shadow: 0 2px 6px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.05); animation: slideUp 0.4s ease-out; display: none; overflow: hidden; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* Status Header */
         .status-header { padding: 1.5rem; text-align: center; border-bottom: 1px solid #d9dee3; }
         .status-badge { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 1.25rem; border-radius: 0.25rem; font-weight: 600; font-size: 0.9375rem; }
         .status-info { background: rgba(3,195,236,0.1); color: #03c3ec; }
@@ -64,6 +44,7 @@
         .status-secondary { background: rgba(133,146,163,0.1); color: #8592a3; }
         .status-danger { background: rgba(234,84,85,0.1); color: #ea5455; }
 
+        /* Progress Stepper */
         .progress-stepper { display: flex; justify-content: space-between; padding: 0 1.5rem 1.5rem; margin: 1.5rem 0; position: relative; border-bottom: 1px solid #f0f0f0; }
         .progress-stepper::before { content: ''; position: absolute; top: 18px; left: calc(1.5rem + 18px); right: calc(1.5rem + 18px); height: 2px; background: #d9dee3; z-index: 0; }
         .progress-stepper .progress-line { position: absolute; top: 18px; left: calc(1.5rem + 18px); height: 2px; background: var(--primary); z-index: 1; transition: width 0.5s ease; }
@@ -77,6 +58,7 @@
         .step-label.active-label { color: var(--primary); }
         .step-label.done-label { color: #28c76f; }
 
+        /* Info Sections */
         .result-body { padding: 0 1.5rem 1.5rem; }
         .info-section { margin-bottom: 1.25rem; }
         .info-section-title { font-size: 0.75rem; color: #697a8d; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.4rem; }
@@ -86,10 +68,12 @@
         .info-item .label { font-size: 0.65rem; color: #a5a3ae; text-transform: uppercase; font-weight: 600; letter-spacing: 0.3px; margin-bottom: 0.1rem; }
         .info-item .value { font-size: 0.875rem; font-weight: 600; color: #2b2c40; word-break: break-word; }
 
+        /* Items Table */
         .items-table { width: 100%; font-size: 0.8125rem; border-collapse: collapse; }
         .items-table th { color: #697a8d; font-weight: 600; padding: 0.5rem 0; border-bottom: 1px solid #d9dee3; font-size: 0.7rem; text-transform: uppercase; }
         .items-table td { padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0; }
 
+        /* Timeline */
         .timeline-list { list-style: none; padding: 0; position: relative; }
         .timeline-list::before { content: ''; position: absolute; left: 15px; top: 6px; bottom: 6px; width: 2px; background: #d9dee3; }
         .timeline-entry { display: flex; gap: 0.85rem; padding: 0.5rem 0; position: relative; }
@@ -100,6 +84,7 @@
         .timeline-entry .t-detail { font-size: 0.8125rem; color: #2b2c40; font-weight: 600; }
         .timeline-entry .t-note { font-size: 0.75rem; color: #697a8d; }
 
+        /* Payment Summary */
         .payment-summary { background: #f5f5f9; border-radius: 0.375rem; padding: 1rem; }
         .payment-row { display: flex; justify-content: space-between; align-items: center; padding: 0.3rem 0; }
         .payment-row .pay-label { font-size: 0.8125rem; color: #697a8d; }
@@ -108,11 +93,14 @@
         .payment-row.total .pay-label { font-weight: 700; color: #2b2c40; }
         .payment-row.total .pay-value { font-size: 1rem; font-weight: 700; color: var(--primary); }
 
+        /* Not found */
         .not-found { color: #ea5455; font-weight: 600; text-align: center; padding: 2rem 1.5rem; }
         .not-found i { font-size: 3rem; display: block; margin-bottom: 0.75rem; opacity: 0.7; }
 
+        /* Footer */
         .footer-text { text-align: center; margin-top: 1.5rem; color: #a5a3ae; font-size: 0.8rem; }
 
+        /* Responsive */
         @media (max-width: 576px) {
             body { padding: 1rem 0.75rem; }
             .search-card { padding: 1.5rem 1.25rem; }
@@ -131,7 +119,7 @@
 </head>
 <body>
     <div class="main-container">
-        
+        <!-- Search Card -->
         <div class="search-card">
             <div class="logo-icon"><i class="ri-tools-line"></i></div>
             <h1>Cek Status Service</h1>
@@ -150,6 +138,7 @@
             </div>
         </div>
 
+        <!-- Result Card -->
         <div class="result-card" id="resultCard">
             <div id="resultContent"></div>
         </div>
@@ -220,6 +209,7 @@
                     itemsHtml += '</tbody></table></div>';
                 }
 
+                // Sparepart section
                 var sparepartHtml = '';
                 if (data.spareparts && data.spareparts.length > 0) {
                     sparepartHtml = '<div class="info-section"><div class="info-section-title"><i class="ri-cpu-line"></i>Sparepart Digunakan</div>';
@@ -228,6 +218,7 @@
                     sparepartHtml += '</tbody></table></div>';
                 }
 
+                // Payment summary with breakdown
                 var subtotalLayanan = 0;
                 if (data.items) data.items.forEach(function(i) { subtotalLayanan += i.biaya; });
                 var subtotalSparepart = 0;

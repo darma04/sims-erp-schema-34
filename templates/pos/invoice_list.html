@@ -7,8 +7,7 @@ Tabel: nomor invoice, tanggal, customer, total, status, metode bayar.
 Fitur: filter, search, export, detail.
 ==========================================================================
 {% endcomment %}
-{% load static %}
-{% load currency_filters %}
+{% load static %}`r`n{% load currency_filters %}
 {% load i18n %}
 
 {% block title %}Daftar Invoice - POS{% endblock title %}
@@ -31,7 +30,7 @@ Fitur: filter, search, export, detail.
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -46,6 +45,7 @@ Fitur: filter, search, export, detail.
         {% endif %}
     </div>
 
+    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -78,6 +78,7 @@ Fitur: filter, search, export, detail.
                 </div>
             </div>
 
+            <!-- Baris 2: Pilih Kolom (kiri) dan Tombol Filter (kanan) -->
             <div class="row g-3 mt-2 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
@@ -153,6 +154,7 @@ Fitur: filter, search, export, detail.
         </div>
     </div>
 
+    <!-- Invoice List Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Riwayat Transaksi</h5>
@@ -165,8 +167,8 @@ Fitur: filter, search, export, detail.
                 </button>
             </div>
         </div>
-        <div class="card-datatable">
-            <table class="datatables-invoice table table-hover" id="invoiceTable" style="width:100%">
+        <div class="card-datatable table-responsive">
+            <table class="datatables-invoice table table-hover" id="invoiceTable">
                 <thead>
                     <tr>
                         <th>No. Transaksi</th>
@@ -265,13 +267,39 @@ Fitur: filter, search, export, detail.
                             <i class="ri-file-list-3-line ri-3x text-muted mb-3 d-block"></i>
                             <p class="text-muted">Belum ada transaksi</p>
                         </td>
-                    <td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="4" class="text-start ps-4 py-3" style="vertical-align: middle;">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ total_invoice }}
+                                        Invoice</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3" style="vertical-align: middle;">
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="badge bg-label-success d-flex align-items-center gap-1 mb-2"
+                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    <i class="ri-money-dollar-circle-line"></i>
+                                    <span>Rp {{ total_amount_invoice|floatformat:0 }}</span>
+                                </span>
+                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Pendapatan</small>
+                            </div>
+                        </td>
+                        <td colspan="3" class="py-3"></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
     <div class="modal fade" id="deleteInvoiceModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -307,7 +335,7 @@ Fitur: filter, search, export, detail.
 
 {% block page_js %}
 <style>
-    
+    /* Custom Spacing untuk DataTables - Materialize Style */
     .dataTables_wrapper .dataTables_info {
         padding: 1rem 1.5rem;
         font-size: 0.875rem;
@@ -335,6 +363,7 @@ Fitur: filter, search, export, detail.
         padding: 0.4375rem 2rem 0.4375rem 0.875rem;
     }
 
+    /* Pagination Materialize Style */
     .dataTables_wrapper .dataTables_paginate .paginate_button {
         padding: 0.438rem 0.875rem;
         border-radius: 0.375rem;
@@ -361,6 +390,7 @@ Fitur: filter, search, export, detail.
         cursor: not-allowed;
     }
 
+    /* Table styling improvements */
     .card-datatable {
         padding-bottom: 0;
     }
@@ -372,6 +402,7 @@ Fitur: filter, search, export, detail.
         letter-spacing: 0;
     }
 
+    /* Mobile Horizontal Scroll */
     @media (max-width: 768px) {
         .card-datatable {
             overflow-x: hidden !important;
@@ -379,7 +410,11 @@ Fitur: filter, search, export, detail.
             max-width: 100%;
         }
 
-        {% if metode_pembayaran %}.datatables-invoice { min-width: 1000px !important; }{% endif %}
+        .datatables-invoice {
+            min-width: 1000px !important;
+            width: 1000px !important;
+            table-layout: auto !important;
+        }
 
         .dataTables_wrapper {
             overflow-x: hidden !important;
@@ -390,10 +425,10 @@ Fitur: filter, search, export, detail.
 
 <script>
     $(document).ready(function () {
-        
+        // Inisialisasi DataTable
+        {% if transactions %}
         {% if metode_pembayaran %}
         const table = $('#invoiceTable').DataTable({
-            scrollX: true,
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini",
                 "sProcessing": "Sedang memproses...",
@@ -416,7 +451,7 @@ Fitur: filter, search, export, detail.
             pageLength: 25,
             lengthMenu: [[10, 25, 50, 75, 100, -1], ['10', '25', '50', '75', '100', 'Semua']],
             responsive: false,
-            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             buttons: [
                 {
                     extend: 'excel',
@@ -430,12 +465,14 @@ Fitur: filter, search, export, detail.
                 }
             ],
             initComplete: function () {
-                
+                // Tambahkan placeholder pada search input
                 $('.dataTables_filter input').attr('placeholder', 'Cari invoice...');
             }
         });
         {% endif %}
+        {% endif %}
 
+        // Inisialisasi Flatpickr
         flatpickr('#startDate', {
             dateFormat: 'Y-m-d',
             locale: 'id'
@@ -448,18 +485,20 @@ Fitur: filter, search, export, detail.
     });
 
     function applyFilter() {
-        
+        // Implement filter logic
         const startDate = $('#startDate').val();
         const endDate = $('#endDate').val();
         const status = $('#statusFilter').val();
         const payment = $('#paymentFilter').val();
 
+        // Bangun query string
         const params = new URLSearchParams();
         if (startDate) params.append('start', startDate);
         if (endDate) params.append('end', endDate);
         if (status) params.append('status', status);
         if (payment) params.append('payment', payment);
 
+        // Reload page with filters
         window.location.href = '{% url "pos:invoice_list" %}?' + params.toString();
     }
 
@@ -467,6 +506,16 @@ Fitur: filter, search, export, detail.
         window.location.href = '{% url "pos:invoice_list" %}';
     }
 
+    // Template Data for Independent Headers/Footers
+    // Template Data for Independent Headers/Footers
+    // Template Data for Independent Headers/Footers
+    // Template Data for Independent Headers/Footers
+    // Template Data for Independent Headers/Footers
+    // Template Data for Independent Headers/Footers
+    // Template Data for Independent Headers/Footers
+    // Template Data for Independent Headers/Footers
+    // Template Data for Independent Headers/Footers
+    // Template Data for Independent Headers/Footers
     const EXCEL_INFO = {
         name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
         address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -504,9 +553,8 @@ Fitur: filter, search, export, detail.
     function deselectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(cb => { cb.checked = false; }); toggleColumns(); }
 
     function exportToExcel() {
-        if (typeof $ === "undefined" || typeof $.fn.dataTable === "undefined" || !$.fn.dataTable.isDataTable('#invoiceTable')) { alert('Tidak ada data untuk di-export. Silakan tambahkan data terlebih dahulu.'); return; }
         const table = document.getElementById('invoiceTable');
-        if (!table) { showExportError(); return; }
+        if (!table) { alert('Tabel tidak ditemukan!'); return; }
 
         const tableObj = new $.fn.dataTable.Api('#invoiceTable');
 
@@ -526,12 +574,13 @@ Fitur: filter, search, export, detail.
         html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
         html += '<body>';
 
+        // --- ADD EXCEL HEADER (Company Info) ---
         html += '<table border="0">';
         if (typeof EXCEL_INFO !== 'undefined') {
-            html += `<tr><td colspan="${colCount}">${EXCEL_INFO.name}</td></tr>`;
-            html += `<tr><td colspan="${colCount}">${EXCEL_INFO.address}</td></tr>`;
-            html += `<tr><td colspan="${colCount}">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
-            html += `<tr><td colspan="${colCount}"></td></tr>`; 
+            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
+            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
+            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
+            html += `<tr><td colspan="${colCount}"></td></tr>`; // empty row for spacing
         }
         html += '</table>';
 
@@ -544,7 +593,7 @@ Fitur: filter, search, export, detail.
 
         html += '</tr></thead><tbody>';
 
-          tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
+        tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
             html += '<tr>';
             visibleColumns.forEach(col => {
                 let cellNode = tableObj.cell(rowIdx, col.index).node();
@@ -554,6 +603,7 @@ Fitur: filter, search, export, detail.
             html += '</tr>';
         });
 
+        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
             let ri = 0;
@@ -591,11 +641,10 @@ Fitur: filter, search, export, detail.
     }
 
     function exportToPDF() {
-        if (typeof $ === "undefined" || typeof $.fn.dataTable === "undefined" || !$.fn.dataTable.isDataTable('#invoiceTable')) { alert('Tidak ada data untuk di-export. Silakan tambahkan data terlebih dahulu.'); return; }
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('invoiceTable');
-        if (!table) { showExportError(); return; }
+        if (!table) { alert('Tabel tidak ditemukan!'); return; }
 
         const tableObj = new $.fn.dataTable.Api('#invoiceTable');
 
@@ -629,6 +678,7 @@ Fitur: filter, search, export, detail.
             if (row.length > 0) body.push(row);
         });
 
+        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             const summaryRow = [];
             let ri = 0;
@@ -714,6 +764,7 @@ Fitur: filter, search, export, detail.
         pdfMake.createPdf(docDefinition).download('Daftar_Invoice' + '' + '' + '' + '' + '' + '' + '' + '' + '' + '_' + new Date().toISOString().slice(0, 10) + '.pdf');
     }
 
+    // Tangani Hapus Invoice
     let deleteId = null;
 function confirmDelete(id, name) {
     deleteId = id;
@@ -752,48 +803,10 @@ $('#confirmDeleteBtn').on('click', function() {
 });
 
     function showErrorAlert(message) {
-        const modalBody = $('#deleteInvoiceModal').find('.modal-body');
+        const modalBody = ('#deleteInvoiceModal').find('.modal-body');
         modalBody.find('.delete-error-msg').remove();
         modalBody.append('<div class="delete-error-msg alert alert-danger d-flex align-items-start mt-3 mb-0" role="alert"><i class="ri-error-warning-line me-2 fs-5"></i><div>' + message + '</div></div>');
     }
 
 </script>
-
-<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-warning align-items-center py-3">
-                <h5 class="modal-title text-dark mb-0">
-                    <i class="ri-error-warning-line me-2"></i>Export Gagal
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center py-3">
-                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
-                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
-                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
-                    <i class="ri-close-line me-1"></i>Tutup
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-
-function showExportError() {
-    var modal = document.getElementById('exportErrorModal');
-    if (modal) {
-        new bootstrap.Modal(modal).show();
-    } else {
-        alert('Tabel tidak ditemukan!');
-    }
-}
-</script>
-
 {% endblock page_js %}

@@ -4,7 +4,7 @@
    Modal popup untuk mengedit role/peran yang sudah ada.
    ==========================================================================
 {% endcomment %}
-
+<!-- Edit Role Modal with SubCRUD Permission Support -->
 <div class="modal fade" id="editRoleModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content p-3">
@@ -31,8 +31,9 @@
             <small class="text-muted">Centang View untuk menampilkan menu. Buka sub-halaman untuk kontrol tampilan sidebar.</small>
           </div>
 
+          <!-- Permission checkboxes — akan dirender oleh JavaScript -->
           <div id="editPermissionCheckboxContainer" class="col-12">
-            
+            <!-- Will be populated by JavaScript -->
           </div>
 
           <div class="col-12 text-center mt-4">
@@ -46,3 +47,4 @@
     </div>
   </div>
 </div>
+<!--/ Edit Role Modal -->

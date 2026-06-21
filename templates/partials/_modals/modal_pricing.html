@@ -6,12 +6,13 @@
 {% endcomment %}
 {% load static %}
 
+<!-- Pricing Modal -->
 <div class="modal fade" id="pricingModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-simple modal-pricing">
     <div class="modal-content">
       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       <div class="modal-body p-0">
-        
+        <!-- Pricing Plans -->
         <div class="pb-6 rounded-top">
           <h4 class="text-center mb-2">Pricing Plans</h4>
           <p class="text-center mb-0">All plans include 40+ advanced tools and features to boost your product. Choose the best plan to fit your needs.</p>
@@ -32,7 +33,7 @@
           </div>
 
           <div class="row gy-3">
-            
+            <!-- Basic -->
             <div class="col-xl mb-md-0 mb-6">
               <div class="card border shadow-none">
                 <div class="card-body pt-12">
@@ -62,6 +63,7 @@
               </div>
             </div>
 
+            <!-- Standard -->
             <div class="col-xl mb-md-0 mb-6">
               <div class="card border-primary border shadow-none">
                 <div class="card-body position-relative pt-4">
@@ -96,6 +98,7 @@
               </div>
             </div>
 
+            <!-- Enterprise -->
             <div class="col-xl">
               <div class="card border shadow-none">
                 <div class="card-body pt-12">
@@ -130,7 +133,7 @@
             </div>
           </div>
         </div>
-        
+        <!--/ Pricing Plans -->
         <div class="text-center">
           <p>Still Not Convinced? Start with a 14-day FREE trial!</p>
           <a href="javascript:void(0);" class="btn btn-primary">Start your trial</a>
@@ -139,6 +142,7 @@
     </div>
   </div>
 </div>
+<!--/ Pricing Modal -->
 
 {% block page_js %}
 <script src="{% static 'js/pages-pricing.js' %}"></script>

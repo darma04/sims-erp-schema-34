@@ -27,7 +27,7 @@ Display Logic:
 {% user_can 'read' module as can_view %}
 
 {% if can_edit or can_delete %}
-  
+  {# User punya permission edit atau delete → Tampilkan dropdown menu #}
   <div class="dropdown">
     <button type="button" class="btn btn-sm btn-icon" data-bs-toggle="dropdown" aria-expanded="false">
       <i class="ri-more-2-line"></i>
@@ -68,12 +68,12 @@ Display Logic:
   </div>
 
 {% elif can_view %}
-  
+  {# User HANYA punya permission view → Tampilkan teks "View Only" #}
   <span class="badge bg-label-secondary">
     <i class="ri-eye-line me-1"></i>View Only
   </span>
 
 {% else %}
-  
+  {# User TIDAK punya permission apapun → Tampilkan strip #}
   <span class="text-muted">—</span>
 {% endif %}

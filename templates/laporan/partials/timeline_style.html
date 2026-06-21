@@ -5,7 +5,9 @@
    ==========================================================================
 {% endcomment %}
 <style>
+/* Materialize Timeline Outlined - Compact Version */
 
+/* Main Timeline Container */
 .timeline {
     position: relative;
     padding: 0;
@@ -13,25 +15,30 @@
     margin: 0;
 }
 
+/* Timeline Item - More Compact */
 .timeline-item {
     position: relative;
     padding-left: 2rem;
     padding-bottom: 0.75rem;
 }
 
+/* Transparent Timeline Item (No Background Box) */
 .timeline-item-transparent {
     background: transparent !important;
 }
 
+/* Dashed Left Border (Dotted Line) - Thinner */
 .border-left-dashed {
     border-left: 2px solid #d9dee3 !important;
     margin-left: 0.5rem;
 }
 
+/* Hide border for last item */
 .timeline-item:last-child.border-left-dashed {
     border-left: none !important;
 }
 
+/* Timeline Point (SOLID Circle Marker) - Sesuai Gambar */
 .timeline-point {
     position: absolute;
     left: 0;
@@ -41,12 +48,13 @@
     align-items: center;
     width: 0.875rem;
     height: 0.875rem;
-    background-color: #ffab00; 
+    background-color: #ffab00; /* Solid background */
     border-radius: 50%;
-    border: none; 
+    border: none; /* No border, solid fill */
     z-index: 1;
 }
 
+/* Timeline Point Colors - SOLID */
 .timeline-point-primary { background-color: #696cff; }
 .timeline-point-secondary { background-color: #8592a3; }
 .timeline-point-success { background-color: #71dd37; }
@@ -55,15 +63,18 @@
 .timeline-point-info { background-color: #03c3ec; }
 .timeline-point-dark { background-color: #233446; }
 
+/* Timeline Event Content Container - Compact */
 .timeline-event {
     position: relative;
     width: 100%;
 }
 
+/* Timeline Header - Removed (akan pakai struktur lebih sederhana) */
 .timeline-header {
     display: none;
 }
 
+/* Timeline Title - Compact */
 .timeline-title {
     font-size: 0.8125rem;
     font-weight: 500;
@@ -72,6 +83,7 @@
     line-height: 1.2;
 }
 
+/* Timeline Description - Compact */
 .timeline-desc {
     font-size: 0.75rem;
     color: #697a8d;
@@ -79,6 +91,7 @@
     line-height: 1.3;
 }
 
+/* Timeline User - Very Small */
 .timeline-user {
     font-size: 0.6875rem;
     color: #a1acb8;
@@ -87,10 +100,12 @@
     gap: 0.25rem;
 }
 
+/* Timeline Icon Small */
 .timeline-user i {
     font-size: 0.75rem;
 }
 
+/* Changes List - Inline Compact */
 .changes-list {
     margin: 0.25rem 0 0 0;
     padding: 0;
@@ -138,6 +153,7 @@
     margin: 0 0.125rem;
 }
 
+/* Remove changes-box styling */
 .changes-box {
     background: transparent;
     border: none;
@@ -145,6 +161,7 @@
     margin: 0;
 }
 
+/* Timeline Text Muted */
 .timeline .text-muted {
     font-size: 0.6875rem;
     color: #a1acb8;

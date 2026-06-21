@@ -25,7 +25,7 @@
     {% endif %}
 
     <div class="row">
-        
+        <!-- Kolom Kiri: Form Pengaturan -->
         <div class="col-lg-8">
             <div class="card mb-4">
                 <div class="card-header d-flex align-items-center justify-content-between">
@@ -43,11 +43,11 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    
                     <form method="POST" id="aiSettingsForm">
                         {% csrf_token %}
                         <input type="hidden" name="aktif" id="aktifHidden" value="{% if config.aktif %}on{% endif %}">
 
+                        <!-- Nama AI -->
                         <div class="mb-3">
                             <label class="form-label" for="ai_name">
                                 <i class="ri-user-star-line me-1"></i>Nama AI
@@ -58,6 +58,7 @@
                             <small class="text-muted">Nama yang ditampilkan di header chat AI</small>
                         </div>
 
+                        <!-- Provider -->
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label" for="provider">
@@ -85,6 +86,7 @@
                             </div>
                         </div>
 
+                        <!-- API Key -->
                         <div class="mb-3">
                             <label class="form-label" for="api_key">
                                 <i class="ri-key-2-line me-1"></i>API Key
@@ -106,6 +108,7 @@
 
                         <hr class="my-4">
 
+                        <!-- Advanced Settings -->
                         <h6 class="mb-3"><i class="ri-settings-4-line me-1"></i>Pengaturan Lanjutan</h6>
 
                         <div class="row mb-3">
@@ -127,6 +130,7 @@
                             </div>
                         </div>
 
+                        <!-- System Prompt -->
                         <div class="mb-3">
                             <label class="form-label" for="system_prompt">
                                 <i class="ri-chat-settings-line me-1"></i>System Prompt Tambahan
@@ -155,8 +159,9 @@
             </div>
         </div>
 
+        <!-- Kolom Kanan: Info & Panduan -->
         <div class="col-lg-4">
-            
+            <!-- Status Card -->
             <div class="card mb-4">
                 <div class="card-body text-center">
                     <div class="mb-3">
@@ -178,6 +183,7 @@
                 </div>
             </div>
 
+            <!-- Panduan Card -->
             <div class="card mb-4">
                 <div class="card-header">
                     <h6 class="mb-0"><i class="ri-question-line me-1"></i>Panduan</h6>
@@ -216,6 +222,7 @@
                 </div>
             </div>
 
+            <!-- Fitur Unggulan AI -->
             <div class="card mb-4">
                 <div class="card-header">
                     <h6 class="mb-0"><i class="ri-sparkling-2-line me-1"></i>Fitur Unggulan AI</h6>
@@ -227,76 +234,13 @@
                                 <i class="ri-bar-chart-box-line text-primary me-2" style="font-size:1.2rem;"></i>
                                 <div>
                                     <strong style="font-size:0.8rem;">Business Intelligence</strong>
-                                    <div class="text-muted" style="font-size:0.7rem;">Analisa penjualan, stok, biaya, keuntungan, PO, SO, POS</div>
+                                    <div class="text-muted" style="font-size:0.7rem;">Analisa penjualan, stok, biaya, keuntungan</div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-12">
                             <div class="d-flex align-items-center p-2 rounded" style="background:rgba(40,199,111,0.08);">
-                                <i class="ri-book-open-line text-success me-2" style="font-size:1.2rem;"></i>
-                                <div>
-                                    <strong style="font-size:0.8rem;">Panduan Penggunaan</strong>
-                                    <div class="text-muted" style="font-size:0.7rem;">Cara input semua modul, langkah demi langkah untuk user awam</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <div class="d-flex align-items-center p-2 rounded" style="background:rgba(255,159,67,0.08);">
-                                <i class="ri-file-list-3-line text-warning me-2" style="font-size:1.2rem;"></i>
-                                <div>
-                                    <strong style="font-size:0.8rem;">Alur Akuntansi & Jurnal</strong>
-                                    <div class="text-muted" style="font-size:0.7rem;">Jurnal otomatis, CoA, neraca, laba rugi, double-entry</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <div class="d-flex align-items-center p-2 rounded" style="background:rgba(234,84,85,0.08);">
-                                <i class="ri-money-dollar-circle-line text-danger me-2" style="font-size:1.2rem;"></i>
-                                <div>
-                                    <strong style="font-size:0.8rem;">Penggajian & Payroll</strong>
-                                    <div class="text-muted" style="font-size:0.7rem;">Gaji pokok, tunjangan, potongan BPJS, PPh21, gaji bersih</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <div class="d-flex align-items-center p-2 rounded" style="background:rgba(0,207,232,0.08);">
-                                <i class="ri-receipt-line text-info me-2" style="font-size:1.2rem;"></i>
-                                <div>
-                                    <strong style="font-size:0.8rem;">Pajak PPN</strong>
-                                    <div class="text-muted" style="font-size:0.7rem;">Faktur pajak keluaran/masukan, rekap PPN, kurang/lebih bayar</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <div class="d-flex align-items-center p-2 rounded" style="background:rgba(168,85,247,0.08);">
-                                <i class="ri-bank-card-line me-2" style="font-size:1.2rem;color:#a855f7;"></i>
-                                <div>
-                                    <strong style="font-size:0.8rem;">Piutang & Hutang</strong>
-                                    <div class="text-muted" style="font-size:0.7rem;">Aging, jatuh tempo, pembayaran, posisi piutang-hutang</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <div class="d-flex align-items-center p-2 rounded" style="background:rgba(20,184,166,0.08);">
-                                <i class="ri-wallet-3-line me-2" style="font-size:1.2rem;color:#14b8a6;"></i>
-                                <div>
-                                    <strong style="font-size:0.8rem;">Kas & Bank Treasury</strong>
-                                    <div class="text-muted" style="font-size:0.7rem;">Saldo, mutasi, transfer, rekonsiliasi bank</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <div class="d-flex align-items-center p-2 rounded" style="background:rgba(99,102,241,0.08);">
-                                <i class="ri-shopping-cart-2-line me-2" style="font-size:1.2rem;color:#6366f1;"></i>
-                                <div>
-                                    <strong style="font-size:0.8rem;">Diskon & Ongkir</strong>
-                                    <div class="text-muted" style="font-size:0.7rem;">Diskon per item & order, ongkir SO & PO, perhitungan total</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <div class="d-flex align-items-center p-2 rounded" style="background:rgba(236,72,153,0.08);">
-                                <i class="ri-group-line me-2" style="font-size:1.2rem;color:#ec4899;"></i>
+                                <i class="ri-group-line text-success me-2" style="font-size:1.2rem;"></i>
                                 <div>
                                     <strong style="font-size:0.8rem;">Analisa Pelanggan</strong>
                                     <div class="text-muted" style="font-size:0.7rem;">Top customer, customer tidak aktif, frekuensi beli</div>
@@ -304,8 +248,8 @@
                             </div>
                         </div>
                         <div class="col-12">
-                            <div class="d-flex align-items-center p-2 rounded" style="background:rgba(245,158,11,0.08);">
-                                <i class="ri-funds-line me-2" style="font-size:1.2rem;color:#f59e0b;"></i>
+                            <div class="d-flex align-items-center p-2 rounded" style="background:rgba(255,159,67,0.08);">
+                                <i class="ri-funds-line text-warning me-2" style="font-size:1.2rem;"></i>
                                 <div>
                                     <strong style="font-size:0.8rem;">Deteksi Kebocoran Profit</strong>
                                     <div class="text-muted" style="font-size:0.7rem;">Margin rendah, biaya naik, produk slow moving</div>
@@ -317,7 +261,61 @@
                                 <i class="ri-shield-keyhole-line text-danger me-2" style="font-size:1.2rem;"></i>
                                 <div>
                                     <strong style="font-size:0.8rem;">Fraud Detection</strong>
-                                    <div class="text-muted" style="font-size:0.7rem;">Diskon tidak wajar, transaksi mencurigakan, rekonsiliasi kas</div>
+                                    <div class="text-muted" style="font-size:0.7rem;">Diskon tidak wajar, transaksi mencurigakan</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex align-items-center p-2 rounded" style="background:rgba(0,207,232,0.08);">
+                                <i class="ri-quill-pen-line text-info me-2" style="font-size:1.2rem;"></i>
+                                <div>
+                                    <strong style="font-size:0.8rem;">AI Copywriter</strong>
+                                    <div class="text-muted" style="font-size:0.7rem;">Caption, deskripsi produk, broadcast WhatsApp</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex align-items-center p-2 rounded" style="background:rgba(168,85,247,0.08);">
+                                <i class="ri-megaphone-line me-2" style="font-size:1.2rem;color:#a855f7;"></i>
+                                <div>
+                                    <strong style="font-size:0.8rem;">Marketing Generator</strong>
+                                    <div class="text-muted" style="font-size:0.7rem;">Campaign plan, strategi promosi, content calendar</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex align-items-center p-2 rounded" style="background:rgba(236,72,153,0.08);">
+                                <i class="ri-calendar-todo-line me-2" style="font-size:1.2rem;color:#ec4899;"></i>
+                                <div>
+                                    <strong style="font-size:0.8rem;">Campaign Planner</strong>
+                                    <div class="text-muted" style="font-size:0.7rem;">Content calendar, budget allocation, A/B testing</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex align-items-center p-2 rounded" style="background:rgba(20,184,166,0.08);">
+                                <i class="ri-road-map-line me-2" style="font-size:1.2rem;color:#14b8a6;"></i>
+                                <div>
+                                    <strong style="font-size:0.8rem;">90 Days Business Plan</strong>
+                                    <div class="text-muted" style="font-size:0.7rem;">Roadmap 3 bulan, milestone, target revenue</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex align-items-center p-2 rounded" style="background:rgba(245,158,11,0.08);">
+                                <i class="ri-building-2-line me-2" style="font-size:1.2rem;color:#f59e0b;"></i>
+                                <div>
+                                    <strong style="font-size:0.8rem;">Multi-Branch Analyzer</strong>
+                                    <div class="text-muted" style="font-size:0.7rem;">Bandingkan performa cabang, ranking, rekomendasi</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex align-items-center p-2 rounded" style="background:rgba(99,102,241,0.08);">
+                                <i class="ri-instagram-line me-2" style="font-size:1.2rem;color:#6366f1;"></i>
+                                <div>
+                                    <strong style="font-size:0.8rem;">Content Generator</strong>
+                                    <div class="text-muted" style="font-size:0.7rem;">Caption IG, Script TikTok, Deskripsi Shopee, WA Blast</div>
                                 </div>
                             </div>
                         </div>
@@ -341,10 +339,19 @@
                         </div>
                         <div class="col-12">
                             <div class="d-flex align-items-center p-2 rounded" style="background:rgba(255,159,67,0.08);">
-                                <i class="ri-compass-3-line text-warning me-2" style="font-size:1.2rem;"></i>
+                                <i class="ri-calendar-schedule-line text-warning me-2" style="font-size:1.2rem;"></i>
+                                <div>
+                                    <strong style="font-size:0.8rem;">Laporan Terjadwal</strong>
+                                    <div class="text-muted" style="font-size:0.7rem;">Laporan otomatis mingguan setiap Senin pagi</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex align-items-center p-2 rounded" style="background:rgba(234,84,85,0.08);">
+                                <i class="ri-compass-3-line text-danger me-2" style="font-size:1.2rem;"></i>
                                 <div>
                                     <strong style="font-size:0.8rem;">SWOT & Executive Summary</strong>
-                                    <div class="text-muted" style="font-size:0.7rem;">Analisa strategi, forecasting, rencana aksi, risiko</div>
+                                    <div class="text-muted" style="font-size:0.7rem;">Analisa strategi bisnis, forecasting, risiko</div>
                                 </div>
                             </div>
                         </div>
@@ -357,36 +364,11 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12">
-                            <div class="d-flex align-items-center p-2 rounded" style="background:rgba(236,72,153,0.08);">
-                                <i class="ri-megaphone-line me-2" style="font-size:1.2rem;color:#ec4899;"></i>
-                                <div>
-                                    <strong style="font-size:0.8rem;">Marketing & Content Generator</strong>
-                                    <div class="text-muted" style="font-size:0.7rem;">Caption IG, TikTok, Shopee, WA Blast, campaign plan</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <div class="d-flex align-items-center p-2 rounded" style="background:rgba(20,184,166,0.08);">
-                                <i class="ri-building-2-line me-2" style="font-size:1.2rem;color:#14b8a6;"></i>
-                                <div>
-                                    <strong style="font-size:0.8rem;">Multi-Branch & Aset Tetap</strong>
-                                    <div class="text-muted" style="font-size:0.7rem;">Performa cabang, penyusutan aset, disposal</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <div class="d-flex align-items-center p-2 rounded" style="background:rgba(59,130,246,0.08);">
-                                <i class="ri-tools-line me-2" style="font-size:1.2rem;color:#3b82f6;"></i>
-                                <div>
-                                    <strong style="font-size:0.8rem;">Service Center & Sparepart</strong>
-                                    <div class="text-muted" style="font-size:0.7rem;">Order service, diagnosa, teknisi, sparepart, garansi</div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Keamanan Card -->
             <div class="card">
                 <div class="card-header">
                     <h6 class="mb-0"><i class="ri-shield-check-line me-1"></i>Keamanan Data</h6>
@@ -409,7 +391,7 @@
 {% block page_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    
+    // Toggle API Key visibility
     const toggleBtn = document.getElementById('toggleApiKey');
     const apiKeyInput = document.getElementById('api_key');
     if (toggleBtn && apiKeyInput) {
@@ -425,6 +407,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Temperature slider
     const tempSlider = document.getElementById('temperature');
     const tempValue = document.getElementById('tempValue');
     if (tempSlider && tempValue) {
@@ -433,6 +416,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Aktif switch sync
     const aktifSwitch = document.getElementById('aktifSwitch');
     const aktifHidden = document.getElementById('aktifHidden');
     const statusLabel = document.getElementById('statusLabel');
@@ -443,6 +427,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Provider change — update model hint
     const providerSelect = document.getElementById('provider');
     const modelInput = document.getElementById('model_name');
     const defaults = {
@@ -454,7 +439,7 @@ document.addEventListener('DOMContentLoaded', function() {
         providerSelect.addEventListener('change', function() {
             const defaultModel = defaults[this.value] || '';
             modelInput.placeholder = defaultModel;
-            
+            // Auto-switch model jika model saat ini milik provider lain
             const currentVal = modelInput.value;
             const isOtherProvider = (
                 (this.value === 'groq' && !currentVal.startsWith('llama') && !currentVal.startsWith('mixtral') && !currentVal.startsWith('gemma')) ||

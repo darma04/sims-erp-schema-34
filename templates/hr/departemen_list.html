@@ -25,7 +25,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -43,6 +43,7 @@
         {% endif %}
     </div>
 
+    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -62,7 +63,7 @@
                     </select>
                 </div>
             </div>
-            
+            <!-- Baris kedua: Pilih Kolom (kiri) dan Tombol Filter (kanan) -->
             <div class="row g-3 mt-2 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
@@ -123,6 +124,7 @@
         </div>
     </div>
 
+    <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Data Departemen</h5>
@@ -135,8 +137,8 @@
                 </button>
             </div>
         </div>
-        <div class="card-datatable">
-            <table class="datatables-departemen table table-hover" id="departemenTable" style="width:100%">
+        <div class="card-datatable table-responsive">
+            <table class="datatables-departemen table table-hover" id="departemenTable">
                 <thead>
                     <tr>
                         <th>Kode</th>
@@ -200,13 +202,36 @@
                             </div>
                             <p class="text-muted mb-0 d-block">Belum ada data departemen</p>
                         </td>
-                    <td></td><td></td><td></td><td></td><td></td></tr>
+                    </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="3" class="text-start ps-4 py-3">
+                            <div class="d-flex align-items-center">
+                                <span class="d-inline-flex align-items-center justify-content-center bg-label-primary rounded-circle me-2" style="width: 40px; height: 40px;">
+                                    <i class="ri-calculator-line" style="font-size: 1.25rem;"></i>
+                                </span>
+                                <div>
+                                    <strong>RINGKASAN</strong>
+                                    <br><small class="text-muted">Total {{ total_departemen|default:0 }} Departemen</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3 text-center">
+                            <span class="badge bg-label-info d-inline-flex align-items-center gap-1" style="font-size: 0.85rem; padding: 0.4rem 0.6rem;">
+                                <i class="ri-team-line"></i>
+                                <span>{{ total_karyawan|default:0 }} Karyawan</span>
+                            </span>
+                        </td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
 
+    <!-- Delete Modal -->
     <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -250,7 +275,6 @@ let dataTable;
 $(document).ready(function() {
     {% if departemen_list %}
     dataTable = $('#departemenTable').DataTable({
-            scrollX: true,
         language: {
             "sEmptyTable": "Tidak ada data", "sLengthMenu": "Tampilkan _MENU_ data",
             "sZeroRecords": "Tidak ditemukan data yang sesuai", "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
@@ -261,7 +285,7 @@ $(document).ready(function() {
         lengthMenu: [[10, 25, 50, -1], ['10', '25', '50', 'Semua']],
         responsive: false,
         columnDefs: [{ orderable: false, targets: [5] }],
-        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
     });
     {% endif %}
 });
@@ -297,6 +321,17 @@ function deselectAllColumns() {
     toggleColumns();
 }
 
+        // Template Data for Independent Headers/Footers
+                // Template Data for Independent Headers/Footers
+                // Template Data for Independent Headers/Footers
+            // Company Information (from Template Cetak settings)
+                // Template Data for Independent Headers/Footers
+                // Template Data for Independent Headers/Footers
+                // Template Data for Independent Headers/Footers
+                // Template Data for Independent Headers/Footers
+                // Template Data for Independent Headers/Footers
+                // Template Data for Independent Headers/Footers
+                // Template Data for Independent Headers/Footers
     const EXCEL_INFO = {
         name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
         address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -315,12 +350,14 @@ function deselectAllColumns() {
         copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
     };
 
+
+// === FOOTER DATA: Explicit summary values per column index ===
 const FOOTER_DATA = { 3: "{{ total_karyawan|default:'0' }}" };
 const FOOTER_LABEL = 'RINGKASAN';
 
     function exportToExcel() {
         const table = document.getElementById('departemenTable');
-        if (!table) { showExportError(); return; }
+        if (!table) { alert('Tabel tidak ditemukan!'); return; }
 
         const tableObj = new $.fn.dataTable.Api('#departemenTable');
 
@@ -340,6 +377,7 @@ const FOOTER_LABEL = 'RINGKASAN';
         html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
         html += '<body>';
 
+        // --- ADD EXCEL HEADER (Company Info) ---
         html += '<table border="0">';
         if (typeof EXCEL_INFO !== 'undefined') {
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
@@ -358,7 +396,7 @@ const FOOTER_LABEL = 'RINGKASAN';
 
         html += '</tr></thead><tbody>';
 
-          tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
+        tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
             html += '<tr>';
             visibleColumns.forEach(col => {
                 let cellNode = tableObj.cell(rowIdx, col.index).node();
@@ -368,6 +406,7 @@ const FOOTER_LABEL = 'RINGKASAN';
             html += '</tr>';
         });
 
+        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
             let ri = 0;
@@ -408,7 +447,7 @@ const FOOTER_LABEL = 'RINGKASAN';
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('departemenTable');
-        if (!table) { showExportError(); return; }
+        if (!table) { alert('Tabel tidak ditemukan!'); return; }
 
         const tableObj = new $.fn.dataTable.Api('#departemenTable');
 
@@ -442,6 +481,7 @@ const FOOTER_LABEL = 'RINGKASAN';
             if (row.length > 0) body.push(row);
         });
 
+        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             const summaryRow = [];
             let ri = 0;
@@ -564,42 +604,4 @@ $('#confirmDeleteBtn').on('click', function() {
     });
 });
 </script>
-
-<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-warning align-items-center py-3">
-                <h5 class="modal-title text-dark mb-0">
-                    <i class="ri-error-warning-line me-2"></i>Export Gagal
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center py-3">
-                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
-                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
-                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
-                    <i class="ri-close-line me-1"></i>Tutup
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-
-function showExportError() {
-    var modal = document.getElementById('exportErrorModal');
-    if (modal) {
-        new bootstrap.Modal(modal).show();
-    } else {
-        alert('Tabel tidak ditemukan!');
-    }
-}
-</script>
-
 {% endblock page_js %}

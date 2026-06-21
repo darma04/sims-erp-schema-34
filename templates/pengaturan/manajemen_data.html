@@ -14,11 +14,12 @@
 <link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
 <link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
 <style>
-  
+  /* Border penuh pada action cards (semua sisi) dengan aksen kiri lebih tebal */
   .action-card-backup { border: 1.5px solid #7367f0 !important; border-left: 4px solid #7367f0 !important; }
   .action-card-restore { border: 1.5px solid #28c76f !important; border-left: 4px solid #28c76f !important; }
   .action-card-reset { border: 1.5px solid #ea5455 !important; border-left: 4px solid #ea5455 !important; }
 
+  /* DataTables Custom Styling - sama seperti Daftar Produk */
   .dataTables_wrapper .dataTables_info {
       padding: 1rem 1.5rem;
       font-size: 0.875rem;
@@ -67,8 +68,9 @@
       padding-bottom: 0;
   }
 
+  /* Mobile Responsiveness - Horizontal Scroll untuk tabel, tanpa scroll untuk pagination */
   @media (max-width: 768px) {
-      
+      /* Wrapper luar: sembunyikan overflow agar pagination tidak scroll */
       .card-datatable {
           overflow-x: hidden !important;
           overflow-y: visible !important;
@@ -76,18 +78,21 @@
           max-width: 100%;
       }
 
+      /* Tabel dipaksa lebar agar bisa scroll di dalam .table-responsive */
       #riwayatTable {
           min-width: 900px !important;
           width: 900px !important;
-          
+          table-layout: auto !important;
       }
 
+      /* DataTables wrapper: sembunyikan overflow */
       .dataTables_wrapper {
           overflow-x: hidden !important;
           max-width: 100% !important;
           width: 100% !important;
       }
 
+      /* Row info + pagination: TIDAK boleh overflow */
       .dataTables_wrapper > .row {
           overflow-x: hidden !important;
           margin-left: 0 !important;
@@ -95,6 +100,7 @@
           max-width: 100% !important;
       }
 
+      /* Pagination container */
       .dataTables_wrapper .dataTables_paginate {
           overflow-x: hidden !important;
           max-width: 100% !important;
@@ -104,6 +110,7 @@
           gap: 0.25rem;
       }
 
+      /* Pagination buttons bisa wrap ke baris baru */
       .dataTables_wrapper .dataTables_paginate span {
           display: flex !important;
           flex-wrap: wrap !important;
@@ -116,6 +123,7 @@
           margin: 0 !important;
       }
 
+      /* Info text */
       .dataTables_wrapper .dataTables_info {
           overflow-x: hidden !important;
           max-width: 100% !important;
@@ -124,30 +132,34 @@
           word-wrap: break-word !important;
       }
 
+      /* Length + Filter row */
       .dataTables_wrapper .dataTables_length,
       .dataTables_wrapper .dataTables_filter {
           overflow-x: hidden !important;
           max-width: 100% !important;
       }
 
+      /* Column di dalam row DataTables */
       .dataTables_wrapper > .row > [class*="col-"] {
           overflow-x: hidden !important;
           max-width: 100% !important;
       }
 
+      /* Tabel cell styling */
       #riwayatTable th,
       #riwayatTable td {
           font-size: 0.8rem;
           white-space: nowrap;
           min-width: 80px;
       }
-      
+      /* Kolom catatan lebih lebar */
       #riwayatTable th:nth-child(8),
       #riwayatTable td:nth-child(8) {
           min-width: 150px;
       }
   }
 
+  /* Responsive: mobile stat cards */
   @media (max-width: 576px) {
     .container-p-y { padding-top: 1rem !important; padding-bottom: 1rem !important; }
     .action-card-backup, .action-card-restore, .action-card-reset { border-left-width: 5px !important; }
@@ -156,10 +168,12 @@
     .stat-card h6 { font-size: 0.75rem; }
   }
 
+  /* Responsive: tablet */
   @media (min-width: 577px) and (max-width: 991px) {
     .stat-card .card-body { padding: 1rem !important; }
   }
 
+  /* Hover effect pada action cards */
   .action-card-backup:hover,
   .action-card-restore:hover,
   .action-card-reset:hover {
@@ -177,7 +191,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -187,6 +201,7 @@
         </div>
     </div>
 
+    <!-- Alert Messages -->
     {% if messages %}
     {% for message in messages %}
     <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
@@ -205,6 +220,7 @@
     {% endfor %}
     {% endif %}
 
+    <!-- Info Card: Statistik Database -->
     <div class="row mb-4">
         <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-6 mb-4">
             <div class="card h-100 stat-card">
@@ -282,8 +298,9 @@
         </div>
     </div>
 
+    <!-- Action Cards -->
     <div class="row mb-4">
-        
+        <!-- Backup Card -->
         {% if can_create.pengaturan %}
         <div class="col-lg-4 col-md-6 col-sm-12 mb-4">
             <div class="card h-100 action-card-backup">
@@ -303,7 +320,6 @@
                         Buat cadangan seluruh database dan file media (gambar produk, foto karyawan, logo, bukti transaksi, dll). 
                         File backup berformat ZIP bisa digunakan untuk restore di kemudian hari.
                     </p>
-                    
                     <form method="post" action="{% url 'pengaturan:backup_data' %}" id="backupForm">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-primary w-100" id="btnBackup">
@@ -316,6 +332,7 @@
         </div>
         {% endif %}
 
+        <!-- Restore Card -->
         {% if can_create.pengaturan %}
         <div class="col-lg-4 col-md-6 col-sm-12 mb-4">
             <div class="card h-100 action-card-restore">
@@ -344,6 +361,7 @@
         </div>
         {% endif %}
 
+        <!-- Reset Card -->
         {% if can_delete.pengaturan %}
         <div class="col-lg-4 col-md-6 col-sm-12 mb-4">
             <div class="card h-100 action-card-reset">
@@ -373,6 +391,7 @@
         {% endif %}
     </div>
 
+    <!-- Detail Statistik -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="ri-bar-chart-box-line me-2"></i>Detail Statistik Database</h5>
@@ -460,6 +479,7 @@
         </div>
     </div>
 
+    <!-- Bersihkan Data Log -->
     {% if can_delete.pengaturan %}
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -467,7 +487,7 @@
         </div>
         <div class="card-body">
             <div class="row g-3">
-                
+                <!-- Bersihkan Log Aktivitas -->
                 <div class="col-lg-6 col-md-6">
                     <div class="card border shadow-none h-100">
                         <div class="card-body">
@@ -494,7 +514,7 @@
                         </div>
                     </div>
                 </div>
-                
+                <!-- Bersihkan Log Notifikasi -->
                 <div class="col-lg-6 col-md-6">
                     <div class="card border shadow-none h-100">
                         <div class="card-body">
@@ -526,6 +546,7 @@
     </div>
     {% endif %}
 
+    <!-- Riwayat Backup/Restore/Reset -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="ri-history-line me-2"></i>Riwayat Aktivitas</h5>
@@ -593,10 +614,10 @@
     </div>
 </div>
 
+<!-- Modal Restore -->
 <div class="modal fade" id="restoreModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            
             <form method="post" action="{% url 'pengaturan:restore_data' %}" enctype="multipart/form-data" id="restoreForm">
                 {% csrf_token %}
                 <div class="modal-header">
@@ -637,10 +658,10 @@
     </div>
 </div>
 
+<!-- Modal Reset -->
 <div class="modal fade" id="resetModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            
             <form method="post" action="{% url 'pengaturan:reset_data' %}" id="resetForm">
                 {% csrf_token %}
                 <div class="modal-header">
@@ -705,6 +726,7 @@
     </div>
 </div>
 
+<!-- Modal Hapus Riwayat -->
 {% if can_delete.pengaturan %}
 <div class="modal fade" id="hapusRiwayatModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -729,7 +751,6 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Batal</button>
-                
                 <form method="post" id="hapusRiwayatForm" style="display:inline;">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-danger">
@@ -742,11 +763,11 @@
 </div>
 {% endif %}
 
+<!-- Modal Bersihkan Log Aktivitas -->
 {% if can_delete.pengaturan %}
 <div class="modal fade" id="bersihkanLogAktivitasModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            
             <form method="post" action="{% url 'pengaturan:bersihkan_log_aktivitas' %}">
                 {% csrf_token %}
                 <div class="modal-header">
@@ -783,11 +804,11 @@
 </div>
 {% endif %}
 
+<!-- Modal Bersihkan Log Notifikasi -->
 {% if can_delete.pengaturan %}
 <div class="modal fade" id="bersihkanLogNotifikasiModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            
             <form method="post" action="{% url 'pengaturan:bersihkan_log_notifikasi' %}">
                 {% csrf_token %}
                 <div class="modal-header">
@@ -828,10 +849,9 @@
 {% block page_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    
+    // DataTable untuk riwayat
     if (document.getElementById('riwayatTable') && typeof $.fn.DataTable !== 'undefined') {
         $('#riwayatTable').DataTable({
-            scrollX: true,
             responsive: false,
             ordering: true,
             order: [[1, 'desc']],
@@ -852,10 +872,11 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             pageLength: 10,
             lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Semua"]],
-            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
         });
     }
 
+    // Konfirmasi Reset — enable button hanya jika ketik HAPUS SEMUA
     var konfirmasiInput = document.getElementById('konfirmasi');
     var btnReset = document.getElementById('btnReset');
     if (konfirmasiInput && btnReset) {
@@ -864,6 +885,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Reset form ketika modal ditutup
     var resetModal = document.getElementById('resetModal');
     if (resetModal) {
         resetModal.addEventListener('hidden.bs.modal', function() {
@@ -872,6 +894,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Handler tombol hapus riwayat — buka modal konfirmasi
     document.querySelectorAll('.btn-hapus-riwayat').forEach(function(btn) {
         btn.addEventListener('click', function() {
             var id = this.getAttribute('data-id');
@@ -879,14 +902,17 @@ document.addEventListener('DOMContentLoaded', function() {
             var form = document.getElementById('hapusRiwayatForm');
             var info = document.getElementById('hapusRiwayatInfo');
             
+            // Set action URL form secara dinamis
             form.action = '/pengaturan/manajemen-data/riwayat/' + id + '/hapus/';
-            
+            // Tampilkan info tanggal di modal
             if (info) info.textContent = 'Tanggal: ' + tanggal;
             
+            // Buka modal
             new bootstrap.Modal(document.getElementById('hapusRiwayatModal')).show();
         });
     });
 
+    // File info display untuk restore
     var fileInput = document.getElementById('backup_file');
     if (fileInput) {
         fileInput.addEventListener('change', function() {
@@ -914,13 +940,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Status loading untuk tombol-tombol
     var backupForm = document.getElementById('backupForm');
     if (backupForm) {
         backupForm.addEventListener('submit', function() {
             var btn = document.getElementById('btnBackup');
             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Memproses...';
             btn.disabled = true;
-            
+            // Re-enable setelah 5 detik (file download)
             setTimeout(function() {
                 btn.innerHTML = '<i class="ri-download-cloud-2-line me-1"></i>Download Backup';
                 btn.disabled = false;

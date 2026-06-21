@@ -3,29 +3,6 @@
 {% load i18n %}
 {% load humanize %}
 
-{% comment %}
-  ==========================================================================
-  SERVICE CENTER - Detail Order
-  ==========================================================================
-  Menampilkan informasi lengkap satu order termasuk data relasi.
-  Detail page biasanya menampilkan data read-only (tidak bisa diedit langsung).
-
-  FLOW DATA:
-  - URL: /service_center/order/<pk>/- View: DetailView mengambil 1 object berdasarkan primary key- Context: object + data relasi (items, history, dll)- Template: Render semua informasi ke HTML
-
-  RELASI KE MODUL LAIN:
-  - apps/service_center/views.py -> OrderDetailView- apps/service_center/models.py -> Model Order- get_context_data(): Menambahkan data relasi ke context
-
-  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
-  - BOLEH diubah: Layout detail, urutan informasi- BOLEH ditambah: Informasi baru dari relasi- JANGAN diubah: {% extends %} dan {% block %} structure
-
-  TIPS & DEBUGGING:
-  - Error 'DoesNotExist'? Primary key tidak ditemukan di database- Data relasi kosong? Cek get_context_data() di views.py
-
-  ==========================================================================
-{% endcomment %}
-
-
 {% block title %}{{ order.nomor_service }} - Detail Service{% endblock %}
 
 {% block page_css %}
@@ -49,7 +26,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-
+<!-- Header -->
 <div class="d-flex align-items-center justify-content-between mb-6">
   <div>
     <h4 class="mb-1">
@@ -79,9 +56,10 @@
 </div>
 
 <div class="row g-6">
-  
+  <!-- Kolom Kiri: Info Utama -->
   <div class="col-xl-8">
 
+    <!-- Status & Prioritas -->
     <div class="card mb-6">
       <div class="card-body">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
@@ -115,6 +93,7 @@
       </div>
     </div>
 
+    <!-- Info Perangkat -->
     <div class="card mb-6">
       <div class="card-header">
         <h5 class="card-title mb-0"><i class="ri-smartphone-line me-2"></i>Info Perangkat</h5>
@@ -157,6 +136,7 @@
       </div>
     </div>
 
+    <!-- Keluhan & Kondisi -->
     <div class="card mb-6">
       <div class="card-header">
         <h5 class="card-title mb-0"><i class="ri-stethoscope-line me-2"></i>Keluhan & Kondisi</h5>
@@ -185,12 +165,13 @@
       </div>
     </div>
 
+    <!-- Detail Layanan / Biaya -->
     <div class="card mb-6">
       <div class="card-header d-flex align-items-center justify-content-between">
         <h5 class="card-title mb-0"><i class="ri-list-check me-2"></i>Detail Layanan & Biaya</h5>
       </div>
       <div class="card-body">
-        
+        <!-- Tabel items yang sudah ada -->
         {% if items %}
         <div class="table-responsive mb-4">
           <table class="table">
@@ -244,6 +225,7 @@
         <p class="text-muted mb-4">Belum ada detail layanan. Tambahkan di bawah:</p>
         {% endif %}
 
+        <!-- Form tambah/edit items -->
         <div class="border rounded p-3 bg-light">
           <div class="d-flex align-items-center justify-content-between mb-3">
             <h6 class="mb-0"><i class="ri-add-circle-line me-1"></i>Tambah / Edit Layanan</h6>
@@ -251,7 +233,6 @@
               <i class="ri-add-line me-1"></i>Tambah Layanan
             </button>
           </div>
-          
           <form method="post" action="{% url 'service_center:update_items' order.pk %}">
             {% csrf_token %}
             {{ item_formset.management_form }}
@@ -324,7 +305,7 @@
         </script>
       </div>
     </div>
-    
+    <!-- ═══ Penggunaan Sparepart ═══ -->
     <div class="card mb-6">
       <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="card-title mb-0"><i class="ri-cpu-line me-2"></i>Penggunaan Sparepart</h5>
@@ -335,6 +316,7 @@
         {% endif %}
       </div>
 
+      <!-- Form Tambah Sparepart (collapsible) -->
       <div class="collapse" id="formTambahSparepart">
         <div class="card-body border-bottom">
           <div class="row g-3">
@@ -428,8 +410,9 @@
             </tbody>
             <tfoot>
               <tr class="table-light">
-                <td colspan="6" class="text-end fw-bold">Total Harga Sparepart:</td>
+                <td colspan="5" class="text-end fw-bold">Total Harga Sparepart:</td>
                 <td class="text-end fw-bold text-primary" id="totalBiayaSparepart">Rp {{ total_biaya_sparepart|floatformat:0 }}</td>
+                <td></td>
               </tr>
             </tfoot>
           </table>
@@ -449,6 +432,7 @@
       const orderPk = {{ order.pk }};
       let searchTimeout;
 
+      // Search sparepart
       const searchInput = document.getElementById('searchSparepart');
       const resultsDiv = document.getElementById('sparepartResults');
 
@@ -499,6 +483,7 @@
         });
       }
 
+      // Simpan sparepart
       const btnSimpan = document.getElementById('btnSimpanSparepart');
       if (btnSimpan) {
         btnSimpan.addEventListener('click', function() {
@@ -535,6 +520,7 @@
       }
     })();
 
+    // Edit sparepart
     function editSparepart(orderPk, sparepartId, currentJumlah, currentHarga, currentGudangId) {
       const newJumlah = prompt('Jumlah baru:', currentJumlah);
       if (newJumlah === null) return;
@@ -557,6 +543,7 @@
       .catch(err => alert('Network error: ' + err));
     }
 
+    // Hapus sparepart
     function hapusSparepart(orderPk, sparepartId) {
       if (!confirm('Yakin hapus sparepart ini? Stok akan dikembalikan.')) return;
 
@@ -573,6 +560,7 @@
     }
     </script>
 
+    <!-- Riwayat Status -->
     <div class="card">
       <div class="card-header">
         <h5 class="card-title mb-0"><i class="ri-history-line me-2"></i>Riwayat Status</h5>
@@ -607,8 +595,10 @@
     </div>
   </div>
 
+  <!-- Kolom Kanan: Sidebar -->
   <div class="col-xl-4">
 
+    <!-- Info Pelanggan -->
     <div class="card mb-6">
       <div class="card-header">
         <h5 class="card-title mb-0"><i class="ri-user-heart-line me-2"></i>Pelanggan</h5>
@@ -625,6 +615,7 @@
       </div>
     </div>
 
+    <!-- Info Tanggal -->
     <div class="card mb-6">
       <div class="card-header">
         <h5 class="card-title mb-0"><i class="ri-calendar-line me-2"></i>Informasi Waktu</h5>
@@ -665,13 +656,13 @@
       </div>
     </div>
 
+    <!-- Update Status -->
     {% if can_edit.service_center %}
     <div class="card mb-6">
       <div class="card-header">
         <h5 class="card-title mb-0"><i class="ri-refresh-line me-2"></i>Update Status</h5>
       </div>
       <div class="card-body">
-        
         <form method="post" action="{% url 'service_center:update_status' order.pk %}">
           {% csrf_token %}
           <div class="mb-3">
@@ -698,6 +689,7 @@
     </div>
     {% endif %}
 
+    <!-- Update Pembayaran -->
     <div class="card mb-6">
       <div class="card-header">
         <h5 class="card-title mb-0"><i class="ri-money-dollar-circle-line me-2"></i>Pembayaran</h5>
@@ -730,7 +722,6 @@
           </div>
         </div>
         {% if can_edit.service_center %}
-        
         <form method="post" action="{% url 'service_center:update_pembayaran' order.pk %}">
           {% csrf_token %}
           <div class="mb-3">
@@ -753,6 +744,7 @@
       </div>
     </div>
 
+    <!-- Estimasi Biaya -->
     {% if order.estimasi_biaya > 0 %}
     <div class="card">
       <div class="card-body text-center">

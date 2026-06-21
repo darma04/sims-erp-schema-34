@@ -16,13 +16,13 @@
     <title>{% block title %}{% endblock title %} | {{ system_title|default:"ERP System" }}</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
-    
+    <!-- Meta Deskripsi SEO (Dinamis dari Pengaturan Meta Sistem) -->
     <meta name="description" content="{% if system_description %}{{ system_description }}{% else %}{% get_theme_variables 'template_description' %}{% endif %}" />
-    
+    <!-- Meta Keywords SEO (Dinamis dari Pengaturan Meta Sistem) -->
     <meta name="keywords" content="{% if system_keywords %}{{ system_keywords }}{% else %}{% get_theme_variables 'template_keyword' %}{% endif %}" />
-    
+    <!-- Canonical SEO -->
     <link rel="canonical" href="{% get_theme_variables 'product_page' %}">
-    
+    <!-- Favicon (dinamis dari Pengaturan Sistem) -->
     {% if system_favicon_url %}
     <link rel="icon" type="image/png" href="{{ system_favicon_url }}" />
     <link rel="shortcut icon" href="{{ system_favicon_url }}" />
@@ -31,12 +31,19 @@
     <link rel="shortcut icon" href="{% static 'img/favicon/logo-default.png' %}" />
     {% endif %}
 
+    <!-- Include the styles partial -->
     {% include is_front|yesno:"./partials/styles_front.html,./partials/styles.html" %}
 
     {% block vendor_css %}{% endblock vendor_css %}
 
+    <!--Page CSS-->
+    <!-- ═══════════════════════════════════════════════════════════════════
+         MOBILE NAVBAR FIX — Padding Seimbang untuk Capacitor WebView
+         Menambahkan padding-top pada navbar agar konten (ikon ≡, Q, dll.)
+         tidak menempel ke tepi atas layar setelah status bar.
+         ═══════════════════════════════════════════════════════════════════ -->
     <style>
-      
+      /* Navbar padding fix untuk mobile app (Capacitor WebView) */
       @media (max-width: 1199.98px) {
         .layout-navbar #layout-navbar,
         .layout-navbar.navbar,
@@ -51,7 +58,7 @@
           padding-bottom: 4px !important;
         }
       }
-      
+      /* Fallback safe-area untuk device yang mendukung */
       @supports (padding-top: env(safe-area-inset-top)) {
         .layout-navbar {
           padding-top: calc(env(safe-area-inset-top, 0px) + 10px) !important;
@@ -63,64 +70,39 @@
     </style>
     {% block page_css %}{% endblock page_css %}
 
+
+    <!-- Include the scripts partial (required ) -->
     {% include is_front|yesno:"./partials/scripts_includes_front.html,./partials/scripts_includes.html" %}
 
   </head>
 
   <body>
 
+    
+    <!-- beautify ignore:end -->
+
     {% block layout %}
     {% endblock layout %}
 
     {% include is_front|yesno:"./partials/scripts_front.html,./partials/scripts.html" %}
 
+    <!--Vendors Javascript-->
     {% block vendor_js %} {% endblock vendor_js %}
 
-    {% block page_js %} 
+    <!--Page Javascript-->
+    {% block page_js %} {% endblock page_js %}
 
-<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-warning align-items-center py-3">
-                <h5 class="modal-title text-dark mb-0">
-                    <i class="ri-error-warning-line me-2"></i>Export Gagal
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center py-3">
-                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
-                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
-                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
-                    <i class="ri-close-line me-1"></i>Tutup
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-
-function showExportError() {
-    var modal = document.getElementById('exportErrorModal');
-    if (modal) {
-        new bootstrap.Modal(modal).show();
-    } else {
-        alert('Tabel tidak ditemukan!');
-    }
-}
-</script>
-
-{% endblock page_js %}
-
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         EXPORT UTILS — INLINE (Tidak bergantung pada file external)
+         Kode ini di-embed langsung agar PASTI dimuat oleh Capacitor WebView.
+         File export_utils.js external bisa 404 di VPS jika collectstatic
+         belum dijalankan, tapi inline script ini selalu tersedia.
+         ═══════════════════════════════════════════════════════════════════════ -->
     <script>
     (function(){
       'use strict';
 
+      // ── DETEKSI WEBVIEW ─────────────────────────────────────────────
       function _isWebView() {
         var ua = navigator.userAgent || '';
         if (window.Capacitor) return true;
@@ -130,6 +112,7 @@ function showExportError() {
         return false;
       }
 
+      // ── UNIVERSAL FILE DOWNLOAD ─────────────────────────────────────
       function _downloadBlob(blob, filename) {
         if (_isWebView()) {
           _downloadBlobWebView(blob, filename);
@@ -138,21 +121,33 @@ function showExportError() {
         }
       }
 
+      // ═══════════════════════════════════════════════════════════════
+      // METODE DEFINITIF: PROTOTYPE-LEVEL INTERCEPT
+      // Pendekatan createElement GAGAL karena pdfmake/FileSaver sudah
+      // meng-cache referensi document.createElement SEBELUM script ini.
+      // Solusi: Override HTMLAnchorElement.prototype.click (TIDAK BISA
+      // dibypass oleh library APAPUN) + Cache blob via createObjectURL.
+      // ═══════════════════════════════════════════════════════════════
+
+      // ── 1. SIMPAN SALINAN BLOB SAAT createObjectURL DIPANGGIL ──────
+      // Ini memastikan kita punya akses ke data asli blob bahkan jika
+      // revokeObjectURL sudah dipanggil oleh pdfmake/FileSaver.
       var _blobStore = {};
       var _origCreateObjectURL = URL.createObjectURL.bind(URL);
       URL.createObjectURL = function(blob) {
           var url = _origCreateObjectURL(blob);
           if (blob instanceof Blob) {
-              _blobStore[url] = blob; 
+              _blobStore[url] = blob; // Simpan referensi blob
               console.log('[ExportUtils] Blob tersimpan:', url, 'size:', blob.size, 'type:', blob.type);
           }
           return url;
       };
 
+      // ── 2. TUNDA revokeObjectURL SAMPAI PROSES SELESAI ─────────────
       var _origRevokeObjectURL = URL.revokeObjectURL.bind(URL);
       URL.revokeObjectURL = function(url) {
           if (_blobStore[url]) {
-              
+              // Blob ini mungkin sedang diproses, tunda pembersihan 60 detik
               setTimeout(function() {
                   delete _blobStore[url];
                   try { _origRevokeObjectURL(url); } catch(e){}
@@ -162,11 +157,12 @@ function showExportError() {
           try { _origRevokeObjectURL(url); } catch(e){}
       };
 
+      // ── 3. KIRIM KE ANDROID VIA NATIVE BRIDGE (CHUNKING) ──────────
       function _sendToSerpApp(pureBase64, fname, mimeType) {
          if (!window.SerpApp) return false;
          if (window.SerpApp.saveBase64Chunk) {
              console.log('[ExportUtils] Mengirim via Async Chunking:', fname, '(' + pureBase64.length + ' chars)');
-             var chunkSize = 65536; 
+             var chunkSize = 65536; // 64KB per chunk
              var i = 0;
              function sendNext() {
                  if (i < pureBase64.length) {
@@ -184,6 +180,7 @@ function showExportError() {
          return true;
       }
 
+      // ── 4. KONVERSI BLOB KE BASE64 DAN KIRIM ──────────────────────
       function _downloadBlobWebView(blob, filename) {
           var reader = new FileReader();
           reader.onloadend = function() {
@@ -193,7 +190,7 @@ function showExportError() {
                   if (window.SerpApp) {
                       _sendToSerpApp(pureBase64, filename, blob.type || 'application/octet-stream');
                   } else {
-                      
+                      // Fallback jika SerpApp belum injeksi tapi dideteksi WebView
                       var a = document.createElement('a');
                       a.href = base64data;
                       a.download = filename;
@@ -207,10 +204,14 @@ function showExportError() {
           reader.readAsDataURL(blob);
       }
 
+      // ── 5. PROTOTYPE-LEVEL INTERCEPT (ANTI-BYPASS MUTLAK) ─────────
+      // Override HTMLAnchorElement.prototype.click — ini adalah metode
+      // yang dipanggil oleh SETIAP elemen <a>, termasuk yang dibuat oleh
+      // pdfmake/FileSaver walaupun mereka cache createElement sendiri.
       var _origAnchorClick = HTMLAnchorElement.prototype.click;
       HTMLAnchorElement.prototype.click = function() {
           if (_isWebView() && this.href) {
-              
+              // Tangkap blob: URL
               if (this.href.indexOf('blob:') === 0) {
                   var fname = this.getAttribute('download') || this.download || 'Exported_File';
                   var blobUrl = this.href;
@@ -219,18 +220,18 @@ function showExportError() {
                   console.log('[ExportUtils] PROTOTYPE intercept blob:', blobUrl, 'cached:', !!cachedBlob);
                   
                   if (cachedBlob) {
-                      
+                      // JALUR UTAMA: Gunakan blob yang sudah di-cache (PALING CEPAT & AMAN)
                       _downloadBlobWebView(cachedBlob, fname);
                   } else {
-                      
+                      // JALUR CADANGAN: Fetch blob dari URL (jika tidak ada di cache)
                       fetch(blobUrl)
                           .then(function(res) { return res.blob(); })
                           .then(function(blob) { _downloadBlobWebView(blob, fname); })
                           .catch(function(err) { console.error('[ExportUtils] Blob fetch gagal:', err); });
                   }
-                  return; 
+                  return; // Hentikan click asli agar WebView tidak bingung
               }
-              
+              // Tangkap data: URL
               if (this.href.indexOf('data:') === 0) {
                   var fname2 = this.getAttribute('download') || this.download || 'Exported_File';
                   var pureBase64 = this.href.split(',')[1];
@@ -240,23 +241,28 @@ function showExportError() {
                   return;
               }
           }
-          
+          // Untuk semua kasus lain, jalankan click asli
           return _origAnchorClick.apply(this, arguments);
       };
 
+      // ── 5.5 EVETARGET PROTOTYPE INTERCEPT (MENGATASI FileSaver.js) ─
+      // Banyak library (seperti FileSaver.js / pdfmake) tidak memanggil a.click(),
+      // melainkan menggunakan a.dispatchEvent(new MouseEvent('click')). 
+      // Jika 'a' tidak di-append ke body, maka Event Listener global akan gagal!
       var _origDispatchEvent = EventTarget.prototype.dispatchEvent;
       EventTarget.prototype.dispatchEvent = function(event) {
           if (event && event.type === 'click' && _isWebView() && this instanceof HTMLAnchorElement && this.href) {
               if (this.href.indexOf('blob:') === 0 || this.href.indexOf('data:') === 0) {
                   console.log('[ExportUtils] DISPATCH intercept (FileSaver):', this.href.substring(0, 100));
-                  
+                  // Panggil fungsi interceptor Prototype kita (bukan yang asli!)
                   HTMLAnchorElement.prototype.click.call(this);
-                  return false; 
+                  return false; // Hentikan event asli
               }
           }
           return _origDispatchEvent.apply(this, arguments);
       };
 
+      // ── 6. BROWSER DOWNLOAD (Jalur non-WebView) ───────────────────
       function _downloadBlobBrowser(blob, filename) {
         try {
           var url = URL.createObjectURL(blob);
@@ -265,21 +271,22 @@ function showExportError() {
           a.download = filename;
           a.style.display = 'none';
           document.body.appendChild(a);
-          _origAnchorClick.call(a); 
+          _origAnchorClick.call(a); // Gunakan click asli untuk browser
           setTimeout(function() {
             document.body.removeChild(a);
             _origRevokeObjectURL(url);
-            delete _blobStore[url]; 
+            delete _blobStore[url]; // Bersihkan cache
           }, 300);
         } catch (e) {
           console.error('[ExportUtils] Browser download gagal:', e);
         }
       }
 
+      // ── EXPORT TABLE TO EXCEL (CSV) ─────────────────────────────────
       function exportTableToExcel(tableId, filename) {
         try {
           var table = document.getElementById(tableId);
-          if (!table) { showExportError(); return; }
+          if (!table) { alert('Tabel tidak ditemukan!'); return; }
           var csv = [];
           var headerRow = table.querySelector('thead tr');
           if (headerRow) {
@@ -325,6 +332,7 @@ function showExportError() {
         }
       }
 
+      // ── EXPORT TABLE TO PDF ─────────────────────────────────────────
       function exportTableToPDF(tableId, filename, title, orientation) {
         orientation = orientation || 'landscape';
         try {
@@ -333,7 +341,7 @@ function showExportError() {
             return;
           }
           var table = document.getElementById(tableId);
-          if (!table) { showExportError(); return; }
+          if (!table) { alert('Tabel tidak ditemukan!'); return; }
           var headers = [];
           var headerRow = table.querySelector('thead tr');
           if (headerRow) {
@@ -403,6 +411,9 @@ function showExportError() {
         }
       }
 
+      // ── GLOBAL DOWNLOAD INTERCEPTOR (ULTIMATE) ──────────────────────
+      // Menangkap SEMUA download (blob, data, dan file HTTP seperti .csv/.xlsx)
+      // dan mendelegasikannya ke Android via Base64 Native Bridge.
       if (_isWebView()) {
         document.addEventListener('click', function(e) {
           var target = e.target.closest('a');
@@ -412,10 +423,12 @@ function showExportError() {
           var dl = target.getAttribute('download');
           var isFileLink = href.match(/\.(csv|pdf|xlsx?|docx?|zip|png|jpe?g)$/i);
           
+          // Pengecualian: jangan tangkap link yang bernavigasi normal atau #
           if (!dl && !isFileLink && href.indexOf('blob:') !== 0 && href.indexOf('data:') !== 0) {
             return;
           }
           
+          // STOP NAVIGASI WEBVIEW BAWAAN (Ini mencegah WebView redirect ke file langsung)
           e.preventDefault();
           e.stopPropagation();
           
@@ -425,6 +438,7 @@ function showExportError() {
           
           console.log('[ExportUtils] Intercepted link klik:', href.substring(0, 100));
           
+          // 1. Tangani Data URI
           if (href.indexOf('data:') === 0) {
             var pureBase64 = href.split(',')[1];
             var mimeType = href.split(';')[0].substring(5);
@@ -437,8 +451,11 @@ function showExportError() {
             return;
           }
           
+          // 2. Tangani Blob & HTTP File Links via fetch()
+          // Ini mendownload file MENGGUNAKAN sesi web saat ini, lalu meneruskan blob ke native
           console.log('[ExportUtils] Fetching file untuk native proxy...');
           
+          // Tampilkan indikator UI ringan
           var btnOriginalText = target.innerHTML;
           target.innerHTML = '⏳ Sedang mengunduh...';
           target.style.opacity = '0.7';
@@ -458,15 +475,15 @@ function showExportError() {
             })
             .then(function(blob) {
               console.log('[ExportUtils] Fetch selesai, ukuran blob:', blob.size);
-              _downloadBlob(blob, fname); 
+              _downloadBlob(blob, fname); // Akan diarahkan ke _downloadBlobWebView (Base64 -> Java)
             })
             .catch(function(err) {
               console.error('[ExportUtils] Gagal mengunduh URL:', err);
               alert('Gagal mengunduh file. Percobaan manual akan dilakukan.');
-              window.open(href, '_system'); 
+              window.open(href, '_system'); // Fallback buka di browser luar
             })
             .finally(function() {
-              
+              // Kembalikan UI tombol
               target.innerHTML = btnOriginalText;
               target.style.opacity = '1';
               target.style.pointerEvents = 'auto';
@@ -477,6 +494,7 @@ function showExportError() {
         console.log('[ExportUtils] Global download interceptor (Event Listener) AKTIF');
       }
 
+      // ── EXPOSE GLOBAL ───────────────────────────────────────────────
       window._downloadBlob = _downloadBlob;
       window._isWebView = _isWebView;
       window.exportTableToExcel = exportTableToExcel;
@@ -486,10 +504,16 @@ function showExportError() {
     })();
     </script>
 
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         GLOBAL AJAX ERROR HANDLER — Menangkap SEMUA error AJAX (jQuery)
+         Mencegah error default Android/browser muncul saat koneksi terputus,
+         timeout, atau server error (500, 502, 503, 504).
+         ═══════════════════════════════════════════════════════════════════════ -->
     <script>
     (function(){
       'use strict';
 
+      // ── Toast Notification System ──────────────────────────────────────
       var toastContainer = null;
       function ensureToastContainer() {
         if (!toastContainer) {
@@ -522,6 +546,7 @@ function showExportError() {
 
         container.appendChild(toast);
 
+        // Auto-remove setelah 8 detik
         setTimeout(function() {
           if (toast.parentElement) {
             toast.style.animation = 'fadeOut 0.3s ease-out forwards';
@@ -530,6 +555,7 @@ function showExportError() {
         }, 8000);
       }
 
+      // Tambahkan CSS animasi jika belum ada
       if (!document.getElementById('serptech-toast-css')) {
         var style = document.createElement('style');
         style.id = 'serptech-toast-css';
@@ -537,22 +563,27 @@ function showExportError() {
         document.head.appendChild(style);
       }
 
+      // ── Global jQuery AJAX Error Handler ───────────────────────────────
       if (typeof jQuery !== 'undefined' || typeof $ !== 'undefined') {
         var jq = typeof jQuery !== 'undefined' ? jQuery : $;
         
+        // Tambahkan default timeout untuk semua AJAX request
         jq.ajaxSetup({
-          timeout: 30000 
+          timeout: 30000 // 30 detik timeout default
         });
 
+        // Global AJAX error handler
         jq(document).ajaxError(function(event, xhr, settings, thrownError) {
-          
+          // Skip jika error sudah dihandle oleh callback error spesifik
+          // yang mengembalikan false atau sudah menampilkan alert sendiri
           if (settings._serpErrorHandled) return;
 
           var title, message, type;
 
+          // Status 0 = Network Error / Connection Refused / CORS / Aborted
           if (xhr.status === 0) {
             if (xhr.statusText === 'abort') {
-              
+              // Request dibatalkan secara normal, jangan tampilkan error
               return;
             }
             if (thrownError === 'timeout' || xhr.statusText === 'timeout') {
@@ -569,7 +600,7 @@ function showExportError() {
               type = 'error';
             }
           } else if (xhr.status === 403) {
-            
+            // 403 biasanya CSRF token expired atau izin ditolak
             title = 'Akses Ditolak';
             message = 'Sesi Anda mungkin telah berakhir. Silakan refresh halaman atau login ulang.';
             type = 'warning';
@@ -606,8 +637,8 @@ function showExportError() {
             message = 'Terjadi kesalahan pada server. Silakan coba lagi nanti.';
             type = 'error';
           } else {
-            
-            return; 
+            // Error lain yang tidak dikenal
+            return; // Biarkan handler spesifik menangani
           }
 
           showToast(title, message, type);
@@ -617,12 +648,13 @@ function showExportError() {
         console.log('[SERPTECH] Global AJAX Error Handler AKTIF');
       }
 
+      // ── Global Fetch Error Handler (untuk non-jQuery requests) ─────────
       var _origFetch = window.fetch;
       window.fetch = function(url, options) {
         return _origFetch.apply(this, arguments).catch(function(error) {
-          
+          // Hanya tampilkan toast untuk error koneksi
           if (error.name === 'AbortError') {
-            
+            // Request dibatalkan, jangan tampilkan error
             throw error;
           }
           if (!navigator.onLine) {
@@ -630,10 +662,11 @@ function showExportError() {
           } else if (error.name === 'TypeError' && error.message.indexOf('Failed to fetch') !== -1) {
             showToast('Gagal Menghubungi Server', 'Tidak dapat menghubungi server. Server mungkin sedang dalam pemeliharaan.', 'error');
           }
-          throw error; 
+          throw error; // Re-throw agar catch chain tetap bekerja
         });
       };
 
+      // ── Offline/Online Event Listeners ─────────────────────────────────
       window.addEventListener('offline', function() {
         showToast('Koneksi Terputus', 'Perangkat Anda kehilangan koneksi internet. Beberapa fitur mungkin tidak berfungsi.', 'error');
       });
@@ -642,24 +675,30 @@ function showExportError() {
         showToast('Koneksi Terhubung', 'Koneksi internet telah pulih kembali.', 'success');
       });
 
+      // Expose untuk penggunaan manual
       window._showSerpToast = showToast;
 
       console.log('[SERPTECH] Global Error Handler System AKTIF');
     })();
     </script>
 
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         SMART AUTO-DISABLER (RBAC SYSTEM-WIDE GATING)
+         Menyembunyikan aksi Delete, Edit, Create jika permission false via CSS.
+         Mengunci input formulir jika is_readonly_mode aktif via JS.
+         ═══════════════════════════════════════════════════════════════════════ -->
     {% if rbac_current_module %}
     <style>
         {% if rbac_can_delete == False %}
-        
+        /* Hiden aksi delete secara global */
         .btn-delete, [data-action="delete"], [data-bs-target*="delete"], [data-bs-target*="Delete"], form[action*="delete"] button[type="submit"], a[href*="delete"], a[href*="hapus"] { display: none !important; }
         {% endif %}
         {% if rbac_can_create == False %}
-        
+        /* Hiden aksi create secara global */
         .btn-create, [data-action="create"], a[href*="tambah"], a[href*="create"] { display: none !important; }
         {% endif %}
         {% if rbac_can_edit == False %}
-        
+        /* Hiden aksi edit di list dan detail secara global */
         .btn-edit, [data-action="edit"], [data-bs-target*="edit"], [data-bs-target*="Edit"], a[href*="edit"], a[href*="ubah"], a[href*="update"], a[href*="perbarui"] { display: none !important; }
         {% endif %}
     </style>
@@ -699,10 +738,16 @@ function showExportError() {
     {% include "partials/ai_chat_widget.html" with ai_name=ai_display_name %}
     {% endif %}
 
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         REALTIME MAINTENANCE STATUS CHECKER (JS POLLING)
+         Mengecek status perbaikan dari back-end terus menerus di background.
+         Ini diperlukan agar aplikasi ter-redirect otomatis ketika
+         Admin mengaktifkan Maintenance Mode tanpa user harus me-reload webview.
+         ═══════════════════════════════════════════════════════════════════════ -->
     <script>
     (function() {
         var isKicking = false;
-        
+        // Jangan polling di halaman maintenance/login/license (mereka punya polling sendiri)
         var skipPaths = ['/pages/misc/under_maintenance/', '/login/', '/license/'];
         var currentPath = window.location.pathname;
         for (var i = 0; i < skipPaths.length; i++) {
@@ -718,8 +763,8 @@ function showExportError() {
                         window.location.href = '/pages/misc/under_maintenance/';
                     }
                 })
-                .catch(function(err) {  });
-        }, 15000); 
+                .catch(function(err) { /* ignore silently */ });
+        }, 15000); // Poll setiap 15 detik
     })();
     </script>
 

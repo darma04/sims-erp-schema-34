@@ -10,6 +10,7 @@ Fitur: filter, export Excel & PDF, delete modal.
 {% load static %}
 {% load currency_filters %}
 
+
 {% block title %}Transaksi Biaya - Keuangan ERP{% endblock title %}
 
 {% block vendor_css %}
@@ -30,7 +31,7 @@ Fitur: filter, export Excel & PDF, delete modal.
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -45,9 +46,10 @@ Fitur: filter, export Excel & PDF, delete modal.
         {% endif %}
     </div>
 
+    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
-            
+            <!-- Baris 1: Filter Inputs -->
             <div class="row g-3">
                 <div class="col-md-4">
                     <label class="form-label">Tanggal Mulai</label>
@@ -68,6 +70,7 @@ Fitur: filter, export Excel & PDF, delete modal.
                 </div>
             </div>
 
+            <!-- Baris 2: Pilih Kolom (kiri) dan Tombol Filter (kanan) -->
             <div class="row g-3 mt-2 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
@@ -153,6 +156,7 @@ Fitur: filter, export Excel & PDF, delete modal.
         </div>
     </div>
 
+    <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Riwayat Pengeluaran</h5>
@@ -165,8 +169,8 @@ Fitur: filter, export Excel & PDF, delete modal.
                 </button>
             </div>
         </div>
-        <div class="card-datatable">
-            <table class="datatables-biaya table table-hover" id="biayaTable" style="width:100%">
+        <div class="card-datatable table-responsive">
+            <table class="datatables-biaya table table-hover" id="biayaTable">
                 <thead>
                     <tr>
                         <th>No. Transaksi</th>
@@ -285,17 +289,43 @@ Fitur: filter, export Excel & PDF, delete modal.
                     {% endfor %}
                     {% else %}
                     <tr>
-                        <td colspan="10" class="text-center py-5">
+                        <td colspan="9" class="text-center py-5">
                             <i class="ri-money-dollar-circle-line ri-3x text-muted mb-3 d-block"></i>
                             <p class="text-muted mb-0">Belum ada transaksi biaya</p>
                         </td>
                     </tr>
                     {% endif %}
                 </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="4" class="text-start ps-4 py-3" style="vertical-align: middle;">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ total_transaksi_biaya }}
+                                        Transaksi Biaya</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3" style="vertical-align: middle;">
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="badge bg-label-danger d-flex align-items-center gap-1 mb-2"
+                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    <i class="ri-money-dollar-circle-line"></i>
+                                    <span>Rp {{ total_amount_biaya|floatformat:0 }}</span>
+                                </span>
+                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Biaya</small>
+                            </div>
+                        </td>
+                        <td colspan="5" class="py-3"></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
     <div class="modal fade" id="deleteTransaksiModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -326,6 +356,7 @@ Fitur: filter, export Excel & PDF, delete modal.
     </div>
 </div>
 
+<!-- Approve Confirmation Modal -->
 <div class="modal fade" id="approveTransaksiModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -355,6 +386,7 @@ Fitur: filter, export Excel & PDF, delete modal.
     </div>
 </div>
 
+<!-- Reject Confirmation Modal -->
 <div class="modal fade" id="rejectTransaksiModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -389,7 +421,7 @@ Fitur: filter, export Excel & PDF, delete modal.
 
 {% block page_js %}
 <style>
-    
+    /* DataTables Custom Styling */
     .dataTables_wrapper .dataTables_info {
         padding: 1rem 1.5rem;
         font-size: 0.875rem;
@@ -454,6 +486,7 @@ Fitur: filter, export Excel & PDF, delete modal.
         letter-spacing: 0;
     }
 
+    /* Mobile Horizontal Scroll */
     @media (max-width: 768px) {
         .card-datatable {
             overflow-x: hidden !important;
@@ -461,7 +494,11 @@ Fitur: filter, export Excel & PDF, delete modal.
             max-width: 100%;
         }
 
-        .datatables-biaya { min-width: 950px !important; }
+        .datatables-biaya {
+            min-width: 950px !important;
+            width: 950px !important;
+            table-layout: auto !important;
+        }
 
         .dataTables_wrapper {
             overflow-x: hidden !important;
@@ -475,9 +512,10 @@ Fitur: filter, export Excel & PDF, delete modal.
         flatpickr('#startDate', { dateFormat: 'Y-m-d', locale: 'id' });
         flatpickr('#endDate', { dateFormat: 'Y-m-d', locale: 'id' });
 
+        // Inisialisasi DataTable
         {% if transaksi_list %}
+        {% if kategori_list %}
         const table = $('#biayaTable').DataTable({
-            scrollX: true,
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini",
                 "sProcessing": "Sedang memproses...",
@@ -496,18 +534,19 @@ Fitur: filter, export Excel & PDF, delete modal.
                     "sLast": "Terakhir"
                 }
             },
-            order: [[1, 'desc']], 
+            order: [[1, 'desc']], // Sort by tanggal desc
             pageLength: 25,
             lengthMenu: [[10, 25, 50, 75, 100, -1], ['10', '25', '50', '75', '100', 'Semua']],
             responsive: false,
             columnDefs: [
-                { orderable: false, targets: [9] } 
+                { orderable: false, targets: [9] } // Nonaktifkan sort untuk kolom aksi (index 9 setelah tambah kolom Status)
             ],
-            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             initComplete: function () {
                 $('.dataTables_filter input').attr('placeholder', 'Cari transaksi biaya...');
             }
         });
+        {% endif %}
         {% endif %}
     });
 
@@ -523,6 +562,7 @@ Fitur: filter, export Excel & PDF, delete modal.
         window.location.href = '{% url "biaya:transaksi" %}';
     }
 
+    // Toggle visibilitas kolom menggunakan DataTables API
     function toggleColumns() {
         const checkboxes = document.querySelectorAll('.column-checkbox');
         const table = new $.fn.dataTable.Api('#biayaTable');
@@ -542,6 +582,7 @@ Fitur: filter, export Excel & PDF, delete modal.
         toggleColumns();
     }
 
+    // Template Data for Independent Headers/Footers
     const EXCEL_INFO = {
         name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
         address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -560,12 +601,13 @@ Fitur: filter, export Excel & PDF, delete modal.
         copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
     };
 
+    // === FOOTER DATA: Explicit summary values per column index ===
     const FOOTER_DATA = { 4: "Rp {{ total_amount_biaya|floatformat:0|escapejs }}" };
     const FOOTER_LABEL = 'RINGKASAN';
 
     function exportToExcel() {
         const table = document.getElementById('biayaTable');
-        if (!table) { showExportError(); return; }
+        if (!table) { alert('Tabel tidak ditemukan!'); return; }
 
         const tableObj = new $.fn.dataTable.Api('#biayaTable');
 
@@ -585,12 +627,13 @@ Fitur: filter, export Excel & PDF, delete modal.
         html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
         html += '<body>';
 
+        // --- ADD EXCEL HEADER (Company Info) ---
         html += '<table border="0">';
         if (typeof EXCEL_INFO !== 'undefined') {
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
-            html += `<tr><td colspan="${colCount}"></td></tr>`; 
+            html += `<tr><td colspan="${colCount}"></td></tr>`; // empty row for spacing
         }
         html += '</table>';
 
@@ -603,7 +646,7 @@ Fitur: filter, export Excel & PDF, delete modal.
 
         html += '</tr></thead><tbody>';
 
-          tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
+        tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
             html += '<tr>';
             visibleColumns.forEach(col => {
                 let cellNode = tableObj.cell(rowIdx, col.index).node();
@@ -613,6 +656,7 @@ Fitur: filter, export Excel & PDF, delete modal.
             html += '</tr>';
         });
 
+        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
             let ri = 0;
@@ -640,6 +684,7 @@ Fitur: filter, export Excel & PDF, delete modal.
         }
         html += '</tbody></table>';
 
+        // --- ADD EXCEL FOOTER ---
         html += '<table border="0">';
         html += `<tr><td colspan="${colCount}"></td></tr>`;
         if (typeof EXCEL_INFO !== 'undefined') {
@@ -660,7 +705,7 @@ Fitur: filter, export Excel & PDF, delete modal.
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('biayaTable');
-        if (!table) { showExportError(); return; }
+        if (!table) { alert('Tabel tidak ditemukan!'); return; }
 
         const tableObj = new $.fn.dataTable.Api('#biayaTable');
 
@@ -694,6 +739,7 @@ Fitur: filter, export Excel & PDF, delete modal.
             if (row.length > 0) body.push(row);
         });
 
+        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             const summaryRow = [];
             let ri = 0;
@@ -795,6 +841,9 @@ Fitur: filter, export Excel & PDF, delete modal.
         window.open(`/biaya/transaksi/${id}/print/`, '_blank');
     }
 
+    // ═══════════════════════════════════════════════════
+    // APPROVE / REJECT TRANSAKSI BIAYA — AJAX
+    // ═══════════════════════════════════════════════════
     let approveId = null;
     let rejectId = null;
 
@@ -866,6 +915,7 @@ Fitur: filter, export Excel & PDF, delete modal.
         });
     });
 
+    // Tangani Hapus Transaksi Biaya
     let deleteId = null;
 function confirmDelete(id, name) {
     deleteId = id;
@@ -918,42 +968,4 @@ $('#confirmDeleteBtn').on('click', function() {
         }, 5000);
     }
 </script>
-
-<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-warning align-items-center py-3">
-                <h5 class="modal-title text-dark mb-0">
-                    <i class="ri-error-warning-line me-2"></i>Export Gagal
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center py-3">
-                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
-                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
-                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
-                    <i class="ri-close-line me-1"></i>Tutup
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-
-function showExportError() {
-    var modal = document.getElementById('exportErrorModal');
-    if (modal) {
-        new bootstrap.Modal(modal).show();
-    } else {
-        alert('Tabel tidak ditemukan!');
-    }
-}
-</script>
-
 {% endblock page_js %}

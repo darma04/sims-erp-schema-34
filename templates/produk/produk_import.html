@@ -40,7 +40,6 @@
             <div class="card mb-4">
                 <h5 class="card-header">Upload File Produk</h5>
                 <div class="card-body">
-                    
                     <form method="POST" enctype="multipart/form-data">
                         {% csrf_token %}
                         <div class="mb-3">
@@ -101,27 +100,30 @@
 {{ block.super }}
 <script>
 function downloadTemplate(format) {
-    
+    // Header order: nama (required) first, then optional fields INCLUDING stok
     const header = ['nama', 'sku', 'kategori', 'satuan', 'harga_beli', 'harga_jual', 'stok', 'gudang', 'deskripsi', 'barcode'];
     const sampleData = [
         ['Contoh Produk 1', 'PRD-00001', 'Elektronik', 'pcs', '100000', '150000', '50', 'Gudang Utama', 'Deskripsi produk 1', '1234567890'],
+        ['Contoh Produk 2', 'PRD-00002', 'Makanan', 'box', '50000', '75000', '25', 'Gudang Cabang', 'Deskripsi produk 2', '0987654321']
     ];
     
     let blob, filename;
     
     if (format === 'csv') {
-        
-        let csvContent = 'sep=,\n';  
+        // Generate CSV dengan Excel directive untuk auto-split kolom!
+        // 'sep=,' memberitahu Excel untuk otomatis pisahkan by comma
+        let csvContent = 'sep=,\n';  // Excel directive - PENTING!
         csvContent += header.join(',') + '\n';
         sampleData.forEach(row => {
             csvContent += row.join(',') + '\n';
         });
         
+        // Buat blob CSV dengan UTF-8 BOM
         const BOM = '\uFEFF';
         blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8' });
         filename = 'template_import_produk.csv';
     } else {
-        
+        // Generate Excel HTML table - setiap data di kolom terpisah!
         let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
         html += '<head>';
         html += '<meta charset="utf-8">';
@@ -133,10 +135,12 @@ function downloadTemplate(format) {
         html += '</head><body>';
         html += '<table border="1">';
         
+        // Header row dengan styling
         html += '<thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;">';
         header.forEach(h => html += `<th>${h}</th>`);
         html += '</tr></thead>';
         
+        // Data rows
         html += '<tbody>';
         sampleData.forEach(row => {
             html += '<tr>';
@@ -146,15 +150,18 @@ function downloadTemplate(format) {
         html += '</tbody></table>';
         html += '</body></html>';
         
+        // Buat blob Excel dengan UTF-8 BOM
         const BOM = '\uFEFF';
         blob = new Blob([BOM + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
         filename = 'template_import_produk.xls';
     }
     
+    // Download file — universal (browser + WebView compatible)
+    // Memanfaatkan fungsi _downloadBlob dari export_utils.js
     if (typeof _downloadBlob === 'function') {
         _downloadBlob(blob, filename);
     } else {
-        
+        // Fallback jika export_utils.js belum dimuat
         try {
             var url = URL.createObjectURL(blob);
             var link = document.createElement('a');
@@ -165,7 +172,7 @@ function downloadTemplate(format) {
             link.click();
             setTimeout(function() { document.body.removeChild(link); URL.revokeObjectURL(url); }, 200);
         } catch(e) {
-            
+            // Fallback: FileReader + Data URI
             var reader = new FileReader();
             reader.onloadend = function() {
                 var downloadUri = reader.result.replace(/^data:[^;]+;/, 'data:application/octet-stream;');
@@ -176,6 +183,7 @@ function downloadTemplate(format) {
     }
 }
 
+// AJAX Import Handler with SweetAlert
 $(document).ready(function() {
     $('form[enctype="multipart/form-data"]').on('submit', function(e) {
         e.preventDefault();
@@ -184,6 +192,7 @@ $(document).ready(function() {
         const submitBtn = $(this).find('button[type="submit"]');
         const originalText = submitBtn.html();
        
+        // Nonaktifkan tombol dan tampilkan loading
         submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Uploading...');
         
         $.ajax({
@@ -195,7 +204,7 @@ $(document).ready(function() {
             dataType: 'json',
             headers: {'X-Requested-With': 'XMLHttpRequest'},
             success: function(response) {
-                
+                // Re-enable button
                 submitBtn.prop('disabled', false).html(originalText);
                 
                 if (response.success) {
@@ -206,7 +215,7 @@ $(document).ready(function() {
                         confirmButtonText: 'OK',
                         confirmButtonColor: '#696cff'
                     }).then(() => {
-                        
+                        // Reset form
                         $('form[enctype="multipart/form-data"]')[0].reset();
                     });
                 } else {
@@ -220,7 +229,7 @@ $(document).ready(function() {
                 }
             },
             error: function(xhr, status, error) {
-                
+                // Re-enable button
                 submitBtn.prop('disabled', false).html(originalText);
                 
                 Swal.fire({

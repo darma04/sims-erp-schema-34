@@ -21,6 +21,7 @@
 
         .slip-container { max-width: 800px; margin: 0 auto; background: white; padding: 35px 40px; border: 1px solid #ddd; }
 
+        /* Header */
         .header-table { width: 100%; border-bottom: 3px solid #696cff; padding-bottom: 15px; margin-bottom: 20px; }
         .header-table td { vertical-align: top; }
         .company-logo { height: 26px; width: auto; vertical-align: middle; }
@@ -33,6 +34,7 @@
         .status-diproses { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
         .status-dibayar { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
 
+        /* Info Karyawan */
         .employee-table { width: 100%; margin-bottom: 25px; background: #f8f9fa; border: 1px solid #e9ecef; }
         .employee-table td { padding: 15px 20px; vertical-align: top; }
         .info-group h3 { font-size: 11px; color: #696cff; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -40,6 +42,7 @@
         .info-label { font-weight: bold; display: inline-block; width: 130px; color: #555; }
         .info-value { color: #333; }
 
+        /* Tabel Gaji */
         .salary-wrapper { width: 100%; margin-bottom: 20px; }
         .salary-wrapper td { vertical-align: top; width: 50%; }
         .salary-wrapper td:first-child { padding-right: 10px; }
@@ -58,25 +61,30 @@
         .total-income td { background: #e7e7ff; color: #696cff; border-top: 2px solid #696cff; }
         .total-deduction td { background: #ffebee; color: #c62828; border-top: 2px solid #c62828; }
 
+        /* Box Gaji Bersih */
         .net-salary-box { background: #696cff; padding: 18px 25px; margin-bottom: 20px; text-align: center; }
         .net-salary-box table { width: 100%; }
         .net-salary-label { font-size: 14px; font-weight: 600; color: #fff; }
         .net-salary-amount { font-size: 22px; font-weight: 800; color: #fff; }
 
+        /* Catatan */
         .notes-section { background: #fff3cd; padding: 12px 15px; border-left: 4px solid #ffc107; margin-bottom: 20px; }
         .notes-section h4 { font-size: 11px; margin-bottom: 4px; color: #856404; }
         .notes-section p { font-size: 11px; color: #856404; margin: 0; }
 
+        /* Tanda Tangan */
         .signature-table { width: 100%; margin-top: 50px; margin-bottom: 25px; }
         .sig-label { font-size: 11px; color: #666; }
         .signature-line { border-top: 1px solid #333; margin-top: 65px; padding-top: 6px; font-size: 12px; font-weight: 600; text-align: center; }
         .sig-title { font-size: 10px; color: #888; margin-top: 2px; text-align: center; }
 
+        /* Footer */
         .footer-table { width: 100%; border-top: 1px solid #ddd; margin-top: 10px; }
         .footer-table td { padding-top: 25px; text-align: center; font-size: 10px; color: #888; line-height: 1.8; }
         .footer-table p { margin: 0 0 3px 0; }
         .footer-timestamp { margin-top: 8px; font-size: 9px; color: #aaa; }
 
+        /* Mobile Responsive */
         @media screen and (max-width: 768px) {
             body { padding: 10px; }
             .slip-container { padding: 15px; }
@@ -87,6 +95,7 @@
             .net-salary-amount { font-size: 18px; }
         }
 
+        /* Print */
         @media print {
             .invoice-status, .order-status, .po-status, .slip-status {
                 -webkit-print-color-adjust: exact !important;
@@ -108,6 +117,7 @@
 <body>
     <div class="slip-container">
 
+        <!-- Header (TABLE layout) -->
         <table class="header-table" cellpadding="0" cellspacing="0">
             <tr>
                 <td style="vertical-align: top;">
@@ -138,6 +148,7 @@
             </tr>
         </table>
 
+        <!-- Info Karyawan (TABLE layout) -->
         <table class="employee-table" cellpadding="0" cellspacing="0">
             <tr>
                 <td class="info-group">
@@ -165,9 +176,10 @@
             </tr>
         </table>
 
+        <!-- Tabel Pendapatan & Potongan (TABLE layout) -->
         <table class="salary-wrapper" cellpadding="0" cellspacing="0">
             <tr>
-                
+                <!-- Kolom Pendapatan -->
                 <td>
                     <div class="column-header column-header-income">✚ Pendapatan</div>
                     <table class="salary-table">
@@ -195,6 +207,7 @@
                     </table>
                 </td>
 
+                <!-- Kolom Potongan -->
                 <td>
                     <div class="column-header column-header-deduction">− Potongan</div>
                     <table class="salary-table">
@@ -221,6 +234,7 @@
             </tr>
         </table>
 
+        <!-- Gaji Bersih -->
         <table cellpadding="0" cellspacing="0" width="100%" style="margin: 20px 0;">
             <tr>
                 <td bgcolor="#696cff" class="net-salary-box" style="padding: 14px 20px 8px 20px; border-radius: 8px; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;">
@@ -234,6 +248,7 @@
             </tr>
         </table>
 
+        <!-- Catatan -->
         {% if slip.catatan %}
         <div class="notes-section">
             <h4>Catatan:</h4>
@@ -241,6 +256,7 @@
         </div>
         {% endif %}
 
+        <!-- Tanda Tangan (TABLE layout) -->
         <table class="signature-table" cellpadding="0" cellspacing="0">
             <tr>
                 <td style="text-align: center; width: 200px;">
@@ -257,6 +273,7 @@
             </tr>
         </table>
 
+        <!-- Footer (TABLE layout untuk konsistensi xhtml2pdf) -->
         <table class="footer-table" cellpadding="0" cellspacing="0">
             <tr>
                 <td>
@@ -271,6 +288,7 @@
 
     </div>
 
+    <!-- Tombol Kembali (ditampilkan setelah native Android print dialog) -->
     <div id="backBtnWrap" class="no-print" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:9999;">
         <a id="backBtn" href="javascript:void(0)" style="display:inline-block; padding:12px 32px; background:#696cff; color:#fff; text-decoration:none; border-radius:8px; font-size:14px; font-weight:bold; box-shadow:0 4px 12px rgba(0,0,0,0.2);">
             ← Kembali
@@ -278,7 +296,7 @@
     </div>
 
     <script>
-        
+        // Smart Print Handler — Universal: Browser + Capacitor Android (SerpApp.triggerPrint)
         (function() {
             var printed = false;
             function goBack() {

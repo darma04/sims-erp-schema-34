@@ -28,7 +28,7 @@
     </div>
 
     <div class="row">
-        
+        <!-- Preview Kamera -->
         <div class="col-md-7 mb-4">
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -59,6 +59,7 @@
             </div>
         </div>
 
+        <!-- Info Absensi -->
         <div class="col-md-5 mb-4">
             <div class="card h-100">
                 <div class="card-header">
@@ -75,6 +76,7 @@
                         Waktu: <strong id="currentTime">{{ now|time:"H:i:s" }}</strong>
                     </div>
                     
+                    <!-- Hasil Deteksi -->
                     <div id="detectionResult" style="display: none;">
                         <div class="card bg-label-success mb-3">
                             <div class="card-body">
@@ -104,6 +106,7 @@
                         </div>
                     </div>
                     
+                    <!-- Info Default -->
                     <div id="defaultInfo">
                         <div class="text-center py-4">
                             <i class="ri-user-face-line ri-4x text-muted mb-3"></i>
@@ -112,6 +115,7 @@
                         </div>
                     </div>
 
+                    <!-- GPS Location Panel -->
                     <div class="card bg-label-info mt-3" id="gpsPanel">
                         <div class="card-body py-3">
                             <div class="d-flex align-items-center mb-2">
@@ -143,6 +147,7 @@
         </div>
     </div>
 
+    <!-- Result Alert -->
     <div id="resultAlert" class="alert" style="display: none;"></div>
     {% csrf_token %}
 </div>
@@ -159,16 +164,20 @@ let currentLatitude = null;
 let currentLongitude = null;
 let gpsWatchId = null;
 
+// Update time
 setInterval(function() {
     const now = new Date();
     document.getElementById('currentTime').textContent = 
         now.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', second: '2-digit'});
 }, 1000);
 
+// === GPS LOCATION TRACKING ===
+// Koordinat kantor dari pengaturan (jika ada, dari backend)
 const OFFICE_LAT = {{ pengaturan.latitude|default:"null" }};
 const OFFICE_LNG = {{ pengaturan.longitude|default:"null" }};
 const OFFICE_RADIUS = {{ pengaturan.radius_lokasi|default:"100" }};
 
+// Haversine formula — hitung jarak 2 koordinat (meter)
 function haversineDistance(lat1, lon1, lat2, lon2) {
     const R = 6371000;
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -201,12 +210,14 @@ function initGPS() {
         return;
     }
 
+    // Watch position untuk update real-time
     gpsWatchId = navigator.geolocation.watchPosition(
         function(position) {
             currentLatitude = position.coords.latitude;
             currentLongitude = position.coords.longitude;
             const accuracy = position.coords.accuracy;
 
+            // Update UI
             document.getElementById('gpsInfo').style.display = 'block';
             document.getElementById('gpsError').style.display = 'none';
             document.getElementById('gpsCoords').textContent =
@@ -215,6 +226,7 @@ function initGPS() {
             document.getElementById('gpsStatus').innerHTML = '<i class="ri-map-pin-line me-1"></i>Aktif';
             document.getElementById('gpsStatus').className = 'badge bg-label-success ms-auto';
 
+            // Hitung dan tampilkan jarak dari kantor secara real-time
             updateDistanceUI();
         },
         function(error) {
@@ -243,10 +255,11 @@ function initGPS() {
     );
 }
 
+// Auto-start GPS saat halaman dimuat
 initGPS();
 
 function startCamera() {
-    
+    // Tampilkan loading saat memulai kamera
     document.getElementById('faceStatus').innerHTML = '<i class="ri-loader-4-line ri-spin me-1"></i>Memulai Kamera...';
     document.getElementById('faceStatus').className = 'badge bg-label-warning';
 
@@ -257,6 +270,7 @@ function startCamera() {
         return;
     }
 
+    // Hentikan stream lama jika ada
     if (stream) {
         stream.getTracks().forEach(track => track.stop());
         stream = null;
@@ -278,6 +292,7 @@ function startCamera() {
         document.getElementById('faceStatus').innerHTML = '<i class="ri-focus-2-line me-1"></i>Kamera Aktif';
         document.getElementById('faceStatus').className = 'badge bg-label-success';
         
+        // Reset detection
         resetDetection();
     })
     .catch(function(error) {
@@ -291,7 +306,7 @@ function startCamera() {
             errorMsg += 'Kamera sedang digunakan aplikasi lain. Tutup aplikasi lain yang menggunakan kamera.';
         } else if (error.name === 'OverconstrainedError') {
             errorMsg += 'Konfigurasi kamera tidak didukung. Mencoba pengaturan alternatif...';
-             
+             // Retry with simpler constraints
             navigator.mediaDevices.getUserMedia({ video: true })
             .then(function(s) {
                 stream = s;
@@ -332,6 +347,7 @@ function detectAndAbsen() {
     document.getElementById('faceStatus').innerHTML = '<i class="ri-loader-4-line ri-spin me-1"></i>Mendeteksi Wajah...';
     document.getElementById('faceStatus').className = 'badge bg-label-warning';
     
+    // Capture current frame
     const fotoBase64 = captureFrame();
     
     const formData = new FormData();
@@ -350,19 +366,19 @@ function detectAndAbsen() {
         document.getElementById('detectBtn').innerHTML = '<i class="ri-user-search-line me-1"></i>Deteksi & Absen';
         
         if (data.success && data.karyawan_id) {
-            
+            // Wajah dikenali
             detectedKaryawanId = data.karyawan_id;
             showDetectionResult(data);
             document.getElementById('faceStatus').innerHTML = '<i class="ri-checkbox-circle-line me-1"></i>Wajah Dikenali';
             document.getElementById('faceStatus').className = 'badge bg-label-success';
         } else if (data.has_face && !data.karyawan_id) {
-            
+            // Ada wajah tapi tidak dikenali
             showResult(false, data.message + ' <a href="{% url "hr:registrasi-wajah" %}" class="alert-link">Daftarkan wajah</a>');
             document.getElementById('faceStatus').innerHTML = '<i class="ri-user-unfollow-line me-1"></i>Wajah Tidak Dikenali';
             document.getElementById('faceStatus').className = 'badge bg-label-warning';
             resetDetection();
         } else {
-            
+            // Tidak ada wajah
             showResult(false, data.message);
             document.getElementById('faceStatus').innerHTML = '<i class="ri-error-warning-line me-1"></i>Wajah Tidak Terdeteksi';
             document.getElementById('faceStatus').className = 'badge bg-label-danger';
@@ -402,6 +418,7 @@ function clockIn() {
     document.getElementById('clockInBtn').disabled = true;
     document.getElementById('clockInBtn').innerHTML = '<i class="ri-loader-4-line ri-spin me-2"></i>Proses...';
 
+    // Re-fetch GPS sebelum kirim (fallback jika watchPosition belum update)
     function doClockIn(lat, lng) {
         const formData = new FormData();
         formData.append('karyawan_id', detectedKaryawanId);
@@ -443,22 +460,23 @@ function clockIn() {
         });
     }
 
+    // Jika GPS sudah tersedia dari watchPosition, langsung kirim
     if (currentLatitude && currentLongitude) {
         doClockIn(currentLatitude, currentLongitude);
     } else if (navigator.geolocation) {
-        
+        // Coba ambil sekali lagi
         navigator.geolocation.getCurrentPosition(
             function(pos) {
                 currentLatitude = pos.coords.latitude;
                 currentLongitude = pos.coords.longitude;
-                
+                // Update UI
                 document.getElementById('gpsCoords').textContent = currentLatitude.toFixed(6) + ', ' + currentLongitude.toFixed(6);
                 document.getElementById('gpsInfo').style.display = 'block';
                 updateDistanceUI();
                 doClockIn(currentLatitude, currentLongitude);
             },
             function() {
-                
+                // GPS gagal, kirim tanpa lokasi
                 doClockIn(null, null);
             },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
@@ -546,15 +564,17 @@ function showResult(success, message) {
     setTimeout(() => { alert.style.display = 'none'; }, 5000);
 }
 
+// Start camera on page load
 document.addEventListener('DOMContentLoaded', function() {
     startCamera();
 });
 
+// Cleanup saat meninggalkan halaman
 window.addEventListener('beforeunload', function() {
     if (stream) {
         stream.getTracks().forEach(track => track.stop());
     }
-    
+    // Stop GPS tracking saat meninggalkan halaman
     if (gpsWatchId) {
         navigator.geolocation.clearWatch(gpsWatchId);
     }
@@ -563,10 +583,10 @@ window.addEventListener('beforeunload', function() {
 
 <style>
 #video {
-    transform: scaleX(-1); 
+    transform: scaleX(-1); /* Mirror effect */
 }
 #photoPreview {
-    transform: scaleX(-1); 
+    transform: scaleX(-1); /* Mirror effect */
 }
 </style>
 {% endblock page_js %}

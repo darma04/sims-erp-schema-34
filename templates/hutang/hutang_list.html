@@ -1,30 +1,6 @@
-{% extends 'layout/layout_vertical.html' %}
+﻿{% extends 'layout/layout_vertical.html' %}
 {% load static %}
 {% load currency_filters %}
-
-{% comment %}
-  ==========================================================================
-  HUTANG - Daftar Hutang (List View)
-  ==========================================================================
-  Menampilkan daftar semua hutang menggunakan DataTables (tabel interaktif).
-  DataTables menyediakan: search, sorting, pagination, dan export PDF/Excel
-  secara otomatis tanpa perlu coding JavaScript tambahan.
-
-  FLOW DATA:
-  - URL: /hutang/ -> hutang.views.HutangListView- View: Mengambil data dari database via model Hutang- Template: File ini merender data ke HTML- Response: Browser menampilkan tabel + tombol aksi (edit/hapus/detail)
-
-  RELASI KE MODUL LAIN:
-  - apps/hutang/models.py -> Model Hutang (sumber data)- apps/hutang/views.py -> HutangListView (handler)- apps/hutang/urls.py -> URL routing ke view ini- apps/core/mixins.py -> ReadPermissionMixin (cek hak akses)- layout/layout_vertical.html -> Template induk (sidebar, header)
-
-  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
-  - BOLEH diubah: Tampilan kolom tabel, tombol aksi, filter- BOLEH diubah: Tambah kolom baru (sesuaikan juga di views.py queryset)- JANGAN diubah: {% extends %} dan {% block %} structure- JANGAN diubah: class DataTables (break JavaScript)
-
-  TIPS & DEBUGGING:
-  - Error 'TemplateDoesNotExist'? Cek path di views.py template_name- Data tidak muncul? Cek get_queryset() di views.py- Tambah kolom? Edit <th> di <thead> dan <td> di <tbody>- Export gagal? Cek fungsi export_di_hutang_list() di <script>
-
-  ==========================================================================
-{% endcomment %}
-
 
 {% block title %}Hutang Usaha - Akuntansi ERP{% endblock title %}
 
@@ -40,14 +16,14 @@
 {{ block.super }}
 <script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
 <script src="{% static 'vendor/libs/flatpickr/flatpickr.js' %}"></script>
-<script src="{% static 'vendor/libs/chartjs/chartjs.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 {% endblock vendor_js %}
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1"><i class="ri-hand-coin-line me-2"></i>Hutang Usaha (Accounts Payable)</h4>
@@ -61,6 +37,7 @@
         </div>
     </div>
 
+    <!-- Summary Cards -->
     <div class="row g-3 mb-4">
         <div class="col-sm-6 col-md-3">
             <div class="card">
@@ -104,6 +81,7 @@
         </div>
     </div>
 
+    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -181,6 +159,7 @@
         </div>
     </div>
 
+    <!-- Main Table -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Daftar Hutang</h5>
@@ -249,11 +228,11 @@
                         </td>
                     </tr>
                     {% endfor %}
-                    
+                    {# Tidak ada baris empty colspan; DataTables handle via language.sEmptyTable #}
                 </tbody>
                 <tfoot class="table-footer-summary">
                     <tr>
-                        <td colspan="1" class="text-start ps-4 py-3">
+                        <td colspan="4" class="text-start ps-4 py-3">
                             <div class="d-flex align-items-center justify-content-start">
                                 <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
                                 <div class="text-start">
@@ -262,7 +241,7 @@
                                 </div>
                             </div>
                         </td>
-                        <td colspan="7" class="py-3">
+                        <td colspan="2" class="py-3">
                             <div class="text-center">
                                 <span class="badge bg-label-danger">{{ total_sisa|rupiah }}</span>
                                 <small class="d-block text-muted mt-1">Sisa Hutang</small>
@@ -279,8 +258,8 @@
                                 <span class="badge bg-label-warning">{{ count_belum }}</span>
                                 <small class="d-block text-muted mt-1">Belum Bayar</small>
                             </div>
-
                         </td>
+                        <td colspan="2"></td>
                     </tr>
                 </tfoot>
             </table>
@@ -313,3 +292,4 @@ function deselectAllColumns() { document.querySelectorAll('.column-checkbox').fo
 </script>
 {% include 'accounting/partials/table_tools.html' %}
 {% endblock page_js %}
+

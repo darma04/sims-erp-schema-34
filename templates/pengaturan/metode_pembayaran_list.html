@@ -26,7 +26,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -36,42 +36,13 @@
         </div>
         {% if can_create.pengaturan %}
         <div class="d-flex gap-2">
-            
             <form method="post" action="{% url 'pengaturan:metode_pembayaran_seed' %}" class="d-inline">
                 {% csrf_token %}
-                <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#seedMetodeModal">
+                <button type="submit" class="btn btn-label-success"
+                    onclick="return confirm('Seed metode pembayaran default? Data yang sudah ada tidak ditimpa.');">
                     <i class="ri-database-2-line me-1"></i>Seed Pembayaran Default
                 </button>
             </form>
-
-<div class="modal fade" id="seedMetodeModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-success align-items-center py-3">
-                <h5 class="modal-title text-white mb-0">
-                    <i class="ri-database-2-line me-2"></i>Konfirmasi Seed Metode Pembayaran
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center py-3">
-                    <i class="ri-database-2-line text-success" style="font-size: 4rem;"></i>
-                    <h4 class="mt-3 mb-2">Seed Metode Pembayaran Default?</h4>
-                    <p class="text-muted mb-0">Metode pembayaran default akan ditambahkan. Data yang sudah ada tidak akan ditimpa.</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
-                    <i class="ri-close-line me-1"></i>Batal
-                </button>
-                <button type="button" class="btn btn-success" id="confirmSeedBtn">
-                    <i class="ri-database-2-line me-1"></i>Ya, Seed Metode
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
             <a href="{% url 'pengaturan:metode_pembayaran_create' %}" class="btn btn-primary">
                 <i class="ri-add-line me-1"></i>Tambah Metode
             </a>
@@ -79,10 +50,11 @@
         {% endif %}
     </div>
 
+    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3 align-items-end">
-                
+                <!-- Filter Status -->
                 <div class="col-12 col-md">
                     <label class="form-label" for="filterStatus">Status</label>
                     <select class="form-select" id="filterStatus" onchange="filterByStatus()">
@@ -91,15 +63,15 @@
                         <option value="Nonaktif">Nonaktif</option>
                     </select>
                 </div>
-                
+                <!-- Filter Nama Pemilik -->
                 <div class="col-12 col-md">
                     <label class="form-label" for="filterPemilik">Nama Pemilik</label>
                     <input type="text" class="form-control" id="filterPemilik" placeholder="Cari nama pemilik..." oninput="filterByPemilik()">
                 </div>
             </div>
-            
+            <!-- Baris kedua: Pilih Kolom + Tombol -->
             <div class="row g-3 mt-2 align-items-end">
-                
+                <!-- Pilih Kolom -->
                 <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
                     <div class="dropdown">
@@ -175,7 +147,7 @@
                     <small class="text-muted d-block mt-1">Klik untuk memilih kolom</small>
                 </div>
                 <div class="col-md-6"></div>
-                
+                <!-- Tombol Action -->
                 <div class="col-md-3">
                     <div class="d-grid gap-2">
                         <button class="btn btn-primary" onclick="applyFilter()">
@@ -190,6 +162,7 @@
         </div>
     </div>
 
+    <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Daftar Metode Pembayaran</h5>
@@ -202,8 +175,8 @@
                 </button>
             </div>
         </div>
-        <div class="card-datatable">
-            <table class="datatables-metode table table-hover" id="metodeTable" style="width:100%">
+        <div class="card-datatable table-responsive">
+            <table class="datatables-metode table table-hover" id="metodeTable">
                 <thead>
                     <tr>
                         <th>Gambar</th>
@@ -306,14 +279,41 @@
                             <i class="ri-wallet-3-line ri-3x text-muted mb-3 d-block"></i>
                             <p class="text-muted mb-0">Belum ada metode pembayaran</p>
                         </td>
-                    <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td class="py-3 ps-4" colspan="2" style="vertical-align: middle;">
+                            <div class="d-flex align-items-center">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.25rem;"></i>
+                                <div>
+                                    <strong style="font-size: 0.9rem;">RINGKASAN</strong>
+                                    <br><small class="text-muted" style="font-size: 0.7rem;">{{ metode_list|length }} Metode Terdaftar</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3"></td>
+                        <td class="py-3"></td>
+                        <td class="py-3">
+                            <strong class="{% if ringkasan_saldo >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                {{ ringkasan_saldo|rupiah }}
+                            </strong>
+                        </td>
+                        <td class="py-3 text-success fw-bold">{{ ringkasan_pendapatan|rupiah }}</td>
+                        <td class="py-3 text-danger fw-bold">{{ ringkasan_pengeluaran|rupiah }}</td>
+                        <td class="py-3 text-center">
+                            <span class="badge bg-label-info">{{ ringkasan_transaksi }}</span>
+                        </td>
+                        <td class="py-3" colspan="3"></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteMetodeModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -411,6 +411,7 @@
         letter-spacing: 0;
     }
 
+    /* Mobile Responsiveness */
     @media (max-width: 768px) {
         .card-datatable {
             overflow-x: hidden !important;
@@ -418,7 +419,11 @@
             max-width: 100%;
         }
 
-        {% if metode_list %}.datatables-metode { min-width: 1300px !important; }{% endif %}
+        .datatables-metode {
+            min-width: 1300px !important;
+            width: 1300px !important;
+            table-layout: auto !important;
+        }
 
         .dataTables_wrapper {
             overflow-x: hidden !important;
@@ -433,7 +438,6 @@
     $(document).ready(function () {
         {% if metode_list %}
         table = $('#metodeTable').DataTable({
-            scrollX: true,
             language: { "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini", "sProcessing": "Sedang memproses...", "sLengthMenu": "Tampilkan _MENU_ data", "sZeroRecords": "Tidak ditemukan data yang sesuai", "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data", "sInfoEmpty": "Menampilkan 0 sampai 0 dari 0 data", "sInfoFiltered": "(disaring dari _MAX_ total data)", "sSearch": "Cari:", "oPaginate": { "sFirst": "Pertama", "sPrevious": "Sebelumnya", "sNext": "Selanjutnya", "sLast": "Terakhir" } },
             order: [[1, 'asc']],
             pageLength: 25,
@@ -442,24 +446,27 @@
             columnDefs: [
                 { orderable: false, targets: [0, 10] }
             ],
-            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             initComplete: function () { $('.dataTables_filter input').attr('placeholder', 'Cari metode pembayaran...'); }
         });
         {% endif %}
     });
 
+    // Filter berdasarkan Status
     function filterByStatus() {
         if (!table) return;
         var val = $('#filterStatus').val();
-        table.column(8).search(val).draw(); 
+        table.column(8).search(val).draw(); // kolom 8 = Status
     }
 
+    // Filter berdasarkan Nama Pemilik
     function filterByPemilik() {
         if (!table) return;
         var val = $('#filterPemilik').val();
-        table.column(2).search(val).draw(); 
+        table.column(2).search(val).draw(); // kolom 2 = Nama Pemilik
     }
 
+    // Toggle visibilitas kolom
     function toggleColumns() {
         if (!table) return;
         const checkboxes = document.querySelectorAll('.column-checkbox');
@@ -484,16 +491,17 @@
     }
 
     function applyFilter() {
-        
+        // Filter menggunakan DataTables search bawaan
+        // Fungsi ini tersedia untuk konsistensi dengan halaman lain
     }
 
     function resetFilter() {
-        
+        // Reset column checkboxes
         document.querySelectorAll('.column-checkbox').forEach(cb => {
             cb.checked = true;
         });
         toggleColumns();
-        
+        // Reset filter inputs
         $('#filterStatus').val('');
         $('#filterPemilik').val('');
         if (table) {
@@ -501,6 +509,8 @@
         }
     }
 
+    // Ekspor ke Excel
+            // Template Data for Independent Headers/Footers
     const EXCEL_INFO = {
         name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
         address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -519,13 +529,14 @@
         copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
     };
 
+
+// === FOOTER DATA: Explicit summary values per column index ===
 const FOOTER_DATA = { 4: "{{ ringkasan_saldo|rupiah }}", 5: "{{ ringkasan_pendapatan|rupiah }}", 6: "{{ ringkasan_pengeluaran|rupiah }}", 7: "{{ ringkasan_transaksi }}" };
 const FOOTER_LABEL = 'RINGKASAN';
 
     function exportToExcel() {
-        if (typeof $ === "undefined" || typeof $.fn.dataTable === "undefined" || !$.fn.dataTable.isDataTable('#metodeTable')) { alert('Tidak ada data untuk di-export. Silakan tambahkan data terlebih dahulu.'); return; }
         const table = document.getElementById('metodeTable');
-        if (!table) { showExportError(); return; }
+        if (!table) { alert('Tabel tidak ditemukan!'); return; }
 
         const tableObj = new $.fn.dataTable.Api('#metodeTable');
 
@@ -545,11 +556,12 @@ const FOOTER_LABEL = 'RINGKASAN';
         html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
         html += '<body>';
 
+        // --- ADD EXCEL HEADER (Company Info) ---
         html += '<table border="0">';
         if (typeof EXCEL_INFO !== 'undefined') {
-            html += `<tr><td colspan="${colCount}">${EXCEL_INFO.name}</td></tr>`;
-            html += `<tr><td colspan="${colCount}">${EXCEL_INFO.address}</td></tr>`;
-            html += `<tr><td colspan="${colCount}">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
+            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
+            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
+            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
             html += `<tr><td colspan="${colCount}"></td></tr>`;
         }
         html += '</table>';
@@ -563,7 +575,7 @@ const FOOTER_LABEL = 'RINGKASAN';
 
         html += '</tr></thead><tbody>';
 
-          tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
+        tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
             html += '<tr>';
             visibleColumns.forEach(col => {
                 let cellNode = tableObj.cell(rowIdx, col.index).node();
@@ -573,6 +585,7 @@ const FOOTER_LABEL = 'RINGKASAN';
             html += '</tr>';
         });
 
+        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
             let ri = 0;
@@ -609,12 +622,12 @@ const FOOTER_LABEL = 'RINGKASAN';
         link.click();
     }
 
+    // Ekspor ke PDF
                                             function exportToPDF() {
-                                                if (typeof $ === "undefined" || typeof $.fn.dataTable === "undefined" || !$.fn.dataTable.isDataTable('#metodeTable')) { alert('Tidak ada data untuk di-export. Silakan tambahkan data terlebih dahulu.'); return; }
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('metodeTable');
-        if (!table) { showExportError(); return; }
+        if (!table) { alert('Tabel tidak ditemukan!'); return; }
 
         const tableObj = new $.fn.dataTable.Api('#metodeTable');
 
@@ -648,6 +661,7 @@ const FOOTER_LABEL = 'RINGKASAN';
             if (row.length > 0) body.push(row);
         });
 
+        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             const summaryRow = [];
             let ri = 0;
@@ -733,6 +747,7 @@ const FOOTER_LABEL = 'RINGKASAN';
         pdfMake.createPdf(docDefinition).download('Metode_Pembayaran_' + new Date().toISOString().slice(0, 10) + '.pdf');
     }
 
+    // Tangani Hapus Metode Pembayaran
     let deleteId = null;
     function confirmDeleteMetode(id, name) {
         deleteId = id;
@@ -770,63 +785,4 @@ const FOOTER_LABEL = 'RINGKASAN';
         });
     });
 </script>
-
-<script>
-
-(function() {
-    var seedForm = document.querySelector('form[action*="seed"]');
-
-    document.getElementById('confirmSeedBtn').addEventListener('click', function() {
-        var btn = this;
-        var originalText = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Memproses...';
-        if (seedForm) {
-            seedForm.submit();
-        } else {
-            alert('Form seed tidak ditemukan. Silakan refresh halaman.');
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-        }
-    });
-})();
-</script>
-
-<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-warning align-items-center py-3">
-                <h5 class="modal-title text-dark mb-0">
-                    <i class="ri-error-warning-line me-2"></i>Export Gagal
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center py-3">
-                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
-                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
-                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
-                    <i class="ri-close-line me-1"></i>Tutup
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-
-function showExportError() {
-    var modal = document.getElementById('exportErrorModal');
-    if (modal) {
-        new bootstrap.Modal(modal).show();
-    } else {
-        alert('Tabel tidak ditemukan!');
-    }
-}
-</script>
-
 {% endblock page_js %}

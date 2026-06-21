@@ -39,7 +39,6 @@ Halaman untuk mengupload file Excel/CSV berisi data penggajian.
             <div class="card mb-4">
                 <h5 class="card-header">Upload File Penggajian</h5>
                 <div class="card-body">
-                    
                     <form method="POST" enctype="multipart/form-data">
                         {% csrf_token %}
                         <div class="mb-3">
@@ -123,6 +122,7 @@ function downloadTemplate(format) {
     const header = ['nik_karyawan', 'periode_bulan', 'periode_tahun', 'gaji_pokok', 'tunjangan_jabatan', 'tunjangan_makan', 'tunjangan_transport', 'tunjangan_lainnya', 'lembur', 'bonus', 'bpjs_kesehatan', 'bpjs_ketenagakerjaan', 'pph21', 'potongan_lainnya', 'status', 'catatan'];
     const sampleData = [
         ['EMP20260001', '5', '2026', '5000000', '500000', '300000', '200000', '0', '100000', '0', '100000', '50000', '150000', '0', 'draft', 'Import Mei 2026'],
+        ['EMP20260002', '5', '2026', '4500000', '400000', '300000', '200000', '0', '0', '0', '90000', '45000', '120000', '0', 'draft', 'Import Mei 2026']
     ];
     
     let blob, filename;
@@ -190,6 +190,7 @@ function downloadTemplate(format) {
     }
 }
 
+// AJAX Import Handler with SweetAlert
 $(document).ready(function() {
     $('form[enctype="multipart/form-data"]').on('submit', function(e) {
         e.preventDefault();

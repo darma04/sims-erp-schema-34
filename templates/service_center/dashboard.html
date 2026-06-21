@@ -32,6 +32,7 @@
         </a>
     </div>
 
+    <!-- ROW 1: Summary Cards -->
     <div class="row g-6 mb-6">
         <div class="col-sm-6 col-xl-3">
             <div class="card h-100">
@@ -107,54 +108,33 @@
         </div>
     </div>
 
+    <!-- ROW 2: Charts -->
     <div class="row g-6 mb-6">
-        
+        <!-- Tren Order Service (Area Chart) -->
         <div class="col-lg-8">
             <div class="card h-100">
-                <div class="card-header d-flex flex-nowrap align-items-center justify-content-between">
-                    <h5 class="mb-0 me-2">Tren Order Service{% if has_date_filter %} ({{ filter_start_date }} s/d {{ filter_end_date }}){% else %} (30 Hari Terakhir){% endif %}</h5>
-                    <div class="dropdown flex-shrink-0">
-                        <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button>
-                        <div class="dropdown-menu dropdown-menu-end">
-                            <a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a>
-                            <a class="dropdown-item" href="javascript:void(0)" onclick="if(window.__trenOrderChart) window.__trenOrderChart.exportTo({type:'png'});"><i class="ri-download-2-line me-2"></i>Unduh Grafik</a>
-                        </div>
-                    </div>
+                <div class="card-header d-flex justify-content-between">
+                    <h5 class="mb-0">Tren Order Service (30 Hari Terakhir)</h5>
                 </div>
-                    {% if tren_data_json != '[]' %}
-                    <div class="card-body pt-2">
-                        <div id="trenOrderChart" style="min-height: 320px;"></div>
-                    </div>
-                    {% else %}
-                    <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 320px;">
-                        <div class="text-center text-muted">
-                            <i class="ri-bar-chart-line ri-3x mb-2 d-block"></i>
-                            <p class="mb-0">Data Kosong</p>
-                        </div>
-                    </div>
-                    {% endif %}
+                <div class="card-body">
+                    <div id="trenOrderChart" style="min-height: 320px;"></div>
+                </div>
             </div>
         </div>
-        
+        <!-- Distribusi Status (Donut Chart) -->
         <div class="col-lg-4">
             <div class="card h-100">
-                <div class="card-header text-center">
+                <div class="card-header">
                     <h5 class="mb-0">Distribusi Status</h5>
                 </div>
-                <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 280px;">
-                    {% if status_data_json != '[]' %}
+                <div class="card-body d-flex align-items-center justify-content-center">
                     <div id="statusDonutChart" style="min-height: 280px; width: 100%;"></div>
-                    {% else %}
-                    <div class="text-center text-muted">
-                        <i class="ri-pie-chart-line ri-3x mb-2 d-block"></i>
-                        <p class="mb-0">Data Kosong</p>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- ROW 3: Top Perangkat + Top Jenis Service + Order Terbaru -->
     <div class="row g-6 mb-6">
         <div class="col-lg-4">
             <div class="card h-100">
@@ -231,17 +211,17 @@ document.addEventListener('DOMContentLoaded', function() {
     var labelColor = isDark ? '#b4b5ba' : '#a5a3ae';
     var borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
 
+    // === TREN ORDER CHART (Area — style Penjualan per Cabang) ===
     var trenEl = document.getElementById('trenOrderChart');
     if (trenEl) {
         var trenLabels = {{ tren_labels_json|safe }};
         var trenData = {{ tren_data_json|safe }};
-        var trenTotal = trenData.reduce(function(a,b){ return a+b; }, 0);
-        var __chartInst = new ApexCharts(trenEl, {
+        new ApexCharts(trenEl, {
             chart: {
                 type: 'area', height: 320,
                 fontFamily: 'Inter, -apple-system, sans-serif',
                 background: 'transparent',
-                toolbar: { show: false },
+                toolbar: { show: true, tools: { download: '<i class="ri-download-2-line" style="font-size:16px"></i>', selection: false, zoom: false, zoomin: false, zoomout: false, pan: false, reset: false } },
                 animations: { enabled: true, easing: 'easeinout', speed: 800, dynamicAnimation: { enabled: true, speed: 350 } },
                 dropShadow: { enabled: true, top: 6, left: 0, blur: 6, opacity: isDark ? 0.15 : 0.08, color: '#7367f0' }
             },
@@ -262,19 +242,17 @@ document.addEventListener('DOMContentLoaded', function() {
             markers: { size: 0, hover: { size: 6, sizeOffset: 3 }, strokeWidth: 2, strokeColors: isDark ? '#2b2c40' : '#fff' },
             grid: { borderColor: borderColor, strokeDashArray: 4, padding: { top: -10, left: 10, right: 10, bottom: 0 }, xaxis: { lines: { show: false } }, yaxis: { lines: { show: true } } },
             responsive: [{ breakpoint: 768, options: { chart: { height: 280 }, legend: { fontSize: '11px' }, stroke: { width: 2 } } }]
-        });
-        __chartInst.render();
-        window.__trenOrderChart = __chartInst;
-        }
+        }).render();
     }
 
+    // === STATUS DONUT CHART (style Skor Kesehatan) ===
     var donutEl = document.getElementById('statusDonutChart');
     if (donutEl) {
         var statusLabels = {{ status_labels_json|safe }};
         var statusData = {{ status_data_json|safe }};
         if (statusData.length > 0) {
-            var __chartInst2 = new ApexCharts(donutEl, {
-                chart: { type: 'donut', height: 280, fontFamily: 'Inter, -apple-system, sans-serif', toolbar: { show: false } },
+            new ApexCharts(donutEl, {
+                chart: { type: 'donut', height: 280, fontFamily: 'Inter, -apple-system, sans-serif' },
                 labels: statusLabels,
                 series: statusData,
                 colors: ['#03c3ec', '#ff9f43', '#696cff', '#ffab00', '#28c76f', '#8592a3', '#ea5455'],
@@ -283,25 +261,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 plotOptions: { pie: { donut: { size: '65%', labels: { show: true, name: { fontSize: '14px', fontWeight: 600, color: labelColor }, value: { fontSize: '22px', fontWeight: 700, color: isDark ? '#fff' : '#2b2c40', formatter: function(val) { return val; } }, total: { show: true, label: 'Total Order', fontSize: '12px', fontWeight: 500, color: labelColor, formatter: function(w) { return w.globals.seriesTotals.reduce(function(a,b){ return a+b; }, 0); } } } } } },
                 dataLabels: { enabled: false },
                 responsive: [{ breakpoint: 480, options: { chart: { height: 250 }, legend: { position: 'bottom', fontSize: '11px' } } }]
-            });
-            __chartInst2.render();
-            window.__statusDonutChart = __chartInst2;
+            }).render();
         } else {
-            // Pattern B for circular: show gray placeholder
-            var __chartInst2 = new ApexCharts(donutEl, {
-                chart: { type: 'donut', height: 280, fontFamily: 'Inter, -apple-system, sans-serif', toolbar: { show: false } },
-                series: [1],
-                labels: ['Data Kosong'],
-                colors: ['#e9ecef'],
-                dataLabels: { enabled: false },
-                legend: { show: false },
-                plotOptions: { pie: { donut: { size: '65%', labels: { show: true, total: { show: true, label: 'Total Order', formatter: function() { return 0; } } } } } },
-                tooltip: { enabled: false }
-            });
-            __chartInst2.render();
-            window.__statusDonutChart = __chartInst2;
+            donutEl.innerHTML = '<div class="text-center text-muted py-5"><i class="ri-pie-chart-line ri-3x mb-2 d-block"></i>Belum ada data order aktif</div>';
         }
     }
 });
 </script>
 {% endblock page_js %}
+

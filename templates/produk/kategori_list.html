@@ -25,7 +25,7 @@ Fitur: tambah, edit, hapus kategori. Filter dan pencarian.
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -40,9 +40,10 @@ Fitur: tambah, edit, hapus kategori. Filter dan pencarian.
         {% endif %}
     </div>
 
+    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
-            
+            <!-- Baris 1: Filter Inputs -->
             <div class="row g-3 align-items-end">
                 <div class="col-12 col-md">
                     <label class="form-label" for="searchKategori">Cari Kategori</label>
@@ -53,6 +54,7 @@ Fitur: tambah, edit, hapus kategori. Filter dan pencarian.
                 </div>
             </div>
 
+            <!-- Baris 2: Pilih Kolom (kiri) dan Tombol Filter (kanan) -->
             <div class="row g-3 mt-2 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
@@ -108,6 +110,7 @@ Fitur: tambah, edit, hapus kategori. Filter dan pencarian.
         </div>
     </div>
 
+    <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Daftar Kategori</h5>
@@ -120,8 +123,8 @@ Fitur: tambah, edit, hapus kategori. Filter dan pencarian.
                 </button>
             </div>
         </div>
-        <div class="card-datatable">
-            <table class="datatables-kategori table table-hover" id="kategoriTable" style="width:100%">
+        <div class="card-datatable table-responsive">
+            <table class="datatables-kategori table table-hover" id="kategoriTable">
                 <thead>
                     <tr>
                         <th>Nama Kategori</th>
@@ -130,7 +133,7 @@ Fitur: tambah, edit, hapus kategori. Filter dan pencarian.
                         <th>Aksi</th>
                     </tr>
                 </thead>
-                <tbody>{% if kategori_list %}
+                <tbody>
                     {% for kategori in kategori_list %}
                     <tr>
                         <td><strong>{{ kategori.nama }}</strong></td>
@@ -142,23 +145,35 @@ Fitur: tambah, edit, hapus kategori. Filter dan pencarian.
                             {% include 'shared/action_column.html' with module='produk' item=kategori edit_url=edit_url_val delete_url=delete_url_val item_id=kategori.pk %}
                         </td>
                     </tr>
-                    {% endfor %}
-                    {% else %}
+                    {% empty %}
                     <tr>
                         <td colspan="4" class="text-center py-5">
-                            <i class="ri-shopping-bag-line ri-3x text-muted mb-3 d-block"></i>
-                            <p class="text-muted mb-2">Belum ada kategori</p>
-                            {% if can_create.produk %}
-                            <a href="{% url 'produk:tambah' %}" class="btn btn-primary btn-sm mt-2">
-                                <i class="ri-add-line me-1"></i> Tambah</a>
-                            {% endif %}
+                            <i class="ri-folder-line ri-3x text-muted mb-3 d-block"></i>
+                            <p class="text-muted mb-0">Belum ada kategori</p>
                         </td>
                     </tr>
-                    {% endif %}</tbody>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="3" class="text-start ps-4 py-3" style="vertical-align: middle;">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ total_kategori }} Kategori
+                                        Terdaftar</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3"></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
     <div class="modal fade" id="deleteKategoriModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -250,6 +265,7 @@ Fitur: tambah, edit, hapus kategori. Filter dan pencarian.
         padding-bottom: 0;
     }
 
+    /* Dark mode support for summary footer */
     .table-footer-summary {
         border-top: 3px solid var(--bs-primary) !important;
         background: var(--bs-body-bg) !important;
@@ -266,17 +282,22 @@ Fitur: tambah, edit, hapus kategori. Filter dan pencarian.
         letter-spacing: 0;
     }
 
+    /* Mobile Responsiveness - Horizontal Scroll */
     @media (max-width: 768px) {
         .card-datatable {
-            overflow-x: hidden !important;
+            overflow-x: auto !important;
             -webkit-overflow-scrolling: touch;
             max-width: 100%;
         }
 
-        .datatables-kategori { min-width: 800px !important; }
+        .datatables-kategori {
+            min-width: 800px !important;
+            width: 800px !important;
+            table-layout: auto !important;
+        }
 
         .dataTables_wrapper {
-            overflow-x: hidden !important;
+            overflow-x: auto !important;
             max-width: 100% !important;
         }
     }
@@ -286,19 +307,28 @@ Fitur: tambah, edit, hapus kategori. Filter dan pencarian.
     $(document).ready(function () {
         {% if kategori_list %}
         $('#kategoriTable').DataTable({
-            scrollX: true,
             language: { "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini", "sProcessing": "Sedang memproses...", "sLengthMenu": "Tampilkan _MENU_ data", "sZeroRecords": "Tidak ditemukan data yang sesuai", "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data", "sInfoEmpty": "Menampilkan 0 sampai 0 dari 0 data", "sInfoFiltered": "(disaring dari _MAX_ total data)", "sSearch": "Cari:", "oPaginate": { "sFirst": "Pertama", "sPrevious": "Sebelumnya", "sNext": "Selanjutnya", "sLast": "Terakhir" } },
             order: [[0, 'asc']],
             pageLength: 25,
             lengthMenu: [[10, 25, 50, 75, 100, -1], ['10', '25', '50', '75', '100', 'Semua']],
             responsive: false,
             columnDefs: [{ orderable: false, targets: [3] }],
-            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             initComplete: function () { $('.dataTables_filter input').attr('placeholder', 'Cari kategori...'); }
         });
         {% endif %}
     });
 
+    // Template Data for Independent Headers/Footers
+    // Template Data for Independent Headers/Footers
+    // Template Data for Independent Headers/Footers
+    // Template Data for Independent Headers/Footers
+    // Template Data for Independent Headers/Footers
+    // Template Data for Independent Headers/Footers
+    // Template Data for Independent Headers/Footers
+    // Template Data for Independent Headers/Footers
+    // Template Data for Independent Headers/Footers
+    // Template Data for Independent Headers/Footers
     const EXCEL_INFO = {
         name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
         address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -348,7 +378,7 @@ Fitur: tambah, edit, hapus kategori. Filter dan pencarian.
 
     function exportToExcel() {
         const table = document.getElementById('kategoriTable');
-        if (!table) { showExportError(); return; }
+        if (!table) { alert('Tabel tidak ditemukan!'); return; }
 
         const tableObj = new $.fn.dataTable.Api('#kategoriTable');
 
@@ -368,12 +398,13 @@ Fitur: tambah, edit, hapus kategori. Filter dan pencarian.
         html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
         html += '<body>';
 
+        // --- ADD EXCEL HEADER (Company Info) ---
         html += '<table border="0">';
         if (typeof EXCEL_INFO !== 'undefined') {
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
             html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
-            html += `<tr><td colspan="${colCount}"></td></tr>`; 
+            html += `<tr><td colspan="${colCount}"></td></tr>`; // empty row for spacing
         }
         html += '</table>';
 
@@ -386,7 +417,7 @@ Fitur: tambah, edit, hapus kategori. Filter dan pencarian.
 
         html += '</tr></thead><tbody>';
 
-          tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
+        tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
             html += '<tr>';
             visibleColumns.forEach(col => {
                 let cellNode = tableObj.cell(rowIdx, col.index).node();
@@ -396,6 +427,7 @@ Fitur: tambah, edit, hapus kategori. Filter dan pencarian.
             html += '</tr>';
         });
 
+        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
             let ri = 0;
@@ -426,7 +458,7 @@ Fitur: tambah, edit, hapus kategori. Filter dan pencarian.
 
         const BOM = '\uFEFF';
         const blob = new Blob([BOM + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
-        
+        // Gunakan _downloadBlob() dari export_utils.js — kompatibel browser + Capacitor WebView
         _downloadBlob(blob, 'Kategori_Produk_' + new Date().toISOString().slice(0, 10) + '.xls');
     }
 
@@ -434,7 +466,7 @@ Fitur: tambah, edit, hapus kategori. Filter dan pencarian.
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('kategoriTable');
-        if (!table) { showExportError(); return; }
+        if (!table) { alert('Tabel tidak ditemukan!'); return; }
 
         const tableObj = new $.fn.dataTable.Api('#kategoriTable');
 
@@ -468,6 +500,7 @@ Fitur: tambah, edit, hapus kategori. Filter dan pencarian.
             if (row.length > 0) body.push(row);
         });
 
+        // Build summary row from explicit FOOTER_DATA
         if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
             const summaryRow = [];
             let ri = 0;
@@ -550,6 +583,7 @@ Fitur: tambah, edit, hapus kategori. Filter dan pencarian.
             defaultStyle: { fontSize: 9 }
         };
 
+        // Gunakan _downloadBlob() dari export_utils.js — kompatibel browser + Capacitor WebView
         var pdfDoc = pdfMake.createPdf(docDefinition);
         if (typeof _isWebView === 'function' && _isWebView()) {
             pdfDoc.getBlob(function(blob) {
@@ -560,6 +594,7 @@ Fitur: tambah, edit, hapus kategori. Filter dan pencarian.
         }
     }
 
+    // Tangani Hapus Kategori via event delegation (.delete-item dari action_column.html)
     let deleteKategoriId = null;
     let deleteKategoriUrl = null;
 
@@ -610,42 +645,4 @@ $('#confirmDeleteBtn').on('click', function() {
     });
 });
 </script>
-
-<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-warning align-items-center py-3">
-                <h5 class="modal-title text-dark mb-0">
-                    <i class="ri-error-warning-line me-2"></i>Export Gagal
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center py-3">
-                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
-                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
-                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
-                    <i class="ri-close-line me-1"></i>Tutup
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-
-function showExportError() {
-    var modal = document.getElementById('exportErrorModal');
-    if (modal) {
-        new bootstrap.Modal(modal).show();
-    } else {
-        alert('Tabel tidak ditemukan!');
-    }
-}
-</script>
-
 {% endblock page_js %}

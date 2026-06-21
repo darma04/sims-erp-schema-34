@@ -1,29 +1,6 @@
 {% extends 'layout/layout_vertical.html' %}
 {% load static %}
 {% load currency_filters %}
-
-{% comment %}
-  ==========================================================================
-  SERVICE CENTER - Laporan Service
-  ==========================================================================
-  Halaman Laporan Service untuk modul Service Center.
-  Template ini merender data dari view ke HTML yang ditampilkan di browser.
-
-  FLOW DATA:
-  - URL: /service_center/ -> View di apps/service_center/views.py- View: Mengambil data, menyiapkan context, render template ini- Template: File ini (HTML + Django template tags)- Response: HTML yang ditampilkan di browser user
-
-  RELASI KE MODUL LAIN:
-  - apps/service_center/views.py -> View (handler untuk halaman ini)- apps/service_center/models.py -> Model (sumber data)- apps/service_center/urls.py -> URL routing- layout/ -> Template induk (sidebar, header, footer)
-
-  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
-  - BOLEH diubah: Tampilan HTML, CSS inline, JavaScript- JANGAN diubah: {% extends %} dan {% block %} structure- JANGAN dihapus: {% csrf_token %} di form
-
-  TIPS & DEBUGGING:
-  - Error 'TemplateDoesNotExist'? Cek template_name di views.py- Variabel {{ }} kosong? Cek get_context_data() di views.py- Layout rusak? Pastikan TemplateLayout.init() dipanggil di view
-
-  ==========================================================================
-{% endcomment %}
-
 {% block title %}Laporan Service{% endblock %}
 {% block vendor_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'vendor/libs/apex-charts/apex-charts.css' %}" /><link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" /><link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />{% endblock %}
 {% block vendor_js %}{{ block.super }}<script src="{% static 'vendor/libs/apex-charts/apexcharts.js' %}"></script><script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
@@ -34,55 +11,19 @@
         <div><h4 class="mb-1"><i class="ri-bar-chart-box-line me-2"></i>Laporan Service</h4><p class="text-muted mb-0">Analisis dan laporan operasional service center</p></div>
     </div>
 
+    <!-- Filter Tanggal -->
     <div class="card mb-4">
         <div class="card-body">
-            <form method="get">
-                <div class="row g-3 align-items-end">
-                    <div class="col-12 col-md">
-                        <label class="form-label">Dari Tanggal</label>
-                        <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
-                    </div>
-                    <div class="col-12 col-md">
-                        <label class="form-label">Sampai Tanggal</label>
-                        <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
-                    </div>
-                </div>
-                <div class="row g-3 mt-2 align-items-end">
-                    <div class="col-md-3">
-                        <label class="form-label">Pilih Kolom</label>
-                        <div class="dropdown">
-                            <button class="btn btn-label-secondary dropdown-toggle w-100" type="button" id="columnFilterDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside">
-                                <i class="ri-layout-column-line me-1"></i>Pilih Kolom yang Ditampilkan
-                            </button>
-                            <div class="dropdown-menu p-3" aria-labelledby="columnFilterDropdown" style="min-width:280px">
-                                <h6 class="dropdown-header px-0 mb-2">Kolom Tabel</h6>
-                                <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="0" checked onchange="toggleColumns()"><label class="form-check-label">No. Service</label></div>
-                                <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="1" checked onchange="toggleColumns()"><label class="form-check-label">Pelanggan</label></div>
-                                <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="2" checked onchange="toggleColumns()"><label class="form-check-label">Perangkat</label></div>
-                                <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="3" checked onchange="toggleColumns()"><label class="form-check-label">Status</label></div>
-                                <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="4" checked onchange="toggleColumns()"><label class="form-check-label">Biaya</label></div>
-                                <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="5" checked onchange="toggleColumns()"><label class="form-check-label">Tanggal</label></div>
-                                <div class="dropdown-divider my-2"></div>
-                                <div class="d-flex gap-2">
-                                    <button type="button" class="btn btn-sm btn-primary flex-fill" onclick="selectAllColumns()">Semua</button>
-                                    <button type="button" class="btn btn-sm btn-label-secondary flex-fill" onclick="deselectAllColumns()">Kosongkan</button>
-                                </div>
-                            </div>
-                        </div>
-                        <small class="text-muted d-block mt-1">Klik untuk memilih kolom</small>
-                    </div>
-                    <div class="col-md-6"></div>
-                    <div class="col-md-3">
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary"><i class="ri-filter-3-line me-1"></i>Terapkan Filter</button>
-                            <a href="{% url 'service_center:laporan' %}" class="btn btn-label-secondary"><i class="ri-refresh-line me-1"></i>Reset</a>
-                        </div>
-                    </div>
-                </div>
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3"><label class="form-label">Dari Tanggal</label><input type="date" name="start_date" class="form-control" value="{{ start_date }}"></div>
+                <div class="col-md-3"><label class="form-label">Sampai Tanggal</label><input type="date" name="end_date" class="form-control" value="{{ end_date }}"></div>
+                <div class="col-md-3"><button type="submit" class="btn btn-primary w-100"><i class="ri-filter-3-line me-1"></i>Filter</button></div>
+                <div class="col-md-3"><a href="{% url 'service_center:laporan' %}" class="btn btn-label-secondary w-100"><i class="ri-refresh-line me-1"></i>Reset</a></div>
             </form>
         </div>
     </div>
 
+    <!-- Statistik Cards -->
     <div class="row g-6 mb-6">
         <div class="col-sm-6 col-xl-3"><div class="card h-100"><div class="card-body"><div class="d-flex align-items-center justify-content-between"><div><h6 class="mb-2 text-muted">Total Order</h6><h3 class="mb-0">{{ total_order }}</h3></div><div class="avatar"><div class="avatar-initial bg-label-primary rounded"><i class="ri-file-list-3-line ri-24px"></i></div></div></div></div></div></div>
         <div class="col-sm-6 col-xl-3"><div class="card h-100"><div class="card-body"><div class="d-flex align-items-center justify-content-between"><div><h6 class="mb-2 text-muted">Selesai</h6><h3 class="mb-0 text-success">{{ total_selesai }}</h3></div><div class="avatar"><div class="avatar-initial bg-label-success rounded"><i class="ri-checkbox-circle-line ri-24px"></i></div></div></div></div></div></div>
@@ -90,32 +31,20 @@
         <div class="col-sm-6 col-xl-3"><div class="card h-100"><div class="card-body"><div class="d-flex align-items-center justify-content-between"><div><h6 class="mb-2 text-muted">Total Pendapatan</h6><h3 class="mb-0 text-info">{{ total_pendapatan|rupiah }}</h3></div><div class="avatar"><div class="avatar-initial bg-label-info rounded"><i class="ri-money-dollar-circle-line ri-24px"></i></div></div></div></div></div></div>
     </div>
 
+    <!-- Charts -->
     <div class="row g-6 mb-6">
         <div class="col-lg-8">
-            <div class="card h-100"><div class="card-header d-flex flex-nowrap align-items-center justify-content-between text-center"><h5 class="mb-0 me-2">Tren Order & Pendapatan</h5>
-                    <div class="dropdown flex-shrink-0">
-                        <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button>
-                        <div class="dropdown-menu dropdown-menu-end">
-                            <a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a>
-                            <a class="dropdown-item" href="javascript:void(0)" onclick="if(window.__trenChart) window.__trenChart.exportTo({type:'png'});"><i class="ri-download-2-line me-2"></i>Unduh Grafik</a>
-                        </div>
-                    </div></div><div class="card-body"><div id="trenChart" style="min-height:320px"></div></div></div>
+            <div class="card h-100"><div class="card-header"><h5 class="mb-0">Tren Order & Pendapatan</h5></div><div class="card-body"><div id="trenChart" style="min-height:320px"></div></div></div>
         </div>
         <div class="col-lg-4">
-            <div class="card h-100"><div class="card-header d-flex flex-nowrap align-items-center justify-content-between text-center"><h5 class="mb-0 me-2">Distribusi Status</h5>
-                    <div class="dropdown flex-shrink-0">
-                        <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button>
-                        <div class="dropdown-menu dropdown-menu-end">
-                            <a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a>
-                            <a class="dropdown-item" href="javascript:void(0)" onclick="if(window.__statusChart){var c=window.__statusChart.canvas||document.querySelector('#statusChart canvas');if(c&&c.toBlob){c.toBlob(function(b){var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='chart.png';a.click();});}}else if(window.__statusChart&&window.__statusChart.exportTo){window.__statusChart.exportTo({type:'png'});}"><i class="ri-download-2-line me-2"></i>Unduh Grafik</a>
-                        </div>
-                    </div></div><div class="card-body d-flex align-items-center justify-content-center"><div id="statusChart" style="min-height:280px;width:100%"></div></div></div>
+            <div class="card h-100"><div class="card-header"><h5 class="mb-0">Distribusi Status</h5></div><div class="card-body d-flex align-items-center justify-content-center"><div id="statusChart" style="min-height:280px;width:100%"></div></div></div>
         </div>
     </div>
 
+    <!-- Tabel Data -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center"><h5 class="mb-0">Detail Order</h5><div class="d-flex gap-2"><button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button><button class="btn btn-sm btn-label-danger" onclick="exportToPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button></div></div>
-        <div class="card-datatable">
+        <div class="card-datatable table-responsive">
             <table class="table table-hover" id="laporanTable">
                 <thead><tr><th>No. Service</th><th>Pelanggan</th><th>Perangkat</th><th>Status</th><th>Biaya</th><th>Tanggal</th></tr></thead>
                 <tbody>
@@ -128,8 +57,32 @@
                         <td>{{ order.biaya_akhir|rupiah }}</td>
                         <td>{{ order.tanggal_masuk|date:"d/m/Y" }}</td>
                     </tr>
-                    {% empty %}<tr><td colspan="6" class="text-center py-5 text-muted">Tidak ada data</td><td></td><td></td><td></td><td></td><td></td></tr>{% endfor %}
+                    {% empty %}<tr><td colspan="6" class="text-center py-5 text-muted">Tidak ada data</td></tr>{% endfor %}
                 </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="3" class="text-start ps-4 py-3">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ total_order }} Order | {{ total_selesai }} Selesai | {{ total_batal }} Dibatalkan</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3"></td>
+                        <td class="text-end py-3">
+                            <div class="text-end">
+                                <strong class="d-block text-success" style="font-size: 1rem;">{{ total_pendapatan|rupiah }}</strong>
+                                <small class="text-muted" style="font-size: 0.75rem;">Total Pendapatan</small>
+                                {% if total_dp %}
+                                <br><small class="text-warning" style="font-size: 0.7rem;">DP: {{ total_dp|rupiah }}</small>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="py-3"></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
@@ -142,12 +95,12 @@ document.addEventListener('DOMContentLoaded',function(){
     var isDark = (typeof isDarkStyle!=='undefined'&&isDarkStyle) || document.documentElement.classList.contains('dark-style');
     var labelColor = isDark ? '#b4b5ba' : '#a5a3ae';
     var borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
-    
+    // Tren Chart (style Penjualan per Cabang)
     var trenEl=document.getElementById('trenChart');
     if(trenEl){
-        var __chartInst = new ApexCharts(trenEl,{
+        new ApexCharts(trenEl,{
             chart:{type:'area',height:320,fontFamily:'Inter, -apple-system, sans-serif',background:'transparent',
-                toolbar: { show: false },
+                toolbar:{show:true,tools:{download:'<i class="ri-download-2-line" style="font-size:16px"></i>',selection:false,zoom:false,zoomin:false,zoomout:false,pan:false,reset:false}},
                 animations:{enabled:true,easing:'easeinout',speed:800,dynamicAnimation:{enabled:true,speed:350}},
                 dropShadow:{enabled:true,top:6,left:0,blur:6,opacity:isDark?0.15:0.08,color:['#7367f0','#28c76f']}
             },
@@ -163,17 +116,15 @@ document.addEventListener('DOMContentLoaded',function(){
             markers:{size:0,hover:{size:6,sizeOffset:3},strokeWidth:2,strokeColors:isDark?'#2b2c40':'#fff'},
             dataLabels:{enabled:false},
             responsive:[{breakpoint:768,options:{chart:{height:280},legend:{fontSize:'11px'},stroke:{width:[2,2]}}}]
-        });
-        __chartInst.render();
-        window.__trenChart = __chartInst;
+        }).render();
     }
-    
+    // Status Donut (style Skor Kesehatan)
     var statusEl=document.getElementById('statusChart');
     if(statusEl){
         var data={{ status_data_json|safe }};
         if(data.length>0){
-            var __chartInst = new ApexCharts(statusEl,{
-                chart:{type:'donut',height:280,fontFamily:'Inter, -apple-system, sans-serif',toolbar: { show: false }},
+            new ApexCharts(statusEl,{
+                chart:{type:'donut',height:280,fontFamily:'Inter, -apple-system, sans-serif'},
                 labels:{{ status_labels_json|safe }},
                 series:data,
                 colors:['#03c3ec','#ff9f43','#696cff','#ffab00','#28c76f','#8592a3','#ea5455'],
@@ -182,39 +133,14 @@ document.addEventListener('DOMContentLoaded',function(){
                 plotOptions:{pie:{donut:{size:'65%',labels:{show:true,name:{fontSize:'14px',fontWeight:600,color:labelColor},value:{fontSize:'22px',fontWeight:700,color:isDark?'#fff':'#2b2c40',formatter:function(val){return val;}},total:{show:true,label:'Total Order',fontSize:'12px',fontWeight:500,color:labelColor,formatter:function(w){return w.globals.seriesTotals.reduce(function(a,b){return a+b;},0);}}}}}},
                 dataLabels:{enabled:false},
                 responsive:[{breakpoint:480,options:{chart:{height:250},legend:{position:'bottom',fontSize:'11px'}}}]
-            });
-            __chartInst.render();
-            window.__statusChart = __chartInst;
+            }).render();
         } else {
-            var __chartInst = new ApexCharts(statusEl,{
-                chart:{type:'donut',height:280,fontFamily:'Inter, -apple-system, sans-serif',toolbar: { show: false }},
-                series:[1],
-                labels:['Data Kosong'],
-                colors:['#e9ecef'],
-                dataLabels:{enabled:false},
-                legend:{show:false},
-                plotOptions:{pie:{donut:{size:'65%',labels:{show:true,total:{show:true,label:'Total Order',formatter:function(){return 0;}}}}}},
-                tooltip:{enabled:false}
-            });
-            __chartInst.render();
-            window.__statusChart = __chartInst;
+            statusEl.innerHTML='<div class="text-center text-muted py-5"><i class="ri-pie-chart-line ri-3x mb-2 d-block"></i>Belum ada data</div>';
         }
     }
-    
-    {% if order_list %}$('#laporanTable').DataTable({
-            scrollX: true,language:{"sLengthMenu":"Tampilkan _MENU_","sSearch":"Cari:","sInfo":"_START_-_END_ dari _TOTAL_","oPaginate":{"sPrevious":"Sebelumnya","sNext":"Selanjutnya"}},order:[[5,'desc']],pageLength:25,dom:'<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'});{% endif %}
+    // DataTable
+    {% if order_list %}$('#laporanTable').DataTable({language:{"sLengthMenu":"Tampilkan _MENU_","sSearch":"Cari:","sInfo":"_START_-_END_ dari _TOTAL_","oPaginate":{"sPrevious":"Sebelumnya","sNext":"Selanjutnya"}},order:[[5,'desc']],pageLength:25,dom:'<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'});{% endif %}
 });
-    function toggleColumns() {
-        {% if order_list %}
-        var dt = $('#laporanTable').DataTable();
-        document.querySelectorAll('.column-checkbox').forEach(function(cb) {
-            dt.column(parseInt(cb.value)).visible(cb.checked);
-        });
-        {% endif %}
-    }
-    function selectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(function(c) { c.checked = true; }); toggleColumns(); }
-    function deselectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(function(c) { c.checked = false; }); toggleColumns(); }
-
     const COMPANY_INFO = {
         name:    "{{ export_pdf_template.header_nama_perusahaan|default:'' }}",
         address: "{{ export_pdf_template.header_alamat|default:'' }}",

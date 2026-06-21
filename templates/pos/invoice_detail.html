@@ -9,15 +9,14 @@
    - Tombol cetak invoice
    ==========================================================================
 {% endcomment %}
-{% load static %}
-{% load currency_filters %}
+{% load static %}`r`n{% load currency_filters %}
 {% load i18n %}
 
 {% block title %}Invoice {{ transaction.nomor_transaksi }} - POS{% endblock title %}
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <nav aria-label="breadcrumb">
@@ -43,7 +42,7 @@
     </div>
 
     <div class="row">
-        
+        <!-- Invoice Details -->
         <div class="col-xl-9 col-md-8">
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -59,7 +58,7 @@
                     {% endif %}
                 </div>
                 <div class="card-body">
-                    
+                    <!-- Transaction Info -->
                     <div class="row mb-4">
                         <div class="col-md-6">
                             <h6 class="text-muted mb-3">Informasi Transaksi</h6>
@@ -95,6 +94,7 @@
                         </div>
                     </div>
 
+                    <!-- Items Table -->
                     <div class="table-responsive border rounded-3">
                         <table class="table table-bordered mb-0">
                             <thead>
@@ -163,6 +163,7 @@
                         </table>
                     </div>
 
+                    <!-- Payment Info -->
                     <div class="row mt-4">
                         <div class="col-md-6 offset-md-6">
                             <div class="card border">
@@ -195,8 +196,9 @@
             </div>
         </div>
 
+        <!-- Timeline & Actions -->
         <div class="col-xl-3 col-md-4">
-            
+            <!-- Actions Card -->
             <div class="card mb-4">
                 <div class="card-header">
                     <h6 class="mb-0">Aksi</h6>
@@ -233,6 +235,7 @@
                 </div>
             </div>
 
+            <!-- Timeline Card -->
             <div class="card">
                 <div class="card-header">
                     <h6 class="mb-0">Timeline</h6>
@@ -272,7 +275,7 @@
 {% block page_js %}
 <script>
     function downloadPDF() {
-        
+        // Buka halaman cetak invoice di tab baru (user bisa Save as PDF dari sana)
         window.open("{% url 'pos:invoice_print' transaction.pk %}", '_blank');
     }
 
@@ -281,16 +284,19 @@
         const title = 'Invoice {{ transaction.nomor_transaksi }}';
         const text = 'Invoice transaksi POS - {{ transaction.nomor_transaksi }}';
 
+        // 1. Android WebView — gunakan SerpApp.shareUrl() bridge
         if (typeof SerpApp !== 'undefined' && typeof SerpApp.shareUrl === 'function') {
             SerpApp.shareUrl(url, title, text);
             return;
         }
 
+        // 2. Web Share API (browser modern / PWA)
         if (navigator.share) {
             navigator.share({ title: title, text: text, url: url }).catch(() => {});
             return;
         }
 
+        // 3. Fallback: Copy to clipboard
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(url).then(() => {
                 if (typeof Swal !== 'undefined') {
@@ -303,6 +309,7 @@
         }
     }
 
+    // Fallback copy untuk browser lama / WebView yang tidak mendukung clipboard API
     function _fallbackCopyText(text) {
         try {
             const ta = document.createElement('textarea');

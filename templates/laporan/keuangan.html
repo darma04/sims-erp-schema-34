@@ -25,20 +25,30 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    <h4 class="mb-4"><i class="ri-bar-chart-box-line me-2"></i>Laporan Keuangan</h4>
+    <h4 class="mb-1"><i class="ri-bar-chart-box-line me-2"></i>Laporan Keuangan</h4>
+    <!-- Label Sumber Data -->
+    <div class="mb-4">
+        <span class="badge bg-label-warning rounded-pill px-3 py-2">
+            <i class="ri-database-2-line me-1"></i>Laporan Operasional Real-time
+        </span>
+        <small class="text-muted ms-2 d-inline-block mt-1" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="right" title="Data bersumber langsung dari transaksi operasional (POS, Sales Order, Purchase Order, Biaya). Nilai penjualan memakai pendapatan bersih setelah diskon termasuk ongkir dan tidak memasukkan PPN. Nilai pembelian memakai DPP/subtotal termasuk ongkir dan memisahkan PPN Masukan. Untuk laporan akuntansi resmi, gunakan Modul Akuntansi.">
+            <i class="ri-information-line"></i> Apa artinya?
+        </small>
+    </div>
 
+    <!-- 4 Summary Cards -->
     <div class="row g-2 g-md-3 mb-4">
         <div class="col-6 col-lg-3">
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div class="card-info">
-                            <p class="card-text text-muted">Total Pemasukan</p>
+                            <p class="card-text text-muted">Pendapatan Bersih</p>
                             <h4 class="mb-0 text-success summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
-                                title="<b>Alur Data:</b><br>Σ total_harga SO (confirmed/delivered/completed) + Σ total_harga POS (paid).<br><br><b>Sumber:</b> Tabel SalesOrder + POSTransaction.<br>Mendukung filter tanggal.">
+                                title="<b>Alur Data:</b><br>SO dihitung sebagai subtotal setelah diskon + ongkir, POS dari subtotal setelah diskon, tanpa PPN Keluaran.<br><br><b>Sumber:</b> SalesOrder + POSTransaction.<br><b>Catatan:</b> PPN Keluaran masuk akun pajak/kas, bukan pendapatan.">
                                 {{ total_pemasukan|rupiah }}</h4>
-                            <small class="text-muted">Dari penjualan</small>
+                            <small class="text-muted">Tanpa PPN</small>
                         </div>
                         <div class="card-icon">
                             <span class="badge bg-label-success rounded p-2">
@@ -54,12 +64,12 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div class="card-info">
-                            <p class="card-text text-muted">Total Pengeluaran</p>
+                            <p class="card-text text-muted">Beban/DPP Operasional</p>
                             <h4 class="mb-0 text-danger summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
-                                title="<b>Alur Data:</b><br>Σ nominal Biaya (status approved) + Σ total_harga PO (approved/received) + Σ (harga_beli × qty_historis) Produk.<br><br><b>Sumber:</b> Tabel Biaya + PurchaseOrder + Produk.<br>Qty historis = stok saat ini + terjual (SO: qty transaksi, POS: qty konversi satuan dasar) + adj_out.<br>Mendukung filter tanggal.">
+                                title="<b>Alur Data:</b><br>Biaya approved + DPP/subtotal PO termasuk ongkir + modal produk. PPN Masukan dipisahkan dari beban.<br><br><b>Sumber:</b> Biaya + PurchaseOrder + Produk.<br>Qty historis = stok saat ini + terjual + adj_out.">
                                 {{ total_pengeluaran|rupiah }}</h4>
-                            <small class="text-muted">PO + Biaya + Gaji + Produk</small>
+                            <small class="text-muted">Tanpa PPN Masukan</small>
                         </div>
                         <div class="card-icon">
                             <span class="badge bg-label-danger rounded p-2">
@@ -79,7 +89,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                             <h4 class="mb-0 {% if laba_rugi >= 0 %}text-success{% else %}text-danger{% endif %} summary-nominal"
                                 style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom"
                                 data-bs-html="true"
-                                title="<b>Alur Data:</b><br>Total Pemasukan − Total Pengeluaran.<br><br><b>Sumber:</b> Selisih pemasukan dan pengeluaran.<br>Mendukung filter tanggal.">
+                                title="<b>Alur Data:</b><br>Pendapatan bersih - beban/DPP operasional. Diskon sudah mengurangi pendapatan. PPN tidak dihitung sebagai laba/rugi.">
                                 {{ laba_rugi|rupiah }}
                             </h4>
                             <small class="text-muted">{% if laba_rugi >= 0 %}Laba{% else %}Rugi{% endif %}</small>
@@ -117,6 +127,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
         </div>
     </div>
 
+    <!-- Ringkasan Keuntungan & Stok -->
     <div class="row g-2 g-md-3 mb-4">
         <div class="col-6 col-lg-3">
             <div class="card">
@@ -206,93 +217,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
         </div>
     </div>
 
-    <div class="row g-2 g-md-3 mb-4">
-        <div class="col-6 col-lg-3">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Total Diskon</p>
-                            <h4 class="mb-0 text-warning summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
-                                data-bs-placement="bottom" data-bs-html="true"
-                                title="<b>Alur Data:</b><br>Σ diskon SO (header + item) + Σ diskon POS.<br><br><b>Sumber:</b> SalesOrder.diskon + SalesOrderItem.diskon + POSTransaction.diskon.<br>Mendukung filter tanggal dan cabang.">
-                                {{ total_diskon|rupiah }}</h4>
-                            <small class="text-muted">SO: {{ total_diskon_so|rupiah }} | POS: {{ total_diskon_pos|rupiah }}</small>
-                        </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-warning rounded p-2">
-                                <i class="ri-discount-percent-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">PPN Penjualan</p>
-                            <h4 class="mb-0 text-info summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
-                                data-bs-placement="bottom" data-bs-html="true"
-                                title="<b>Alur Data:</b><br>Σ pajak SO (confirmed/delivered/completed) + Σ pajak POS (paid).<br><br><b>Sumber:</b> SalesOrder.pajak + POSTransaction.pajak.<br>Mendukung filter tanggal dan cabang.">
-                                {{ total_pajak_penjualan|rupiah }}</h4>
-                            <small class="text-muted">SO: {{ total_pajak_so|rupiah }} | POS: {{ total_pajak_pos|rupiah }}</small>
-                        </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-info rounded p-2">
-                                <i class="ri-government-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">PPN Pembelian</p>
-                            <h4 class="mb-0 text-info summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
-                                data-bs-placement="bottom" data-bs-html="true"
-                                title="<b>Alur Data:</b><br>Σ pajak PO (approved/received).<br><br><b>Sumber:</b> PurchaseOrder.pajak.<br>Mendukung filter tanggal dan cabang.">
-                                {{ total_pajak_pembelian|rupiah }}</h4>
-                            <small class="text-muted">Dari Purchase Order</small>
-                        </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-info rounded p-2">
-                                <i class="ri-building-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Subtotal Penjualan</p>
-                            <h4 class="mb-0 text-primary summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
-                                data-bs-placement="bottom" data-bs-html="true"
-                                title="<b>Alur Data:</b><br>Σ subtotal SO + Σ subtotal POS (sebelum diskon & pajak).<br><br><b>Sumber:</b> SalesOrder.subtotal + POSTransaction.subtotal.<br>Nilai penjualan sebelum potongan dan pajak.">
-                                {{ total_subtotal_penjualan|rupiah }}</h4>
-                            <small class="text-muted">Sebelum diskon & pajak</small>
-                        </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-primary rounded p-2">
-                                <i class="ri-file-list-3-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
+    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -323,7 +248,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                     </select>
                 </div>
             </div>
-            
+            <!-- Baris kedua: Kolom filter + Tombol -->
             <div class="row g-3 mt-2 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label">Kolom Pemasukan</label>
@@ -456,9 +381,10 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
         </div>
     </div>
 
+    <!-- Tabel Pemasukan -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between">
-            <h5 class="mb-0"><i class="ri-arrow-down-line me-2 text-success"></i>Pemasukan (Penjualan)</h5>
+            <h5 class="mb-0"><i class="ri-arrow-down-line me-2 text-success"></i>Pendapatan Bersih (Penjualan)</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i
                         class="ri-file-excel-2-line me-1"></i>Export Excel</button>
@@ -466,7 +392,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
-        <div class="card-datatable">
+        <div class="card-datatable table-responsive">
             <table class="table table-hover" id="tabelPemasukan">
                 <thead>
                     <tr>
@@ -475,7 +401,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         <th>Customer</th>
                         <th>Cabang</th>
                         <th>Metode Pembayaran</th>
-                        <th>Total</th>
+                        <th>Pendapatan Bersih</th>
                         <th>Status</th>
                         <th>Aksi</th>
                     </tr>
@@ -488,7 +414,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         <td>{{ so.customer.nama }}</td>
                         <td>{{ so.gudang.nama|default:"-" }}</td>
                         <td>{{ so.metode_pembayaran.nama|default:"-" }}</td>
-                        <td class="text-success fw-semibold">+{{ so.total_harga|rupiah }}</td>
+                        <td class="text-success fw-semibold">+{{ so.nilai_laporan|rupiah }}</td>
                         <td>
                             {% if so.status == 'completed' %}
                             <span class="badge bg-label-success">Selesai</span>
@@ -519,7 +445,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         </td>
                         <td>{{ pos.gudang.nama|default:"-" }}</td>
                         <td>{{ pos.metode_pembayaran.nama|default:"-" }}</td>
-                        <td class="text-success fw-semibold">+{{ pos.total_harga|rupiah }}</td>
+                        <td class="text-success fw-semibold">+{{ pos.nilai_laporan|rupiah }}</td>
                         <td>
                             {% if pos.status == 'paid' %}
                             <span class="badge bg-label-success">Lunas</span>
@@ -550,13 +476,39 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                     </tr>
                     {% endif %}
                 </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="5" class="text-start ps-4 py-3" style="vertical-align: middle;">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN PENDAPATAN BERSIH</strong>
+                                    <small class="text-muted" style="font-size: 0.75rem;">SO: {{ total_sales_order|rupiah }} | POS: {{ total_pos|rupiah }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3" style="vertical-align: middle;">
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="badge bg-label-success d-flex align-items-center gap-1 mb-2"
+                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 140px;">
+                                    <i class="ri-arrow-down-circle-line"></i>
+                                    <span>{{ total_pemasukan|rupiah }}</span>
+                                </span>
+                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Pendapatan Bersih</small>
+                            </div>
+                        </td>
+                        <td class="py-3"></td>
+                        <td class="py-3"></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
 
+    <!-- Tabel Pengeluaran -->
     <div class="card">
         <div class="card-header d-flex justify-content-between">
-            <h5 class="mb-0"><i class="ri-arrow-up-line me-2 text-danger"></i>Pengeluaran (PO + Biaya + Penggajian + Produk)</h5>
+            <h5 class="mb-0"><i class="ri-arrow-up-line me-2 text-danger"></i>Beban/DPP Operasional (PO + Biaya + Produk)</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i
                         class="ri-file-excel-2-line me-1"></i>Export Excel</button>
@@ -564,7 +516,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
-        <div class="card-datatable">
+        <div class="card-datatable table-responsive">
             <table class="table table-hover" id="tabelPengeluaran">
                 <thead>
                     <tr>
@@ -573,7 +525,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         <th>Keterangan</th>
                         <th>Cabang</th>
                         <th>Metode Pembayaran</th>
-                        <th>Total</th>
+                        <th>Nilai Beban/DPP</th>
                         <th>Aksi</th>
                     </tr>
                 </thead>
@@ -585,7 +537,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         <td>{{ po.nomor_po }} - {{ po.supplier.nama }}</td>
                         <td>{{ po.gudang.nama|default:"-" }}</td>
                         <td>{{ po.metode_pembayaran.nama|default:"-" }}</td>
-                        <td class="text-danger fw-semibold">-{{ po.total_harga|rupiah }}</td>
+                        <td class="text-danger fw-semibold">-{{ po.nilai_laporan|rupiah }}</td>
                         <td>
                             <div class="dropdown">
                                 <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow"
@@ -624,29 +576,6 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         </td>
                     </tr>
                     {% endfor %}
-                    {% for slip in penggajian_list %}
-                    <tr>
-                        <td>{{ slip.tanggal_bayar|date:"d M Y" }}</td>
-                        <td><span class="badge bg-label-danger">Gaji</span></td>
-                        <td>{{ slip.karyawan.nama }} - {{ slip.periode }}</td>
-                        <td>{{ slip.cabang.nama|default:"-" }}</td>
-                        <td>{{ slip.metode_pembayaran.nama|default:"-" }}</td>
-                        <td class="text-danger fw-semibold">-{{ slip.gaji_bersih|rupiah }}</td>
-                        <td>
-                            <div class="dropdown">
-                                <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow"
-                                    data-bs-toggle="dropdown">
-                                    <i class="ri-more-2-line"></i>
-                                </button>
-                                <div class="dropdown-menu">
-                                    <a class="dropdown-item" href="{% url 'hr:penggajian-detail' slip.pk %}">
-                                        <i class="ri-eye-line me-2"></i>Lihat Detail
-                                    </a>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
                     {% for produk in produk_pengeluaran_list %}
                     <tr>
                         <td>{{ produk.dibuat_pada|date:"d M Y" }}</td>
@@ -670,7 +599,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         </td>
                     </tr>
                     {% endfor %}
-                    {% if not purchase_order_list and not transaksi_biaya_list and not penggajian_list and not produk_pengeluaran_list %}
+                    {% if not purchase_order_list and not transaksi_biaya_list and not produk_pengeluaran_list %}
                     <tr>
                         <td colspan="7" class="text-center py-3">
                             <p class="text-muted mb-0">Belum ada pengeluaran</p>
@@ -678,6 +607,31 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                     </tr>
                     {% endif %}
                 </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="5" class="text-start ps-4 py-3" style="vertical-align: middle;">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN PENGELUARAN</strong>
+                                    <small class="text-muted" style="font-size: 0.75rem;">PO: {{ total_pembelian|rupiah }} | Biaya: {{ total_biaya|rupiah }} | Produk: {{ total_produk_pengeluaran|rupiah }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3" style="vertical-align: middle;">
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="badge bg-label-danger d-flex align-items-center gap-1 mb-2"
+                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 140px;">
+                                    <i class="ri-arrow-up-circle-line"></i>
+                                    <span>{{ total_pengeluaran|rupiah }}</span>
+                                </span>
+                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Total
+                                    Pengeluaran</small>
+                            </div>
+                        </td>
+                        <td class="py-3"></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
@@ -686,12 +640,12 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
 
 {% block page_js %}
 <script>
-    
+    // Initialize DataTables
     let dtPemasukan, dtPengeluaran;
     $(document).ready(function () {
         if ($('#tabelPemasukan tbody tr').length > 0 && !$('#tabelPemasukan tbody tr td[colspan]').length) {
+            {% if gudang_list %}
             dtPemasukan = $('#tabelPemasukan').DataTable({
-            scrollX: true,
                 language: {
                     "sEmptyTable": "Tidak ada data", "sLengthMenu": "Tampilkan _MENU_ data", "sSearch": "Cari:",
                     "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
@@ -702,12 +656,13 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                 lengthMenu: [[10, 25, 50, -1], ['10', '25', '50', 'Semua']],
                 responsive: false,
                 columnDefs: [{ orderable: false, targets: [7] }],
-                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
+                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
             });
+            {% endif %}
         }
         if ($('#tabelPengeluaran tbody tr').length > 0 && !$('#tabelPengeluaran tbody tr td[colspan]').length) {
+            {% if gudang_list %}
             dtPengeluaran = $('#tabelPengeluaran').DataTable({
-            scrollX: true,
                 language: {
                     "sEmptyTable": "Tidak ada data", "sLengthMenu": "Tampilkan _MENU_ data", "sSearch": "Cari:",
                     "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
@@ -718,11 +673,13 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                 lengthMenu: [[10, 25, 50, -1], ['10', '25', '50', 'Semua']],
                 responsive: false,
                 columnDefs: [{ orderable: false, targets: [6] }],
-                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
+                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
             });
+            {% endif %}
         }
     });
 
+    // Template Data for Independent Headers/Footers
     const EXCEL_INFO = {
         name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
         address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -742,14 +699,16 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
     };
 
     function exportToExcel() {
-        
+        // Ambil semua tabel di halaman (Pemasukan dan Pengeluaran)
         const tables = document.querySelectorAll('.table-responsive table');
-        if (tables.length === 0) { showExportError(); return; }
+        if (tables.length === 0) { alert('Tabel tidak ditemukan!'); return; }
 
+        // Buat tabel HTML untuk Excel (format .xls)
         let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
         html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
         html += '<body>';
 
+        // --- ADD EXCEL HEADER (Company Info) ---
         html += '<table border="0">';
         if (typeof EXCEL_INFO !== 'undefined') {
             html += `<tr><td colspan="10" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
@@ -761,17 +720,19 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
 
         html += '<table border="1">';
 
+        // Ekspor kedua tabel
         tables.forEach((table, tableIndex) => {
-            
+            // Tambah judul tabel
             html += '<tr><td colspan="10" style="background-color: #696CFF; color: #FFFFFF; font-weight: bold; font-size: 14px;">';
             html += tableIndex === 0 ? 'PEMASUKAN (PENJUALAN)' : 'PENGELUARAN (PEMBELIAN & BIAYA)';
             html += '</td></tr>';
 
+            // Tambah header
             const headerRow = table.querySelector('thead tr');
             if (headerRow) {
                 html += '<tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;">';
                 headerRow.querySelectorAll('th').forEach((th, index) => {
-                    
+                    // Exclude last column (Aksi)
                     if (index < headerRow.querySelectorAll('th').length - 1 && window.getComputedStyle(th).display !== 'none') {
                         html += `<th>${th.textContent.trim()}</th>`;
                     }
@@ -779,6 +740,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                 html += '</tr>';
             }
 
+            // Tambah baris data
             const tbody = table.querySelector('tbody');
             if (tbody) {
                 tbody.querySelectorAll('tr').forEach(tr => {
@@ -787,7 +749,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
 
                     html += '<tr>';
                     cells.forEach((td, index) => {
-                        
+                        // Exclude last column (Aksi)
                         if (index < cells.length - 1 && window.getComputedStyle(td).display !== 'none') {
                             html += `<td>${td.textContent.trim().replace(/\s+/g, ' ')}</td>`;
                         }
@@ -796,6 +758,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                 });
             }
 
+            // Tambah baris RINGKASAN dari tfoot untuk setiap tabel
             const tfoot = table.querySelector('tfoot');
             if (tfoot) {
                 const tfootRow = tfoot.querySelector('tr');
@@ -803,7 +766,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                     html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
                     const tfootCells = tfootRow.querySelectorAll('td');
                     tfootCells.forEach((td, index) => {
-                        
+                        // Exclude last column (empty/Aksi)
                         if (index < tfootCells.length - 1) {
                             let clone = td.cloneNode(true);
                             clone.querySelectorAll('small, i').forEach(el => el.remove());
@@ -816,13 +779,15 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                 }
             }
 
+            // Tambah spasi antar tabel
             html += '<tr><td colspan="10">&nbsp;</td></tr>';
         });
 
         html += '</table>';
 
+        // --- ADD EXCEL FOOTER ---
         html += '<table border="0">';
-        html += `<tr><td colspan="10"></td></tr>`; 
+        html += `<tr><td colspan="10"></td></tr>`; // empty spacer
         if (typeof EXCEL_INFO !== 'undefined') {
             html += `<tr><td colspan="10" style="text-align:right; font-size:10px; color:#697A8D;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</td></tr>`;
             html += `<tr><td colspan="10" style="text-align:right; font-size:10px; color:#697A8D;">${EXCEL_INFO.copyright}</td></tr>`;
@@ -840,12 +805,12 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
     function exportToPDF() {
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
         const tables = document.querySelectorAll('.table-responsive table');
-        if (tables.length === 0) { showExportError(); return; }
+        if (tables.length === 0) { alert('Tabel tidak ditemukan!'); return; }
 
         const allContent = [];
 
         tables.forEach((table, tableIndex) => {
-            
+            // Tambah judul tabel
             const titleText = tableIndex === 0 ? 'PEMASUKAN (PENJUALAN)' : 'PENGELUARAN (PEMBELIAN & BIAYA)';
             allContent.push({
                 text: titleText,
@@ -856,6 +821,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                 bold: true
             });
 
+            // Extract headers
             const headers = [];
             const headerRow = table.querySelector('thead tr');
             if (headerRow) {
@@ -874,6 +840,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
 
             const body = [headers];
 
+            // Extract data rows
             const tbody = table.querySelector('tbody');
             if (tbody) {
                 tbody.querySelectorAll('tr').forEach(tr => {
@@ -891,6 +858,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                 });
             }
 
+            // Tambah baris RINGKASAN dari tfoot
             const tfoot = table.querySelector('tfoot');
             if (tfoot) {
                 const tfootRow = tfoot.querySelector('tr');
@@ -906,7 +874,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                             const colspan = parseInt(td.getAttribute('colspan') || 1);
                             summaryRow.push({ text: text, colSpan: colspan, bold: true, fillColor: '#f8f9fa' });
                             colspanUsed += colspan;
-                            
+                            // Tambah sel kosong untuk colspan
                             for (let i = 1; i < colspan; i++) {
                                 summaryRow.push({});
                             }
@@ -916,6 +884,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                 }
             }
 
+            // Tambah tabel ke konten
             allContent.push({
                 table: { headerRows: 1, widths: Array(headers.length).fill('auto'), body: body },
                 layout: {
@@ -988,14 +957,15 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
         window.location.href = window.location.pathname + (qs ? '?' + qs : '');
     }
     function resetFilter() {
-        
+        // Reset column checkboxes ke semua checked
         document.querySelectorAll('.col-pemasukan-cb, .col-pengeluaran-cb').forEach(cb => { cb.checked = true; });
         togglePemasukanCols();
         togglePengeluaranCols();
-        
+        // Reset filter dan reload
         window.location.href = window.location.pathname;
     }
 
+    // ===== Column Toggle Pemasukan =====
     function togglePemasukanCols() {
         const checkboxes = document.querySelectorAll('.col-pemasukan-cb');
         if (dtPemasukan) {
@@ -1027,6 +997,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
         togglePemasukanCols();
     }
 
+    // ===== Column Toggle Pengeluaran =====
     function togglePengeluaranCols() {
         const checkboxes = document.querySelectorAll('.col-pengeluaran-cb');
         if (dtPengeluaran) {
@@ -1059,7 +1030,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
     }
 </script>
 <style>
-    
+    /* Responsive Summary Cards - Laporan Keuangan */
     .row>[class*="col-6"]>.card {
         height: 100%;
     }
@@ -1132,7 +1103,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
     }
 </style>
 <script>
-    
+    // Inisialisasi Bootstrap Tooltip
     document.addEventListener('DOMContentLoaded', function () {
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         tooltipTriggerList.forEach(function (el) {
@@ -1140,42 +1111,4 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
         });
     });
 </script>
-
-<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-warning align-items-center py-3">
-                <h5 class="modal-title text-dark mb-0">
-                    <i class="ri-error-warning-line me-2"></i>Export Gagal
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center py-3">
-                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
-                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
-                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
-                    <i class="ri-close-line me-1"></i>Tutup
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-
-function showExportError() {
-    var modal = document.getElementById('exportErrorModal');
-    if (modal) {
-        new bootstrap.Modal(modal).show();
-    } else {
-        alert('Tabel tidak ditemukan!');
-    }
-}
-</script>
-
 {% endblock page_js %}
