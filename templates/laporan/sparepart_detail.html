@@ -119,6 +119,8 @@
                 <div class="tab-pane fade show active" id="tab-pemakaian" role="tabpanel">
                     <div class="card">
                         <div class="card-header"><h5 class="mb-0">Riwayat Pemakaian di Service Center</h5></div>
+                        {% if stok_list %}
+
                         <div class="card-datatable table-responsive">
                             <table class="table table-hover">
                                 <thead><tr><th>No. Service</th><th>Tanggal</th><th>Pelanggan</th><th>Gudang</th><th>Qty</th><th>Harga Satuan</th><th>Subtotal</th></tr></thead>
@@ -133,12 +135,42 @@
                                         <td>{{ sp.harga_satuan|rupiah }}</td>
                                         <td class="text-danger fw-medium">{{ sp.subtotal|rupiah }}</td>
                                     </tr>
-                                    {% empty %}
-                                    <tr><td colspan="7" class="text-center py-4 text-muted">Belum ada pemakaian</td></tr>
-                                    {% endfor %}
+                    {% endfor %}
                                 </tbody>
                             </table>
                         </div>
+
+                        {% else %}
+
+                        <div class="card-body">
+
+                            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                                <div class="mb-4">
+
+                                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                                         style="width: 88px; height: 88px;">
+
+                                        <i class="ri-tools-line" style="font-size: 2.8rem;"></i>
+
+                                    </div>
+
+                                </div>
+
+                                <h5 class="mb-3">Belum Ada Sparepart</h5>
+
+                                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                                    Daftar sparepart masih kosong.
+
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                        {% endif %}
                     </div>
                 </div>
 

@@ -203,6 +203,9 @@
                 <div class="table-responsive">
                     {% if karyawan_terbaru %}
 
+                    {% if karyawan_terbaru %}
+
+
                     <table class="table table-hover mb-0">
                         <thead>
                             <tr>
@@ -237,6 +240,54 @@
                     {% endfor %}
                         </tbody>
                     </table>
+
+
+                    {% else %}
+
+
+                    <div class="card-body">
+
+
+                        <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+
+                            <div class="mb-4">
+
+
+                                <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+
+                                     style="width: 88px; height: 88px;">
+
+
+                                    <i class="ri-dashboard-line" style="font-size: 2.8rem;"></i>
+
+
+                                </div>
+
+
+                            </div>
+
+
+                            <h5 class="mb-3">Belum Ada Data</h5>
+
+
+                            <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+
+                                Data masih kosong.
+
+
+                            </p>
+
+
+                        </div>
+
+
+                    </div>
+
+
+                    {% endif %}
 
                     {% else %}
 
@@ -304,9 +355,7 @@
                                     {% endif %}
                                 </td>
                             </tr>
-                            {% empty %}
-                            <tr><td colspan="4" class="text-center text-muted py-4">Belum ada data</td></tr>
-                            {% endfor %}
+                    {% endfor %}
                         </tbody>
                     </table>
                 </div>
