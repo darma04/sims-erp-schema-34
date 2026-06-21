@@ -213,8 +213,6 @@ Fitur: filter tipe akun, export Excel & PDF, cards ringkasan, seed CoA.
                 </button>
             </div>
         </div>
-        {% if akun_list %}
-
         <div class="card-datatable table-responsive">
             <table class="datatables-coa accounting-data-table table table-hover" id="coaTable" data-accounting-primary="true" data-export-title="Chart of Accounts" data-export-filename="Chart_of_Accounts" data-search-placeholder="Cari akun...">
                 <thead>
@@ -229,7 +227,7 @@ Fitur: filter tipe akun, export Excel & PDF, cards ringkasan, seed CoA.
                     </tr>
                 </thead>
                 <tbody>
-
+                    {% if akun_list %}
                     {% for akun in akun_list %}
                     <tr>
                         <td>
@@ -262,7 +260,56 @@ Fitur: filter tipe akun, export Excel & PDF, cards ringkasan, seed CoA.
                         <td>
                             {% if akun.saldo_normal == 'debit' %}
                             <span class="badge bg-label-primary">Debit</span>
-                            </tbody>
+                            {% else %}
+                            <span class="badge bg-label-info">Kredit</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if akun.is_active %}
+                            <span class="badge bg-label-success">Aktif</span>
+                            {% else %}
+                            <span class="badge bg-label-secondary">Nonaktif</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if rbac_can_edit or rbac_can_delete %}
+                            <div class="dropdown">
+                                <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                                    <i class="ri-more-2-line"></i>
+                                </button>
+                                <div class="dropdown-menu">
+                                    {% if rbac_can_edit %}
+                                    <a class="dropdown-item" href="{% url 'akuntansi:coa_edit' akun.pk %}">
+                                        <i class="ri-edit-line me-2"></i>Edit
+                                    </a>
+                                    {% endif %}
+                                    {% if rbac_can_delete and not akun.is_system %}
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item text-danger" href="javascript:void(0);"
+                                        onclick="confirmDelete({{ akun.pk }}, '{{ akun.kode }} - {{ akun.nama }}')">
+                                        <i class="ri-delete-bin-line me-2"></i>Hapus
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% else %}
+                            <span class="badge bg-label-secondary"><i class="ri-eye-line me-1"></i>View Only</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <i class="ri-book-2-line ri-3x text-muted mb-3 d-block"></i>
+                            <p class="text-muted mb-2">Belum ada akun keuangan</p>
+                            {% if rbac_can_create %}
+                            <p class="text-muted small">Klik "Seed CoA Default" untuk menambahkan akun standar PSAK</p>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
                 <tfoot class="table-footer-summary">
                     <tr>
                         <td colspan="2" class="text-start ps-4 py-3">
@@ -308,38 +355,6 @@ Fitur: filter tipe akun, export Excel & PDF, cards ringkasan, seed CoA.
                 </tfoot>
             </table>
         </div>
-
-        {% else %}
-
-        <div class="card-body">
-
-            <div class="text-center py-4 py-md-5 px-3 px-md-4">
-
-                <div class="mb-4">
-
-                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
-
-                         style="width: 88px; height: 88px;">
-
-                        <i class="ri-book-open-line" style="font-size: 2.8rem;"></i>
-
-                    </div>
-
-                </div>
-
-                <h5 class="mb-3">Belum Ada Akun (CoA)</h5>
-
-                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
-
-                    Chart of Accounts masih kosong.
-
-                </p>
-
-            </div>
-
-        </div>
-
-        {% endif %}
     </div>
 
     <!-- Delete Modal -->

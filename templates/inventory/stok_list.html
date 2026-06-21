@@ -152,8 +152,6 @@ Tabel: produk, gudang, jumlah stok, satuan.
                 </button>
             </div>
         </div>
-        {% if stok_list %}
-
         <div class="card-datatable table-responsive">
             <table class="datatables-stok table table-hover" id="stokTable">
                 <thead>
@@ -167,7 +165,7 @@ Tabel: produk, gudang, jumlah stok, satuan.
                     </tr>
                 </thead>
                 <tbody>
-
+                    {% if stok_list %}
                     {% for stok in stok_list %}
                     <tr>
                         <td>{{ stok.produk.nama }}</td>
@@ -178,7 +176,23 @@ Tabel: produk, gudang, jumlah stok, satuan.
                             {% if stok.jumlah == 0 %}
                             <span class="badge bg-danger ms-2">Habis</span>
                             {% elif stok.jumlah <= 10 %} <span class="badge bg-warning ms-2">Rendah</span>
-                                </tbody>
+                                {% else %}
+                                <span class="badge bg-success ms-2">Tersedia</span>
+                                {% endif %}
+                        </td>
+                        <td>{{ stok.produk.satuan.singkatan }}</td>
+                        <td>{{ stok.diupdate_pada|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <i class="ri-inbox-line ri-3x text-muted mb-3 d-block"></i>
+                            <p class="text-muted mb-0">Belum ada data stok</p>
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
                 <tfoot class="table-footer-summary">
                     <tr>
                         <td colspan="3" class="text-start ps-4 py-3" style="vertical-align: middle;">
@@ -203,38 +217,6 @@ Tabel: produk, gudang, jumlah stok, satuan.
                 </tfoot>
             </table>
         </div>
-
-        {% else %}
-
-        <div class="card-body">
-
-            <div class="text-center py-4 py-md-5 px-3 px-md-4">
-
-                <div class="mb-4">
-
-                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
-
-                         style="width: 88px; height: 88px;">
-
-                        <i class="ri-stack-line" style="font-size: 2.8rem;"></i>
-
-                    </div>
-
-                </div>
-
-                <h5 class="mb-3">Belum Ada Data Stok</h5>
-
-                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
-
-                    Data stok masih kosong.
-
-                </p>
-
-            </div>
-
-        </div>
-
-        {% endif %}
     </div>
 </div>
 {% endblock content %}

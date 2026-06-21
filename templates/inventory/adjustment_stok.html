@@ -162,8 +162,6 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
                 </button>
             </div>
         </div>
-        {% if adjustment_list %}
-
         <div class="card-datatable table-responsive">
             <table class="datatables-adjustment table table-hover" id="adjustmentTable">
                 <thead>
@@ -179,7 +177,7 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
                     </tr>
                 </thead>
                 <tbody>
-
+                    {% if adjustment_list %}
                     {% for adj in adjustment_list %}
                     <tr>
                         <td>
@@ -204,7 +202,62 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
                             <span class="badge bg-label-success">
                                 <i class="ri-add-line me-1"></i>Penambahan
                             </span>
-                            </tbody>
+                            {% else %}
+                            <span class="badge bg-label-danger">
+                                <i class="ri-subtract-line me-1"></i>Pengurangan
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if adj.tipe == 'in' %}
+                            <span class="text-success fw-bold">+{{ adj.jumlah }}</span>
+                            {% else %}
+                            <span class="text-danger fw-bold">-{{ adj.jumlah }}</span>
+                            {% endif %}
+                            <small class="text-muted ms-1">{{ adj.produk.satuan.singkatan }}</small>
+                        </td>
+                        <td>{{ adj.dibuat_oleh.username|default:"-" }}</td>
+                        <td>
+                            {% if can_view.inventory or can_delete.inventory %}
+                            <div class="dropdown">
+                                <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow"
+                                    data-bs-toggle="dropdown">
+                                    <i class="ri-more-2-line"></i>
+                                </button>
+                                <div class="dropdown-menu">
+                                    {% if can_view.inventory %}
+                                    <a class="dropdown-item" href="#" onclick="viewDetail({{ adj.pk }})">
+                                        <i class="ri-eye-line me-2"></i>Lihat Detail
+                                    </a>
+                                    {% endif %}
+                                    {% if can_view.inventory and can_delete.inventory %}
+                                    <div class="dropdown-divider"></div>
+                                    {% endif %}
+                                    {% if can_delete.inventory %}
+                                    <a class="dropdown-item text-danger" href="javascript:void(0);"
+                                        onclick="confirmDelete({{ adj.pk }}, '{{ adj.nomor_adjustment }}')">
+                                        <i class="ri-delete-bin-line me-2"></i>Hapus
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% else %}
+                            <span class="badge bg-label-secondary">
+                                <i class="ri-eye-line me-1"></i>View Only
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5">
+                            <i class="ri-edit-box-line ri-3x text-muted mb-3 d-block"></i>
+                            <p class="text-muted mb-0">Belum ada adjustment stok</p>
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
                 <tfoot class="table-footer-summary">
                     <tr>
                         <td colspan="7" class="text-start ps-4 py-3" style="vertical-align: middle;">
@@ -222,38 +275,6 @@ Tabel: tanggal, produk, gudang, qty sebelum, qty sesudah, alasan.
                 </tfoot>
             </table>
         </div>
-
-        {% else %}
-
-        <div class="card-body">
-
-            <div class="text-center py-4 py-md-5 px-3 px-md-4">
-
-                <div class="mb-4">
-
-                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
-
-                         style="width: 88px; height: 88px;">
-
-                        <i class="ri-stack-line" style="font-size: 2.8rem;"></i>
-
-                    </div>
-
-                </div>
-
-                <h5 class="mb-3">Belum Ada Data Stok</h5>
-
-                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
-
-                    Data stok masih kosong.
-
-                </p>
-
-            </div>
-
-        </div>
-
-        {% endif %}
     </div>
 
     <!-- Delete Confirmation Modal -->
