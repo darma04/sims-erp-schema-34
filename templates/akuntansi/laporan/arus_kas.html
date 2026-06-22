@@ -269,7 +269,21 @@
             {% for s in saldo_kas %}<tr><td class="fw-medium">{{ s.akun.kode }}</td><td>{{ s.akun.nama }}</td><td class="text-end fw-bold text-primary">{{ s.saldo|rupiah }}</td></tr>{% endfor %}
         </tbody><tfoot class="table-footer-summary"><tr><td colspan="2" class="text-start ps-4 py-3"><div class="d-flex align-items-center justify-content-start"><i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i><div class="text-start"><strong class="d-block" style="font-size: 0.875rem;">RINGKASAN</strong><small class="text-muted">Total Kas & Bank</small></div></div></td><td class="text-end py-3"><span class="badge bg-label-primary">{{ total_saldo_kas|rupiah }}</span></td></tr></tfoot></table></div>
         {% else %}
-{% endif %}
+        <div class="card-body">
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+                <div class="mb-4">
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                         style="width: 88px; height: 88px;">
+                        <i class="ri-inbox-line" style="font-size: 2.8rem;"></i>
+                    </div>
+                </div>
+                <h5 class="mb-3">Belum Ada Data Arus Kas</h5>
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+                    Daftar arus kas masih kosong.
+                </p>
+            </div>
+        </div>
+        {% endif %}
 
     </div>
 </div>

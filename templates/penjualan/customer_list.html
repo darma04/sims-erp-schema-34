@@ -217,7 +217,46 @@ Fitur: tambah, edit, hapus customer. Tabel: nama, kontak, alamat, aksi.
         </div>
 
         {% else %}
-{% endif %}
+
+        <div class="card-body">
+
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                <div class="mb-4">
+
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                         style="width: 88px; height: 88px;">
+
+                        <i class="ri-user-line" style="font-size: 2.8rem;"></i>
+
+                    </div>
+
+                </div>
+
+                <h5 class="mb-3">Belum Ada Customer</h5>
+
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                    Daftar customer masih kosong. Tambahkan customer untuk memulai transaksi.
+
+                </p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
+                    {% if can_create.penjualan %}
+                    <a href="{% url 'penjualan:customer_add' %}" class="btn btn-primary btn-lg">
+                        <i class="ri-add-line me-1"></i>Tambah Customer
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'penjualan:customer_import' %}" class="btn btn-label-success btn-lg">
+                        <i class="ri-upload-2-line me-1"></i>Import dari Excel
+                    </a>
+                </div>
+
+            </div>
+
+        </div>
+
+        {% endif %}
     </div>
 
     <!-- Delete Confirmation Modal -->

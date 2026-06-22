@@ -222,8 +222,15 @@ LAPORAN CABANG - Laporan Performa per Cabang/Gudang
                         <td>{{ c.jml_trx_pos }}</td>
                         <td data-order="{{ c.total_pemasukan }}" class="text-success fw-semibold">{{ c.total_pemasukan|rupiah }}</td>
                         <td data-order="{{ c.total_pengeluaran }}" class="text-danger fw-semibold">{{ c.total_pengeluaran|rupiah }}</td>
-                        <td data-order="{{ c.laba_rugi }}" class="{% if c.laba_rugi >= 0 %}text-success{% else %}
-</td>
+                        <td data-order="{{ c.laba_rugi }}" class="{% if c.laba_rugi >= 0 %}text-success{% else %}text-danger{% endif %} fw-bold">{{ c.laba_rugi|rupiah }}</td>
+                        <td>
+                            <div class="dropdown">
+                                <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ri-more-2-line"></i></button>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="?cabang={{ c.pk }}"><i class="ri-eye-line me-2"></i>Lihat Detail</a>
+                                </div>
+                            </div>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -268,14 +275,146 @@ LAPORAN CABANG - Laporan Performa per Cabang/Gudang
 
 
         {% else %}
-{% endif %}
+
+
+
+        <div class="card-body">
+
+
+
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+
+
+                <div class="mb-4">
+
+
+
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+
+
+                         style="width: 88px; height: 88px;">
+
+
+
+                        <i class="ri-bar-chart-box-line" style="font-size: 2.8rem;"></i>
+
+
+
+                    </div>
+
+
+
+                </div>
+
+
+
+                <h5 class="mb-3">Belum Ada Laporan</h5>
+
+
+
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+
+
+                    Daftar data masih kosong.
+
+
+
+                </p>
+
+
+
+            </div>
+
+
+
+        </div>
+
+
+
+        {% endif %}
 
 
         {% else %}
-{% endif %}
+
+
+        <div class="card-body">
+
+
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+
+                <div class="mb-4">
+
+
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+
+                         style="width: 88px; height: 88px;">
+
+
+                        <i class="ri-building-4-line" style="font-size: 2.8rem;"></i>
+
+
+                    </div>
+
+
+                </div>
+
+
+                <h5 class="mb-3">Belum Ada Data Cabang</h5>
+
+
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+
+                    Data cabang masih kosong.
+
+
+                </p>
+
+
+            </div>
+
+
+        </div>
+
+
+        {% endif %}
 
         {% else %}
-{% endif %}
+
+        <div class="card-body">
+
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                <div class="mb-4">
+
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                         style="width: 88px; height: 88px;">
+
+                        <i class="ri-building-4-line" style="font-size: 2.8rem;"></i>
+
+                    </div>
+
+                </div>
+
+                <h5 class="mb-3">Belum Ada Data Cabang</h5>
+
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                    Data cabang masih kosong.
+
+                </p>
+
+            </div>
+
+        </div>
+
+        {% endif %}
     </div>
     {% else %}
     <!-- Section: Laporan Keuangan & Inventaris -->
@@ -398,9 +537,10 @@ LAPORAN CABANG - Laporan Performa per Cabang/Gudang
                             title="Total terjual dari SO + POS di cabang ini">{{ p.qty|floatformat:0 }} unit</span>
                     </div>
                     {% endfor %}
-                </div>
-            </div>
+                </tbody>
+            </table>
         </div>
+    </div>
 
     <!-- Tabel Riwayat Absensi Cabang -->
     <div class="card mb-4">
@@ -432,35 +572,7 @@ LAPORAN CABANG - Laporan Performa per Cabang/Gudang
                         <td>
                             <div class="d-flex align-items-center">
                                 {% if a.karyawan.foto %}
-                                <div class="avatar avatar-sm me-2"><img src="{{ a.karyawan.foto.url }}" alt="{{ a.karyawan.nama }}" class="rounded-ci
-                                <div class="card-body">
-                                    <div class="text-center py-4 py-md-5 px-3 px-md-4">
-                                        <div class="mb-4">
-                                            <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
-                                                 style="width: 88px; height: 88px;">
-                                                <i class="ri-inbox-line" style="font-size: 2.8rem;"></i>
-                                            </div>
-                                        </div>
-                                        <h5 class="mb-3">Belum Ada Data</h5>
-                                        <p class=
-                                       <div class="card-body">
-                                           <div class="text-center py-4 py-md-5 px-3 px-md-4">
-                                               <div class="mb-4">
-                                                   <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
-                                                        style="width: 88px; height: 88px;">
-                                                       <i class="ri-inbox-line" style="font-size: 2.8rem;"></i>
-                                                   </div>
-                                               </div>
-                                               <h5 class="mb-3">Belum Ada Data</h5>
-                                               <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
-                                                   Daftar data masih kosong.
-                                               </p>
-                                           </div>
-                                       </div>"text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
-                                            Daftar data masih kosong.
-                                        </p>
-                                    </div>
-                                </div>rcle" style="width:32px;height:32px;object-fit:cover;"></div>
+                                <div class="avatar avatar-sm me-2"><img src="{{ a.karyawan.foto.url }}" alt="{{ a.karyawan.nama }}" class="rounded-circle" style="width:32px;height:32px;object-fit:cover;"></div>
                                 {% else %}
                                 <div class="avatar avatar-sm me-2"><span class="avatar-initial rounded-circle bg-label-primary">{{ a.karyawan.nama|first }}</span></div>
                                 {% endif %}
@@ -490,7 +602,21 @@ LAPORAN CABANG - Laporan Performa per Cabang/Gudang
     </div>
     </div>
     {% else %}
-{% endif %}
+    <div class="card-body">
+        <div class="text-center py-4 py-md-5 px-3 px-md-4">
+            <div class="mb-4">
+                <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                     style="width: 88px; height: 88px;">
+                    <i class="ri-calendar-check-line" style="font-size: 2.8rem;"></i>
+                </div>
+            </div>
+            <h5 class="mb-3">Belum Ada Data Absensi</h5>
+            <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+                Belum ada data absensi di cabang ini.
+            </p>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock content %}
 

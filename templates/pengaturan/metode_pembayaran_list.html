@@ -36,7 +36,7 @@
         </div>
         {% if can_create.pengaturan %}
         <div class="d-flex gap-2">
-            <form method="post" action="{% url 'pengaturan:metode_pembayaran_create' %}" class="d-inline">
+            <form method="post" action="{% url 'pengaturan:metode_pembayaran_seed' %}" class="d-inline">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-label-success"
                     onclick="return confirm('Seed metode pembayaran default? Data yang sudah ada tidak ditimpa.');">
@@ -307,7 +307,44 @@
         </div>
 
         {% else %}
-{% endif %}
+
+        <div class="card-body">
+
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                <div class="mb-4">
+
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                         style="width: 88px; height: 88px;">
+
+                        <i class="ri-cash-line" style="font-size: 2.8rem;"></i>
+
+                    </div>
+
+                </div>
+
+                <h5 class="mb-3">Belum Ada Pembayaran</h5>
+
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                    Daftar pembayaran masih kosong.
+
+                </p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
+                    <a href="{% url 'pengaturan:metode_pembayaran_add' %}" class="btn btn-primary btn-lg">
+                        <i class="ri-add-line me-1"></i>Tambah Metode
+                    </a>
+                    <a href="{% url 'pengaturan:metode_pembayaran_seed' %}" class="btn btn-label-success btn-lg">
+                        <i class="ri-database-2-line me-1"></i>Seed Default
+                    </a>
+                </div>
+
+            </div>
+
+        </div>
+
+        {% endif %}
     </div>
 </div>
 

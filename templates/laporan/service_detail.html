@@ -133,14 +133,146 @@
 
 
                 {% else %}
-{% endif %}
+
+
+
+                <div class="card-body">
+
+
+
+                    <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+
+
+                        <div class="mb-4">
+
+
+
+                            <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+
+
+                                 style="width: 88px; height: 88px;">
+
+
+
+                                <i class="ri-customer-service-2-line" style="font-size: 2.8rem;"></i>
+
+
+
+                            </div>
+
+
+
+                        </div>
+
+
+
+                        <h5 class="mb-3">Belum Ada Service</h5>
+
+
+
+                        <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+
+
+                            Daftar data masih kosong.
+
+
+
+                        </p>
+
+
+
+                    </div>
+
+
+
+                </div>
+
+
+
+                {% endif %}
 
 
                 {% else %}
-{% endif %}
+
+
+                <div class="card-body">
+
+
+                    <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+
+                        <div class="mb-4">
+
+
+                            <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+
+                                 style="width: 88px; height: 88px;">
+
+
+                                <i class="ri-customer-service-2-line" style="font-size: 2.8rem;"></i>
+
+
+                            </div>
+
+
+                        </div>
+
+
+                        <h5 class="mb-3">Belum Ada Data Service</h5>
+
+
+                        <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+
+                            Data service masih kosong.
+
+
+                        </p>
+
+
+                    </div>
+
+
+                </div>
+
+
+                {% endif %}
 
                 {% else %}
-{% endif %}
+
+                <div class="card-body">
+
+                    <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                        <div class="mb-4">
+
+                            <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                                 style="width: 88px; height: 88px;">
+
+                                <i class="ri-customer-service-2-line" style="font-size: 2.8rem;"></i>
+
+                            </div>
+
+                        </div>
+
+                        <h5 class="mb-3">Belum Ada Data Service</h5>
+
+                        <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                            Daftar data masih kosong.
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+                {% endif %}
             </div>
 
             <div class="card mb-3">
@@ -196,8 +328,7 @@
                             {% for log in activity_logs %}
                             <tr>
                                 <td><small>{{ log.timestamp|date:"d M Y H:i" }}</small></td>
-                                <td>{% if log.user %}{{ log.user.get_full_name|default:log.user.username }}{% else %}
-Sistem{% endif %}</td>
+                                <td>{% if log.user %}{{ log.user.get_full_name|default:log.user.username }}{% else %}Sistem{% endif %}</td>
                                 <td><span class="badge bg-label-info">{{ log.action }}</span></td>
                                 <td><small class="text-muted">{{ log.remarks|default:log.object_repr|truncatewords:15 }}</small></td>
                             </tr>

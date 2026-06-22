@@ -392,7 +392,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
-                {% if sales_order_list or pos_transaction_list %}
+                {% if sales_order_list %}
 <div class="card-datatable table-responsive">
             <table class="table table-hover" id="tabelPemasukan">
                 <thead>
@@ -505,7 +505,21 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
             </table>
         </div>
         {% else %}
-{% endif %}
+        <div class="card-body">
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+                <div class="mb-4">
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                         style="width: 88px; height: 88px;">
+                        <i class="ri-inbox-line" style="font-size: 2.8rem;"></i>
+                    </div>
+                </div>
+                <h5 class="mb-3">Belum Ada Data Keuangan</h5>
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+                    Daftar keuangan masih kosong.
+                </p>
+            </div>
+        </div>
+        {% endif %}
 
     </div>
 
@@ -520,7 +534,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
-                {% if purchase_order_list or transaksi_biaya_list or produk_pengeluaran_list %}
+                {% if purchase_order_list %}
 <div class="card-datatable table-responsive">
             <table class="table table-hover" id="tabelPengeluaran">
                 <thead>
@@ -640,7 +654,21 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
             </table>
         </div>
         {% else %}
-{% endif %}
+        <div class="card-body">
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+                <div class="mb-4">
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                         style="width: 88px; height: 88px;">
+                        <i class="ri-inbox-line" style="font-size: 2.8rem;"></i>
+                    </div>
+                </div>
+                <h5 class="mb-3">Belum Ada Data Keuangan</h5>
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+                    Daftar keuangan masih kosong.
+                </p>
+            </div>
+        </div>
+        {% endif %}
 
     </div>
 </div>

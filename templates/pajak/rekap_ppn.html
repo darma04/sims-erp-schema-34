@@ -192,7 +192,21 @@
             </tr>{% endfor %}
         </tbody><tfoot class="table-footer-summary"><tr><td class="text-start ps-4 py-3"><div class="d-flex align-items-center justify-content-start"><i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i><div class="text-start"><strong class="d-block" style="font-size: 0.875rem;">RINGKASAN</strong><small class="text-muted">{{ selected_tahun }}</small></div></div></td><td class="text-end py-3">-</td><td class="text-end py-3"><span class="badge bg-label-warning">{{ total_masukan|rupiah }}</span></td><td class="text-end py-3">-</td><td class="text-end py-3"><span class="badge bg-label-success">{{ total_keluaran|rupiah }}</span></td><td class="text-end py-3"><span class="badge bg-label-{% if total_setor > 0 %}danger{% else %}info{% endif %}">{{ total_setor|rupiah }}</span></td></tr></tfoot></table></div>
         {% else %}
-{% endif %}
+        <div class="card-body">
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+                <div class="mb-4">
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                         style="width: 88px; height: 88px;">
+                        <i class="ri-inbox-line" style="font-size: 2.8rem;"></i>
+                    </div>
+                </div>
+                <h5 class="mb-3">Belum Ada Data Rekap</h5>
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+                    Daftar rekap ppn masih kosong.
+                </p>
+            </div>
+        </div>
+        {% endif %}
 
     </div>
 </div>

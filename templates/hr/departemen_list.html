@@ -224,7 +224,43 @@
         </div>
 
         {% else %}
-{% endif %}
+
+        <div class="card-body">
+
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                <div class="mb-4">
+
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                         style="width: 88px; height: 88px;">
+
+                        <i class="ri-building-line" style="font-size: 2.8rem;"></i>
+
+                    </div>
+
+                </div>
+
+                <h5 class="mb-3">Belum Ada Departemen</h5>
+
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                    Daftar departemen masih kosong. Tambahkan departemen untuk struktur organisasi.
+
+                </p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
+                    {% if can_create.hr %}
+                    <a href="{% url 'hr:departemen_add' %}" class="btn btn-primary btn-lg">
+                        <i class="ri-add-line me-1"></i>Tambah Departemen
+                    </a>
+                    {% endif %}
+                </div>
+
+            </div>
+
+        </div>
+
+        {% endif %}
     </div>
 
     <!-- Delete Modal -->
