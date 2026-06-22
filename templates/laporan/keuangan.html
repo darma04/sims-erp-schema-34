@@ -392,7 +392,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
-                {% if sales_order_list %}
+                {% if sales_order_list or pos_transaction_list %}
 <div class="card-datatable table-responsive">
             <table class="table table-hover" id="tabelPemasukan">
                 <thead>
@@ -534,7 +534,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
-                {% if purchase_order_list %}
+                {% if purchase_order_list or transaksi_biaya_list or produk_pengeluaran_list %}
 <div class="card-datatable table-responsive">
             <table class="table table-hover" id="tabelPengeluaran">
                 <thead>
