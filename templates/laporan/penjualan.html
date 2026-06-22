@@ -289,63 +289,7 @@
                         <td>{{ so.harga_beli_calc|rupiah }}</td>
                         <td>
                             <span class="{% if so.keuntungan_calc >= 0 %}text-success{% else %}
-                            <div class="card-body">
-                                <div class="text-center py-4 py-md-5 px-3 px-md-4">
-                                    <div class="mb-4">
-                                        <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
-                                             style="width: 88px; height: 88px;">
-                                            <i class="ri-inbox-line" style="font-size: 2.8rem;"></i>
-                                        </div>
-                                    </div>
-                                    <h5 class="mb-3">Belum Ada Data</h5>
-                                    <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: aut
-                                    <div class="card-body">
-                                        <div class="text-center py-4 py-md-5 px-3 px-md-4">
-                                            <div class="mb-4">
-                                                <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
-                                                     style="width: 88px; height: 88px;">
-                                                    <i class="ri-inbox-line" style="font-size: 2.8rem;"></i>
-                                                </div>
-                                            </div>
-                                            <h5 class="mb-3">Belum Ada Data</h5>
-                                            <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
-                                                Daftar data masih kosong.
-                                            </p>
-                                        </div>
-                                    </div>o; line-height: 1.7;">
-                                        Daftar data masih kosong.
-                                    </p>
-                                </div>
-                            </div>text-danger{% endif %} fw-medium">
-                                {{ so.keuntungan_calc|rupiah }}
-                            </span>
-                        </td>
-                        <td>
-                            {% if so.status == 'draft' %}
-                            <span class="badge bg-label-secondary">Draft</span>
-                            {% elif so.status == 'confirmed' %}
-                            <span class="badge bg-label-primary">Dikonfirmasi</span>
-                            {% elif so.status == 'delivered' %}
-                            <span class="badge bg-label-info">Dikirim</span>
-                            {% elif so.status == 'completed' %}
-                            <span class="badge bg-label-success">Selesai</span>
-                            {% else %}
-                            <span class="badge bg-label-danger">Dibatalkan</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <div class="dropdown">
-                                <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow"
-                                    data-bs-toggle="dropdown">
-                                    <i class="ri-more-2-line"></i>
-                                </button>
-                                <div class="dropdown-menu">
-                                    <a class="dropdown-item" href="{% url 'laporan:penjualan-detail' so.pk %}">
-                                        <i class="ri-eye-line me-2"></i>Lihat Detail
-                                    </a>
-                                </div>
-                            </div>
-                        </td>
+</td>
                     </tr>
                     {% endfor %}
                 </tbody>

@@ -109,28 +109,7 @@
             {# Tidak ada baris empty colspan — DataTables handle via language.sEmptyTable #}
         </tbody><tfoot class="table-footer-summary"><tr><td colspan="4" class="text-start ps-4 py-3"><div class="d-flex align-items-center justify-content-start"><i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i><div class="text-start"><strong class="d-block" style="font-size: 0.875rem;">RINGKASAN</strong><small class="text-muted">{{ count_total }} faktur</small></div></div></td><td colspan="2" class="py-3"><div class="text-center"><span class="badge bg-label-warning">{{ ppn_masukan|rupiah }}</span><small class="d-block text-muted mt-1">PPN Masukan</small></div></td><td class="py-3"><div class="text-center"><span class="badge bg-label-success">{{ ppn_keluaran|rupiah }}</span><small class="d-block text-muted mt-1">PPN Keluaran</small></div></td><td class="py-3"><div class="text-center"><span class="badge bg-label-{% if ppn_setor > 0 %}danger{% else %}info{% endif %}">{{ ppn_setor|rupiah }}</span><small class="d-block text-muted mt-1">Selisih PPN</small></div></td><td></td></tr></tfoot></table></div>
         {% else %}
-        <div class="card-body">
-            <div class="text-center py-4 py-md-5 px-3 px-md-4">
-                <div class="mb-4">
-                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
-                         style="width: 88px; height: 88px;">
-                        <i class="ri-inbox-line" style="font-size: 2.8rem;"></i>
-                    </div>
-                </div>
-                <h5 class="mb-3">Belum Ada Data Faktur</h5>
-                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
-                    Daftar faktur masih kosong.
-                </p>
-                <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
-                    {% if can_create.pajak %}
-                    <a href="{% url 'pajak:add' %}" class="btn btn-primary btn-lg">
-                        <i class="ri-add-line me-1"></i>Tambah Faktur
-                    </a>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        {% endif %}
+{% endif %}
 
     </div>
 </div>

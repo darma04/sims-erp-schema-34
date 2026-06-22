@@ -194,43 +194,7 @@ Fitur: tambah, edit, hapus satuan.
         </div>
 
         {% else %}
-
-        <div class="card-body">
-
-            <div class="text-center py-4 py-md-5 px-3 px-md-4">
-
-                <div class="mb-4">
-
-                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
-
-                         style="width: 88px; height: 88px;">
-
-                        <i class="ri-ruler-line" style="font-size: 2.8rem;"></i>
-
-                    </div>
-
-                </div>
-
-                <h5 class="mb-3">Belum Ada Satuan</h5>
-
-                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
-
-                    Daftar satuan masih kosong. Tambahkan satuan untuk unit pengukuran produk.
-
-                </p>
-                <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
-                    {% if can_create.produk %}
-                    <a href="{% url 'produk:satuan_add' %}" class="btn btn-primary btn-lg">
-                        <i class="ri-add-line me-1"></i>Tambah Satuan
-                    </a>
-                    {% endif %}
-                </div>
-
-            </div>
-
-        </div>
-
-        {% endif %}
+{% endif %}
     </div>
 
     <!-- Delete Confirmation Modal -->
