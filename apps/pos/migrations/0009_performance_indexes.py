@@ -10,6 +10,7 @@ class Migration(migrations.Migration):
         ('akuntansi', '0004_performance_indexes'),
         ('kas_bank', '0002_performance_indexes'),
         ('penjualan', '0005_performance_indexes'),
+        ('pos', '0006_add_customer_fk'),
         ('pos', '0008_metodepembayaran_kas_bank_mapping'),
         ('produk', '0006_produk_metode_pembayaran'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
