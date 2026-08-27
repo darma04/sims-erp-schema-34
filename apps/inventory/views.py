@@ -406,8 +406,8 @@ class AdjustmentStokView(ReadPermissionMixin, ListView):
         # Export template context
         try:
             from apps.pengaturan.models import TemplateCetak
-            context['export_excel_template'] = TemplateCetak.objects.filter(tipe='excel').first()
-            context['export_pdf_template'] = TemplateCetak.objects.filter(tipe='pdf').first()
+            context['export_excel_template'] = TemplateCetak.objects.filter(jenis='export_excel').first()
+            context['export_pdf_template'] = TemplateCetak.objects.filter(jenis='export_pdf').first()
         except Exception as e:
             logger.warning("Gagal render template: %s", e)
 

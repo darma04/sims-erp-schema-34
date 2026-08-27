@@ -94,7 +94,7 @@ Fitur: tambah, edit, hapus kategori biaya.
 
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Daftar Kategori Biaya</h5>
+            <h5 class="mb-0 fs-card-title">Daftar Kategori Biaya</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i
                         class="ri-file-excel-2-line me-1"></i>Export Excel</button>
@@ -195,14 +195,11 @@ Fitur: tambah, edit, hapus kategori biaya.
 
                 </p>
                 <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
-                    {% if can_create.produk %}
+                    {% if can_create.biaya %}
                     <a href="{% url 'produk:kategori_add' %}" class="btn btn-primary btn-lg">
                         <i class="ri-add-line me-1"></i>Tambah Kategori
                     </a>
                     {% endif %}
-                    <a href="{% url 'produk:kategori_import' %}" class="btn btn-label-success btn-lg">
-                        <i class="ri-upload-2-line me-1"></i>Import dari Excel
-                    </a>
                 </div>
 
             </div>
@@ -246,7 +243,7 @@ Fitur: tambah, edit, hapus kategori biaya.
     .dataTables_wrapper .dataTables_info {
         padding: 1rem 1.5rem;
         font-size: 0.875rem;
-        color: #697a8d
+        
     }
 
     .dataTables_wrapper .dataTables_paginate {
@@ -415,9 +412,13 @@ Fitur: tambah, edit, hapus kategori biaya.
 
     function exportToExcel() {
         const table = document.getElementById('kategoriTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#kategoriTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         let colCount = 0;
         let visibleColumns = [];
@@ -505,9 +506,13 @@ Fitur: tambah, edit, hapus kategori biaya.
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('kategoriTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#kategoriTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         const headers = [];
         let visibleColumns = [];

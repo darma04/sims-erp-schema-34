@@ -1,0 +1,46 @@
+{% extends layout_path %}
+
+{% load static %}
+{% load i18n %}
+
+{% block title %}Tidak Terotentikasi - Halaman{% endblock %}
+
+{% block page_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/css/pages/page-misc.css' %}" />
+{% endblock page_css %}
+
+{% block content %}
+
+<div class="misc-wrapper">
+  <h1 class="mb-2 mx-2" style="font-size: 6rem;">{{ status|default:401 }}</h1>
+  <h4 class="mb-2">Anda Tidak Terotentikasi!</h4>
+  <p class="mb-2 mx-2">Anda harus masuk terlebih dahulu untuk mengakses halaman ini.</p>
+  <div class="d-flex justify-content-center mt-5">
+    <img src="{% static 'img/illustrations/misc-not-authorized-object.png' %}" alt="misc-unauthorized"
+      class="img-fluid misc-object d-none d-lg-inline-block" width="190">
+    {% if pengaturan.misc_background_image %}
+    <img src="{{ pengaturan.misc_background_image.url }}" alt="misc-error-bg" class="misc-bg d-none d-lg-inline-block" style="position: absolute !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; inset-block-end: 0 !important; inline-size: 100% !important; width: 100% !important; height: 100% !important; object-fit: cover !important; z-index: -1;">
+    {% else %}
+    <img src="{% static 'img/illustrations/misc-bg-' %}{{ COOKIES.style|default:'light' }}.png" alt="misc-unauthorized"
+      class="misc-bg d-none d-lg-inline-block" data-app-light-img="illustrations/misc-bg-light.png"
+      data-app-dark-img="illustrations/misc-bg-dark.png">
+    {% endif %}
+    
+    <div class="d-flex flex-column align-items-center">
+      {% if pengaturan.misc_image %}
+      <img src="{{ pengaturan.misc_image.url }}" alt="misc-unauthorized"
+        class="img-fluid z-1" style="width: 50vw !important; max-inline-size: 100% !important;">
+      {% else %}
+      <img src="{% static 'img/illustrations/misc-not-authorized-illustration.png' %}" alt="misc-unauthorized"
+        class="img-fluid z-1" width="160">
+      {% endif %}
+      <div class="d-flex flex-wrap justify-content-center gap-2">
+        <a href="{% url 'dashboard:index' %}" class="btn btn-primary text-center my-4">Kembali ke Beranda</a>
+        <a href="/login/" class="btn btn-outline-secondary text-center my-4"><i class="ri-shield-user-line me-1"></i>Masuk</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -25,7 +25,6 @@
 from django.core.management.base import BaseCommand
 from apps.core.models import RolePermission
 
-
 class Command(BaseCommand):
     """Management command Django — dijalankan via python manage.py."""
     help = 'Seed default role permissions'
@@ -51,6 +50,7 @@ class Command(BaseCommand):
                 'pembelian__purchase_order_import': {'view': True, 'create': True, 'edit': False, 'delete': False},
                 'penjualan': {'view': True, 'create': True, 'edit': True, 'delete': False},
                 'pos': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'invoice': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'kas_bank': {'view': True, 'create': True, 'edit': True, 'delete': False},
                 'kas_bank__dashboard': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'kas_bank__akun': {'view': True, 'create': True, 'edit': True, 'delete': False},
@@ -65,10 +65,11 @@ class Command(BaseCommand):
                 'laporan__laporan_penjualan': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'laporan__laporan_pembelian': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'laporan__laporan_keuangan': {'view': True, 'create': False, 'edit': False, 'delete': False},
-                'laporan__laporan_service': {'view': True, 'create': False, 'edit': False, 'delete': False},
-                'laporan__laporan_sparepart': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'laporan__laporan_cabang': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'user_management': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'access_control': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'access_control__roles': {'view': True, 'create': True, 'edit': True, 'delete': True},
+                'access_control__permissions': {'view': True, 'create': True, 'edit': True, 'delete': True},
                 'activity_log': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'pengaturan': {'view': True, 'create': True, 'edit': True, 'delete': False},
                 'automation': {'view': True, 'create': True, 'edit': True, 'delete': False},
@@ -108,6 +109,44 @@ class Command(BaseCommand):
                 'pajak__faktur_pajak': {'view': True, 'create': True, 'edit': True, 'delete': False},
                 'pajak__rekap_ppn': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'pajak__setting_pajak': {'view': True, 'create': False, 'edit': True, 'delete': False},
+                # Rekonsiliasi Keuangan (modul tanpa sub-menu)
+                'rekonsiliasi_keuangan': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                # Service Center module + sub-modules
+                'service_center': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'service_center__dashboard_service': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'service_center__order_service': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'service_center__pelanggan_service': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'service_center__perangkat': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'service_center__kategori_service': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'service_center__jenis_service': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'service_center__sparepart_service': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'service_center__terima_unit': {'view': True, 'create': True, 'edit': False, 'delete': False},
+                'service_center__sc_laporan': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                # Sparepart module
+                'sparepart': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'sparepart__daftar_sparepart': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'sparepart__tambah_sparepart': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                # HR
+                'hr': {'view': True, 'create': True, 'edit': True, 'delete': True},
+                'hr__dashboard_hr': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'hr__departemen': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'hr__jabatan': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'hr__karyawan': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'hr__absensi': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'hr__penggajian': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'hr__penggajian_import': {'view': True, 'create': True, 'edit': False, 'delete': False},
+                'hr__pengaturan_absensi': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                # Fraud Detection
+                'fraud_detection': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'fraud_detection__dashboard_fraud': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'fraud_detection__daftar_anomali': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'fraud_detection__rekonsiliasi_kas': {'view': True, 'create': True, 'edit': True, 'delete': False},
+                'fraud_detection__pengaturan_fraud': {'view': True, 'create': False, 'edit': True, 'delete': False},
+                # Reimburse & Approval Center
+                'reimburse': {'view': True, 'create': True, 'edit': True, 'delete': True},
+                'reimburse__daftar_reimburse': {'view': True, 'create': True, 'edit': True, 'delete': True},
+                'reimburse__pengajuan_reimburse': {'view': True, 'create': True, 'edit': True, 'delete': True},
+                'approval_center': {'view': True, 'create': False, 'edit': False, 'delete': False},
             },
             'USER': {
                 'dashboard': {'view': True, 'create': False, 'edit': False, 'delete': False},
@@ -132,8 +171,6 @@ class Command(BaseCommand):
                 'laporan__laporan_penjualan': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'laporan__laporan_pembelian': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'laporan__laporan_keuangan': {'view': True, 'create': False, 'edit': False, 'delete': False},
-                'laporan__laporan_service': {'view': True, 'create': False, 'edit': False, 'delete': False},
-                'laporan__laporan_sparepart': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'laporan__laporan_cabang': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'activity_log': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'automation': {'view': True, 'create': False, 'edit': False, 'delete': False},
@@ -165,12 +202,37 @@ class Command(BaseCommand):
                 'pajak__faktur_pajak': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'pajak__rekap_ppn': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'pajak__setting_pajak': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                # Service Center module + sub-modules (limited)
+                'service_center': {'view': True, 'create': True, 'edit': False, 'delete': False},
+                'service_center__dashboard_service': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'service_center__order_service': {'view': True, 'create': True, 'edit': False, 'delete': False},
+                'service_center__pelanggan_service': {'view': True, 'create': True, 'edit': False, 'delete': False},
+                'service_center__perangkat': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'service_center__kategori_service': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'service_center__jenis_service': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'service_center__sparepart_service': {'view': True, 'create': True, 'edit': False, 'delete': False},
+                'service_center__terima_unit': {'view': True, 'create': True, 'edit': False, 'delete': False},
+                'service_center__sc_laporan': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                # Sparepart module (limited)
+                'sparepart': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'sparepart__daftar_sparepart': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                # Reimburse & Approval Center
+                'reimburse': {'view': True, 'create': True, 'edit': False, 'delete': False},
+                'reimburse__daftar_reimburse': {'view': True, 'create': True, 'edit': False, 'delete': False},
+                'reimburse__pengajuan_reimburse': {'view': True, 'create': True, 'edit': False, 'delete': False},
+                'approval_center': {'view': True, 'create': False, 'edit': False, 'delete': False},
             },
             'KASIR': {
                 'dashboard': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'produk': {'view': True, 'create': False, 'edit': False, 'delete': False},
                 'penjualan': {'view': True, 'create': True, 'edit': False, 'delete': False},
                 'pos': {'view': True, 'create': True, 'edit': False, 'delete': False},
+                # Service Center — kasir bisa lihat order, sparepart, dan terima unit
+                'service_center': {'view': True, 'create': True, 'edit': False, 'delete': False},
+                'service_center__dashboard_service': {'view': True, 'create': False, 'edit': False, 'delete': False},
+                'service_center__order_service': {'view': True, 'create': True, 'edit': False, 'delete': False},
+                'service_center__sparepart_service': {'view': True, 'create': True, 'edit': False, 'delete': False},
+                'service_center__terima_unit': {'view': True, 'create': True, 'edit': False, 'delete': False},
             },
         }
         

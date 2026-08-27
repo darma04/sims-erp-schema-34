@@ -28,72 +28,56 @@
     <h4 class="mb-4"><i class="ri-tools-line me-2"></i>Laporan Service Center</h4>
 
     <!-- 4 Summary Cards -->
-    <div class="row g-2 g-md-3 mb-4">
-        <div class="col-6 col-lg-3">
-            <div class="card">
+    <div class="row g-6 mb-6">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Total Order</p>
-                            <h4 class="mb-0 text-primary summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Jumlah tiket/order service yang terdaftar sesuai filter.<br><br><b>Sumber:</b> Tabel OrderService.">{{ total_order }}</h4>
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-primary"><i class="ri-file-list-3-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Total Order</span>
+<h5  class="mb-0 fw-bold fs-value-primary" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Jumlah tiket/order service yang terdaftar sesuai filter.<br><br><b>Sumber:</b> Tabel OrderService.">{{ total_order }}</h5>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-primary rounded p-2">
-                                <i class="ri-file-list-3-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Total Revenue</p>
-                            <h4 class="mb-0 text-success summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>SUM(biaya_akhir) dari OrderService yang sudah lunas.<br><br><b>Sumber:</b> Tabel OrderService WHERE status_bayar = lunas.<br>Mendukung filter tanggal.">{{ total_revenue|rupiah }}</h4>
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-success"><i class="ri-money-dollar-circle-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Total Revenue</span>
+<h5  class="mb-0 fw-bold fs-value-primary" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>SUM(biaya_akhir) dari OrderService yang sudah lunas.<br><br><b>Sumber:</b> Tabel OrderService WHERE status_bayar = lunas.<br>Mendukung filter tanggal.">{{ total_revenue|rupiah }}</h5>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-success rounded p-2">
-                                <i class="ri-money-dollar-circle-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Order Selesai</p>
-                            <h4 class="mb-0 text-info summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Jumlah tiket dengan status 'Selesai'.<br><br><b>Sumber:</b> Status OrderService.">{{ order_selesai }}</h4>
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-info"><i class="ri-check-double-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Order Selesai</span>
+<h5  class="mb-0 fw-bold fs-value-primary" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Jumlah tiket dengan status 'Selesai'.<br><br><b>Sumber:</b> Status OrderService.">{{ order_selesai }}</h5>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-info rounded p-2">
-                                <i class="ri-check-double-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Rata-rata Biaya</p>
-                            <h4 class="mb-0 text-warning summary-nominal" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Total Revenue dibagi dengan Total Order.<br><br><b>Sumber:</b> Kalkulasi python view.">{{ rata_rata_biaya|rupiah }}</h4>
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-warning"><i class="ri-percent-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Rata-rata Biaya</span>
+<h5  class="mb-0 fw-bold fs-value-primary" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Total Revenue dibagi dengan Total Order.<br><br><b>Sumber:</b> Kalkulasi python view.">{{ rata_rata_biaya|rupiah }}</h5>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-warning rounded p-2">
-                                <i class="ri-percent-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
@@ -178,6 +162,11 @@
                                     onchange="toggleColumns()">
                                 <label class="form-check-label">Bayar</label>
                             </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="8" checked
+                                    onchange="toggleColumns()">
+                                <label class="form-check-label">Aksi</label>
+                            </div>
                             <div class="dropdown-divider my-2"></div>
                             <div class="d-flex gap-2">
                                 <button class="btn btn-sm btn-primary flex-fill"
@@ -204,12 +193,12 @@
     <div class="row g-2 g-md-3 mb-4">
         <div class="col-md-4">
             <div class="card">
-                <div class="card-header"><h6 class="mb-0"><i class="ri-pie-chart-line me-2"></i>Distribusi Status</h6></div>
+                <div class="card-header"><h6 class="mb-0 fs-card-title"><i class="ri-pie-chart-line me-2"></i>Distribusi Status</h6></div>
                 <div class="card-body">
                     {% for label, count in status_dist.items %}
                     <div class="d-flex justify-content-between mb-2">
                         <span>{{ label }}</span>
-                        <span class="badge bg-label-primary">{{ count }}</span>
+                        <span class="badge bg-label-primary fs-value-secondary">{{ count }}</span>
                     </div>
                     {% empty %}
                     <p class="text-muted text-center mb-0">Tidak ada data</p>
@@ -219,7 +208,7 @@
         </div>
         <div class="col-md-4">
             <div class="card">
-                <div class="card-header"><h6 class="mb-0"><i class="ri-user-star-line me-2"></i>Top Teknisi</h6></div>
+                <div class="card-header"><h6 class="mb-0 fs-card-title"><i class="ri-user-star-line me-2"></i>Top Teknisi</h6></div>
                 <div class="card-body">
                     {% for tk in top_teknisi %}
                     <div class="d-flex justify-content-between mb-2">
@@ -234,12 +223,12 @@
         </div>
         <div class="col-md-4">
             <div class="card">
-                <div class="card-header"><h6 class="mb-0"><i class="ri-smartphone-line me-2"></i>Top Perangkat</h6></div>
+                <div class="card-header"><h6 class="mb-0 fs-card-title"><i class="ri-smartphone-line me-2"></i>Top Perangkat</h6></div>
                 <div class="card-body">
                     {% for p in top_perangkat %}
                     <div class="d-flex justify-content-between mb-2">
                         <span>{{ p.jenis_perangkat__nama }}</span>
-                        <span class="badge bg-label-info">{{ p.total }}</span>
+                        <span class="badge bg-label-info fs-value-secondary">{{ p.total }}</span>
                     </div>
                     {% empty %}
                     <p class="text-muted text-center mb-0">Tidak ada data</p>
@@ -253,12 +242,12 @@
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <div>
-                <h5 class="mb-0">Daftar Order Service</h5>
-                <small class="text-muted">{{ total_order }} order — Revenue: {{ total_revenue|rupiah }}</small>
+                <h5 class="mb-0 fs-card-title">Daftar Order Service</h5>
+                <small class="text-muted fs-value-secondary">{{ total_order }} order — Revenue: {{ total_revenue|rupiah }}</small>
             </div>
             <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-label-success" onclick="exportExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
-                <button class="btn btn-sm btn-label-danger" onclick="exportPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+                <button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportToPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
         {% if teknisi_list %}
@@ -285,7 +274,7 @@
                         <td>{{ order.pelanggan.nama }}</td>
                         <td>{{ order.jenis_perangkat.nama }} — {{ order.merek }}</td>
                         <td>{% if order.teknisi %}{{ order.teknisi.get_full_name|default:order.teknisi.username }}{% else %}-{% endif %}</td>
-                        <td>{{ order.biaya_akhir|rupiah }}</td>
+                        <td class="text-end">{{ order.biaya_akhir|rupiah }}</td>
                         <td>
                             <span class="badge bg-label-{{ order.status_badge_class }}">{{ order.get_status_display }}</span>
                         </td>
@@ -315,11 +304,11 @@
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-success d-flex align-items-center gap-1 mb-1"
-                                    style="font-size: 0.8rem; padding: 0.4rem 0.6rem;">
+                                    style="font-size: var(--fs-ui-sm); padding: 0.4rem 0.6rem;">
                                     <i class="ri-money-dollar-circle-line"></i>
                                     <span>{{ total_revenue|rupiah }}</span>
                                 </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Total Revenue</small>
+                                <small class="text-muted fw-medium" style="font-size: var(--fs-ui-xxs);">Total Revenue</small>
                             </div>
                         </td>
                         <td class="py-3"></td>
@@ -430,11 +419,15 @@
     const FOOTER_DATA = { 5: "{{ total_revenue|escapejs }}" };
     const FOOTER_LABEL = 'RINGKASAN';
 
-    function exportExcel() {
+    function exportToExcel() {
         const table = document.getElementById('serviceTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#serviceTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         let colCount = 0;
         let visibleColumns = [];
@@ -526,13 +519,17 @@
         link.click();
     }
 
-    function exportPDF() {
+    function exportToPDF() {
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('serviceTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#serviceTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         const headers = [];
         let visibleColumns = [];
@@ -664,15 +661,15 @@
 </script>
 <style>
 @media (max-width: 575.98px) {
-    .summary-nominal { font-size: 10px !important; white-space: nowrap; }
-    .card-info .card-text { font-size: 0.68rem; margin-bottom: 0.15rem !important; line-height: 1.2; }
+    .{ font-size: 10px !important; white-space: nowrap; }
+    .card-info .card-text { font-size: var(--fs-ui-xxs); margin-bottom: 0.15rem !important; line-height: 1.2; }
     .card-body { padding: 0.5rem 0.6rem !important; }
 }
 @media (min-width: 576px) and (max-width: 767.98px) {
-    .summary-nominal { font-size: 0.9rem !important; }
+    .{ font-size: var(--fs-ui-value) !important; }
 }
 @media (min-width: 768px) and (max-width: 991.98px) {
-    .summary-nominal { font-size: 1.05rem !important; }
+    .{ font-size: var(--fs-ui-stat) !important; }
 }
 </style>
 {% endblock page_js %}

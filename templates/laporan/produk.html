@@ -35,89 +35,73 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
     </div>
 
     <!-- Summary Cards (4 cards) -->
-    <div class="row g-2 g-md-3 mb-4">
-        <div class="col-6 col-lg-3">
-            <div class="card">
+    <div class="row g-6 mb-6">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Total Keseluruhan Aset</p>
-                            <h4 class="mb-0 text-primary summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-primary"><i class="ri-safe-2-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Total Keseluruhan Aset</span>
+<h5  class="mb-0 fw-bold fs-value-primary" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
                                 title="<b>Alur Data:</b><br>╬ú (harga_beli ├ù qty_total_pernah_masuk)<br><br><b>Sumber:</b> Semua produk yang pernah masuk ke sistem (stok + terjual + adjustment).<br>Bersifat kumulatif historis.">
-                                {{ total_keseluruhan_aset|rupiah }}</h4>
-                            <small class="text-muted">Semua produk masuk</small>
+                                {{ total_keseluruhan_aset|rupiah }}</h5>
+<small class="text-muted">Semua produk masuk</small>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-primary rounded p-2">
-                                <i class="ri-safe-2-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Total Harga Beli</p>
-                            <h4 class="mb-0 text-danger summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-danger"><i class="ri-shopping-cart-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Total Harga Beli</span>
+<h5  class="mb-0 fw-bold fs-value-primary" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
                                 title="<b>Alur Data:</b><br>╬ú (harga_beli ├ù stok_saat_ini)<br><br><b>Sumber:</b> Hanya produk yang stoknya > 0 (ready).<br>Dari tabel Produk ├ù Stok.">
-                                {{ total_harga_beli_ready|rupiah }}</h4>
-                            <small class="text-muted">Produk ready (stok > 0)</small>
+                                {{ total_harga_beli_ready|rupiah }}</h5>
+<small class="text-muted">Produk ready (stok > 0)</small>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-danger rounded p-2">
-                                <i class="ri-shopping-cart-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Total Harga Jual</p>
-                            <h4 class="mb-0 text-success summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-success"><i class="ri-price-tag-3-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Total Harga Jual</span>
+<h5  class="mb-0 fw-bold fs-value-primary" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
                                 title="<b>Alur Data:</b><br>╬ú (harga_jual ├ù stok_saat_ini)<br><br><b>Sumber:</b> Hanya produk yang stoknya > 0 (ready).<br>Dari tabel Produk ├ù Stok.">
-                                {{ total_harga_jual_ready|rupiah }}</h4>
-                            <small class="text-muted">Produk ready (stok > 0)</small>
+                                {{ total_harga_jual_ready|rupiah }}</h5>
+<small class="text-muted">Produk ready (stok > 0)</small>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-success rounded p-2">
-                                <i class="ri-price-tag-3-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Estimasi Untung</p>
-                            <h4 class="mb-0 {% if estimasi_keuntungan >= 0 %}text-success{% else %}text-danger{% endif %} summary-nominal"
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-warning"><i class="ri-bar-chart-grouped-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Estimasi Untung</span>
+<h5  class="mb-0 fw-bold fs-value-primary"
                                 style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom"
                                 data-bs-html="true"
                                 title="<b>Alur Data:</b><br>Total Harga Jual (Ready) ÔêÆ Total Harga Beli (Ready)<br><br><b>Sumber:</b> Selisih harga jual dan harga beli dari produk yang masih punya stok > 0.<br>Potensi keuntungan jika semua stok terjual.">
-                                {{ estimasi_keuntungan|rupiah }}</h4>
-                            <small class="text-muted">Produk ready (stok > 0)</small>
+                                {{ estimasi_keuntungan|rupiah }}</h5>
+<small class="text-muted">Produk ready (stok > 0)</small>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-warning rounded p-2">
-                                <i class="ri-bar-chart-grouped-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
@@ -232,7 +216,7 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
 
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Daftar Produk</h5>
+            <h5 class="mb-0 fs-card-title">Daftar Produk</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i
                         class="ri-file-excel-2-line me-1"></i>Export Excel</button>
@@ -276,8 +260,8 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
                             <span class="text-muted">Tidak ada stok</span>
                             {% endfor %}
                         </td>
-                        <td>{{ produk.harga_beli|rupiah }}</td>
-                        <td>{{ produk.harga_jual|rupiah }}</td>
+                        <td class="text-end">{{ produk.harga_beli|rupiah }}</td>
+                        <td class="text-end">{{ produk.harga_jual|rupiah }}</td>
                         <td>
                             <span class="fw-bold">{{ produk.stok_total|floatformat:0 }}</span>
                             <small class="text-muted">{{ produk.satuan.nama|default:"pcs" }}</small>
@@ -320,7 +304,7 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-success d-flex align-items-center gap-1 mb-2"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
                                     <i class="ri-shopping-cart-line"></i>
                                     <span>{{ total_nilai_beli|rupiah }}</span>
                                 </span>
@@ -330,7 +314,7 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-primary d-flex align-items-center gap-1 mb-2"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
                                     <i class="ri-price-tag-3-line"></i>
                                     <span>{{ total_nilai_jual|rupiah }}</span>
                                 </span>
@@ -340,7 +324,7 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-info d-flex align-items-center gap-1 mb-2"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 100px;">
+                                    style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 100px;">
                                     <i class="ri-stack-line"></i>
                                     <span>{{ total_stok|floatformat:0 }}</span>
                                 </span>
@@ -394,7 +378,7 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
     .dataTables_wrapper .dataTables_info {
         padding: 1rem 1.5rem;
         font-size: 0.875rem;
-        color: #697a8d
+        
     }
 
     .dataTables_wrapper .dataTables_paginate {
@@ -450,9 +434,13 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
 
     function exportToExcel() {
         const table = document.getElementById('produkTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#produkTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         let colCount = 0;
         let visibleColumns = [];
@@ -541,9 +529,13 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('produkTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#produkTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         const headers = [];
         let visibleColumns = [];
@@ -694,17 +686,17 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
 </script>
 <style>
 @media (max-width: 575.98px) {
-    .summary-nominal {
+    .{
         font-size: 10px !important;
         white-space: nowrap;
     }
     .card-info .card-text {
-        font-size: 0.68rem;
+        font-size: var(--fs-ui-xxs);
         margin-bottom: 0.15rem !important;
         line-height: 1.2;
     }
     .card-info small {
-        font-size: 0.6rem;
+        font-size: var(--fs-ui-3xs);
     }
     .card-body {
         padding: 0.5rem 0.6rem !important;
@@ -720,14 +712,14 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
     }
 }
 @media (min-width: 576px) and (max-width: 767.98px) {
-    .summary-nominal {
-        font-size: 0.9rem !important;
+    .{
+        font-size: var(--fs-ui-value) !important;
     }
     .card-info .card-text {
-        font-size: 0.72rem;
+        font-size: var(--fs-ui-xs);
     }
     .card-info small {
-        font-size: 0.62rem;
+        font-size: var(--fs-ui-3xs);
     }
     .card-body {
         padding: 0.6rem 0.75rem !important;
@@ -737,8 +729,8 @@ Tabel: nama, SKU, kategori, harga, stok, nilai.
     }
 }
 @media (min-width: 768px) and (max-width: 991.98px) {
-    .summary-nominal {
-        font-size: 1.05rem !important;
+    .{
+        font-size: var(--fs-ui-stat) !important;
     }
 }
 </style>

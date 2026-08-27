@@ -1,125 +1,133 @@
-"""
-==========================================================================
- CORE PERMISSIONS - Fungsi Utilitas Pengecekan Hak Akses
-==========================================================================
- File ini berisi fungsi-fungsi untuk mengecek hak akses user.
- Semua permission 100% diambil dari database (RolePermission model).
- Tidak ada fallback hardcoded — jika tidak ada config di DB, akses DITOLAK.
+# CORE PERMISSIONS SYSTEM - HYBRID RBAC
+import os
+from functools import wraps
+import warnings
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import redirect
+from django.contrib import messages
 
- Fungsi utama:
- - get_user_role(user) → Mendapatkan role user
- - has_permission(user, action, module, sub_module) → Cek hak akses
- - get_accessible_submodules(user, module) → Sub-modul yang bisa dilihat
- - role_required(*roles) → Decorator untuk membatasi akses berdasarkan role
- - permission_required(action, module) → Decorator untuk membatasi akses
+SUB_MODULE_TO_SLUG = {
+    'kategori': 'kategori',
+    'satuan': 'satuan',
+    'import': 'import',
+    'produk_import': 'import',
+    'stok': 'stok',
+    'gudang': 'gudang',
+    'penyesuaian': 'penyesuaian',
+    'transfer': 'transfer',
+    'minimum': 'minimum',
+    'opname': 'opname',
+    'supplier': 'supplier',
+    'po': 'po',
+    'penerimaan': 'penerimaan',
+    'faktur': 'faktur',
+    'retur': 'retur',
+    'purchase_order_import': 'import',
+    'pelanggan': 'pelanggan',
+    'penawaran': 'penawaran',
+    'so': 'so',
+    'pengiriman': 'pengiriman',
+    'dashboard': 'dashboard',
+    'akun': 'akun',
+    'mutasi': 'mutasi',
+    'rekonsiliasi': 'rekonsiliasi',
+    'daftar_piutang': 'list',
+    'aging_piutang': 'aging',
+    'daftar_hutang': 'list',
+    'aging_hutang': 'aging',
+    'list': 'list',
+    'aging': 'aging',
+    'daftar_aset': 'list',
+    'penyusutan': 'penyusutan',
+    'faktur_pajak': 'list',
+    'rekap_ppn': 'rekap',
+    'setting_pajak': 'setting',
+    'rekap': 'rekap',
+    'setting': 'setting',
+    'pengaturan_telegram': 'pengaturan',
+    'template_pesan': 'template',
+    'log_notifikasi': 'log',
+    'pengaturan': 'pengaturan',
+    'template': 'template',
+    'log': 'log',
+    'daftar_reimburse': 'list',
+    'pengajuan': 'pengajuan',
+    'approval': 'approval',
+    'coa': 'coa',
+    'jurnal': 'jurnal',
+    'buku_besar': 'buku-besar',
+    'periode': 'periode',
+    'panduan': 'panduan',
+    'neraca': 'neraca',
+    'laba_rugi': 'laba-rugi',
+    'arus_kas': 'arus-kas',
+    'trial_balance': 'trial-balance',
+}
 
- Alur pengecekan permission:
- 1. Ambil role user dari Profile
- 2. Jika SUPERUSER → izinkan semua (bypass)
- 3. Jika bukan → query RolePermission di database
- 4. Cek field yang sesuai (can_view, can_create, dll)
- 5. Jika tidak ada record → akses DITOLAK
+SUBMODULE_ALIAS_MAP = {
+    'produk_import': 'import',
+    'purchase_order_import': 'import',
+    'daftar_aset': 'list',
+    'daftar_hutang': 'list',
+    'aging_hutang': 'aging',
+    'daftar_piutang': 'list',
+    'aging_piutang': 'aging',
+    'faktur_pajak': 'list',
+    'rekap_ppn': 'rekap',
+    'setting_pajak': 'setting',
+    'pengaturan_telegram': 'pengaturan',
+    'template_pesan': 'template',
+    'log_notifikasi': 'log',
+    'daftar_approval': 'list',
+}
 
- Koneksi:
- - auth/models.py → Profile.role (sumber role user)
- - apps/core/models.py → RolePermission (sumber data permission)
- - apps/core/mixins.py → Mixin yang memanggil has_permission()
- - apps/core/context_processors.py → PermissionChecker yang membungkus ini
- - Semua views → Menggunakan mixin/decorator dari file ini
-==========================================================================
-"""
-
-from functools import wraps                     # Untuk decorator yang mempertahankan metadata fungsi
-# Import dari framework Django
-from django.core.exceptions import PermissionDenied  # Exception 403 Forbidden
-# Import dari framework Django
-from django.shortcuts import redirect           # Fungsi redirect ke URL lain
-# Import dari framework Django
-from django.contrib import messages              # Framework pesan flash
-
-
-SUPERUSER_ROLE_CODES = {'SUPERUSER', 'PEMILIK'}
+SUPERUSER_ROLE_CODES = {'SUPERUSER'}
 
 
 def get_user_role(user):
-    """
-    Mendapatkan role user dari Profile-nya.
-
-    Hierarki:
-    1. Jika user tidak login → return None
-    2. Jika user.is_superuser (superuser Django) → return 'SUPERUSER'
-    3. Jika user punya profile → return profile.role (UPPERCASE)
-    4. Jika gagal (profile belum ada) → return 'USER' (default)
-
-    Parameter:
-    - user: Object User Django (dari request.user)
-
-    Return: String role (UPPERCASE) atau None jika belum login
-
-    Kenapa is_superuser dicek terpisah?
-    - is_superuser adalah flag di model User bawaan Django
-    - User yang dibuat via createsuperuser otomatis punya is_superuser=True
-    - Ini berbeda dengan role 'SUPERUSER' di Profile → keduanya dianggap sama
-    """
-    if not user.is_authenticated:
+    if not user or not user.is_authenticated:
         return None
-
-    # Superuser Django (dari createsuperuser command) → selalu SUPERUSER
     if user.is_superuser:
         return 'SUPERUSER'
-
-    # Blok penanganan error — coba jalankan kode di bawah
     try:
-        # Ambil role dari Profile (via relasi OneToOne: user.profile)
-        role = user.profile.role
-        role = role.upper() if role else 'USER'
-        if role in SUPERUSER_ROLE_CODES:
-            return 'SUPERUSER'
-        return role
-    # Tangkap error Exception — lanjutkan tanpa crash
+        role = str(user.profile.role or '').strip()
+        if not role:
+            return 'USER'
+        role_upper = role.upper()
+        # Exact match untuk role standar — AMAN, tidak potong role kustom
+        # Role standar: SUPERUSER, ADMIN, KASIR, PENGELOLA, USER
+        STANDARD_ROLES = {'SUPERUSER', 'ADMIN', 'KASIR', 'PENGELOLA', 'USER'}
+        if role_upper in STANDARD_ROLES:
+            return role_upper
+        # Role kustom — kembalikan UTUH, jangan dipotong
+        return role_upper
     except Exception:
-        # Jika profile belum ada (error), default ke 'USER'
         return 'USER'
 
 
 def is_superuser_role(user):
-    """True jika user adalah Django superuser atau role bisnis full-access."""
-    return get_user_role(user) == 'SUPERUSER'
+    if not user or not user.is_authenticated:
+        return False
+    return user.is_superuser or get_user_role(user) == 'SUPERUSER'
 
 
 def has_permission(user, action, module=None, sub_module=None):
-    """
-    Fungsi INTI — Mengecek apakah user punya hak akses untuk aksi tertentu.
+    if not user or not user.is_authenticated:
+        return False
 
-    Parameter:
-    - user: Object User Django
-    - action: Jenis aksi — 'create', 'read'/'view', 'update'/'write', 'delete'
-    - module: Nama modul (contoh: 'produk', 'inventory', 'access-control')
-    - sub_module: Nama sub-modul opsional (contoh: 'kategori', 'gudang')
-
-    Return: True jika diizinkan, False jika ditolak
-
-    OPTIMASI: Semua permission untuk sebuah role di-load sekali dari DB
-    dan di-cache selama 30 detik. Satu page load hanya 1 DB query,
-    bukan 20-40+ query seperti sebelumnya.
-    """
     role = get_user_role(user)
 
     if not role:
         return False
 
-    # Superuser selalu punya semua akses (tidak bisa dibatasi)
-    if role == 'SUPERUSER':
+    # Superuser selalu punya semua akses (bypass)
+    if user.is_superuser or role == 'SUPERUSER':
         return True
 
-    # Semua role lain → cek di cache permission
     if module:
-        # Blok penanganan error — coba jalankan kode di bawah
         try:
-            # Normalisasi: 'access-control' → 'access_control' (sesuai format di DB)
             module_normalized = module.replace('-', '_').lower()
 
-            # Mapping aksi ke field database
             action_map = {
                 'add': 'can_create',
                 'create': 'can_create',
@@ -136,61 +144,67 @@ def has_permission(user, action, module=None, sub_module=None):
             if not perm_field:
                 return False
 
-            # Ambil cache permission (1 query per role, di-cache 30 detik)
             perms_cache = _get_role_permissions_cache(role)
 
-            # ===== CEK SUB-MODULE DULU (lebih spesifik) =====
             if sub_module:
-                sub_key = (module_normalized, sub_module.lower())
+                sub_clean = sub_module.lower()
+                sub_clean = SUBMODULE_ALIAS_MAP.get(sub_clean, sub_clean)
+                sub_key = (module_normalized, sub_clean)
+                
+                # Cek permission di sub-module dulu
                 if sub_key in perms_cache:
-                    sub_value = perms_cache[sub_key].get(perm_field, False)
-                    if sub_value:
+                    sub_perm = perms_cache[sub_key].get(perm_field, False)
+                    if sub_perm:
                         return True
-                    # Sub-modul ada tapi permission False →
-                    # fallback ke module level (karena UI hanya set can_view untuk sub-modul)
+                    # Jika sub-module tidak punya permission ini,
+                    # FALLBACK ke module-level (module inherit CRUD ke sub-module)
+                    # kecuali untuk View — View harus eksplisit di sub-module
+                    if perm_field != 'can_view':
+                        mod_key = (module_normalized, None)
+                        if mod_key in perms_cache:
+                            return perms_cache[mod_key].get(perm_field, False)
+                        return False
+                    # Untuk View, jika sub-module tidak punya can_view, cek raw key
+                
+                raw_key = (module_normalized, sub_module.lower())
+                if raw_key in perms_cache and raw_key != sub_key:
+                    raw_perm = perms_cache[raw_key].get(perm_field, False)
+                    if raw_perm:
+                        return True
+                    if perm_field != 'can_view':
+                        mod_key = (module_normalized, None)
+                        if mod_key in perms_cache:
+                            return perms_cache[mod_key].get(perm_field, False)
+                        return False
+                
+                mod_key = (module_normalized, None)
+                if mod_key in perms_cache:
+                    return perms_cache[mod_key].get(perm_field, False)
+                return False
 
-            # ===== CEK MODULE LEVEL (fallback) =====
             mod_key = (module_normalized, None)
-            if mod_key in perms_cache:
-                return perms_cache[mod_key].get(perm_field, False)
+            if mod_key in perms_cache and perms_cache[mod_key].get(perm_field, False):
+                return True
 
-            # ===== FALLBACK SUB-MODULE =====
-            # Jika user mengecek level modul, tapi database hanya punya record level sub-modul
-            # (karena checkbox UI hanya ada di level sub-modul), anggap True jika ADA minimal
-            # 1 sub-modul di modul ini yang memiliki permission tersebut.
-            if not sub_module:
-                for (mod, sub), perm_dict in perms_cache.items():
-                    if mod == module_normalized and sub is not None and perm_dict.get(perm_field, False):
-                        return True
+            for (mod, sub), perm_dict in perms_cache.items():
+                if mod == module_normalized and sub is not None and perm_dict.get(perm_field, False):
+                    return True
 
-            # Tidak ada permission record → DITOLAK
             return False
 
-        # Tangkap error Exception — lanjutkan tanpa crash
-        except Exception as e:
+        except Exception:
             return False
 
     return False
 
 
 def has_exact_submodule_permission(user, action, module, sub_module):
-    """
-    Cek permission sub-module tanpa fallback ke module-level.
-    Dipakai untuk tombol/fitur global yang harus bisa disembunyikan eksplisit
-    dari Add/Edit Role Permission.
-    """
-    role = get_user_role(user)
-
-    if not role:
+    if not user or not user.is_authenticated:
         return False
-
-    if role == 'SUPERUSER':
+    if user.is_superuser or get_user_role(user) == 'SUPERUSER':
         return True
-
-    if not module or not sub_module:
-        return False
-
     try:
+        role = get_user_role(user)
         module_normalized = module.replace('-', '_').lower()
         sub_module_normalized = sub_module.replace('-', '_').lower()
         action_map = {
@@ -216,12 +230,6 @@ def has_exact_submodule_permission(user, action, module, sub_module):
 
 
 def _get_role_permissions_cache(role):
-    """
-    Load SEMUA permissions untuk sebuah role dalam 1 query dan cache.
-
-    Return: Dictionary {(module, sub_module): {can_view, can_create, can_edit, can_delete}}
-    Cache TTL: 5 menit, dengan versioned invalidation saat permission role berubah.
-    """
     from django.core.cache import cache
     from apps.core.cache_utils import get_role_permissions_cache_key, normalize_role_code
 
@@ -231,16 +239,16 @@ def _get_role_permissions_cache(role):
     if cached is not None:
         return cached
 
-    # Import dari modul internal proyek
     from apps.core.models import RolePermission
     perms_dict = {}
 
-    # Satu query untuk SEMUA permission role ini
-    all_perms = RolePermission.objects.filter(
-        role__iexact=role
-    ).order_by().values('module', 'sub_module', 'can_view', 'can_create', 'can_edit', 'can_delete')
+    exact_qs = RolePermission.objects.filter(role__iexact=role)
+    if exact_qs.exists():
+        all_perms = exact_qs
+    else:
+        all_perms = RolePermission.objects.filter(role__istartswith=role)
 
-    for p in all_perms:
+    for p in all_perms.order_by().values('module', 'sub_module', 'can_view', 'can_create', 'can_edit', 'can_delete'):
         mod = p['module'].lower() if p['module'] else ''
         sub = p['sub_module'].lower() if p['sub_module'] else None
         key = (mod, sub)
@@ -251,193 +259,192 @@ def _get_role_permissions_cache(role):
             'can_delete': p['can_delete'],
         }
 
-    cache.set(cache_key, perms_dict, 300)  # Cache 5 menit, aman karena invalidasi berbasis versi
+    cache.set(cache_key, perms_dict, 300)
     return perms_dict
 
 
 def get_accessible_submodules(user, module):
-    """
-    Mendapatkan daftar sub-modul yang bisa DILIHAT user dalam sebuah modul.
-    Digunakan untuk MEMFILTER sidebar (menyembunyikan submenu yang tidak diizinkan).
+    if not user or not user.is_authenticated:
+        return []
 
-    OPTIMASI: Menggunakan cache permission yang sama, tanpa query tambahan.
-    """
     role = get_user_role(user)
 
-    if not role:
-        return []
+    from apps.core.models import RolePermission
+    module_normalized = module.replace('-', '_').lower()
 
-    # Superuser bisa lihat SEMUA sub-modules
-    if role == 'SUPERUSER':
-        from apps.core.models import RolePermission
-        module_normalized = module.replace('-', '_').lower()
-        return [
-            RolePermission.SUB_MODULE_TO_SLUG.get(sub_code, sub_code)
-            for sub_code, _ in RolePermission.SUB_MODULE_CHOICES.get(module_normalized, [])
-        ]
+    # Ambil semua default submodules untuk modul ini (dari choices & sidebar json)
+    subs_from_choices = [
+        RolePermission.SUB_MODULE_TO_SLUG.get(sub_code, sub_code)
+        for sub_code, _ in RolePermission.SUB_MODULE_CHOICES.get(module_normalized, [])
+    ]
+    subs_from_json = get_all_submodules_from_menu(module)
+    all_default_subs = list(dict.fromkeys(subs_from_choices + subs_from_json))
 
-    # Blok penanganan error — coba jalankan kode di bawah
+    if user.is_superuser or role == 'SUPERUSER':
+        if not all_default_subs and module_normalized:
+            all_default_subs = ['list', 'import', 'kategori', 'satuan', 'stok', 'gudang', 'penyesuaian', 'transfer', 'minimum', 'opname', 'supplier', 'po', 'penerimaan', 'faktur', 'retur', 'pelanggan', 'penawaran', 'so', 'pengiriman', 'dashboard', 'akun', 'mutasi', 'rekonsiliasi', 'aging', 'penyusutan', 'rekap', 'setting', 'pengaturan', 'template', 'log', 'pengajuan', 'approval', 'coa', 'jurnal', 'buku-besar', 'periode', 'panduan', 'neraca', 'laba-rugi', 'arus-kas', 'trial-balance']
+        return all_default_subs
+
     try:
-        # Import dari modul internal proyek
-        from apps.core.models import RolePermission
-
-        # Normalisasi nama modul
-        module_normalized = module.replace('-', '_').lower()
-
-        # Ambil dari cache (sama dengan has_permission, tidak ada query baru)
         perms_cache = _get_role_permissions_cache(role)
 
-        result = []
+        module_has_view = perms_cache.get((module_normalized, None), {}).get('can_view', False)
+
+        explicit_view_subs = []
+
+        # Hanya konfigurasi yang dapat dipetakan ke submenu sidebar yang boleh
+        # membatasi submenu. Data legacy dapat menyimpan kode sub-modul yang
+        # tidak lagi ada di menu (mis. ``reimburse``); jika ikut dianggap
+        # eksplisit, seluruh submenu yang valid akan hilang dari sidebar.
+        sidebar_subs = set(subs_from_json)
+        has_explicit_sub_config = any(
+            mod == module_normalized
+            and sub is not None
+            and (
+                not sidebar_subs
+                or RolePermission.SUB_MODULE_TO_SLUG.get(sub, sub) in sidebar_subs
+            )
+            for (mod, sub) in perms_cache.keys()
+        )
+
         for (mod, sub), perms in perms_cache.items():
-            if mod == module_normalized and sub is not None and perms.get('can_view', False):
-                # Konversi kode database ke slug menu
+            if mod == module_normalized and sub is not None:
                 slug = RolePermission.SUB_MODULE_TO_SLUG.get(sub, sub)
-                if slug and slug not in result:
-                    result.append(slug)
+                if perms.get('can_view', False):
+                    if slug and slug not in explicit_view_subs:
+                        explicit_view_subs.append(slug)
 
-        return result
+        if sidebar_subs:
+            explicit_view_subs = [
+                slug for slug in explicit_view_subs if slug in sidebar_subs
+            ]
 
-    # Tangkap error Exception — lanjutkan tanpa crash
-    except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error in get_accessible_submodules for user {user.username}, module {module}: {e}")
+        if module_has_view:
+            if has_explicit_sub_config:
+                # Ada konfigurasi sub-module eksplisit → gunakan HANYA yang dicentang
+                # (user sudah mengatur sub-menu mana yang boleh tampil)
+                return explicit_view_subs
+            else:
+                # Tidak ada konfigurasi sub-module → backward compat:
+                # semua sub-module default tampil (role lama sebelum fitur sub-menu)
+                return all_default_subs
+        else:
+            # Module tidak dapat view → hanya yang eksplisit dicentang (seharusnya kosong)
+            return explicit_view_subs
+
+    except Exception:
         return []
 
 
-# Cache untuk data menu JSON (dibaca sekali dari disk, tidak perlu baca ulang)
-# v2: Reset cache setelah fix duplikat slug "laporan" → "laporan-keuangan"
+
 _menu_cache = None
 
 
 def get_all_submodules_from_menu(module):
-    """
-    Mendapatkan SEMUA sub-modul untuk sebuah modul dari file vertical_menu.json.
-    Digunakan untuk superuser yang bisa melihat semua sub-modul.
-
-    OPTIMASI: File JSON hanya dibaca SEKALI dari disk dan di-cache di memori.
-    """
     global _menu_cache
+    if _menu_cache is None:
+        _menu_cache = _load_vertical_menu_json()
+
+    module_normalized = module.replace('-', '_').lower()
+    slug_mapping = {
+        'user_management': 'users',
+        'kas_bank': 'kas-bank',
+        'laporan_keuangan': 'laporan-keuangan',
+        'rekonsiliasi_keuangan': 'rekonsiliasi-keuangan',
+        'access_control': 'access-control',
+        'activity_log': 'activity-log',
+        'ai_assistant': 'ai-assistant',
+        'fraud_detection': 'fraud-detection',
+        'service_center': 'service-center',
+    }
+    menu_slug = slug_mapping.get(module_normalized, module_normalized.replace('_', '-'))
+
+    # Known prefixes — harus IDENTIK dengan extract_submodule di permission_tags.py
+    known_prefixes = [
+        'kas-bank-',
+        'laporan-keuangan-',
+        'access-control-',
+        'activity-log-',
+        'fraud-detection-',
+        'service-center-',
+    ]
+
+    def _extract(raw_slug):
+        """Ekstrak sub-name dari slug, konsisten dengan extract_submodule template filter."""
+        if not raw_slug:
+            return ''
+        slug_lower = raw_slug.lower().strip()
+        for prefix in known_prefixes:
+            if slug_lower.startswith(prefix):
+                result = slug_lower[len(prefix):]
+                for component in prefix.strip('-').split('-'):
+                    comp_prefix = component + '-'
+                    if result.startswith(comp_prefix):
+                        result = result[len(comp_prefix):]
+                return result
+        parts = slug_lower.split('-')
+        if len(parts) > 1:
+            return '-'.join(parts[1:])
+        return slug_lower
+
+    submodules = []
+    for item in _menu_cache:
+        if item.get('slug') == menu_slug and 'submenu' in item:
+            for sub in item['submenu']:
+                raw_slug = sub.get('slug', '')
+                sub_name = _extract(raw_slug)
+                if sub_name and sub_name not in submodules:
+                    submodules.append(sub_name)
+
+    return submodules
+
+
+def _load_vertical_menu_json():
     import json
-    import os
-    # Import dari framework Django
     from django.conf import settings
-
-    # Blok penanganan error — coba jalankan kode di bawah
+    menu_path = os.path.join(
+        settings.BASE_DIR,
+        'templates', 'layout', 'partials', 'menu', 'vertical', 'json', 'vertical_menu.json'
+    )
+    if not os.path.exists(menu_path):
+        return []
     try:
-        # Reverse mapping: DB module → menu slug
-        MODULE_TO_SLUG = {
-            'user_management': 'users',
-            'laporan_keuangan': 'laporan-keuangan',
-        }
-
-        # Cache menu data di memori (baca file hanya sekali)
-        if _menu_cache is None:
-            menu_path = os.path.join(
-                settings.BASE_DIR,
-                'templates/layout/partials/menu/vertical/json/vertical_menu.json'
-            )
-            with open(menu_path, 'r', encoding='utf-8') as f:
-                _menu_cache = json.load(f)
-
-        # Cari modul di menu (normalisasi dash dan underscore)
-        module_norm = module.lower().replace('-', '_')
-        menu_slug_norm = MODULE_TO_SLUG.get(module_norm, module_norm)
-
-        for item in _menu_cache.get('menu', []):
-            item_slug_norm = item.get('slug', '').lower().replace('-', '_')
-            if (item_slug_norm == module_norm or item_slug_norm == menu_slug_norm) and 'submenu' in item:
-                # Ekstrak slug sub-modul dari submenu
-                subs = []
-                for sub_item in item['submenu']:
-                    sub_slug = sub_item.get('slug', '')
-                    if '-' in sub_slug:
-                        sub_name = sub_slug.split('-', 1)[1]
-                    else:
-                        sub_name = sub_slug
-
-                    sub_name_lower = sub_name.lower()
-                    if sub_name_lower not in subs:
-                        subs.append(sub_name_lower)
-                return subs
-
-        return []
-
-    # Tangkap error Exception — lanjutkan tanpa crash
-    except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error reading vertical_menu.json for module {module}: {e}")
+        with open(menu_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            return data.get('menu', [])
+    except Exception:
         return []
 
 
-def role_required(*allowed_roles):
-    """
-    Decorator untuk membatasi akses view berdasarkan role.
-
-    Cara pakai:
-        @role_required('SUPERUSER', 'ADMIN')
-        # Fungsi my_view
-        def my_view(request):
-            ...
-
-    Alur:
-    1. Ambil role user
-    2. Jika role ada di daftar yang diizinkan → lanjutkan ke view
-    3. Jika tidak → tampilkan pesan error dan redirect ke dashboard
-
-    Apa itu Decorator?
-    - Fungsi yang membungkus fungsi lain
-    - Menambahkan logika sebelum/sesudah fungsi asli dijalankan
-    - @role_required('ADMIN') = role_required('ADMIN')(my_view)
-    """
+def role_required(*roles):
+    """[DEPRECATED] Gunakan @permission_required sebagai gantinya."""
+    warnings.warn(
+        "role_required sudah tidak digunakan. Gunakan @permission_required.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     def decorator(view_func):
-        """Fungsi decorator — membungkus view function."""
-        @wraps(view_func)  # Mempertahankan nama dan docstring fungsi asli
+        @wraps(view_func)
         def wrapper(request, *args, **kwargs):
-            """Fungsi wrapper — logika pengecekan sebelum view dijalankan."""
+            if not request.user.is_authenticated:
+                return redirect('login')
             user_role = get_user_role(request.user)
-            if user_role in allowed_roles:
-                # Role diizinkan → jalankan view
+            if user_role == 'SUPERUSER' or user_role in [r.upper() for r in roles]:
                 return view_func(request, *args, **kwargs)
-            else:
-                # Role tidak diizinkan → tampilkan pesan error
-                messages.error(request, 'Anda tidak memiliki akses untuk halaman ini.')
-                # Redirect ke halaman tujuan
-                return redirect('dashboard:index')
+            raise PermissionDenied('Anda tidak memiliki akses ke halaman ini.')
         return wrapper
     return decorator
 
 
-def permission_required(action, module=None):
-    """
-    Decorator untuk membatasi akses view berdasarkan permission spesifik.
-
-    Cara pakai:
-        @permission_required('create', 'produk')
-        # Fungsi add_product
-        def add_product(request):
-            ...
-
-    Alur:
-    1. Cek has_permission(user, action, module)
-    2. Jika True → lanjutkan ke view
-    3. Jika False → tampilkan pesan error dan redirect
-
-    Perbedaan dengan role_required:
-    - role_required: cek APAKAH user punya role tertentu
-    - permission_required: cek APAKAH user punya AKSI tertentu di MODUL tertentu
-    - permission_required lebih granular dan fleksibel
-    """
+def permission_required(action, module, sub_module=None):
     def decorator(view_func):
-        """Fungsi decorator — membungkus view function."""
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
-            """Fungsi wrapper — logika pengecekan sebelum view dijalankan."""
-            if has_permission(request.user, action, module):
+            if not request.user.is_authenticated:
+                return redirect('login')
+            if has_permission(request.user, action, module, sub_module):
                 return view_func(request, *args, **kwargs)
             else:
-                # Pesan error dengan label aksi dalam Bahasa Indonesia
                 action_labels = {
                     'create': 'membuat',
                     'read': 'melihat',
@@ -445,33 +452,19 @@ def permission_required(action, module=None):
                     'delete': 'menghapus'
                 }
                 action_label = action_labels.get(action, action)
-                # Tampilkan pesan error ke user
                 messages.error(request, f'Anda tidak memiliki izin untuk {action_label} data ini.')
-                # Redirect ke halaman tujuan
                 return redirect('dashboard:index')
         return wrapper
     return decorator
 
 
 def can_user_edit(user, module=None):
-    """
-    Fungsi helper — cek apakah user bisa EDIT data di modul tertentu.
-    Digunakan di template: {% if user|can_user_edit:'produk' %}
-    """
     return has_permission(user, 'update', module)
 
 
 def can_user_delete(user, module=None):
-    """
-    Fungsi helper — cek apakah user bisa DELETE data di modul tertentu.
-    Digunakan di template: {% if user|can_user_delete:'produk' %}
-    """
     return has_permission(user, 'delete', module)
 
 
 def can_user_create(user, module=None):
-    """
-    Fungsi helper — cek apakah user bisa CREATE data di modul tertentu.
-    Digunakan di template: {% if user|can_user_create:'produk' %}
-    """
     return has_permission(user, 'create', module)

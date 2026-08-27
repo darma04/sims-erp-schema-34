@@ -11,6 +11,18 @@
 
 {% block title %}Detail Stok - {{ stok.produk.nama }} - ERP{% endblock title %}
 
+{% block vendor_css %}{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+{% endblock vendor_js %}
+
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -24,11 +36,11 @@
     </div>
 
     <div class="row">
-        <!-- Info Produk & Stok -->
+        
         <div class="col-md-6 mb-4">
             <div class="card h-100">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="ri-information-line me-2"></i>Informasi Produk & Stok</h5>
+                    <h5 class="mb-0 fs-card-title"><i class="ri-information-line me-2"></i>Informasi Produk & Stok</h5>
                 </div>
                 <div class="card-body">
                     <table class="table table-borderless">
@@ -67,11 +79,10 @@
             </div>
         </div>
 
-        <!-- Info Harga -->
         <div class="col-md-6 mb-4">
             <div class="card h-100">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="ri-money-dollar-circle-line me-2"></i>Informasi Harga</h5>
+                    <h5 class="mb-0 fs-card-title"><i class="ri-money-dollar-circle-line me-2"></i>Informasi Harga</h5>
                 </div>
                 <div class="card-body">
                     <table class="table table-borderless">
@@ -87,7 +98,7 @@
                             <th>Nilai Stok (Harga Beli)</th>
                             <td class="text-end">
                                 {% widthratio stok.jumlah 1 stok.produk.harga_beli as nilai_stok %}
-                                <h5 class="mb-0 text-primary">{{ nilai_stok|rupiah }}</h5>
+                                <h5 class="mb-0 fs-value-primary">{{ nilai_stok|rupiah }}</h5>
                             </td>
                         </tr>
                     </table>
@@ -96,19 +107,17 @@
         </div>
     </div>
 
-    <!-- Riwayat Aktivitas Stok -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="ri-history-line me-2"></i>Riwayat Aktivitas Stok</h5>
+            <h5 class="mb-0 fs-card-title"><i class="ri-history-line me-2"></i>Riwayat Aktivitas Stok</h5>
             <span class="badge bg-label-primary">{{ activity_logs|length }} aktivitas</span>
         </div>
         <div class="card-body">
             {% include 'laporan/partials/timeline_style.html' %}
             
-            <!-- Custom styles for stock activity -->
             <style>
                 .qty-badge {
-                    font-size: 0.8rem;
+                    font-size: var(--fs-ui-sm);
                     font-weight: 600;
                     padding: 0.25rem 0.5rem;
                     border-radius: 4px;
@@ -144,11 +153,11 @@
             <ul class="timeline mb-0">
                 {% for log in activity_logs %}
                 <li class="timeline-item timeline-item-transparent border-left-dashed">
-                    <!-- Timeline point dengan warna berdasarkan jenis aksi -->
+                    
                     <span class="timeline-point timeline-point-{% if log.action == 'stock_in' %}success{% elif log.action == 'stock_out' %}danger{% elif log.action == 'stock_adjustment' %}warning{% elif log.action == 'stock_transfer_in' %}info{% elif log.action == 'stock_transfer_out' %}primary{% elif log.action == 'create' %}info{% elif log.action == 'update' %}warning{% elif log.action == 'delete' %}danger{% else %}secondary{% endif %}">
                     </span>
                     <div class="timeline-event">
-                        <!-- Header dengan icon dan judul -->
+                        
                         <div class="d-flex align-items-center mb-1">
                             {% if log.action == 'stock_in' %}
                                 <i class="ri-arrow-down-circle-line timeline-icon text-success"></i>
@@ -171,20 +180,17 @@
                             {% endif %}
                             <span class="timeline-title">{{ log.get_action_display }}</span>
                             
-                            <!-- Badge perubahan quantity -->
                             {% if log.quantity_change is not None %}
-                                <span class="qty-badge ms-2 {% if log.quantity_change >= 0 %}qty-in{% else %}qty-out{% endif %}">
+                                <span class="qty-badge ms-2 {% if log.quantity_change >= 0 %}qty-in{% else %}qty-out{% endif %} fs-value-secondary">
                                     {% if log.quantity_change >= 0 %}+{% endif %}{{ log.quantity_change|floatformat:0 }}
                                 </span>
                             {% endif %}
                         </div>
                         
-                        <!-- Deskripsi -->
                         {% if log.description %}
                         <div class="timeline-desc">{{ log.description }}</div>
                         {% endif %}
                         
-                        <!-- Detail perubahan quantity (before/after) -->
                         {% if log.quantity_before is not None and log.quantity_after is not None %}
                         <div class="qty-detail">
                             <i class="ri-stack-line"></i>
@@ -193,7 +199,7 @@
                             {{ log.quantity_after|floatformat:0 }}
                             {% if log.source_type %}
                                 <span class="ms-2">|</span>
-                                <span class="badge bg-label-{% if log.source_type == 'purchase' %}success{% elif log.source_type == 'sales' %}danger{% elif log.source_type == 'transfer' %}info{% elif log.source_type == 'adjustment' %}warning{% else %}secondary{% endif %} ms-1">
+                                <span class="badge bg-label-{% if log.source_type == 'purchase' %}success{% elif log.source_type == 'sales' %}danger{% elif log.source_type == 'transfer' %}info{% elif log.source_type == 'adjustment' %}warning{% else %}secondary{% endif %} ms-1 fs-value-secondary">
                                     {{ log.get_source_type_display }}
                                 </span>
                             {% endif %}
@@ -203,7 +209,6 @@
                         </div>
                         {% endif %}
                         
-                        <!-- Detail perubahan JSON (untuk update biasa) -->
                         {% if log.changes and not log.is_stock_action %}
                             {% with changes_dict=log.changes|json_load_safe %}
                                 {% if changes_dict %}
@@ -227,7 +232,6 @@
                             {% endwith %}
                         {% endif %}
                         
-                        <!-- User dan waktu -->
                         <div class="timeline-user">
                             <i class="ri-user-3-line"></i>
                             <span>{{ log.user.username|default:"System" }}</span>
@@ -238,23 +242,34 @@
                 {% endfor %}
             </ul>
             {% else %}
-            <div class="text-center py-4">
-                <i class="ri-history-line ri-3x text-muted mb-3 d-block"></i>
-                <p class="text-muted">Belum ada riwayat aktivitas untuk stok ini</p>
+            <div class="text-center py-3 py-md-4 px-3">
+                <div class="mb-3">
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                         style="width: 72px; height: 72px;">
+                        <i class="ri-inbox-line" style="font-size: 2.2rem;"></i>
+                    </div>
+                </div>
+                <h6 class="mb-2">Belum Ada Data</h6>
+                <p class="text-muted mb-0" style="max-width: 360px; margin-left: auto; margin-right: auto; line-height: 1.6; font-size: 0.875rem;">
+                    Belum ada riwayat aktivitas untuk stok ini.
+                </p>
             </div>
             {% endif %}
         </div>
     </div>
 
-    <!-- Riwayat Purchase Orders -->
-    {% if po_items %}
     <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="ri-shopping-bag-line me-2"></i>Riwayat Pembelian (Purchase Orders)</h5>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fs-card-title"><i class="ri-shopping-bag-line me-2"></i>Riwayat Pembelian (Purchase Orders)</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcelFromButton(this)"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDFFromButton(this)"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+            </div>
         </div>
+        {% if po_items %}
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
+            <div class="card-datatable table-responsive">
+                <table id="stokPoRiwayatTable" class="accounting-data-table table table-hover" data-accounting-primary data-export-title="Riwayat Pembelian - {{ stok.produk.nama }}" data-search-placeholder="Cari PO...">
                     <thead>
                         <tr>
                             <th>No. PO</th>
@@ -272,26 +287,48 @@
                             <td>{{ item.purchase_order.tanggal|date:"d M Y" }}</td>
                             <td>{{ item.purchase_order.supplier.nama }}</td>
                             <td>{{ item.jumlah|floatformat:0 }}</td>
-                            <td>{{ item.harga_satuan|rupiah }}</td>
+                            <td class="text-end">{{ item.harga_satuan|rupiah }}</td>
                             <td><strong>{{ item.total|rupiah }}</strong></td>
                         </tr>
                         {% endfor %}
                     </tbody>
+                    <tfoot class="table-footer-summary"><tr>
+                        <td colspan="5" class="text-start ps-4 py-3"><div class="d-flex align-items-center justify-content-start"><i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i><div class="text-start"><strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong><small class="text-muted" style="font-size: 0.75rem;">{{ po_items|length }} item ditampilkan</small></div></div></td>
+                        <td class="py-3"><div class="d-flex flex-column align-items-center"><span class="badge bg-label-danger d-flex align-items-center gap-1 mb-2" style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;"><i class="ri-money-dollar-circle-line"></i><span>{{ total_nilai_po|rupiah }}</span></span><small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Nilai</small></div></td>
+                    </tr></tfoot>
                 </table>
             </div>
         </div>
-    </div>
-    {% endif %}
-
-    <!-- Riwayat Sales Orders -->
-    {% if so_items %}
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="ri-shopping-cart-line me-2"></i>Riwayat Penjualan (Sales Orders)</h5>
-        </div>
+        {% else %}
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
+            <div class="text-center py-3 py-md-4 px-3">
+                <div class="mb-3">
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                         style="width: 72px; height: 72px;">
+                        <i class="ri-inbox-line" style="font-size: 2.2rem;"></i>
+                    </div>
+                </div>
+                <h6 class="mb-2">Belum Ada Data</h6>
+                <p class="text-muted mb-0" style="max-width: 360px; margin-left: auto; margin-right: auto; line-height: 1.6; font-size: 0.875rem;">
+                    Belum ada riwayat pembelian untuk produk ini.
+                </p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fs-card-title"><i class="ri-shopping-cart-line me-2"></i>Riwayat Penjualan (Sales Orders)</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcelFromButton(this)"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDFFromButton(this)"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+            </div>
+        </div>
+        {% if so_items %}
+        <div class="card-body">
+            <div class="card-datatable table-responsive">
+                <table id="stokSoRiwayatTable" class="accounting-data-table table table-hover" data-accounting-primary data-export-title="Riwayat Penjualan - {{ stok.produk.nama }}" data-search-placeholder="Cari SO...">
                     <thead>
                         <tr>
                             <th>No. SO</th>
@@ -309,15 +346,38 @@
                             <td>{{ item.sales_order.tanggal|date:"d M Y" }}</td>
                             <td>{{ item.sales_order.customer.nama }}</td>
                             <td>{{ item.jumlah|floatformat:0 }}</td>
-                            <td>{{ item.harga_satuan|rupiah }}</td>
+                            <td class="text-end">{{ item.harga_satuan|rupiah }}</td>
                             <td><strong>{{ item.total|rupiah }}</strong></td>
                         </tr>
                         {% endfor %}
                     </tbody>
+                    <tfoot class="table-footer-summary"><tr>
+                        <td colspan="5" class="text-start ps-4 py-3"><div class="d-flex align-items-center justify-content-start"><i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i><div class="text-start"><strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong><small class="text-muted" style="font-size: 0.75rem;">{{ so_items|length }} item ditampilkan</small></div></div></td>
+                        <td class="py-3"><div class="d-flex flex-column align-items-center"><span class="badge bg-label-success d-flex align-items-center gap-1 mb-2" style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;"><i class="ri-money-dollar-circle-line"></i><span>{{ total_nilai_so|rupiah }}</span></span><small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Nilai</small></div></td>
+                    </tr></tfoot>
                 </table>
             </div>
         </div>
+        {% else %}
+        <div class="card-body">
+            <div class="text-center py-3 py-md-4 px-3">
+                <div class="mb-3">
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                         style="width: 72px; height: 72px;">
+                        <i class="ri-inbox-line" style="font-size: 2.2rem;"></i>
+                    </div>
+                </div>
+                <h6 class="mb-2">Belum Ada Data</h6>
+                <p class="text-muted mb-0" style="max-width: 360px; margin-left: auto; margin-right: auto; line-height: 1.6; font-size: 0.875rem;">
+                    Belum ada riwayat penjualan untuk produk ini.
+                </p>
+            </div>
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
 </div>
 {% endblock content %}
+{% block page_js %}
+{{ block.super }}
+{% include 'kas_bank/partials/list_tools.html' %}
+{% endblock page_js %}

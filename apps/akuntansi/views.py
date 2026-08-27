@@ -90,7 +90,7 @@ from apps.core.mixins import ReadPermissionMixin, CreatePermissionMixin, UpdateP
 
 
 # ╔══════════════════════════════════════════════════════════════╗
-# ║               CHART OF ACCOUNTS (CoA)                         ║
+# ║               CHART OF ACCOUNTS (CoA)                        ║
 # ╚══════════════════════════════════════════════════════════════╝
 
 class AkunListView(ReadPermissionMixin, ListView):
@@ -446,13 +446,15 @@ class JurnalReverseView(UpdatePermissionMixin, TemplateView):
     permission_module = 'akuntansi'
     permission_sub_module = 'jurnal'
     http_method_names = ['post']
-    http_method_names = ['post']
 
     def post(self, request, *args, **kwargs):
         jurnal = get_object_or_404(JurnalEntry, pk=kwargs['pk'])
 
         if not jurnal.is_posted:
             return JsonResponse({'success': False, 'message': 'Hanya jurnal yang sudah diposting yang bisa dibalik.'}, status=400)
+
+        if jurnal.is_reversed:
+            return JsonResponse({'success': False, 'message': 'Jurnal sudah dibalik sebelumnya.'}, status=400)
 
         try:
             pembalik = create_jurnal_pembalik(jurnal, user=request.user)
@@ -604,16 +606,20 @@ class PeriodeTutupView(UpdatePermissionMixin, TemplateView):
         if periode.is_tutup:
             return JsonResponse({'success': False, 'message': 'Periode sudah ditutup.'}, status=400)
 
-        # ── Closing Entry Otomatis (Sesuai Standar Akuntansi) ──
-        # Proses tutup buku dengan 3 jurnal closing entry:
-        # 1. Tutup akun Pendapatan → Ikhtisar Laba/Rugi
-        # 2. Tutup akun HPP & Beban → Ikhtisar Laba/Rugi
-        # 3. Transfer Ikhtisar Laba/Rugi → Laba Ditahan
         try:
-            from apps.akuntansi.services import get_laba_rugi, create_jurnal, get_akun_by_kode
-            from apps.akuntansi.models import Akun
-            
             with transaction.atomic():
+                periode.is_tutup = True
+                periode.is_aktif = False
+                periode.save()
+
+                # ── Closing Entry Otomatis (Sesuai Standar Akuntansi) ──
+                # Proses tutup buku dengan 3 jurnal closing entry:
+                # 1. Tutup akun Pendapatan → Ikhtisar Laba/Rugi
+                # 2. Tutup akun HPP & Beban → Ikhtisar Laba/Rugi
+                # 3. Transfer Ikhtisar Laba/Rugi → Laba Ditahan
+                from apps.akuntansi.services import get_laba_rugi, create_jurnal, get_akun_by_kode
+                from apps.akuntansi.models import Akun
+            
                 # Hitung laba/rugi periode
                 data = get_laba_rugi(periode.tanggal_mulai, periode.tanggal_akhir)
                 total_pendapatan = data.get('total_pendapatan', Decimal('0'))
@@ -624,7 +630,7 @@ class PeriodeTutupView(UpdatePermissionMixin, TemplateView):
                 # Cek apakah akun Ikhtisar Laba/Rugi dan Laba Ditahan ada
                 akun_ikhtisar = get_akun_by_kode('3-9000')  # Ikhtisar Laba/Rugi (temporary)
                 akun_laba_ditahan = get_akun_by_kode('3-2000')  # Laba Ditahan
-                
+            
                 if not akun_ikhtisar:
                     # Buat akun Ikhtisar Laba/Rugi jika belum ada
                     akun_ikhtisar = Akun.objects.create(
@@ -664,7 +670,7 @@ class PeriodeTutupView(UpdatePermissionMixin, TemplateView):
                                     'kredit': raw_saldo,
                                     'keterangan': f'Closing entry {periode.nama}'
                                 })
-                        
+                    
                         if total_pendapatan > 0:
                             lines_pendapatan.append({
                                 'akun': akun_ikhtisar,
@@ -679,7 +685,7 @@ class PeriodeTutupView(UpdatePermissionMixin, TemplateView):
                                 'kredit': Decimal('0'),
                                 'keterangan': f'Transfer kontra pendapatan ke Ikhtisar'
                             })
-                        
+                    
                         create_jurnal(
                             tanggal=periode.tanggal_akhir,
                             deskripsi=f'Closing Entry (1/3) — Tutup Akun Pendapatan — {periode.nama}',
@@ -696,7 +702,7 @@ class PeriodeTutupView(UpdatePermissionMixin, TemplateView):
                     total_hpp_beban = total_hpp + total_beban
                     if total_hpp_beban > 0:
                         lines_hpp_beban = []
-                        
+                    
                         # Debit Ikhtisar Laba/Rugi
                         lines_hpp_beban.append({
                             'akun': akun_ikhtisar,
@@ -704,7 +710,7 @@ class PeriodeTutupView(UpdatePermissionMixin, TemplateView):
                             'kredit': Decimal('0'),
                             'keterangan': f'Transfer HPP & Beban ke Ikhtisar'
                         })
-                        
+                    
                         # Kredit untuk tutup akun HPP
                         for item in data.get('hpp', []):
                             if item['saldo'] > 0:
@@ -714,7 +720,7 @@ class PeriodeTutupView(UpdatePermissionMixin, TemplateView):
                                     'kredit': item['saldo'],  # Kredit untuk tutup akun HPP (saldo normal debit)
                                     'keterangan': f'Closing entry {periode.nama}'
                                 })
-                        
+                    
                         # Kredit untuk tutup akun Beban
                         for item in data.get('beban', []):
                             if item['saldo'] > 0:
@@ -724,7 +730,7 @@ class PeriodeTutupView(UpdatePermissionMixin, TemplateView):
                                     'kredit': item['saldo'],  # Kredit untuk tutup akun Beban (saldo normal debit)
                                     'keterangan': f'Closing entry {periode.nama}'
                                 })
-                        
+                    
                         create_jurnal(
                             tanggal=periode.tanggal_akhir,
                             deskripsi=f'Closing Entry (2/3) — Tutup Akun HPP & Beban — {periode.nama}',
@@ -771,7 +777,7 @@ class PeriodeTutupView(UpdatePermissionMixin, TemplateView):
                                     'keterangan': f'Transfer rugi bersih dari Ikhtisar'
                                 }
                             ]
-                        
+                    
                         create_jurnal(
                             tanggal=periode.tanggal_akhir,
                             deskripsi=f'Closing Entry (3/3) — Transfer Ikhtisar ke Laba Ditahan — {periode.nama}',
@@ -784,14 +790,9 @@ class PeriodeTutupView(UpdatePermissionMixin, TemplateView):
                             allow_closed_period=True,
                         )
 
-                # Semua 3 closing entry berhasil — baru update status periode
-                periode.is_tutup = True
-                periode.is_aktif = False
-                periode.save(update_fields=['is_tutup', 'is_aktif'])
-
         except Exception as e:
             logger.error(f'Gagal membuat closing entry untuk {periode.nama}: {e}')
-            # transaction.atomic() otomatis rollback — periode.is_tutup tetap False
+            transaction.set_rollback(True)
             return JsonResponse({
                 'success': False,
                 'message': f'Periode gagal ditutup karena closing entry gagal dibuat: {e}'
@@ -928,6 +929,7 @@ class LabaRugiView(ReadPermissionMixin, TemplateView):
         # Monthly trend (6 bulan terakhir)
         trend_labels = []
         trend_pendapatan = []
+        trend_beban = []
         trend_laba = []
         for i in range(5, -1, -1):
             m = today.month - i
@@ -944,10 +946,12 @@ class LabaRugiView(ReadPermissionMixin, TemplateView):
             nama_bulan = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
             trend_labels.append(f"{nama_bulan[m-1]} {y}")
             trend_pendapatan.append(float(month_data['total_pendapatan']))
+            trend_beban.append(float(month_data['total_beban']))
             trend_laba.append(float(month_data['laba_bersih']))
 
         context['trend_labels'] = json.dumps(trend_labels)
         context['trend_pendapatan'] = json.dumps(trend_pendapatan)
+        context['trend_beban'] = json.dumps(trend_beban)
         context['trend_laba'] = json.dumps(trend_laba)
 
         return context
@@ -995,8 +999,9 @@ class ArusKasView(ReadPermissionMixin, TemplateView):
         if cabang:
             filters &= Q(jurnal__cabang=cabang)
 
-        # Ambil semua akun Kas/Bank secara dinamis berdasarkan sub_tipe (bukan hardcoded kode prefix)
-        # Mencakup semua akun aset lancar: Kas, Bank BCA, Bank Mandiri, dll
+        # FIXED: Remove hardcoded '1-1' prefix filter. Use sub_tipe='aset_lancar'
+        # to dynamically include all cash/bank accounts (Kas, Bank, QRIS, E-Wallet, dll)
+        # without relying on a specific kode prefix convention.
         kas_akun_kodes = list(
             Akun.objects.filter(
                 is_active=True,
@@ -1243,7 +1248,6 @@ class PanduanAkuntansiView(ReadPermissionMixin, TemplateView):
         except Exception:
             context['total_kas_bank_accounts'] = 0
             context['total_mutasi_posted'] = 0
-        context['has_service_center'] = True
 
         # CoA structure reference
         context['coa_structure'] = [
@@ -1342,12 +1346,12 @@ class PanduanAkuntansiView(ReadPermissionMixin, TemplateView):
             {'sumber': 'Mutasi Manual Kas/Bank', 'sumber_icon': 'ri-exchange-dollar-line',
              'jurnal': 'D/K: Kas/Bank  K/D: Akun Lawan',
              'trigger': 'Saat mutasi manual posted (akun lawan wajib)'},
+            {'sumber': 'Reimburse (Diajukan & Dibayar)', 'sumber_icon': 'ri-refund-2-line',
+             'jurnal': 'D: Beban per Kategori  K: Kas/Bank',
+             'trigger': 'Saat reimburse di-approve & dibayar (signal post_save -> services.reimburse.create_reimburse_accounting)'},
             {'sumber': 'Settlement PPN', 'sumber_icon': 'ri-bank-line',
              'jurnal': 'Setor (PK>PM): D:PPN Keluaran  K:PPN Masukan  K:Kas/Bank | Restitusi (PM>PK): D:PPN Keluaran + Kas/Bank  K:PPN Masukan',
              'trigger': 'Saat Setor PPN diproses — otomatis pilih setor/restitusi berdasarkan selisih PK-PM'},
-            {'sumber': 'Service Center (Pembayaran Jasa)', 'sumber_icon': 'ri-customer-service-2-line',
-             'jurnal': 'D: Kas/Bank  K: Pendapatan Jasa',
-             'trigger': 'Saat OrderService dibayar (status_bayar = lunas/dp) — signal post_save'},
             {'sumber': 'Tutup Buku (Closing)', 'sumber_icon': 'ri-lock-line',
              'jurnal': '3 jurnal: Pendapatan → Ikhtisar → Laba Ditahan',
              'trigger': 'Saat periode ditutup'},
@@ -1390,7 +1394,7 @@ class PanduanAkuntansiView(ReadPermissionMixin, TemplateView):
 
 
 # ╔══════════════════════════════════════════════════════════════╗
-# ║     REKONSILIASI KEUANGAN (Financial Reconciliation)          ║
+# ║     REKONSILIASI KEUANGAN (Financial Reconciliation)         ║
 # ╚══════════════════════════════════════════════════════════════╝
 
 class RekonsiliasiKeuanganView(ReadPermissionMixin, TemplateView):
@@ -1442,16 +1446,16 @@ class RekonsiliasiKeuanganView(ReadPermissionMixin, TemplateView):
         from apps.biaya.models import TransaksiBiaya
         from apps.core.finance_metrics import aggregate_purchase_amounts, aggregate_sales_amounts
 
-        # PENTING: Filter SO hanya 'completed' agar konsisten dengan trigger jurnal.
-        # Jurnal SO hanya dibuat saat status = completed (lihat penjualan/signals.py).
-        # Jika menggunakan confirmed/delivered, akan selalu ada selisih karena
-        # transaksi tersebut belum ter-jurnal di akuntansi.
-        so_filter = {'status': 'completed',
+        # PENTING: Filter SO = confirmed/delivered/completed agar konsisten dengan trigger jurnal.
+        # Lihat penjualan/signals.py:127 — signal trigger pada tiga status ini.
+        # Gunakan status__in untuk mencakup semua SO yang sudah memiliki jurnal.
+        so_filter = {'status__in': ['confirmed', 'delivered', 'completed'],
                      'tanggal__date__gte': tanggal_mulai, 'tanggal__date__lte': tanggal_akhir}
         pos_filter = {'status': 'paid',
                       'tanggal__date__gte': tanggal_mulai, 'tanggal__date__lte': tanggal_akhir}
-        # PO: jurnal dibuat saat status = approved/received (lihat pembelian/signals.py)
-        po_filter = {'status__in': ['approved', 'received'],
+        # PO: jurnal dibuat SAAT status = 'received' (lihat pembelian/signals.py:126).
+        # 'approved' belum memiliki jurnal → jangan disertakan agar tidak ada selisih.
+        po_filter = {'status': 'received',
                      'tanggal__date__gte': tanggal_mulai, 'tanggal__date__lte': tanggal_akhir}
         biaya_filter = {'status': 'approved',
                         'tanggal__gte': tanggal_mulai, 'tanggal__lte': tanggal_akhir}

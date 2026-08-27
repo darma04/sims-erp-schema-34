@@ -7,7 +7,7 @@
    Menggunakan TemplateCetak untuk header, footer, dan signature.
    ==========================================================================
 {% endcomment %}
-{% load humanize %}
+{% load humanize currency_filters %}
 <!DOCTYPE html>
 <html lang="id">
 
@@ -190,18 +190,18 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr><td>Gaji Pokok</td><td class="text-right">{{ slip.gaji_pokok|floatformat:0|intcomma }}</td></tr>
-                            <tr><td>Tunjangan Jabatan</td><td class="text-right">{{ slip.tunjangan_jabatan|floatformat:0|intcomma }}</td></tr>
-                            <tr><td>Tunjangan Makan</td><td class="text-right">{{ slip.tunjangan_makan|floatformat:0|intcomma }}</td></tr>
-                            <tr><td>Tunjangan Transport</td><td class="text-right">{{ slip.tunjangan_transport|floatformat:0|intcomma }}</td></tr>
-                            <tr><td>Tunjangan Lainnya</td><td class="text-right">{{ slip.tunjangan_lainnya|floatformat:0|intcomma }}</td></tr>
-                            <tr><td>Lembur</td><td class="text-right">{{ slip.lembur|floatformat:0|intcomma }}</td></tr>
-                            <tr><td>Bonus</td><td class="text-right">{{ slip.bonus|floatformat:0|intcomma }}</td></tr>
+                            <tr><td>Gaji Pokok</td><td class="text-right">{{ slip.gaji_pokok|floatformat:0|thousands }}</td></tr>
+                            <tr><td>Tunjangan Jabatan</td><td class="text-right">{{ slip.tunjangan_jabatan|floatformat:0|thousands }}</td></tr>
+                            <tr><td>Tunjangan Makan</td><td class="text-right">{{ slip.tunjangan_makan|floatformat:0|thousands }}</td></tr>
+                            <tr><td>Tunjangan Transport</td><td class="text-right">{{ slip.tunjangan_transport|floatformat:0|thousands }}</td></tr>
+                            <tr><td>Tunjangan Lainnya</td><td class="text-right">{{ slip.tunjangan_lainnya|floatformat:0|thousands }}</td></tr>
+                            <tr><td>Lembur</td><td class="text-right">{{ slip.lembur|floatformat:0|thousands }}</td></tr>
+                            <tr><td>Bonus</td><td class="text-right">{{ slip.bonus|floatformat:0|thousands }}</td></tr>
                         </tbody>
                         <tfoot>
                             <tr class="total-row total-income">
                                 <td>Total Pendapatan</td>
-                                <td class="text-right">{{ slip.total_pendapatan|floatformat:0|intcomma }}</td>
+                                <td class="text-right">{{ slip.total_pendapatan|floatformat:0|thousands }}</td>
                             </tr>
                         </tfoot>
                     </table>
@@ -218,15 +218,15 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr><td>BPJS Kesehatan</td><td class="text-right">{{ slip.potongan_bpjs_kesehatan|floatformat:0|intcomma }}</td></tr>
-                            <tr><td>BPJS Ketenagakerjaan</td><td class="text-right">{{ slip.potongan_bpjs_ketenagakerjaan|floatformat:0|intcomma }}</td></tr>
-                            <tr><td>PPh 21</td><td class="text-right">{{ slip.potongan_pph21|floatformat:0|intcomma }}</td></tr>
-                            <tr><td>Potongan Lainnya</td><td class="text-right">{{ slip.potongan_lainnya|floatformat:0|intcomma }}</td></tr>
+                            <tr><td>BPJS Kesehatan</td><td class="text-right">{{ slip.potongan_bpjs_kesehatan|floatformat:0|thousands }}</td></tr>
+                            <tr><td>BPJS Ketenagakerjaan</td><td class="text-right">{{ slip.potongan_bpjs_ketenagakerjaan|floatformat:0|thousands }}</td></tr>
+                            <tr><td>PPh 21</td><td class="text-right">{{ slip.potongan_pph21|floatformat:0|thousands }}</td></tr>
+                            <tr><td>Potongan Lainnya</td><td class="text-right">{{ slip.potongan_lainnya|floatformat:0|thousands }}</td></tr>
                         </tbody>
                         <tfoot>
                             <tr class="total-row total-deduction">
                                 <td>Total Potongan</td>
-                                <td class="text-right">{{ slip.total_potongan|floatformat:0|intcomma }}</td>
+                                <td class="text-right">{{ slip.total_potongan|floatformat:0|thousands }}</td>
                             </tr>
                         </tfoot>
                     </table>
@@ -241,7 +241,7 @@
                     <table cellpadding="0" cellspacing="0" width="100%">
                         <tr>
                             <td style="font-size: 14px; font-weight: 600; color: #ffffff; letter-spacing: 0.5px;">GAJI BERSIH (Take Home Pay)</td>
-                            <td style="text-align: right; font-size: 22px; font-weight: 800; color: #ffffff;">Rp {{ slip.gaji_bersih|floatformat:0|intcomma }}</td>
+                            <td style="text-align: right; font-size: 22px; font-weight: 800; color: #ffffff;">Rp {{ slip.gaji_bersih|floatformat:0|thousands }}</td>
                         </tr>
                     </table>
                 </td>

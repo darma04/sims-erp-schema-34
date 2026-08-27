@@ -40,8 +40,25 @@ DEFAULT_TENANT_CACHE_NAMESPACES = ('view_response', 'context_processor')
 
 
 def normalize_role_code(role_code):
-    """Normalisasi kode role agar cache key konsisten lintas UI, mixin, dan gating."""
-    return str(role_code or '').strip().upper()
+    """Normalisasi kode role agar cache key konsisten lintas UI, mixin, dan gating.
+
+    - Role standar (SUPERUSER, ADMIN, KASIR, PENGELOLA, USER): exact match
+    - Legacy display name (contoh: 'USER - READ & CREATE ONLY'): ambil kata pertama
+    - Role kustom (contoh: 'WAREHOUSE_MANAGER', 'ADMIN_GUDANG'): utuh, tidak dipotong
+    """
+    normalized = str(role_code or '').strip().upper()
+    # Handle legacy display names dengan spasi
+    if ' ' in normalized:
+        first_word = normalized.split()[0]
+        STANDARD_ROLES = {'SUPERUSER', 'ADMIN', 'KASIR', 'PENGELOLA', 'USER'}
+        if first_word in STANDARD_ROLES:
+            return first_word
+    # Exact match untuk role standar
+    STANDARD_ROLES = {'SUPERUSER', 'ADMIN', 'KASIR', 'PENGELOLA', 'USER'}
+    if normalized in STANDARD_ROLES:
+        return normalized
+    # Role kustom — kembalikan utuh
+    return normalized
 
 
 def get_user_permissions_cache_version(user_id):

@@ -1,4 +1,4 @@
-﻿{% extends 'layout/layout_vertical.html' %}
+{% extends 'layout/layout_vertical.html' %}
 {% comment %}
 ==========================================================================
    ABSENSI DETAIL - Detail Absensi Karyawan
@@ -36,7 +36,7 @@
             <!-- Card Info Karyawan -->
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="ri-user-line me-2"></i>Informasi Karyawan</h5>
+                    <h5 class="mb-0 fs-card-title"><i class="ri-user-line me-2"></i>Informasi Karyawan</h5>
                 </div>
                 <div class="card-body">
                     <div class="d-flex align-items-center mb-3">
@@ -45,7 +45,7 @@
                         </div>
                         <div>
                             <h5 class="mb-0">{{ absensi.karyawan.nama }}</h5>
-                            <small class="text-muted">NIK: {{ absensi.karyawan.nik }}</small>
+                            <small class="text-muted fs-value-secondary">NIK: {{ absensi.karyawan.nik }}</small>
                         </div>
                     </div>
                     <div class="row">
@@ -76,7 +76,7 @@
             <!-- Card Data Kehadiran -->
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="ri-time-line me-2"></i>Data Kehadiran</h5>
+                    <h5 class="mb-0 fs-card-title"><i class="ri-time-line me-2"></i>Data Kehadiran</h5>
                 </div>
                 <div class="card-body">
                     <div class="row g-4">
@@ -96,13 +96,13 @@
                                         {% endif %}
                                     </h5>
                                     {% if absensi.lokasi_masuk %}
-                                    <small class="text-muted d-block" style="font-size:0.75rem;">
+                                    <small class="text-muted d-block fs-value-secondary" style="font-size:0.75rem;">
                                         <i class="ri-map-pin-line me-1"></i>{{ absensi.lokasi_masuk }}
                                     </small>
                                     {% endif %}
                                     {% if absensi.jarak_masuk != None %}
                                     <div class="mt-1">
-                                        <span class="badge bg-{% if absensi.jarak_masuk <= 100 %}success{% elif absensi.jarak_masuk <= 200 %}warning{% else %}danger{% endif %}" style="font-size:0.7rem;">
+                                        <span class="badge bg-{% if absensi.jarak_masuk <= 100 %}success{% elif absensi.jarak_masuk <= 200 %}warning{% else %}danger{% endif %} fs-value-secondary" style="font-size: var(--fs-ui-xxs);">
                                             Jarak: {{ absensi.jarak_masuk }}m
                                         </span>
                                     </div>
@@ -126,13 +126,13 @@
                                         {% endif %}
                                     </h5>
                                     {% if absensi.lokasi_keluar %}
-                                    <small class="text-muted d-block" style="font-size:0.75rem;">
+                                    <small class="text-muted d-block fs-value-secondary" style="font-size:0.75rem;">
                                         <i class="ri-map-pin-line me-1"></i>{{ absensi.lokasi_keluar }}
                                     </small>
                                     {% endif %}
                                     {% if absensi.jarak_keluar != None %}
                                     <div class="mt-1">
-                                        <span class="badge bg-{% if absensi.jarak_keluar <= 100 %}success{% elif absensi.jarak_keluar <= 200 %}warning{% else %}danger{% endif %}" style="font-size:0.7rem;">
+                                        <span class="badge bg-{% if absensi.jarak_keluar <= 100 %}success{% elif absensi.jarak_keluar <= 200 %}warning{% else %}danger{% endif %} fs-value-secondary" style="font-size: var(--fs-ui-xxs);">
                                             Jarak: {{ absensi.jarak_keluar }}m
                                         </span>
                                     </div>
@@ -167,7 +167,7 @@
                         <div class="col-sm-4">
                             <div class="d-flex justify-content-between align-items-center p-3 rounded bg-lighter">
                                 <small class="text-muted">Durasi Kerja</small>
-                                <span class="fw-medium">
+                                <span class="fw-medium fs-value-secondary">
                                     {% if absensi.durasi_kerja %}
                                     {{ absensi.durasi_kerja|floatformat:1 }} jam
                                     {% else %}
@@ -180,7 +180,7 @@
                             <div class="d-flex justify-content-between align-items-center p-3 rounded bg-lighter">
                                 <small class="text-muted">Kemiripan Wajah</small>
                                 {% if absensi.persentase_kemiripan %}
-                                <span class="badge bg-label-{% if absensi.persentase_kemiripan >= 80 %}success{% elif absensi.persentase_kemiripan >= 60 %}warning{% else %}danger{% endif %}">
+                                <span class="badge bg-label-{% if absensi.persentase_kemiripan >= 80 %}success{% elif absensi.persentase_kemiripan >= 60 %}warning{% else %}danger{% endif %} fs-value-secondary">
                                     {{ absensi.persentase_kemiripan }}%
                                 </span>
                                 {% else %}
@@ -196,7 +196,7 @@
             {% if absensi.foto_masuk or absensi.foto_keluar %}
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="ri-camera-line me-2"></i>Foto Absensi</h5>
+                    <h5 class="mb-0 fs-card-title"><i class="ri-camera-line me-2"></i>Foto Absensi</h5>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
@@ -225,10 +225,10 @@
             {% if absensi.catatan %}
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="ri-sticky-note-line me-2"></i>Catatan</h5>
+                    <h5 class="mb-0 fs-card-title"><i class="ri-sticky-note-line me-2"></i>Catatan</h5>
                 </div>
                 <div class="card-body">
-                    <p class="mb-0 text-muted fst-italic">{{ absensi.catatan }}</p>
+                    <p class="mb-0 text-muted fst-italic fs-value-secondary">{{ absensi.catatan }}</p>
                 </div>
             </div>
             {% endif %}
@@ -239,7 +239,7 @@
             <!-- Card Peta Lokasi -->
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="ri-map-pin-line me-2"></i>Lokasi Absensi</h5>
+                    <h5 class="mb-0 fs-card-title"><i class="ri-map-pin-line me-2"></i>Lokasi Absensi</h5>
                 </div>
                 <div class="card-body p-0">
                     {% if peta_html %}
@@ -248,9 +248,8 @@
                     </div>
                     {% else %}
                     <div class="text-center py-5">
-                        <i class="ri-map-pin-line ri-3x text-muted mb-3 d-block"></i>
-                        <p class="text-muted mb-0">Data lokasi GPS belum tersedia</p>
-                        <small class="text-muted">Lokasi akan terekam saat karyawan melakukan absensi melalui halaman Deteksi Wajah</small>
+                        <i class="ri-map-pin-line ri-48px mb-2 d-block" style="opacity:0.3;"></i>
+                        <div class="text-muted">Data lokasi GPS belum tersedia<br><small>Lokasi akan terekam saat karyawan melakukan absensi melalui halaman Deteksi Wajah</small></div>
                     </div>
                     {% endif %}
                 </div>
@@ -261,7 +260,7 @@
             <div class="card mb-4">
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="ri-settings-3-line me-2"></i>Pengaturan Absensi</h5>
+                        <h5 class="mb-0 fs-card-title"><i class="ri-settings-3-line me-2"></i>Pengaturan Absensi</h5>
                         <span class="badge bg-label-success"><i class="ri-checkbox-circle-line me-1"></i>{{ pengaturan.nama }}</span>
                     </div>
                 </div>
@@ -272,11 +271,11 @@
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <small class="text-muted">Toleransi Terlambat</small>
-                        <small class="fw-medium">{{ pengaturan.toleransi_terlambat }} menit</small>
+                        <small class="fw-medium fs-value-secondary">{{ pengaturan.toleransi_terlambat }} menit</small>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <small class="text-muted">Zona Waktu</small>
-                        <small class="fw-medium">{{ pengaturan.get_zona_waktu_display }}</small>
+                        <small class="fw-medium fs-value-secondary">{{ pengaturan.get_zona_waktu_display }}</small>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <small class="text-muted">Hari Kerja</small>
@@ -289,7 +288,7 @@
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <small class="text-muted">Radius Absensi</small>
-                        <small class="fw-medium">{{ pengaturan.radius_lokasi }}m</small>
+                        <small class="fw-medium fs-value-secondary">{{ pengaturan.radius_lokasi }}m</small>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <small class="text-muted">Wajib Dalam Lokasi</small>
@@ -321,7 +320,7 @@
             <!-- Card Metadata -->
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="ri-information-line me-2"></i>Metadata</h5>
+                    <h5 class="mb-0 fs-card-title"><i class="ri-information-line me-2"></i>Metadata</h5>
                 </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-2">

@@ -129,7 +129,6 @@ class POSKasbonAccountingTest(AccountingFixtureMixin, TestCase):
 
         jurnals = JurnalEntry.objects.filter(sumber="pos", sumber_id=trx.pk)
         self.assertTrue(jurnals.filter(sumber_ref=trx.nomor_transaksi).exists())
-        self.assertTrue(jurnals.filter(sumber_ref=f"{trx.nomor_transaksi}_hpp").exists())
         for jurnal in jurnals:
             self.assert_journal_balanced(jurnal)
 

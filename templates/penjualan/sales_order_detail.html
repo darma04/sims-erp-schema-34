@@ -17,7 +17,6 @@
 <style>
     @media print {
 
-        /* Hide UI elements */
         .layout-navbar,
         .layout-menu,
         .layout-footer,
@@ -27,7 +26,6 @@
             display: none !important;
         }
 
-        /* Page setup - fit to one page */
         @page {
             size: A4;
             margin: 10mm 15mm 15mm 15mm;
@@ -44,7 +42,6 @@
             padding: 0 !important;
         }
 
-        /* Professional header with company info */
         .card:first-of-type::before {
             content: "";
             display: block;
@@ -89,7 +86,6 @@
             text-align: center;
         }
 
-        /* Document title */
         h4 {
             text-align: center;
             font-size: 16pt !important;
@@ -100,7 +96,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* Card styling */
         .card {
             border: none !important;
             box-shadow: none !important;
@@ -123,7 +118,6 @@
             padding: 2mm 3mm !important;
         }
 
-        /* Compact tables */
         .table {
             font-size: 8pt !important;
             margin-bottom: 2mm !important;
@@ -156,7 +150,6 @@
             border: 0.5pt solid #dee2e6 !important;
         }
 
-        /* Badge styling */
         .badge {
             border: 0.5pt solid currentColor;
             padding: 1mm 2mm;
@@ -165,7 +158,6 @@
             print-color-adjust: exact;
         }
 
-        /* Footer totals */
         .table tfoot {
             background-color: #f8f9fa !important;
             font-weight: 600;
@@ -178,7 +170,6 @@
             font-size: 9pt !important;
         }
 
-        /* Professional footer with signatures */
         .card:last-of-type::after {
             content: "";
             display: block;
@@ -197,7 +188,6 @@
             border-top: 1px solid #ddd;
         }
 
-        /* Signature section */
         .container-xxl::after {
             content: "Dicetak pada: " attr(data-date) "\\A\\A\\A         Disetujui Oleh,                                                                 Dibuat Oleh,\\A\\A\\A\\A\\A         (___________________)                                                    (___________________)";
             display: block;
@@ -210,7 +200,6 @@
             page-break-inside: avoid;
         }
 
-        /* Optimize spacing */
         .row {
             margin: 0 !important;
         }
@@ -220,14 +209,12 @@
             float: left !important;
         }
 
-        /* Remove icons in print */
         .ri-box-3-line,
         .ri-file-list-3-line,
         .ri-user-line {
             display: none;
         }
 
-        /* Compact info sections */
         .table-borderless tr td:first-child {
             width: 35% !important;
         }
@@ -236,7 +223,7 @@
 {% endblock page_css %}
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    <!-- Header -->
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <nav aria-label="breadcrumb">
@@ -245,7 +232,7 @@
                     <li class="breadcrumb-item active">Detail</li>
                 </ol>
             </nav>
-            <h4 class="mb-0 mt-2">
+            <h4 class="mb-0 mt-2 fs-value-primary">
                 <i class="ri-file-list-3-line me-2"></i>{{ sales_order.nomor_so }}
             </h4>
         </div>
@@ -269,12 +256,11 @@
         </div>
     </div>
 
-    <!-- Main Card -->
     <div class="row">
         <div class="col-12">
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0">Informasi Sales Order</h5>
+                    <h5 class="mb-0 fs-card-title">Informasi Sales Order</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -333,7 +319,7 @@
                                 </tr>
                                 <tr>
                                     <td class="fw-medium">Pajak:</td>
-                                    <td>{{ sales_order.pajak|rupiah }}</td>
+                                    <td class="text-end">{{ sales_order.pajak|rupiah }}</td>
                                 </tr>
                                 <tr>
                                     <td class="fw-medium">Piutang/Jatuh Tempo:</td>
@@ -359,15 +345,14 @@
                 </div>
             </div>
 
-            <!-- Items Table -->
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">Detail Produk</h5>
+                    <h5 class="mb-0 fs-card-title">Detail Produk</h5>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         {% if sales_order.items.all %}
-<table class="table table-bordered">
+<table class="table table-hover">
                             <thead class="table-light">
                                 <tr>
                                     <th width="50">#</th>
@@ -397,7 +382,7 @@
                                 {% endfor %}
                             </tbody>
                             
-                            <tfoot class="table-light">
+                            <tfoot class="table-footer-summary">
                                 <tr>
                                     <td colspan="4" class="text-end fw-medium">Subtotal:</td>
                                     <td class="text-end">{{ sales_order.subtotal|rupiah }}</td>
@@ -446,6 +431,7 @@
 {% endblock content %}
 
 {% block page_js %}
+{{ block.super }}
 <script>
 function cancelSO(pk) {
     Swal.fire({

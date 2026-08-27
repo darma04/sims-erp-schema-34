@@ -10,6 +10,20 @@
 
 {% block title %}Detail Transfer Stok - Inventory ERP{% endblock title %}
 
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+{% endblock vendor_js %}
+
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="py-3 mb-4">
@@ -17,11 +31,11 @@
     </h4>
 
     <div class="row">
-        <!-- Info Transfer -->
+        
         <div class="col-md-12 mb-4">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Detail Transfer Stok</h5>
+                    <h5 class="mb-0 fs-card-title">Detail Transfer Stok</h5>
                     <div class="d-flex gap-2">
                         {% if can_edit.inventory %}
                         <a href="{% url 'inventory:transfer_edit' transfer.pk %}" class="btn btn-sm btn-warning">
@@ -106,16 +120,19 @@
             </div>
         </div>
 
-        <!-- Detail Items -->
         <div class="col-md-12">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Produk yang Ditransfer</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fs-card-title">Produk yang Ditransfer</h5>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcelFromButton(this)"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                        <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDFFromButton(this)"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover">
-                            <thead class="table-light">
+                {% if items %}
+                <div class="card-datatable table-responsive">
+                        <table id="transferStokItemsTable" class="accounting-data-table table table-bordered table-hover">
+                            <thead>
                                 <tr>
                                     <th width="50" class="text-center">#</th>
                                     <th>Nama Produk</th>
@@ -126,7 +143,6 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% if items %}
                                 {% for item in items %}
                                 <tr>
                                     <td class="text-center">{{ forloop.counter }}</td>
@@ -141,33 +157,50 @@
                                     <td>{{ item.catatan|default:"-" }}</td>
                                 </tr>
                                 {% endfor %}
-                                {% else %}
+                            </tbody>
+                            <tfoot class="table-footer-summary">
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted">
-                                        <i class="mdi mdi-information-outline me-1"></i>
-                                        Tidak ada item produk dalam transfer ini
+                                    <td colspan="5" class="text-start ps-4 py-3">
+                                        <div class="d-flex align-items-center justify-content-start">
+                                            <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                            <div class="text-start">
+                                                <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
+                                                <small class="text-muted" style="font-size: 0.75rem;">{{ items.count }} item produk ditransfer</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <span class="badge bg-label-primary d-flex align-items-center gap-1 mb-2" style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
+                                                <i class="ri-stack-line"></i><span>{{ items.count }} item</span>
+                                            </span>
+                                            <small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Item</small>
+                                        </div>
                                     </td>
                                 </tr>
-                                {% endif %}
-                            </tbody>
-                            {% if items %}
-                            <tfoot class="table-light">
-                                <tr>
-                                    <td colspan="3" class="text-end"><strong>Total Item:</strong></td>
-                                    <td class="text-end"><strong>{{ items.count }}</strong></td>
-                                    <td colspan="2"></td>
-                                </tr>
                             </tfoot>
-                            {% endif %}
                         </table>
+                </div>
+                {% else %}
+                <div class="card-body">
+                    <div class="text-center py-4 py-md-5 px-3 px-md-4">
+                        <div class="mb-4">
+                            <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 88px; height: 88px;">
+                                <i class="ri-arrow-left-right-line" style="font-size: 2.8rem;"></i>
+                            </div>
+                        </div>
+                        <h5 class="mb-3">Belum Ada Item Produk</h5>
+                        <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+                            Tidak ada item produk dalam transfer ini.
+                        </p>
                     </div>
                 </div>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal Konfirmasi Hapus -->
 {% if can_delete.inventory %}
 <div class="modal fade" id="deleteTransferDetailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -202,6 +235,8 @@
 {% endblock content %}
 
 {% block page_js %}
+{{ block.super }}
+{% include 'kas_bank/partials/list_tools.html' %}
 <script>
 {% if can_delete.inventory %}
     let deleteDetailId = null;

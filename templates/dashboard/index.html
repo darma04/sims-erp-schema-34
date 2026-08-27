@@ -125,8 +125,15 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 
-  #saleThisMonthChart {
-    min-height: 120px;
+  #saleThisMonthChart,
+  #neracaChart {
+    min-height: 50px;
+    overflow: visible;
+    position: relative;
+    z-index: 1;
+  }
+  #neracaChart .apexcharts-canvas {
+    margin: 0 auto;
   }
 
   /* ═══════════════════════════════════════════════════════════════════
@@ -256,6 +263,15 @@
 {{ sales_cabang_labels|json_script:"sales-cabang-labels" }}
 {{ sales_cabang_series|json_script:"sales-cabang-series" }}
 
+{{ akuntansi_neraca.aset|default:0|json_script:"neraca-aset" }}
+{{ akuntansi_neraca.kewajiban|default:0|json_script:"neraca-kewajiban" }}
+{{ akuntansi_neraca.modal|default:0|json_script:"neraca-modal" }}
+
+{{ laba_rugi_chart_data|json_script:"laba-rugi-chart-data" }}
+{{ laba_rugi_chart_labels|json_script:"laba-rugi-chart-labels" }}
+{{ neraca_chart_data|json_script:"neraca-chart-data" }}
+{{ neraca_chart_labels|json_script:"neraca-chart-labels" }}
+
 {{ block.super }}
 <script src="{% static 'vendor/libs/swiper/swiper.js' %}"></script>
 <script>
@@ -322,47 +338,134 @@
       }
     }
 
-    const chartLabels = readDashboardJson('sales-chart-labels', []);
-    const chartSeriesData = readDashboardJson('sales-chart-data', []);
+    const chartLabels = readDashboardJson('laba-rugi-chart-labels', []);
+    const chartSeriesData = readDashboardJson('laba-rugi-chart-data', []);
     const safeChartSeriesData = chartSeriesData.length ? chartSeriesData : [0];
     const safeChartLabels = chartLabels.length ? chartLabels : ['-'];
 
+    // Cek apakah semua data bernilai 0 — jika ya, tampilkan gelombang default
+    const allZero = safeChartSeriesData.every(function(v) { return v === 0; });
+    const displayData = allZero ? [1, 2, 1.2, 2.5, 1.5, 2.8, 0.8, 2.2, 1.8, 3.0, 1.0, 2.0] : safeChartSeriesData;
+    // Hitung min/max dinamis agar chart tidak keluar batas (overflow)
+    var lrDataMin = Math.min.apply(null, displayData);
+    var lrDataMax = Math.max.apply(null, displayData);
+    var lrRange = lrDataMax - lrDataMin;
+    var lrPad = Math.max(lrRange * 0.2, Math.abs(lrDataMax) * 0.1, Math.abs(lrDataMin) * 0.1, 1);
+    var lrChartMin = lrDataMin < 0 ? lrDataMin - lrPad : (allZero ? 0 : Math.max(0, lrDataMin - lrPad));
+    var lrChartMax = lrDataMax + lrPad;
+    if (allZero) { lrChartMin = 0; lrChartMax = 4; }
+
     const saleThisMonthChartConfig = {
         chart: {
-          height: 120,         // Tinggi chart 120px (compact)
+          height: 50,         // Tinggi chart 50px (compact)
           type: 'area',        // Tipe: area chart (garis + fill di bawah)
           parentHeightOffset: 0,
           toolbar: { show: false },   // Sembunyikan toolbar chart
-          sparkline: { enabled: true } // Mode sparkline (chart minimal tanpa axis)
+          sparkline: { enabled: true },
+          offsetY: 0
         },
         grid: {
           xaxis: { lines: { show: false } },
           yaxis: { lines: { show: false } },
-          padding: { top: 0, left: 0, right: 0, bottom: 0 }
+          padding: { top: 2, left: 0, right: 0, bottom: 2 }
         },
         tooltip: {
           enabled: true,
-          x: { show: true, formatter: function (val, opts) { return 'Tgl ' + (safeChartLabels[opts.dataPointIndex] || val); } },
-          y: { formatter: function (val) { return 'Rp ' + val.toLocaleString('id-ID'); } }
+          shared: false,
+          intersect: false,
+          theme: isDarkStyle ? 'dark' : 'light',
+          style: { fontSize: '12px' },
+          x: { show: true, formatter: function (val, opts) { return (safeChartLabels[opts.dataPointIndex] || val); } },
+          y: { formatter: function (val) { return 'Rp ' + (allZero ? 0 : val).toLocaleString('id-ID'); } },
+          marker: { show: false }
         },
         colors: [config.colors.primary],
         fill: {
-          type: 'gradient',
-          gradient: { shade: 'light', type: 'vertical', shadeIntensity: 0.4, opacityFrom: 0.8, opacityTo: 0.1, stops: [0, 100] }
+          type: 'solid',
+          opacity: 0
         },
         stroke: { width: 2, curve: 'smooth' },
-        series: [{ name: 'Penjualan', data: safeChartSeriesData }],
+        series: [{ name: 'Penjualan', data: displayData }],
         xaxis: {
           labels: { show: false },
           axisTicks: { show: false },
           axisBorder: { show: false },
           categories: safeChartLabels
         },
-        yaxis: { min: 0, labels: { show: false } }
+        yaxis: { min: lrChartMin, max: lrChartMax, labels: { show: false }, forceNiceScale: true }
       };
     if (saleThisMonthChartEl) {
-      const saleThisMonthChart = new ApexCharts(saleThisMonthChartEl, saleThisMonthChartConfig);
-      saleThisMonthChart.render();
+      try {
+        const saleThisMonthChart = new ApexCharts(saleThisMonthChartEl, saleThisMonthChartConfig);
+        saleThisMonthChart.render();
+        window.__saleThisMonthChart = saleThisMonthChart;
+      } catch(e) { console.error('Gagal merender chart penjualan:', e); }
+    }
+
+    // --- Neraca Area Sparkline Chart (persis seperti Laba Rugi) ---
+    const neracaChartEl2 = document.querySelector('#neracaChart');
+
+    const neracaChartLabels = readDashboardJson('neraca-chart-labels', []);
+    const neracaChartData = readDashboardJson('neraca-chart-data', []);
+    const safeNeracaData = neracaChartData.length ? neracaChartData : [0];
+    const safeNeracaLabels = neracaChartLabels.length ? neracaChartLabels : ['-'];
+
+    const neracaAllZero = safeNeracaData.every(function(v) { return v === 0; });
+    const neracaDisplayData = neracaAllZero ? [1, 2, 1.2, 2.5, 1.5, 2.8, 0.8, 2.2, 1.8, 3.0, 1.0, 2.0] : safeNeracaData;
+    // Hitung min/max dinamis agar chart tidak keluar batas (overflow)
+    var nrDataMin = Math.min.apply(null, neracaDisplayData);
+    var nrDataMax = Math.max.apply(null, neracaDisplayData);
+    var nrRange = nrDataMax - nrDataMin;
+    var nrPad = Math.max(nrRange * 0.2, Math.abs(nrDataMax) * 0.1, Math.abs(nrDataMin) * 0.1, 1);
+    var nrChartMin = nrDataMin < 0 ? nrDataMin - nrPad : (neracaAllZero ? 0 : Math.max(0, nrDataMin - nrPad));
+    var nrChartMax = nrDataMax + nrPad;
+    if (neracaAllZero) { nrChartMin = 0; nrChartMax = 4; }
+
+    const neracaChartConfig = {
+        chart: {
+          height: 50,
+          type: 'area',
+          parentHeightOffset: 0,
+          toolbar: { show: false },
+          sparkline: { enabled: true },
+          offsetY: 0
+        },
+        grid: {
+          xaxis: { lines: { show: false } },
+          yaxis: { lines: { show: false } },
+          padding: { top: 2, left: 0, right: 0, bottom: 2 }
+        },
+        tooltip: {
+          enabled: true,
+          shared: false,
+          intersect: false,
+          theme: isDarkStyle ? 'dark' : 'light',
+          style: { fontSize: '12px' },
+          x: { show: true, formatter: function (val, opts) { return (safeNeracaLabels[opts.dataPointIndex] || val); } },
+          y: { formatter: function (val) { return 'Rp ' + (neracaAllZero ? 0 : val).toLocaleString('id-ID'); } },
+          marker: { show: false }
+        },
+        colors: [config.colors.primary],
+        fill: {
+          type: 'solid',
+          opacity: 0
+        },
+        stroke: { width: 2, curve: 'smooth' },
+        series: [{ name: 'Aset', data: neracaDisplayData }],
+        xaxis: {
+          labels: { show: false },
+          axisTicks: { show: false },
+          axisBorder: { show: false },
+          categories: safeNeracaLabels
+        },
+        yaxis: { min: nrChartMin, max: nrChartMax, labels: { show: false }, forceNiceScale: true }
+      };
+    if (neracaChartEl2) {
+      try {
+        const neracaChart = new ApexCharts(neracaChartEl2, neracaChartConfig);
+        neracaChart.render();
+        window.__neracaChart = neracaChart;
+      } catch(e) { console.error('Gagal merender chart neraca:', e); }
     }
 
     // (Bagian chart Pembelian/Biaya, Keuntungan per Cabang, dan Biaya per Kategori telah dihapus)
@@ -553,10 +656,24 @@
 
     var labelsEl = document.getElementById('sales-cabang-labels');
     var seriesEl = document.getElementById('sales-cabang-series');
-    if (!labelsEl || !seriesEl) return;
-
-    var labels = JSON.parse(labelsEl.textContent);
-    var series = JSON.parse(seriesEl.textContent);
+    
+    // Safe fallback with zero-fill when data is empty
+    var labels = labelsEl ? JSON.parse(labelsEl.textContent || '[]') : [];
+    var series = seriesEl ? JSON.parse(seriesEl.textContent || '[]') : [];
+    
+    if (!labels || labels.length === 0) {
+      labels = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'];
+    }
+    if (!series || series.length === 0) {
+      series = [{ name: 'Penjualan', data: Array(labels.length).fill(0) }];
+    } else {
+      series = series.map(function(s) {
+        if (!s.data || s.data.length === 0) {
+          s.data = Array(labels.length).fill(0);
+        }
+        return s;
+      });
+    }
 
     // Palet warna modern — sesuai Materialize & dark mode
     var chartColors = [
@@ -575,18 +692,7 @@
         height: 380,
         fontFamily: 'Inter, -apple-system, sans-serif',
         background: 'transparent',
-        toolbar: {
-          show: true,
-          tools: {
-            download: '<i class="ri-download-2-line" style="font-size:16px"></i>',
-            selection: false,
-            zoom: false,
-            zoomin: false,
-            zoomout: false,
-            pan: false,
-            reset: false
-          }
-        },
+        toolbar: { show: false },
         animations: {
           enabled: true,
           easing: 'easeinout',
@@ -702,11 +808,16 @@
             stroke: { width: 2 }
           }
         }
-      ]
+      ],
+      noData: {
+        text: 'Tidak ada data',
+        align: 'center',
+        verticalAlign: 'middle',
+        style: { color: isDarkStyle ? '#b4b5ba' : '#6e6b7b', fontSize: '13px' }
+      }
     };
 
-    var chart = new ApexCharts(chartEl, options);
-    chart.render();
+    var chart; try { chart = new ApexCharts(chartEl, options); chart.render(); window.__salesPerCabangChart = chart; } catch(e) { console.error('Gagal merender chart:', e); }
   });
   // Aktifkan semua tooltip di halaman (elemen dengan data-bs-toggle="tooltip")
   document.addEventListener('DOMContentLoaded', function () {
@@ -724,6 +835,123 @@
 {# ══════════════════════════════════════════════════════════════════════ #}
 {% block content %}
 {# Filter waktu sudah dipindahkan ke icon di navbar #}
+
+<!-- ========== PAGE LOADER (After Login) ========== -->
+<style>
+  .dashboard-page-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--bs-body-bg, #fff);
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+  }
+  .dashboard-page-loader.loaded {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .dashboard-page-loader .loader-logo {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    animation: dashLoaderSpin 1.2s linear infinite;
+  }
+  .dashboard-page-loader .loader-bar-track {
+    width: 180px;
+    height: 3px;
+    background: var(--bs-border-color, #e0e0e0);
+    border-radius: 9999px;
+    margin-top: 24px;
+    overflow: hidden;
+  }
+  .dashboard-page-loader .loader-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(135deg, #666CFF 0%, #5A3FD6 100%);
+    border-radius: 9999px;
+    animation: dashLoaderFill 1.6s ease-out forwards;
+  }
+  .dashboard-page-loader .loader-text {
+    margin-top: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--bs-secondary-color, #a5a3ae);
+  }
+  @keyframes dashLoaderSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  @keyframes dashLoaderFill {
+    0% { width: 0%; }
+    60% { width: 75%; }
+    100% { width: 100%; }
+  }
+  [data-theme="dark"] .dashboard-page-loader,
+  .dark-style .dashboard-page-loader {
+    background: var(--bs-body-bg, #1f2937);
+  }
+  [data-theme="dark"] .dashboard-page-loader .loader-bar-track,
+  .dark-style .dashboard-page-loader .loader-bar-track {
+    background: var(--bs-border-color, #374151);
+  }
+</style>
+
+<div class="dashboard-page-loader" id="dashboardPageLoader">
+  {% if system_logo_url %}
+  <img class="loader-logo" src="{{ system_logo_url }}" alt="{{ system_title|default:'ERP System' }}" onerror="this.onerror=null; this.src='{% static 'img/favicon/logo-default.png' %}';">
+  {% else %}
+  <img class="loader-logo" src="{% static 'img/favicon/logo-default.png' %}" alt="{{ system_title|default:'ERP System' }}">
+  {% endif %}
+  <div class="loader-bar-track">
+    <div class="loader-bar-fill"></div>
+  </div>
+  <span class="loader-text">Memuat ...</span>
+</div>
+
+<script>
+(function() {
+  'use strict';
+  var justLoggedIn = sessionStorage.getItem('justLoggedIn');
+  if (justLoggedIn === 'true') {
+    sessionStorage.removeItem('justLoggedIn');
+  }
+  if (justLoggedIn !== 'true') {
+    var loader = document.getElementById('dashboardPageLoader');
+    if (loader) loader.remove();
+    return;
+  }
+  var state = { hidden: false, startTime: Date.now() };
+  var CONFIG = { minDisplay: 400, maxDuration: 3000 };
+  function hideLoader() {
+    if (state.hidden) return;
+    state.hidden = true;
+    var elapsed = Date.now() - state.startTime;
+    var delay = Math.max(0, CONFIG.minDisplay - elapsed);
+    setTimeout(function() {
+      var loader = document.getElementById('dashboardPageLoader');
+      if (loader) {
+        loader.classList.add('loaded');
+        setTimeout(function() { if (loader.parentNode) loader.remove(); }, 500);
+      }
+    }, delay);
+  }
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(hideLoader, 100);
+  } else {
+    document.addEventListener('DOMContentLoaded', function() { setTimeout(hideLoader, 100); });
+  }
+  setTimeout(hideLoader, CONFIG.maxDuration);
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && !state.hidden) hideLoader();
+  });
+})();
+</script>
 
 <!-- Label Sumber Data Dashboard -->
 <div class="mb-4">
@@ -743,67 +971,67 @@
   <!-- Data dari: sales_overview context variable -->
   <div class="col-lg-6">
     <div class="card h-100">
-      <div class="card-header">
-        <div class="d-flex justify-content-between">
-          <h5 class="mb-1">Ringkasan Penjualan</h5>
-          <div class="dropdown">
-            <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button"
-              data-bs-toggle="dropdown">
-              <i class="ri-more-2-line ri-20px"></i>
-            </button>
-            <div class="dropdown-menu dropdown-menu-end">
-              <a class="dropdown-item" href="javascript:window.location.reload();"><i
-                  class="ri-loop-left-line me-2"></i>Refresh Data</a>
-              <a class="dropdown-item" href="{% url 'laporan:keuangan' %}"><i class="ri-file-chart-line me-2"></i>Lihat
-                Laporan</a>
-              <a class="dropdown-item" href="{% url 'penjualan:sales-order' %}"><i
-                  class="ri-shopping-cart-line me-2"></i>Lihat Penjualan</a>
+      <div class="card-header d-flex flex-nowrap justify-content-between align-items-center">
+        <div class="me-2">
+          <h5 class="mb-1 fs-card-title"><i class="ri-bar-chart-2-line me-2 text-primary" style="color: var(--bs-primary)"></i>Ringkasan Penjualan</h5>
+          <div class="d-flex align-items-center card-subtitle">
+            <div class="me-2">Total {{ sales_overview.total_sales }} Penjualan</div>
+            <div class="d-flex align-items-center text-success">
+              <p class="mb-0 fw-medium fs-value-secondary">+{{ sales_overview.growth }}%</p>
+              <i class="ri-arrow-up-s-line ri-20px"></i>
             </div>
           </div>
         </div>
-        <div class="d-flex align-items-center card-subtitle">
-          <div class="me-2">Total {{ sales_overview.total_sales }} Penjualan</div>
-          <div class="d-flex align-items-center text-success">
-            <p class="mb-0 fw-medium">+{{ sales_overview.growth }}%</p>
-            <i class="ri-arrow-up-s-line ri-20px"></i>
+        <div class="dropdown flex-shrink-0">
+          <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button"
+            data-bs-toggle="dropdown">
+            <i class="ri-more-2-line ri-20px"></i>
+          </button>
+          <div class="dropdown-menu dropdown-menu-end">
+            <a class="dropdown-item" href="javascript:window.location.reload();"><i
+                class="ri-loop-left-line me-2"></i>Refresh Data</a>
+            <a class="dropdown-item" href="{% url 'laporan:keuangan' %}"><i class="ri-file-chart-line me-2"></i>Lihat
+              Laporan</a>
+            <a class="dropdown-item" href="{% url 'penjualan:sales-order' %}"><i
+                class="ri-shopping-cart-line me-2"></i>Lihat Penjualan</a>
           </div>
         </div>
       </div>
-      <div class="card-body d-flex justify-content-between flex-wrap gap-4">
-        <div class="d-flex align-items-center gap-3">
-          <div class="avatar">
-            <div class="avatar-initial bg-label-primary rounded">
-              <i class="ri-safe-2-line ri-24px"></i>
-            </div>
+      <div class="card-body row g-1 g-sm-3">
+        <div class="col-4 d-flex flex-column flex-sm-row align-items-center text-center text-sm-start gap-1 gap-sm-2">
+          <div class="avatar avatar-sm d-none d-sm-flex me-2 me-sm-3 flex-shrink-0">
+            <span class="avatar-initial rounded bg-label-primary">
+                <i class="ri-safe-2-line ri-18px ri-sm-24px"></i>
+              </span>
           </div>
           <div class="card-info">
-            <h5 class="mb-0" data-bs-toggle="tooltip" data-bs-placement="top"
+            <h5 class="mb-0 fs-value-secondary" data-bs-toggle="tooltip" data-bs-placement="top"
               title="Total harga beli × qty historis (stok + terjual SO + terjual POS konversi + adj_out) dari semua produk">{{ sales_overview.total_keseluruhan_aset|rupiah }}</h5>
-            <p class="mb-0">Total Aset</p>
+            <small class="text-muted d-block fs-value-secondary">Aset</small>
           </div>
         </div>
-        <div class="d-flex align-items-center gap-3">
-          <div class="avatar">
-            <div class="avatar-initial bg-label-danger rounded">
-              <i class="ri-shopping-cart-2-line ri-24px"></i>
-            </div>
+        <div class="col-4 d-flex flex-column flex-sm-row align-items-center text-center text-sm-start gap-1 gap-sm-2">
+          <div class="avatar avatar-sm d-none d-sm-flex me-2 me-sm-3 flex-shrink-0">
+            <span class="avatar-initial rounded bg-label-danger">
+                <i class="ri-shopping-cart-2-line ri-18px ri-sm-24px"></i>
+              </span>
           </div>
           <div class="card-info">
-            <h5 class="mb-0" data-bs-toggle="tooltip" data-bs-placement="top"
+            <h5 class="mb-0 fs-value-secondary" data-bs-toggle="tooltip" data-bs-placement="top"
               title="Total harga beli × stok dari produk yang masih tersedia (stok > 0)">{{ sales_overview.total_harga_beli|rupiah }}</h5>
-            <p class="mb-0">Total Harga Beli</p>
+            <small class="text-muted d-block fs-value-secondary">Harga Beli</small>
           </div>
         </div>
-        <div class="d-flex align-items-center gap-3">
-          <div class="avatar">
-            <div class="avatar-initial bg-label-success rounded">
-              <i class="ri-price-tag-3-line ri-24px"></i>
-            </div>
+        <div class="col-4 d-flex flex-column flex-sm-row align-items-center text-center text-sm-start gap-1 gap-sm-2">
+          <div class="avatar avatar-sm d-none d-sm-flex me-2 me-sm-3 flex-shrink-0">
+            <span class="avatar-initial rounded bg-label-success">
+                <i class="ri-price-tag-3-line ri-18px ri-sm-24px"></i>
+              </span>
           </div>
           <div class="card-info">
-            <h5 class="mb-0" data-bs-toggle="tooltip" data-bs-placement="top"
+            <h5 class="mb-0 fs-value-secondary" data-bs-toggle="tooltip" data-bs-placement="top"
               title="Total harga jual × stok dari produk yang masih tersedia (stok > 0)">{{ sales_overview.total_harga_jual|rupiah }}</h5>
-            <p class="mb-0">Total Harga Jual</p>
+            <small class="text-muted d-block fs-value-secondary">Harga Jual</small>
           </div>
         </div>
       </div>
@@ -811,214 +1039,205 @@
   </div>
   <!--/ Sales Overview-->
 
-  <!-- Estimasi Keuntungan -->
+  <!-- Arus Kas (Accounting) -->
   <div class="col-6 col-lg-3">
     <div class="card h-100">
       <div class="card-body position-relative">
         <div class="card-info mb-3">
-          <h6 class="mb-2 text-nowrap">Total Keuntungan</h6>
+          <h5 class="mb-1 fs-card-title" data-bs-toggle="tooltip" data-bs-placement="top"
+            title="Arus Kas (Cash Flow): Selisih antara kas masuk dan kas keluar dalam periode filter. Sumber data: modul Kas & Bank (KasBankTransaction). Rumus: Net = SUM(kas_masuk) - SUM(kas_keluar) dimana status='posted'. Kas masuk = tipe 'masuk', 'transfer_masuk', 'penyesuaian_masuk'. Kas keluar = tipe 'keluar', 'transfer_keluar', 'penyesuaian_keluar'. Saldo = saldo_awal + total_masuk - total_keluar dari semua KasBankAccount aktif."><i class="ri-exchange-dollar-line me-2 text-primary" style="color: var(--bs-primary)"></i>Arus Kas {{ akuntansi_arus_kas.label }}</h5>
           <div
-            class="badge {% if sales_overview.estimasi_keuntungan >= 0 %}bg-label-success{% else %}bg-label-danger{% endif %} rounded-pill lh-xs">
-            {% if sales_overview.estimasi_keuntungan >= 0 %}Estimasi{% else %}Loss{% endif %}
+            class="badge {% if akuntansi_arus_kas.is_positif %}bg-label-success{% else %}bg-label-danger{% endif %} rounded-pill lh-xs fs-value-secondary">
+            {% if akuntansi_arus_kas.is_positif %}Surplus{% else %}Defisit{% endif %}
           </div>
         </div>
-        <div class="d-flex align-items-center flex-wrap gap-2">
-          <h4 class="mb-0" data-bs-toggle="tooltip" data-bs-placement="top"
-            title="Selisih antara Total Harga Jual dan Total Harga Beli dari produk yang masih ready (stok > 0)">{{ sales_overview.estimasi_keuntungan|rupiah }}</h4>
+        <div class="mb-2">
+          <h4 class="mb-0 fs-value-primary"
+            data-bs-toggle="tooltip" data-bs-placement="top"
+            title="Selisih kas masuk dan kas keluar hari ini dari transaksi posted di modul Kas & Bank">
+            {% if akuntansi_arus_kas.is_positif %}+{% endif %}{{ akuntansi_arus_kas.net_hari_ini|rupiah }}</h4>
         </div>
-        <small
-          class="{% if sales_overview.estimasi_keuntungan >= 0 %}text-success{% else %}text-danger{% endif %} fw-medium mt-1 d-block">Produk
-          ready (stok > 0)</small>
-        <div class="position-absolute" style="top: 1.5rem; right: 1.5rem;">
-          <div class="avatar">
-            <div
-              class="avatar-initial {% if sales_overview.estimasi_keuntungan >= 0 %}bg-label-success{% else %}bg-label-danger{% endif %} rounded">
-              <i class="ri-line-chart-line ri-26px"></i>
-            </div>
-          </div>
+        <div class="d-flex justify-content-between mt-2">
+          <small class="fw-medium fs-value-secondary text-success">
+            <i class="ri-arrow-down-line"></i> {{ akuntansi_arus_kas.kas_masuk_hari_ini|rupiah }}
+          </small>
+          <small class="fw-medium fs-value-secondary text-danger">
+            <i class="ri-arrow-up-line"></i> {{ akuntansi_arus_kas.kas_keluar_hari_ini|rupiah }}
+          </small>
         </div>
+        <small class="text-muted d-block mt-1 fs-value-secondary" data-bs-toggle="tooltip" data-bs-placement="bottom"
+          title="Total saldo semua akun kas dan bank yang aktif">
+          Saldo: {{ akuntansi_arus_kas.saldo_total|rupiah }}</small>
+        
       </div>
     </div>
   </div>
-  <!--/ Estimasi Keuntungan -->
+  <!--/ Arus Kas -->
 
   <!-- Keuntungan (Profit) -->
   <div class="col-6 col-lg-3">
     <div class="card h-100">
       <div class="card-body position-relative">
         <div class="card-info mb-3">
-          <h6 class="mb-2 text-nowrap">Keuntungan Kotor</h6>
+          <h5 class="mb-1 fs-card-title"><i class="ri-money-dollar-circle-line me-2 text-primary" style="color: var(--bs-primary)"></i>Keuntungan Kotor</h5>
           <div
-            class="badge {% if profit_data.is_profit %}bg-label-success{% else %}bg-label-danger{% endif %} rounded-pill lh-xs">
+            class="badge {% if profit_data.is_profit %}bg-label-success{% else %}bg-label-danger{% endif %} rounded-pill lh-xs fs-value-secondary">
             {% if profit_data.is_profit %}Keuntungan{% else %}Loss{% endif %}</div>
         </div>
         <div class="mb-2">
-          <h4 class="mb-0 text-truncate" data-bs-toggle="tooltip" data-bs-placement="top"
+          <h4 class="mb-0 fs-value-primary text-truncate" data-bs-toggle="tooltip" data-bs-placement="top"
             title="Keuntungan kotor = pendapatan bersih tanpa PPN - HPP dari barang terjual. SO menghitung subtotal setelah diskon termasuk ongkir; POS menghitung subtotal setelah diskon. Qty SO memakai qty transaksi, POS memakai qty konversi satuan dasar.">{{ profit_data.gross_profit|rupiah }}</h4>
         </div>
         <div>
-          <small class="{% if profit_data.is_profit %}text-success{% else %}text-danger{% endif %} fw-medium"
+          <small class="{% if profit_data.is_profit %}text-success{% else %}text-danger{% endif %} fw-medium fs-value-secondary"
             data-bs-toggle="tooltip" data-bs-placement="bottom"
             title="Profit Margin = Keuntungan Kotor / Pendapatan Bersih x 100%. Pendapatan SO termasuk ongkir, dan PPN tidak dihitung sebagai pendapatan.">{% if profit_data.is_profit %}+{% endif %}{{ profit_data.margin_percent }}% margin</small>
         </div>
-        <div class="position-absolute" style="top: 1.5rem; right: 1.5rem;">
-          <div class="avatar">
-            <div
-              class="avatar-initial {% if profit_data.is_profit %}bg-label-success{% else %}bg-label-danger{% endif %} rounded">
-              <i class="ri-money-dollar-circle-line ri-26px"></i>
-            </div>
-          </div>
-        </div>
+        
       </div>
     </div>
   </div>
   <!--/ Keuntungan -->
 
   <!-- Weekly Sales with bg-->
-  <div class="col-lg-6">
-    <div class="swiper-container swiper-container-horizontal swiper text-bg-primary h-100"
-      id="swiper-weekly-sales-with-bg">
-      <div class="swiper-wrapper">
-        {% for week_data in weekly_sales_data %}
-        <div class="swiper-slide pb-5">
-          <div class="row">
-            <div class="col-12">
-              <h5 class="text-white mb-0">{{ week_data.category }}</h5>
-              <div class="d-flex align-items-center gap-2">
-                <div>Total {{ week_data.earning }} Pendapatan Bersih</div>
-                <div class="d-flex align-items-center text-success">
-                  <p class="mb-0 fw-medium">{{ week_data.growth }} Trx</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-lg-7 col-md-9 col-12 order-2 order-md-1">
-              <h6 class="text-white mt-0 mt-md-4 mb-4 py-1">{{ week_data.category }}</h6>
-              <div class="row g-2">
-                {% for item in week_data.items %}
-                <div class="col-6">
-                  <div class="d-flex mb-2 align-items-center">
-                    <p class="mb-0 me-2 weekly-sales-text-bg-primary fw-medium">{{ item.count }}</p>
-                    <p class="mb-0 text-truncate" style="font-size: 0.85rem;">{{ item.name }}</p>
+  <div class="col-lg-6 col-md-6">
+    <div class="card h-100">
+      <div class="swiper-container swiper-container-horizontal swiper text-bg-primary h-100"
+        id="swiper-weekly-sales-with-bg">
+        <div class="swiper-wrapper">
+          {% for week_data in weekly_sales_data %}
+          <div class="swiper-slide pb-5">
+            <div class="row h-100">
+              <div class="col-12">
+                <h5 class="text-white mb-0">{{ week_data.category }}</h5>
+                <div class="d-flex align-items-center gap-2">
+                  <div>Total {{ week_data.earning }} Pendapatan Bersih</div>
+                  <div class="d-flex align-items-center text-success">
+                    <p class="mb-0 fw-medium fs-value-secondary">{{ week_data.growth }} Trx</p>
                   </div>
                 </div>
-                {% endfor %}
+              </div>
+              <div class="col-lg-7 col-md-9 col-12 order-2 order-md-1">
+                <h6 class="text-white mt-0 mt-md-4 mb-4 py-1">{{ week_data.category }}</h6>
+                <div class="row g-2">
+                  {% for item in week_data.items %}
+                  <div class="col-6">
+                    <div class="d-flex mb-2 align-items-center">
+                      <p class="mb-0 me-2 weekly-sales-text-bg-primary fw-medium fs-value-secondary">{{ item.count }}</p>
+                      <p class="mb-0 text-truncate fs-value-secondary">{{ item.name }}</p>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+              <div class="col-lg-5 col-md-3 col-12 order-1 order-md-2 my-2 my-md-0 d-flex align-items-center justify-content-center">
+                {% if week_data.product_image %}
+                <img src="{{ week_data.product_image.url }}" alt="{{ week_data.category }}"
+                  class="weekly-sales-img rounded-3">
+              {% else %}
+                <img src="{% static 'img/products/card-weekly-sales-phone.png' %}" alt="{{ week_data.category }}"
+                  class="weekly-sales-img">
+              {% endif %}
               </div>
             </div>
-            <div class="col-lg-5 col-md-3 col-12 order-1 order-md-2 my-2 my-md-0 text-center">
-              {% if week_data.product_image %}
-              <img src="{{ week_data.product_image.url }}" alt="{{ week_data.category }}" width="200"
-                class="weekly-sales-img rounded-3" style="object-fit: cover; max-height: 200px;">
-              {% else %}
-              <img src="{% static 'img/products/card-weekly-sales-phone.png' %}" alt="{{ week_data.category }}"
-                width="200" class="weekly-sales-img">
-              {% endif %}
-            </div>
           </div>
+          {% endfor %}
         </div>
-        {% endfor %}
+        <div class="swiper-pagination"></div>
       </div>
-      <div class="swiper-pagination"></div>
     </div>
   </div>
   <!--/ Weekly Sales with bg-->
 
-  <!-- Total Visits -->
-  <div class="col-lg-3 col-sm-6">
+  <div class="col-lg-3 col-md-3 col-6">
     <div class="card h-100">
-      <div class="card-header">
-        <div class="d-flex justify-content-between flex-wrap gap-2">
-          <p class="d-block mb-0 text-body">Gudang & Produk</p>
-          <div class="d-flex align-items-center">
-            <div class="avatar">
-              <div class="avatar-initial bg-label-success rounded">
-                <i class="ri-checkbox-circle-line ri-24px"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-        <h4 class="mb-0" data-bs-toggle="tooltip" data-bs-placement="top"
-          title="Jumlah gudang/cabang aktif yang terdaftar dalam sistem">{{ cabang_data.total_gudang }} Gudang</h4>
-      </div>
-      <div class="card-body">
-        <div class="row">
-          <div class="col-5">
-            <div class="d-flex gap-2 align-items-center mb-2">
-              <div class="avatar avatar-xs flex-shrink-0">
-                <div class="avatar-initial rounded bg-label-warning">
-                  <i class="ri-home-8-line ri-16px"></i>
-                </div>
-              </div>
-              <p class="mb-0">Gudang</p>
-            </div>
-            <h4 class="mb-2" data-bs-toggle="tooltip" data-bs-placement="top" title="Jumlah gudang/cabang yang aktif">{{ cabang_data.total_gudang }}</h4>
-          </div>
-          <div class="col-2">
-            <div class="divider divider-vertical">
-              <div class="divider-text">
-                <span class="badge-divider-bg">:</span>
-              </div>
-            </div>
-          </div>
-          <div class="col-5 text-end">
-            <div class="d-flex gap-2 justify-content-end align-items-center mb-2">
-              <p class="mb-0">Produk</p>
-              <div class="avatar avatar-xs flex-shrink-0">
-                <div class="avatar-initial rounded bg-label-primary">
-                  <i class="ri-box-3-line ri-16px"></i>
-                </div>
-              </div>
-            </div>
-            <h4 class="mb-2" data-bs-toggle="tooltip" data-bs-placement="top"
-              title="Total produk aktif yang tersedia di sistem">{{ cabang_data.total_produk }}</h4>
-          </div>
-        </div>
-        <div class="d-flex align-items-center mt-4">
-          <div class="progress w-100 rounded" style="height: 8px;">
-            <div class="progress-bar bg-warning" style="width: {{ cabang_data.gudang_percent }}%" role="progressbar">
-            </div>
-            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ cabang_data.produk_percent }}%">
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!--/ Total Visits -->
-
-  <!-- Sales This Months -->
-  <div class="col-lg-3 col-sm-6">
-    <div class="card h-100">
-      <div class="card-body position-relative">
+      <div class="card-body position-relative d-flex flex-column">
         <div class="card-info mb-3">
-          <h5 class="mb-2">Bulan Ini</h5>
-          <p class="mb-0">Pendapatan Bersih</p>
-          <h5 class="mb-0" data-bs-toggle="tooltip" data-bs-placement="top"
-            title="Pendapatan bersih dari Sales Order + POS. SO dihitung setelah diskon termasuk ongkir, POS setelah diskon, tanpa PPN. Periode: {{ sales_this_month_label }}">{{ sales_this_month|rupiah }}</h5>
+          <h5 class="mb-2 fs-card-title" data-bs-toggle="tooltip" data-bs-placement="top"
+            title="Neraca (Statement of Financial Position): Ringkasan posisi keuangan dari Chart of Accounts (CoA). AKTIVA = harta perusahaan. PASIVA = sumber pendanaan (kewajiban + modal). Persamaan dasar: Aktiva = Kewajiban + Modal. Data dari jurnal posted s/d {{ akuntansi_neraca.per_tanggal }}.">
+            <i class="ri-scales-3-line me-2 text-primary" style="color: var(--bs-primary)"></i>Posisi Keuangan (Neraca)</h5>
+          <span class="badge {% if akuntansi_neraca.is_healthy %}bg-label-success{% else %}bg-label-danger{% endif %} rounded-pill lh-xs fs-value-secondary"
+            data-bs-toggle="tooltip" data-bs-placement="top"
+            title="Current Ratio = Aktiva Lancar / Kewajiban Lancar. Rasio > 1.0 = likuid (sehat). Rumus: (Debit akun 1-1xxx - Kredit 1-1xxx) / (Kredit 2-1xxx - Debit 2-1xxx)">
+            CR: {{ akuntansi_neraca.current_ratio }}x
+            {% if akuntansi_neraca.is_healthy %}(Likuid){% else %}(Ketat){% endif %}
+          </span>
         </div>
-        <div class="position-absolute" style="top: 1.5rem; right: 1.5rem;">
-          <div class="avatar">
-            <div class="avatar-initial bg-label-primary rounded">
-              <i class="ri-line-chart-line ri-24px"></i>
-            </div>
+        <h4 class="mb-1 fs-value-primary" data-bs-toggle="tooltip" data-bs-placement="top"
+          title="AKTIVA: Seluruh harta perusahaan. Akun CoA tipe 'aset' (1-xxxx). Rumus: SUM(debit) - SUM(kredit) dari jurnal posted.">
+          {{ akuntansi_neraca.aset|rupiah }}</h4>
+        <small class="text-muted fw-medium mb-2">Aktiva — Per {{ akuntansi_neraca.per_tanggal }}</small>
+        <div id="neracaChart" class="mb-2" style="margin-left: -0.5rem; margin-right: -0.5rem;"></div>
+        <div class="d-flex justify-content-between mt-auto">
+          <div>
+            <small class="text-muted d-block" data-bs-toggle="tooltip" data-bs-placement="top"
+              title="PASIVA - Kewajiban: Utang ke pihak ketiga. Akun CoA tipe 'kewajiban' (2-xxxx). Rumus: SUM(kredit) - SUM(debit).">
+              Kewajiban</small>
+            <small class="text-danger fw-medium fs-value-secondary">{{ akuntansi_neraca.kewajiban|rupiah }}</small>
+          </div>
+          <div class="text-end">
+            <small class="text-muted d-block" data-bs-toggle="tooltip" data-bs-placement="top"
+              title="PASIVA - Modal (Ekuitas): Hak pemilik. Akun CoA tipe 'modal' (3-xxxx). Rumus: SUM(kredit) - SUM(debit).">
+              Modal</small>
+            <small class="text-success fw-medium fs-value-secondary">{{ akuntansi_neraca.modal|rupiah }}</small>
           </div>
         </div>
-        <div id="saleThisMonthChart"></div>
       </div>
     </div>
   </div>
-  <!--/ Sales This Months -->
+
+  <!-- Laba Rugi (Accounting) -->
+  <div class="col-lg-3 col-md-3 col-6">
+    <div class="card h-100">
+      <div class="card-body position-relative d-flex flex-column">
+        <div class="card-info mb-3">
+          <h5 class="mb-2 fs-card-title" data-bs-toggle="tooltip" data-bs-placement="top"
+            title="Laba Rugi (Income Statement) periode {{ akuntansi_laba_rugi.periode_label }}. Rumus: Laba/Rugi = Pendapatan - Beban. Pendapatan = SUM(kredit) akun CoA tipe 'pendapatan' (kode 4-xxxx). Beban = SUM(debit) akun CoA tipe 'beban' (kode 6-xxxx) + 'HPP' (kode 5-xxxx). Hanya menghitung jurnal yang sudah di-post (is_posted=True) dari tanggal 1 bulan ini. Margin = Laba / Pendapatan x 100%. Ini berbeda dari 'Estimasi Keuntungan' operasional yang hanya menghitung selisih harga jual dan beli produk.">
+            <i class="ri-funds-line me-2 text-primary" style="color: var(--bs-primary)"></i>Laba Rugi {{ akuntansi_laba_rugi.periode_label }}</h5>
+          <div
+            class="badge {% if akuntansi_laba_rugi.is_profit %}bg-label-success{% else %}bg-label-danger{% endif %} rounded-pill lh-xs fs-value-secondary">
+            {% if akuntansi_laba_rugi.is_profit %}Laba{% else %}Rugi{% endif %}
+          </div>
+        </div>
+        
+        <h4 class="mb-1 fs-value-primary"
+          data-bs-toggle="tooltip" data-bs-placement="top"
+          title="Laba/Rugi = Pendapatan (akun 4-xxxx) - Beban (akun 6-xxxx & 7-xxxx) dari jurnal yang sudah di-post bulan ini">
+          {{ akuntansi_laba_rugi.laba_rugi|rupiah }}</h4>
+        <small class="fw-medium mb-2 fs-value-secondary {% if akuntansi_laba_rugi.is_profit %}text-success{% else %}text-danger{% endif %}">
+          Margin: {% if akuntansi_laba_rugi.is_profit %}+{% endif %}{{ akuntansi_laba_rugi.margin_percent }}%</small>
+        <div id="saleThisMonthChart" class="mb-2" style="margin-left: -0.5rem; margin-right: -0.5rem;"></div>
+        <div class="d-flex justify-content-between mt-auto">
+          <div>
+            <small class="text-muted d-block" data-bs-toggle="tooltip" data-bs-placement="top"
+              title="Total Pendapatan (Revenue): Jumlah semua kredit pada akun tipe 'pendapatan' (4-xxxx) dari jurnal posted bulan ini.">
+              Pendapatan</small>
+            <small class="fw-medium fs-value-secondary text-success">{{ akuntansi_laba_rugi.pendapatan|rupiah }}</small>
+          </div>
+          <div class="text-end">
+            <small class="text-muted d-block" data-bs-toggle="tooltip" data-bs-placement="top"
+              title="Total Beban (Expenses): Jumlah semua debit pada akun tipe 'beban' (6-xxxx) dan 'HPP' (5-xxxx) dari jurnal posted bulan ini.">
+              Beban</small>
+            <small class="fw-medium fs-value-secondary text-danger">{{ akuntansi_laba_rugi.beban|rupiah }}</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!--/ Laba Rugi -->
+
 </div>
 
 <!-- ═══ GRAFIK BESAR: PENJUALAN PER CABANG (Wave Chart) ═══ -->
 <div class="row g-6 mb-6">
   <div class="col-12">
     <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center pb-0">
-        <div>
-          <h5 class="mb-1"><i class="ri-line-chart-line me-2 text-primary"></i>Penjualan per Cabang</h5>
+      <div class="card-header d-flex flex-nowrap justify-content-between align-items-center pb-0">
+        <div class="me-2">
+          <h5 class="mb-1 fs-card-title"><i class="ri-line-chart-line me-2 text-primary" style="color: var(--bs-primary)"></i>Penjualan per Cabang</h5>
           <p class="text-muted mb-0" style="font-size: 0.85rem;">Tren penjualan (SO + POS) per cabang — {% if has_date_filter %}{{ filter_start_date }} s/d {{ filter_end_date }}{% else %}6 bulan terakhir{% endif %}</p>
         </div>
-        <div class="dropdown">
+        <div class="dropdown flex-shrink-0">
           <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button"
             data-bs-toggle="dropdown">
             <i class="ri-more-2-line ri-20px"></i>
@@ -1032,7 +1251,7 @@
         </div>
       </div>
       <div class="card-body pt-2">
-        <div id="salesPerCabangChart"></div>
+        <div id="salesPerCabangChart" style="min-height: 320px;"></div>
       </div>
     </div>
   </div>
@@ -1040,290 +1259,319 @@
 <!--/ Grafik Besar Penjualan per Cabang (Wave Chart) -->
 
 <div class="row g-6 mb-6">
-  <!-- Activity Timeline -->
-  <div class="col-12 col-md-7 col-xl-6 order-md-2 order-xl-0">
+
+  <!-- Status Jurnal & Periode -->
+  <div class="col-lg-6">
     <div class="card h-100">
       <div class="card-header">
-        <div class="d-flex justify-content-between">
-          <h5 class="mb-0">Aktivitas Terkini</h5>
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h5 class="mb-1 fs-card-title" data-bs-toggle="tooltip" data-bs-placement="top"
+              title="Status Jurnal Umum (General Journal): Setiap transaksi di sistem (POS, SO, PO, Biaya, Penggajian, dll) otomatis membuat JurnalEntry. Jurnal harus di-post agar masuk perhitungan Neraca dan Laba Rugi."><i class="ri-book-open-line me-2 text-primary" style="color: var(--bs-primary)"></i>Status Jurnal & Periode</h5>
+            <p class="text-muted mb-0 fs-small">
+              {% if akuntansi_jurnal.periode.is_aktif %}
+                Periode: {{ akuntansi_jurnal.periode.nama }}
+                {% if akuntansi_jurnal.periode.tanggal_mulai %}
+                  ({{ akuntansi_jurnal.periode.tanggal_mulai|date:"d M" }} - {{ akuntansi_jurnal.periode.tanggal_akhir|date:"d M Y" }})
+                {% endif %}
+              {% else %}
+                Belum ada periode akuntansi aktif
+              {% endif %}
+            </p>
+          </div>
+          <a href="{% url 'akuntansi:jurnal' %}" class="btn btn-sm btn-label-primary">
+            <i class="ri-external-link-line me-1"></i>Lihat Jurnal
+          </a>
         </div>
       </div>
-      <div class="card-body pt-4">
-        <ul class="timeline card-timeline mb-0">
-          {% for activity in activity_timeline %}
-          <li class="timeline-item timeline-item-transparent">
-            <span class="timeline-point timeline-point-{{ activity.color }}"></span>
-            <div class="timeline-event">
-              <div class="timeline-header mb-3">
-                <h6 class="mb-0">{{ activity.title }}</h6>
-                <small class="text-muted">{{ activity.time }}</small>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-4">
+            <div class="text-center">
+              <div class="avatar mx-auto mb-2">
+                <span class="avatar-initial rounded bg-label-primary">
+                <i class="ri-file-list-3-line ri-24px"></i>
+              </span>
               </div>
-              <p class="mb-2">{{ activity.desc }}</p>
-              {% if activity.file %}
-              <div class="d-flex align-items-center mb-1">
-                <div class="badge bg-lighter rounded-3">
-                  <img src="{% static 'img/icons/misc/pdf.png' %}" alt="img" width="15" class="me-2">
-                  <span class="h6 mb-0 text-body">{{ activity.file }}</span>
-                </div>
-              </div>
-              {% endif %}
-              {% if activity.users %}
-              <div class="d-flex justify-content-between flex-wrap gap-2">
-                <div class="d-flex flex-wrap align-items-center">
-                  <ul class="list-unstyled users-list d-flex align-items-center avatar-group m-0">
-                    {% for user_img in activity.users %}
-                    <li class="avatar pull-up">
-                      <img class="rounded-circle" src="{% static 'img/avatars/'|add:user_img %}" alt="Avatar" />
-                    </li>
-                    {% endfor %}
-                  </ul>
-                </div>
-              </div>
-              {% endif %}
+              <h4 class="mb-0 fs-value-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Total semua JurnalEntry di database">{{ akuntansi_jurnal.total }}</h4>
+              <small class="text-muted">Total Jurnal</small>
             </div>
-          </li>
-          {% endfor %}
-        </ul>
-      </div>
-    </div>
-  </div>
-  <!--/ Activity Timeline -->
-
-  <!-- Top Products Table -->
-  <div class="col-12 col-md-5 col-xl-6 order-md-1 order-xl-0">
-    <div class="card h-100">
-      <div class="card-header d-flex justify-content-between">
-        <h5 class="mb-0">Produk Terlaris</h5>
-        <div class="dropdown">
-          <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button"
-            data-bs-toggle="dropdown">
-            <i class="ri-more-2-line ri-20px"></i>
-          </button>
-          <div class="dropdown-menu dropdown-menu-end">
-            <a class="dropdown-item" href="{% url 'produk:list' %}">Lihat Semua Produk</a>
-            <a class="dropdown-item" href="javascript:window.location.reload();"><i
-                class="ri-loop-left-line me-2"></i>Refresh Data</a>
+          </div>
+          <div class="col-4">
+            <div class="text-center">
+              <div class="avatar mx-auto mb-2">
+                <span class="avatar-initial rounded bg-label-success">
+                <i class="ri-check-double-line ri-24px"></i>
+              </span>
+              </div>
+              <h4 class="mb-0 fs-value-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Jurnal dengan is_posted=True.">{{ akuntansi_jurnal.posted }}</h4>
+              <small class="text-muted">Sudah Post</small>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="text-center">
+              <div class="avatar mx-auto mb-2">
+                <span class="avatar-initial rounded bg-label-warning">
+                <i class="ri-time-line ri-24px"></i>
+              </span>
+              </div>
+              <h4 class="mb-0 fs-value-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Jurnal draft (is_posted=False).">{{ akuntansi_jurnal.pending }}</h4>
+              <small class="text-muted">Pending Post</small>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="table-responsive">
-        {% if weekly_sales_data %}
-
-        {% if weekly_sales_data %}
-
-
-        <table class="table table-borderless">
-          <thead>
-            <tr>
-              <th>Produk</th>
-              <th>Status</th>
-              <th>Revenue</th>
-              <th>Profit</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for product in top_products %}
-            <tr>
-              <td>
-                <div class="d-flex align-items-center">
-                  <div class="avatar avatar-sm me-3">
-                    {% if product.image %}
-                    <img src="{{ product.image.url }}" alt="{{ product.name }}" class="rounded">
-                    {% else %}
-                    <span class="avatar-initial rounded bg-label-primary">
-                      <i class="ri-product-hunt-line ri-20px"></i>
-                    </span>
-                    {% endif %}
-                  </div>
-                  <div>
-                    <h6 class="mb-0 text-truncate" style="max-width: 150px;">{{ product.name }}</h6>
-                    <small class="text-muted">{{ product.sku }}</small>
-                  </div>
-                </div>
-              </td>
-              <td><span class="badge bg-label-{{ product.status_class }}">{{ product.status }}</span></td>
-              <td>
-                <div>
-                  <p class="mb-0 fw-medium">{{ product.revenue|rupiah }}</p>
-                  <small class="text-muted">{{ product.qty_sold }} terjual</small>
-                </div>
-              </td>
-              <td>
-                <div class="d-flex align-items-center">
-                  <p class="mb-0 {% if product.profit >= 0 %}text-success{% else %}text-danger{% endif %}">
-                    {% if product.profit >= 0 %}+{% endif %}{{ product.profit_percentage }}%
-                  </p>
-                </div>
-              </td>
-            </tr>
-                    {% endfor %}
-          </tbody>
-        </table>
-
-
-        {% else %}
-
-
-        <div class="card-body">
-
-
-            <div class="text-center py-4 py-md-5 px-3 px-md-4">
-
-
-                <div class="mb-4">
-
-
-                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
-
-
-                         style="width: 88px; height: 88px;">
-
-
-                        <i class="ri-dashboard-line" style="font-size: 2.8rem;"></i>
-
-
-                    </div>
-
-
-                </div>
-
-
-                <h5 class="mb-3">Belum Ada Data</h5>
-
-
-                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
-
-
-                    Data masih kosong.
-
-
-                </p>
-
-
-            </div>
-
-
+        <div class="d-flex align-items-center justify-content-center gap-2 mt-3 pt-3 border-top">
+          <i class="ri-calendar-line text-primary"></i>
+          <small class="text-muted">Jurnal hari ini: <strong class="fs-value-primary">{{ akuntansi_jurnal.hari_ini }}</strong></small>
         </div>
-
-
-        {% endif %}
-
-        {% else %}
-
-        <div class="card-body">
-
-            <div class="text-center py-4 py-md-5 px-3 px-md-4">
-
-                <div class="mb-4">
-
-                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
-
-                         style="width: 88px; height: 88px;">
-
-                        <i class="ri-dashboard-line" style="font-size: 2.8rem;"></i>
-
-                    </div>
-
-                </div>
-
-                <h5 class="mb-3">Belum Ada Data</h5>
-
-                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
-
-                    Daftar data masih kosong.
-
-                </p>
-
-            </div>
-
-        </div>
-
-        {% endif %}
       </div>
     </div>
   </div>
+
+  <!-- Kewajiban Pajak (PPN) -->
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h5 class="mb-1 fs-card-title" data-bs-toggle="tooltip" data-bs-placement="top"
+              title="Kewajiban Pajak PPN (Value Added Tax)"><i class="ri-receipt-line me-2 text-primary" style="color: var(--bs-primary)"></i>Kewajiban Pajak (PPN)</h5>
+            <p class="text-muted mb-0 fs-small">
+              {{ akuntansi_pajak.periode_label }}
+              {% if akuntansi_pajak.is_pkp %}
+                <span class="badge bg-label-info ms-1">PKP</span>
+              {% endif %}
+              &mdash; Tarif {{ akuntansi_pajak.tarif_ppn }}%
+            </p>
+          </div>
+          <a href="{% url 'pajak:list' %}" class="btn btn-sm btn-label-warning">
+            <i class="ri-external-link-line me-1"></i>Lihat Faktur
+          </a>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <div class="d-flex align-items-center gap-2">
+              <div class="avatar avatar-sm">
+                <span class="avatar-initial rounded bg-label-success">
+                <i class="ri-arrow-down-line ri-18px"></i>
+              </span>
+              </div>
+              <div>
+                <small class="text-muted d-block">PPN Keluaran</small>
+                <h6 class="mb-0 fs-value-primary">{{ akuntansi_pajak.ppn_keluaran|rupiah }}</h6>
+              </div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="d-flex align-items-center gap-2">
+              <div class="avatar avatar-sm">
+                <span class="avatar-initial rounded bg-label-primary">
+                <i class="ri-arrow-up-line ri-18px"></i>
+              </span>
+              </div>
+              <div>
+                <small class="text-muted d-block">PPN Masukan</small>
+                <h6 class="mb-0 fs-value-primary">{{ akuntansi_pajak.ppn_masukan|rupiah }}</h6>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="p-3 rounded bg-lighter">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <small class="text-muted d-block">PPN yang Harus Disetor</small>
+              <h5 class="mb-0 fw-bold fs-value-primary">
+                {{ akuntansi_pajak.ppn_belum_setor|rupiah }}
+              </h5>
+            </div>
+            <div class="avatar">
+              <span class="avatar-initial rounded {% if akuntansi_pajak.ppn_belum_setor > 0 %}bg-label-danger{% else %}bg-label-success{% endif %}">
+                <i class="ri-government-line ri-24px"></i>
+              </span>
+            </div>
+          </div>
+          <small class="text-muted mt-1 d-block">
+            <i class="ri-information-line me-1"></i>
+            Keluaran - Masukan = setor ke negara
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="row g-6 mb-6">
+  <!-- Top Products Table -->
   <!--/ Top Products Table -->
 
 
 
 
 
-  <!-- User Table (Replaces Roles Datatable) -->
+  <!-- User Table -->
+  <!--/ Roles Datatables -->
+
+  <!-- Service Center -->
   <div class="col-12">
-    <div class="card h-100">
-      <div class="card-header">
-        <h5 class="mb-0">Pengguna Terbaru</h5>
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="mb-1"><i class="ri-tools-line me-2 text-primary" style="color: var(--bs-primary)"></i>Service Center</h5>
+          <p class="text-muted mb-0" style="font-size: var(--fs-ui-sm);">Ringkasan order service & sparepart</p>
+        </div>
+        <a href="{% url 'service_center:dashboard' %}" class="btn btn-sm btn-label-primary"><i
+            class="ri-external-link-line me-1"></i>Lihat Detail</a>
       </div>
-      <div class="table-responsive rounded-3">
-        <table class="table table-hover table-border-bottom-0">
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for user in latest_users %}
-            <tr>
-              <td>
-                <div class="d-flex align-items-center">
-                  <div class="avatar avatar-sm me-3">
-                    <span class="avatar-initial rounded-circle bg-label-primary">{{ user.username|slice:":1"|upper }}</span>
-                  </div>
-                  <div>
-                    <span class="fw-medium d-block">{{ user.username }}</span>
-                    <small class="text-muted">@{{ user.username|lower }}</small>
-                  </div>
-                </div>
-              </td>
-              <td><span class="text-truncate d-block" style="max-width: 200px;">{{ user.email }}</span></td>
-              <td>
-                <div class="d-flex align-items-center">
-                  <i class="{{ user.role_icon }} ri-18px text-{{ user.role_color }} me-2"></i>
-                  <span>{{ user.role }}</span>
-                </div>
-              </td>
-              <td><span class="badge rounded-pill bg-label-{{ user.status_class }}">{{ user.status }}</span></td>
-              <td>
-                {% if can_edit.user_management or can_delete.user_management %}
-                <div class="dropdown">
-                  <button class="btn btn-sm btn-icon btn-text-secondary" data-bs-toggle="dropdown">
-                    <i class="ri-more-2-line"></i>
-                  </button>
-                  <div class="dropdown-menu dropdown-menu-end">
-                    <a class="dropdown-item" href="{% url 'user_management:user_detail' user.id %}"><i
-                        class="ri-eye-line me-2"></i>Detail User</a>
-                    {% if can_edit.user_management %}
-                    <a class="dropdown-item" href="{% url 'user_management:user_edit' user.id %}"><i
-                        class="ri-edit-line me-2"></i>Edit User</a>
-                    <a class="dropdown-item" href="#" onclick="toggleUserStatus({{ user.id }})"><i
-                        class="ri-toggle-line me-2"></i>Toggle Status</a>
-                    {% endif %}
-                    {% if can_delete.user_management %}
-                    <div class="dropdown-divider"></div>
-                    <a class="dropdown-item text-danger" href="#"
-                      onclick="confirmDeleteUser({{ user.id }}, '{{ user.username }}'); return false;"><i
-                        class="ri-delete-bin-line me-2"></i>Hapus User</a>
-                    {% endif %}
-                  </div>
-                </div>
-                {% else %}
-                <span class="badge bg-label-secondary">
-                    <i class="ri-eye-line me-1"></i>View Only
-                </span>
-                {% endif %}
-              </td>
-            </tr>
-                    {% endfor %}
-          </tbody>
-        </table>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-6 col-lg">
+            <div class="d-flex align-items-center gap-3">
+              <div class="avatar">
+                <span class="avatar-initial rounded bg-label-success">
+                <i class="ri-money-dollar-circle-line ri-24px"></i>
+              </span>
+              </div>
+              <div>
+                <h5 class="mb-0 fw-bold fs-value-primary">+{{ service_overview.pemasukan_layanan|rupiah }}</h5>
+                <p class="mb-0 text-muted">Pemasukan Layanan</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-lg">
+            <div class="d-flex align-items-center gap-3">
+              <div class="avatar">
+                <span class="avatar-initial rounded bg-label-info">
+                <i class="ri-settings-3-line ri-24px"></i>
+              </span>
+              </div>
+              <div>
+                <h5 class="mb-0 fw-bold fs-value-primary">+{{ service_overview.pemasukan_sparepart|rupiah }}</h5>
+                <p class="mb-0 text-muted">Pemasukan Sparepart</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-lg">
+            <div class="d-flex align-items-center gap-3">
+              <div class="avatar">
+                <span class="avatar-initial rounded bg-label-info">
+                <i class="ri-cpu-line ri-24px"></i>
+              </span>
+              </div>
+              <div>
+                <h5 class="mb-0 fw-bold fs-value-primary">{{ service_overview.total_sparepart }}</h5>
+                <p class="mb-0 text-muted">Total Sparepart</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-lg">
+            <div class="d-flex align-items-center gap-3">
+              <div class="avatar">
+                <span class="avatar-initial rounded bg-label-warning">
+                <i class="ri-tools-line ri-24px"></i>
+              </span>
+              </div>
+              <div>
+                <h5 class="mb-0 fw-bold fs-value-primary">{{ service_overview.total_orders }}</h5>
+                <p class="mb-0 text-muted">Total Order</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-lg">
+            <div class="d-flex align-items-center gap-3">
+              <div class="avatar">
+                <span class="avatar-initial rounded bg-label-primary">
+                <i class="ri-checkbox-circle-line ri-24px"></i>
+              </span>
+              </div>
+              <div>
+                <h5 class="mb-0 fw-bold fs-value-primary">{{ service_overview.order_selesai }}</h5>
+                <p class="mb-0 text-muted">Orderan Selesai</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-lg">
+            <div class="d-flex align-items-center gap-3">
+              <div class="avatar">
+                <span class="avatar-initial rounded bg-label-secondary">
+                <i class="ri-user-heart-line ri-24px"></i>
+              </span>
+              </div>
+              <div>
+                <h5 class="mb-0 fw-bold fs-value-primary">{{ service_overview.total_pelanggan }}</h5>
+                <p class="mb-0 text-muted">Pelanggan</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-  <!--/ Roles Datatables -->
+  <!--/ Service Center -->
+
+  <!-- Hutang & Piutang -->
+  <div class="col-12">
+    <div class="card h-100">
+      <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+          <h5 class="mb-0 fs-card-title"><i class="ri-hand-heart-line me-2 text-primary" style="color: var(--bs-primary)"></i>Hutang & Piutang</h5>
+          <div class="d-flex gap-2">
+            <a href="{% url 'hutang:list' %}" class="btn btn-sm btn-label-danger">
+              <i class="ri-arrow-down-line me-1"></i>Hutang
+            </a>
+            <a href="{% url 'piutang:list' %}" class="btn btn-sm btn-label-success">
+              <i class="ri-arrow-up-line me-1"></i>Piutang
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="row g-4">
+          <div class="col-lg-6">
+            <div class="p-3 rounded bg-lighter mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0 text-danger"><i class="ri-arrow-down-circle-line me-1"></i>Hutang (Payables)</h6>
+                <span class="badge bg-label-danger rounded-pill fs-value-secondary">{{ akuntansi_hutang_piutang.hutang_count }} tagihan</span>
+              </div>
+              <h4 class="mb-1 fs-value-primary">{{ akuntansi_hutang_piutang.total_hutang|rupiah }}</h4>
+              <small class="text-muted">Total sisa hutang belum lunas</small>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <small class="text-muted">Jatuh tempo ≤ 7 hari</small>
+              <small class="fw-bold fs-value-secondary text-danger">
+                {{ akuntansi_hutang_piutang.hutang_jt_7hari|rupiah }}
+              </small>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+              <small class="text-muted">Overdue (terlambat)</small>
+              <small class="fw-bold fs-value-secondary text-danger">
+                {{ akuntansi_hutang_piutang.hutang_overdue|rupiah }}
+              </small>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="p-3 rounded bg-lighter mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0 fs-value-secondary"><i class="ri-arrow-up-circle-line me-1"></i>Piutang (Receivables)</h6>
+                <span class="badge bg-label-success rounded-pill fs-value-secondary">{{ akuntansi_hutang_piutang.piutang_count }} tagihan</span>
+              </div>
+              <h4 class="mb-1 fs-value-primary">{{ akuntansi_hutang_piutang.total_piutang|rupiah }}</h4>
+              <small class="text-muted">Total sisa piutang belum diterima</small>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+              <small class="text-muted">Overdue (terlambat)</small>
+              <small class="fw-bold fs-value-secondary text-success">
+                {{ akuntansi_hutang_piutang.piutang_overdue|rupiah }}
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- Delete User Modal -->

@@ -8,6 +8,16 @@
 
 {% block title %}AI Dashboard{% endblock title %}
 
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/apex-charts/apex-charts.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/apex-charts/apexcharts.js' %}"></script>
+{% endblock vendor_js %}
+
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="py-3 mb-4">
@@ -26,39 +36,39 @@
         <div class="col-lg-4 col-md-6 mb-4">
             <div class="card h-100">
                 <div class="card-body text-center">
-                    <h6 class="card-title mb-3">
-                        <i class="ri-heart-pulse-line me-1"></i>Skor Kesehatan Bisnis
+                    <h6 class="card-title mb-3 fs-card-title">
+                        <i class="ri-heart-pulse-line me-1 text-primary" style="color: var(--bs-primary)"></i>Skor Kesehatan Bisnis
                     </h6>
                     <div class="position-relative d-inline-block mb-3">
                         <canvas id="healthChart" width="180" height="180"></canvas>
                         <div class="position-absolute top-50 start-50 translate-middle text-center">
-                            <h2 class="mb-0 fw-bold" style="color: {{ health_color }};">{{ health_score }}</h2>
-                            <small class="text-muted">/ 100</small>
+                            <h2 class="mb-0 fw-bold fs-value-primary">{{ health_score }}</h2>
+                            <small class="text-muted fs-value-secondary">/ 100</small>
                         </div>
                     </div>
                     <div>
-                        <span class="badge rounded-pill px-3 py-2" style="background-color: {{ health_color }}; font-size: 0.85rem;">
+                        <span class="badge rounded-pill px-3 py-2 fs-value-secondary" style="background-color: {{ health_color }}; font-size: 0.85rem;">
                             {{ health_level }}
                         </span>
                     </div>
                     <div class="mt-3 text-start small text-muted">
                         <div class="d-flex justify-content-between mb-1">
                             <span><i class="ri-line-chart-line me-1"></i>Revenue Growth</span>
-                            <span class="fw-semibold {% if rev_growth >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            <span class="fw-semibold fs-value-secondary">
                                 {{ rev_growth }}%
                             </span>
                         </div>
                         <div class="d-flex justify-content-between mb-1">
                             <span><i class="ri-money-dollar-circle-line me-1"></i>Rata-rata Margin</span>
-                            <span class="fw-semibold">{{ avg_margin }}%</span>
+                            <span class="fw-semibold fs-value-secondary">{{ avg_margin }}%</span>
                         </div>
                         <div class="d-flex justify-content-between mb-1">
                             <span><i class="ri-archive-line me-1"></i>Stok Sehat</span>
-                            <span class="fw-semibold">{{ stok_sehat }}/{{ total_produk }}</span>
+                            <span class="fw-semibold fs-value-secondary">{{ stok_sehat }}/{{ total_produk }}</span>
                         </div>
                         <div class="d-flex justify-content-between">
                             <span><i class="ri-exchange-dollar-line me-1"></i>Rasio Biaya</span>
-                            <span class="fw-semibold {% if biaya_ratio > 60 %}text-danger{% elif biaya_ratio > 40 %}text-warning{% else %}text-success{% endif %}">
+                            <span class="fw-semibold fs-value-secondary">
                                 {{ biaya_ratio }}%
                             </span>
                         </div>
@@ -69,9 +79,9 @@
 
         <!-- Key Metrics Cards -->
         <div class="col-lg-8 col-md-6">
-            <div class="row">
+            <div class="row g-6 mb-6">
                 <!-- Revenue Bulan Ini -->
-                <div class="col-sm-6 mb-4">
+                <div class="col-6 mb-4 col-md-3 col-lg-3">
                     <div class="card h-100">
                         <div class="card-body">
                             <div class="d-flex align-items-center gap-3">
@@ -82,8 +92,8 @@
                                 </div>
                                 <div>
                                     <span class="d-block text-muted small">Revenue Bulan Ini</span>
-                                    <h5 class="mb-0 fw-bold">Rp {{ rev_now|floatformat:0 }}</h5>
-                                    <small class="{% if rev_growth >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    <h5 class="mb-0 fw-bold fs-value-primary">Rp {{ rev_now|floatformat:0 }}</h5>
+                                    <small class="fs-value-secondary">
                                         <i class="ri-arrow-{% if rev_growth >= 0 %}up{% else %}down{% endif %}-s-line"></i>
                                         {{ rev_growth }}% dari bulan lalu
                                     </small>
@@ -94,7 +104,7 @@
                 </div>
 
                 <!-- Profit -->
-                <div class="col-sm-6 mb-4">
+                <div class="col-6 mb-4 col-md-3 col-lg-3">
                     <div class="card h-100">
                         <div class="card-body">
                             <div class="d-flex align-items-center gap-3">
@@ -105,10 +115,10 @@
                                 </div>
                                 <div>
                                     <span class="d-block text-muted small">Estimasi Profit</span>
-                                    <h5 class="mb-0 fw-bold {% if profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    <h5 class="mb-0 fw-bold fs-value-primary">
                                         Rp {{ profit|floatformat:0 }}
                                     </h5>
-                                    <small class="text-muted">Revenue - Biaya</small>
+                                    <small class="text-muted fs-value-secondary">Revenue - Biaya</small>
                                 </div>
                             </div>
                         </div>
@@ -116,7 +126,7 @@
                 </div>
 
                 <!-- Total Transaksi -->
-                <div class="col-sm-6 mb-4">
+                <div class="col-6 mb-4 col-md-3 col-lg-3">
                     <div class="card h-100">
                         <div class="card-body">
                             <div class="d-flex align-items-center gap-3">
@@ -127,8 +137,8 @@
                                 </div>
                                 <div>
                                     <span class="d-block text-muted small">Total Transaksi</span>
-                                    <h5 class="mb-0 fw-bold">{{ total_trx }}</h5>
-                                    <small class="text-muted">Bulan ini (SO + POS)</small>
+                                    <h5 class="mb-0 fw-bold fs-value-primary">{{ total_trx }}</h5>
+                                    <small class="text-muted fs-value-secondary">Bulan ini (SO + POS)</small>
                                 </div>
                             </div>
                         </div>
@@ -136,7 +146,7 @@
                 </div>
 
                 <!-- Biaya Operasional -->
-                <div class="col-sm-6 mb-4">
+                <div class="col-6 mb-4 col-md-3 col-lg-3">
                     <div class="card h-100">
                         <div class="card-body">
                             <div class="d-flex align-items-center gap-3">
@@ -147,8 +157,8 @@
                                 </div>
                                 <div>
                                     <span class="d-block text-muted small">Biaya Operasional</span>
-                                    <h5 class="mb-0 fw-bold">Rp {{ biaya_now|floatformat:0 }}</h5>
-                                    <small class="text-muted">{{ biaya_ratio }}% dari revenue</small>
+                                    <h5 class="mb-0 fw-bold fs-value-primary">Rp {{ biaya_now|floatformat:0 }}</h5>
+                                    <small class="text-muted fs-value-secondary">{{ biaya_ratio }}% dari revenue</small>
                                 </div>
                             </div>
                         </div>
@@ -164,14 +174,19 @@
         <div class="col-lg-8 mb-4">
             <div class="card h-100">
                 <div class="card-header d-flex align-items-center justify-content-between">
-                    <h5 class="card-title mb-0">
-                        <i class="ri-bar-chart-box-line me-2"></i>Tren Revenue 6 Bulan
+                    <h5 class="card-title mb-0 me-2 fs-card-title">
+                        <i class="ri-bar-chart-box-line me-2 text-primary" style="color: var(--bs-primary)"></i>Tren Revenue 6 Bulan
                     </h5>
+                    <div class="dropdown flex-shrink-0">
+                        <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a>
+                            <a class="dropdown-item" href="javascript:void(0)" onclick="if(window.__revenueChart) window.__revenueChart.exportTo({type:'png'});"><i class="ri-download-2-line me-2"></i>Unduh Grafik</a>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <div style="position:relative; height:280px;">
-                        <canvas id="revenueTrendChart"></canvas>
-                    </div>
+                    <div id="revenueTrendChart" style="min-height: 320px;"></div>
                 </div>
             </div>
         </div>
@@ -180,28 +195,12 @@
         <div class="col-lg-4 mb-4">
             <div class="card h-100">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="ri-pie-chart-line me-2"></i>Distribusi Stok
+                    <h5 class="card-title mb-0 fs-card-title">
+                        <i class="ri-pie-chart-line me-2 text-primary" style="color: var(--bs-primary)"></i>Distribusi Stok
                     </h5>
                 </div>
-                <div class="card-body text-center">
-                    <div style="position:relative; height:220px; margin:0 auto; max-width:220px;">
-                        <canvas id="stockChart"></canvas>
-                    </div>
-                    <div class="mt-3 text-start">
-                        <div class="d-flex align-items-center mb-2">
-                            <span class="badge me-2" style="background:#28a745;">&nbsp;&nbsp;</span>
-                            <small>Stok Sehat: <strong>{{ stok_sehat }}</strong></small>
-                        </div>
-                        <div class="d-flex align-items-center mb-2">
-                            <span class="badge me-2" style="background:#ff9800;">&nbsp;&nbsp;</span>
-                            <small>Stok Rendah (<10): <strong>{{ stok_rendah }}</strong></small>
-                        </div>
-                        <div class="d-flex align-items-center">
-                            <span class="badge me-2" style="background:#f44336;">&nbsp;&nbsp;</span>
-                            <small>Stok Habis: <strong>{{ stok_habis }}</strong></small>
-                        </div>
-                    </div>
+                <div class="card-body pt-2 d-flex flex-column justify-content-center">
+                    <div id="stockDonutChart" style="min-height: 250px;"></div>
                 </div>
             </div>
         </div>
@@ -213,8 +212,8 @@
         <div class="col-lg-8 mb-4">
             <div class="card h-100">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="ri-alarm-warning-line me-2"></i>Deteksi Anomali & Peringatan
+                    <h5 class="card-title mb-0 fs-card-title">
+                        <i class="ri-alarm-warning-line me-2 text-primary" style="color: var(--bs-primary)"></i>Deteksi Anomali & Peringatan
                     </h5>
                 </div>
                 <div class="card-body">
@@ -245,8 +244,8 @@
         <div class="col-lg-4 mb-4">
             <div class="card h-100">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="ri-robot-2-line me-2"></i>Statistik AI Chat
+                    <h5 class="card-title mb-0 fs-card-title">
+                        <i class="ri-robot-2-line me-2 text-primary" style="color: var(--bs-primary)"></i>Statistik AI Chat
                     </h5>
                 </div>
                 <div class="card-body">
@@ -258,7 +257,7 @@
                         </div>
                         <div>
                             <span class="d-block text-muted small">Total Percakapan</span>
-                            <h5 class="mb-0 fw-bold">{{ total_chats }}</h5>
+                            <h5 class="mb-0 fw-bold fs-value-primary">{{ total_chats }}</h5>
                         </div>
                     </div>
                     <div class="d-flex align-items-center gap-3 mb-4">
@@ -269,7 +268,7 @@
                         </div>
                         <div>
                             <span class="d-block text-muted small">Feedback Positif</span>
-                            <h5 class="mb-0 fw-bold text-success">{{ total_feedback_up }}</h5>
+                            <h5 class="mb-0 fw-bold fs-value-primary">{{ total_feedback_up }}</h5>
                         </div>
                     </div>
                     <div class="d-flex align-items-center gap-3 mb-4">
@@ -280,13 +279,13 @@
                         </div>
                         <div>
                             <span class="d-block text-muted small">Feedback Negatif</span>
-                            <h5 class="mb-0 fw-bold text-danger">{{ total_feedback_down }}</h5>
+                            <h5 class="mb-0 fw-bold fs-value-primary">{{ total_feedback_down }}</h5>
                         </div>
                     </div>
 
                     <hr>
                     <div class="text-center">
-                        <small class="text-muted">
+                        <small class="text-muted fs-value-secondary">
                             <i class="ri-information-line me-1"></i>
                             Data berdasarkan aktivitas user saat ini
                         </small>
@@ -306,6 +305,8 @@ document.addEventListener('DOMContentLoaded', function() {
                  document.body.classList.contains('dark-style') ||
                  window.getComputedStyle(document.body).backgroundColor.includes('rgb(35') ||
                  window.getComputedStyle(document.body).backgroundColor.includes('rgb(40');
+    var cardBgColor = isDark ? '#283046' : '#fff';
+    var labelColor = isDark ? 'rgba(255,255,255,0.6)' : '#6e6b7b';
     var gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
     var tickColor = isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)';
     var borderCol = isDark ? 'rgba(255,255,255,0.15)' : '#fff';
@@ -336,109 +337,138 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     } catch(e) { console.warn('Health chart error:', e); }
 
-    // ÔòÉÔòÉÔòÉ REVENUE TREND CHART ÔòÉÔòÉÔòÉ
-    try {
-        var trendEl = document.getElementById('revenueTrendChart');
-        if (trendEl) {
-            var labels = {{ monthly_labels|safe }};
-            var values = {{ monthly_values|safe }};
+    // === REVENUE TREND CHART (ApexCharts area) ===
+    var trendEl = document.getElementById('revenueTrendChart');
+    if (trendEl) {
+        var labels = {{ monthly_labels|safe }};
+        var values = {{ monthly_values|safe }};
 
-            new Chart(trendEl.getContext('2d'), {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Revenue (Rp)',
-                        data: values,
-                        backgroundColor: 'rgba(102, 108, 255, 0.75)',
-                        borderColor: '#666cff',
-                        borderWidth: 1,
-                        borderRadius: 8,
-                        barPercentage: 0.55,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            titleColor: '#fff',
-                            bodyColor: '#fff',
-                            padding: 10,
-                            cornerRadius: 8,
-                            callbacks: {
-                                label: function(ctx) {
-                                    return 'Rp ' + ctx.parsed.y.toLocaleString('id-ID');
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                color: tickColor,
-                                callback: function(val) {
-                                    if (val >= 1000000) return 'Rp ' + (val / 1000000).toFixed(1) + 'jt';
-                                    if (val >= 1000) return 'Rp ' + (val / 1000).toFixed(0) + 'rb';
-                                    return 'Rp ' + val;
-                                }
+        // Zero-filled fallback
+        if (!labels || !Array.isArray(labels) || labels.length === 0) {
+            labels = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'];
+        }
+        if (!values || !Array.isArray(values) || values.length === 0) {
+            values = Array(labels.length).fill(0);
+        }
+
+        var series = [{ name: 'Revenue', data: values }];
+        var chartColors = ['#7367f0', '#28c76f', '#ff9f43', '#ea5455', '#00cfe8', '#a855f7', '#f472b6'];
+
+        var revenueChart = new ApexCharts(trendEl, {
+            chart: {
+                type: 'area', height: 380, fontFamily: '"Inter", sans-serif', background: 'transparent',
+                toolbar: { show: false },
+                animations: { enabled: true, easing: 'easeinout', speed: 800, dynamicAnimation: { enabled: true, speed: 350 } },
+                dropShadow: { enabled: true, top: 6, left: 0, blur: 6, opacity: isDark ? 0.15 : 0.08, color: chartColors.slice(0, series.length) }
+            },
+            colors: chartColors.slice(0, series.length),
+            dataLabels: { enabled: false },
+            states: { hover: { filter: { type: 'none' } }, active: { filter: { type: 'none' } } },
+            stroke: { curve: 'smooth', width: 3, lineCap: 'round' },
+            fill: {
+                type: 'gradient',
+                gradient: { shade: isDark ? 'dark' : 'light', type: 'vertical', shadeIntensity: 0.3, opacityFrom: isDark ? 0.25 : 0.4, opacityTo: 0.02, stops: [0, 95, 100] }
+            },
+            series: series,
+            xaxis: {
+                categories: labels,
+                labels: { style: { colors: isDark ? '#b4b5ba' : '#a5a3ae', fontSize: '13px', fontWeight: 400 } },
+                axisBorder: { show: false }, axisTicks: { show: false },
+                crosshairs: { stroke: { color: isDark ? '#555' : '#ddd', dashArray: 4 } }
+            },
+            yaxis: {
+                labels: {
+                    style: { colors: isDark ? '#b4b5ba' : '#a5a3ae', fontSize: '13px' },
+                    formatter: function (val) {
+                        if (val >= 1000000000) return 'Rp ' + (val / 1000000000).toFixed(1) + 'M';
+                        if (val >= 1000000) return 'Rp ' + (val / 1000000).toFixed(1) + 'Jt';
+                        if (val >= 1000) return 'Rp ' + (val / 1000).toFixed(0) + 'Rb';
+                        return 'Rp ' + val.toFixed(0);
+                    }
+                }
+            },
+            tooltip: {
+                theme: isDark ? 'dark' : 'light', shared: true, intersect: false,
+                style: { fontSize: '13px' }, x: { show: true },
+                y: { formatter: function (val) { return 'Rp ' + val.toLocaleString('id-ID'); } },
+                marker: { show: true }
+            },
+            legend: {
+                position: 'top', horizontalAlign: 'left', fontSize: '13px', fontWeight: 500,
+                labels: { colors: isDark ? '#ccc' : '#555' },
+                markers: { size: 5, shape: 'circle', strokeWidth: 0, offsetX: -3 },
+                itemMargin: { horizontal: 12, vertical: 4 }
+            },
+            markers: { size: 0, hover: { size: 6, sizeOffset: 3 }, strokeWidth: 2, strokeColors: isDark ? '#2b2c40' : '#fff' },
+            grid: {
+                borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', strokeDashArray: 4,
+                padding: { top: -10, left: 10, right: 10, bottom: 0 },
+                xaxis: { lines: { show: false } }, yaxis: { lines: { show: true } }
+            },
+            responsive: [{ breakpoint: 768, options: { chart: { height: 280 }, legend: { fontSize: '11px' }, stroke: { width: 2 } } }]
+        });
+        revenueChart.render();
+        window.__revenueChart = revenueChart;
+    }
+
+    // === STOCK DISTRIBUTION CHART (ApexCharts donut - same as Distribusi Stok SIMKOS) ===
+    var stockEl = document.getElementById('stockDonutChart');
+    if (stockEl) {
+        var stokSehat = {{ stok_sehat|default:0 }};
+        var stokRendah = {{ stok_rendah|default:0 }};
+        var stokHabis = {{ stok_habis|default:0 }};
+        var totalStok = stokSehat + stokRendah + stokHabis;
+        var _stokHasData = totalStok > 0;
+
+        var stokSeries = _stokHasData ? [stokSehat, stokRendah, stokHabis] : [1];
+        var stokLabels = _stokHasData ? ['Stok Sehat', 'Stok Rendah', 'Stok Habis'] : ['Belum ada data'];
+        var stokColors = _stokHasData ? ['#28a745', '#ff9800', '#f44336'] : ['#e9ecef'];
+
+        new ApexCharts(stockEl, {
+            chart: { type: 'donut', height: 280, fontFamily: '"Inter", sans-serif', parentHeightOffset: 0, toolbar: { show: false } },
+            series: stokSeries,
+            labels: stokLabels,
+            colors: stokColors,
+            plotOptions: {
+                pie: { endAngle: 130, startAngle: -130, customScale: 0.9,
+                    donut: {
+                        size: '83%',
+                        labels: {
+                            show: true,
+                            name: {
+                                offsetY: 25,
+                                fontSize: '0.9375rem',
+                                fontFamily: 'Inter',
+                                color: labelColor
                             },
-                            grid: { color: gridColor }
-                        },
-                        x: {
-                            ticks: { color: tickColor },
-                            grid: { display: false }
-                        }
-                    }
-                }
-            });
-        }
-    } catch(e) { console.warn('Revenue chart error:', e); }
-
-    // ÔòÉÔòÉÔòÉ STOCK DISTRIBUTION CHART ÔòÉÔòÉÔòÉ
-    try {
-        var stockEl = document.getElementById('stockChart');
-        if (stockEl) {
-            var stokSehat = {{ stok_sehat }};
-            var stokRendah = {{ stok_rendah }};
-            var stokHabis = {{ stok_habis }};
-            var totalStok = stokSehat + stokRendah + stokHabis;
-
-            new Chart(stockEl.getContext('2d'), {
-                type: 'doughnut',
-                data: {
-                    labels: ['Stok Sehat', 'Stok Rendah', 'Stok Habis'],
-                    datasets: [{
-                        data: totalStok > 0 ? [stokSehat, stokRendah, stokHabis] : [1],
-                        backgroundColor: totalStok > 0 ? ['#28a745', '#ff9800', '#f44336'] : ['rgba(255,255,255,0.1)'],
-                        borderWidth: 2,
-                        borderColor: borderCol,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '60%',
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            callbacks: {
-                                label: function(ctx) {
-                                    if (totalStok === 0) return 'Tidak ada data';
-                                    var pct = Math.round(ctx.parsed / totalStok * 100);
-                                    return ctx.label + ': ' + ctx.parsed + ' (' + pct + '%)';
+                            value: { show: true, offsetY: -15, fontSize: '1.75rem', fontWeight: 500, fontFamily: 'Inter', color: isDark ? '#d0d2d6' : '#5e5873', formatter: function(v) { return v; } },
+                            total: {
+                                show: true,
+                                label: _stokHasData ? 'Total Stok' : 'Tidak Ada Stok',
+                                fontSize: '0.9375rem', fontFamily: 'Inter',
+                                color: labelColor,
+                                formatter: function(w) {
+                                    if (!_stokHasData) return 0;
+                                    return w.globals.seriesTotals.reduce(function(a, b) { return a + b; }, 0);
                                 }
                             }
                         }
                     }
                 }
-            });
-        }
-    } catch(e) { console.warn('Stock chart error:', e); }
+            },
+            dataLabels: { enabled: false },
+            states: { hover: { filter: { type: 'none' } }, active: { filter: { type: 'none' } } },
+            legend: {
+                position: 'bottom', fontFamily: 'Inter', fontSize: '15px',
+                markers: { offsetX: -3, height: 10, width: 10 },
+                itemMargin: { horizontal: 24, vertical: 8 }, offsetY: -10,
+                labels: { colors: labelColor }
+            },
+            stroke: { width: 3, lineCap: 'round', colors: [cardBgColor] },
+            tooltip: { enabled: _stokHasData, y: { formatter: function(val) { return val + ' produk'; } } },
+            responsive: [{ breakpoint: 480, options: { chart: { height: 240 } } }]
+        }).render();
+    }
 });
 </script>
 {% endblock content %}

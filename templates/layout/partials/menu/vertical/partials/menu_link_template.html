@@ -2,45 +2,51 @@
 {% load permission_tags %}
 
 {% if item %}
-  {% comment %} 
+  {% comment %}
     CRITICAL: Only show menu if user has explicit permission
     Sub-items from collapsible template pass skip_perm_check=True
     because they are already filtered by accessible_subs
   {% endcomment %}
   {% if skip_perm_check %}
     {% comment %} Sub-item sudah di-filter oleh parent collapsible — langsung render {% endcomment %}
-  <li class="menu-item {% if item.url == request.resolver_match.url_name or item.url == request.path %}active{% endif %}">
+  <li class="menu-item {% if item.url == request.resolver_match.url_name or item.url == request.resolver_match.view_name or item.url == request.path %}active{% endif %}">
     <a href="{% if item.external == True %}{{ item.url }}{% else %}{% url item.url %}{% endif %}" class="menu-link" {% if item.target == "_blank" %}target="_blank" {% endif %}>
       <i class="{{ item.icon }}"></i>
-      <div>{% trans item.name %}</div>
-      {% if item.badge %}
-      <div class="badge bg-{{ item.badge.0 }} rounded-pill ms-auto">{{ item.badge.1 }}</div>
+      <div class="text-truncate">{% trans item.name %}</div>
+      {% with badge_count=sidebar_badges|get_item:item.slug %}
+      {% if badge_count %}
+      <span class="badge rounded-pill bg-danger flex-shrink-0 ms-2 fs-value-secondary" style="font-size: var(--fs-ui-3xs);padding:2px 5px;min-width:18px;">{% if badge_count > 99 %}99+{% else %}{{ badge_count }}{% endif %}</span>
       {% endif %}
+      {% endwith %}
     </a>
   </li>
   {% elif item.permission %}
     {% comment %} Explicit permission defined (e.g., "produk:view") {% endcomment %}
     {% if request.user|has_permission:item.permission %}
-  <li class="menu-item {% if item.url == request.resolver_match.url_name or item.url == request.path %}active{% endif %}">
+  <li class="menu-item {% if item.url == request.resolver_match.url_name or item.url == request.resolver_match.view_name or item.url == request.path %}active{% endif %}">
     <a href="{% if item.external == True %}{{ item.url }}{% else %}{% url item.url %}{% endif %}" class="menu-link" {% if item.target == "_blank" %}target="_blank" {% endif %}>
       <i class="{{ item.icon }}"></i>
-      <div>{% trans item.name %}</div>
-      {% if item.badge %}
-      <div class="badge bg-{{ item.badge.0 }} rounded-pill ms-auto">{{ item.badge.1 }}</div>
+      <div class="text-truncate">{% trans item.name %}</div>
+      {% with badge_count=sidebar_badges|get_item:item.slug %}
+      {% if badge_count %}
+      <span class="badge rounded-pill bg-danger flex-shrink-0 ms-2 fs-value-secondary" style="font-size: var(--fs-ui-3xs);padding:2px 5px;min-width:18px;">{% if badge_count > 99 %}99+{% else %}{{ badge_count }}{% endif %}</span>
       {% endif %}
+      {% endwith %}
     </a>
   </li>
     {% endif %}
   {% else %}
     {% comment %} No explicit permission - check module-level view permission via slug {% endcomment %}
     {% if can_view|attr:item.slug %}
-  <li class="menu-item {% if item.url == request.resolver_match.url_name or item.url == request.path %}active{% endif %}">
+  <li class="menu-item {% if item.url == request.resolver_match.url_name or item.url == request.resolver_match.view_name or item.url == request.path %}active{% endif %}">
     <a href="{% if item.external == True %}{{ item.url }}{% else %}{% url item.url %}{% endif %}" class="menu-link" {% if item.target == "_blank" %}target="_blank" {% endif %}>
       <i class="{{ item.icon }}"></i>
-      <div>{% trans item.name %}</div>
-      {% if item.badge %}
-      <div class="badge bg-{{ item.badge.0 }} rounded-pill ms-auto">{{ item.badge.1 }}</div>
+      <div class="text-truncate">{% trans item.name %}</div>
+      {% with badge_count=sidebar_badges|get_item:item.slug %}
+      {% if badge_count %}
+      <span class="badge rounded-pill bg-danger flex-shrink-0 ms-2 fs-value-secondary" style="font-size: var(--fs-ui-3xs);padding:2px 5px;min-width:18px;">{% if badge_count > 99 %}99+{% else %}{{ badge_count }}{% endif %}</span>
       {% endif %}
+      {% endwith %}
     </a>
   </li>
     {% endif %}

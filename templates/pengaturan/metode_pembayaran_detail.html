@@ -48,7 +48,7 @@
             <!-- Card Utama -->
             <div class="card mb-4">
                 <div class="card-header pb-0">
-                    <h5 class="mb-0">Informasi Metode Pembayaran</h5>
+                    <h5 class="mb-0 fs-card-title">Informasi Metode Pembayaran</h5>
                 </div>
                 <div class="card-body pt-4">
                     <div class="row g-4">
@@ -114,7 +114,7 @@
             <!-- Card Keuangan -->
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="ri-money-dollar-circle-line me-2"></i>Informasi Keuangan</h5>
+                    <h5 class="mb-0 fs-card-title"><i class="ri-money-dollar-circle-line me-2"></i>Informasi Keuangan</h5>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
@@ -127,8 +127,8 @@
                                 </div>
                                 <div style="min-width: 0;">
                                     <p class="mb-0 text-muted small">Saldo Saat Ini</p>
-                                    <h6 class="mb-0 {% if saldo_terhitung >= 0 %}text-primary{% else %}text-danger{% endif %} fw-bold">{{ saldo_terhitung|rupiah }}</h6>
-                                    <small class="text-muted" style="font-size: 0.7rem;">Saldo awal: {{ metode.saldo|rupiah }}</small>
+                                    <h6 class="mb-0 fw-bold fs-value-primary">{{ saldo_terhitung|rupiah }}</h6>
+                                    <small class="text-muted fs-value-secondary" style="font-size: var(--fs-ui-xxs);">Saldo awal: {{ metode.saldo|rupiah }}</small>
                                 </div>
                             </div>
                         </div>
@@ -141,8 +141,8 @@
                                 </div>
                                 <div style="min-width: 0;">
                                     <p class="mb-0 text-muted small">Total Pendapatan</p>
-                                    <h6 class="mb-0 text-success fw-bold">{{ total_pendapatan|rupiah }}</h6>
-                                    <small class="text-muted" style="font-size: 0.7rem;">Tertinggi: {{ pendapatan_tertinggi|rupiah }}</small>
+                                    <h6 class="mb-0 fw-bold fs-value-primary">{{ total_pendapatan|rupiah }}</h6>
+                                    <small class="text-muted fs-value-secondary" style="font-size: var(--fs-ui-xxs);">Tertinggi: {{ pendapatan_tertinggi|rupiah }}</small>
                                 </div>
                             </div>
                         </div>
@@ -155,8 +155,8 @@
                                 </div>
                                 <div style="min-width: 0;">
                                     <p class="mb-0 text-muted small">Total Pengeluaran</p>
-                                    <h6 class="mb-0 text-danger fw-bold">{{ total_pengeluaran|rupiah }}</h6>
-                                    <small class="text-muted" style="font-size: 0.7rem;">Tertinggi: {{ pengeluaran_tertinggi|rupiah }}</small>
+                                    <h6 class="mb-0 fw-bold fs-value-primary">{{ total_pengeluaran|rupiah }}</h6>
+                                    <small class="text-muted fs-value-secondary" style="font-size: var(--fs-ui-xxs);">Tertinggi: {{ pengeluaran_tertinggi|rupiah }}</small>
                                 </div>
                             </div>
                         </div>
@@ -167,7 +167,7 @@
             <!-- Card Statistik Transaksi -->
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="ri-bar-chart-box-line me-2"></i>Statistik Penggunaan</h5>
+                    <h5 class="mb-0 fs-card-title"><i class="ri-bar-chart-box-line me-2"></i>Statistik Penggunaan</h5>
                 </div>
                 <div class="card-body">
                     <div class="row g-4">
@@ -181,7 +181,7 @@
                                     <h6 class="mb-0">Total Transaksi</h6>
                                     <small class="text-muted">Menggunakan metode ini</small>
                                 </div>
-                                <h4 class="mb-0 text-info">{{ total_transaksi }}</h4>
+                                <h4 class="mb-0 fs-value-primary">{{ total_transaksi }}</h4>
                             </div>
                         </div>
                         <div class="col-sm-6">
@@ -194,7 +194,7 @@
                                     <h6 class="mb-0">Transaksi Lunas</h6>
                                     <small class="text-muted">Status completed</small>
                                 </div>
-                                <h4 class="mb-0 text-success">{{ transaksi_lunas }}</h4>
+                                <h4 class="mb-0 fs-value-primary">{{ transaksi_lunas }}</h4>
                             </div>
                         </div>
                     </div>
@@ -204,7 +204,7 @@
             <!-- Card Riwayat -->
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="ri-history-line me-2"></i>Riwayat</h5>
+                    <h5 class="mb-0 fs-card-title"><i class="ri-history-line me-2"></i>Riwayat</h5>
                 </div>
                 <div class="card-body">
                     <div class="row g-4">
@@ -278,19 +278,19 @@
                     
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span style="color: rgba(255,255,255,0.7);">Saldo</span>
-                        <span class="text-white fw-bold fs-5">{{ metode.saldo|rupiah }}</span>
+                        <span class="text-white fw-bold fs-value-primary">{{ metode.saldo|rupiah }}</span>
                     </div>
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span style="color: rgba(255,255,255,0.7);">Total Pendapatan</span>
-                        <span class="text-white fw-bold fs-5">{{ total_pendapatan|rupiah }}</span>
+                        <span class="text-white fw-bold fs-value-primary">{{ total_pendapatan|rupiah }}</span>
                     </div>
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span style="color: rgba(255,255,255,0.7);">Total Pengeluaran</span>
-                        <span class="text-white fw-bold fs-5">{{ total_pengeluaran|rupiah }}</span>
+                        <span class="text-white fw-bold fs-value-primary">{{ total_pengeluaran|rupiah }}</span>
                     </div>
                     <div class="d-flex justify-content-between align-items-center">
                         <span style="color: rgba(255,255,255,0.7);">Total Transaksi</span>
-                        <span class="text-white fw-bold fs-5">{{ total_transaksi }}</span>
+                        <span class="text-white fw-bold fs-5 fs-value-primary">{{ total_transaksi }}</span>
                     </div>
                 </div>
             </div>

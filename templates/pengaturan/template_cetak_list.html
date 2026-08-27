@@ -25,7 +25,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    <!-- Header -->
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -42,48 +42,47 @@
         </div>
     </div>
 
-    <!-- Summary Cards -->
-    <div class="row g-4 mb-4">
-        <div class="col-sm-4">
+    <div class="row g-6 mb-6">
+        <div class="col-lg-4 col-md-4 col-6">
             <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="avatar me-3">
+                    <div class="d-flex align-items-center mb-2 gap-3">
+                        <div class="avatar flex-shrink-0">
                             <span class="avatar-initial rounded bg-label-primary"><i class="ri-file-list-3-line ri-24px"></i></span>
                         </div>
                         <div>
-                            <h4 class="mb-0">{{ total_template }}</h4>
-                            <small class="text-muted">Total Template</small>
+                            <span class="d-block text-muted small">Total Template</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_template }}</h5>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-4">
+        <div class="col-lg-4 col-md-4 col-6">
             <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="avatar me-3">
+                    <div class="d-flex align-items-center mb-2 gap-3">
+                        <div class="avatar flex-shrink-0">
                             <span class="avatar-initial rounded bg-label-success"><i class="ri-checkbox-circle-line ri-24px"></i></span>
                         </div>
                         <div>
-                            <h4 class="mb-0">{{ total_aktif }}</h4>
-                            <small class="text-muted">Template Aktif</small>
+                            <span class="d-block text-muted small">Template Aktif</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_aktif }}</h5>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-4">
+        <div class="col-lg-4 col-md-4 col-12">
             <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="avatar me-3">
+                    <div class="d-flex align-items-center mb-2 gap-3">
+                        <div class="avatar flex-shrink-0">
                             <span class="avatar-initial rounded bg-label-secondary"><i class="ri-close-circle-line ri-24px"></i></span>
                         </div>
                         <div>
-                            <h4 class="mb-0">{{ total_nonaktif }}</h4>
-                            <small class="text-muted">Template Nonaktif</small>
+                            <span class="d-block text-muted small">Template Nonaktif</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_nonaktif }}</h5>
                         </div>
                     </div>
                 </div>
@@ -91,7 +90,6 @@
         </div>
     </div>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3 align-items-end">
@@ -123,7 +121,7 @@
                     </select>
                 </div>
             </div>
-            <!-- Baris kedua: Pilih Kolom -->
+            
             <div class="row g-3 mt-2 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
@@ -196,15 +194,14 @@
         </div>
     </div>
 
-    <!-- Data Table Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="ri-table-line me-2"></i>Daftar Template Cetak</h5>
+            <h5 class="mb-0 fs-card-title"><i class="ri-table-line me-2"></i>Daftar Template Cetak</h5>
             <div class="d-flex gap-2">
-                <button type="button" class="btn btn-label-success btn-sm" onclick="exportExcel()">
+                <button type="button" class="btn btn-sm btn-label-success" onclick="exportToExcel()">
                     <i class="ri-file-excel-2-line me-1"></i>Export Excel
                 </button>
-                <button type="button" class="btn btn-label-danger btn-sm" onclick="exportPDF()">
+                <button type="button" class="btn btn-sm btn-label-danger" onclick="exportToPDF()">
                     <i class="ri-file-pdf-2-line me-1"></i>Export PDF
                 </button>
             </div>
@@ -227,18 +224,12 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for template in templates %}
+                    {% for template in templates %}
                         <tr>
                             <td>{{ forloop.counter }}</td>
                             <td><strong>{{ template.nama }}</strong></td>
                             <td>
-                                <span class="badge 
-                                    {% if template.jenis == 'invoice' %}bg-label-primary
-                                    {% elif template.jenis == 'purchase_order' %}bg-label-success
-                                    {% elif template.jenis == 'sales_order' %}bg-label-info
-                                    {% elif template.jenis == 'expense' %}bg-label-warning
-                                    {% elif template.jenis == 'export_excel' %}bg-label-dark
-                                    {% else %}bg-label-secondary{% endif %}">
+                                <span class="badge {% if template.jenis == 'invoice' %}bg-label-primary {% elif template.jenis == 'purchase_order' %}bg-label-success {% elif template.jenis == 'sales_order' %}bg-label-info {% elif template.jenis == 'expense' %}bg-label-warning {% elif template.jenis == 'export_excel' %}bg-label-dark {% else %}bg-label-secondary{% endif %}">
                                     {{ template.get_jenis_display }}
                                 </span>
                             </td>
@@ -277,8 +268,8 @@
                                 {% endif %}
                             </td>
                         </tr>
-                        {% endfor %}
-                    </tbody>
+                    {% endfor %}
+                </tbody>
                     <tfoot class="table-footer-summary">
                         <tr>
                             <td colspan="4" class="text-start ps-4 py-3" style="vertical-align: middle;">
@@ -335,16 +326,16 @@
 
                     </div>
 
-                    <h5 class="mb-3">Belum Ada Template Cetak</h5>
+                    <h5 class="mb-3">Belum Ada Template</h5>
 
                     <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
 
-                        Daftar template cetak masih kosong.
+                        Daftar template masih kosong.
 
                     </p>
                 <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
                     {% if can_create.pengaturan %}
-                    <a href="{% url 'pengaturan:template_cetak_add' %}" class="btn btn-primary btn-lg">
+                    <a href="{% url 'pengaturan:template_cetak_create' %}" class="btn btn-primary btn-lg">
                         <i class="ri-add-line me-1"></i>Tambah Template
                     </a>
                     {% endif %}
@@ -359,7 +350,6 @@
     </div>
 </div>
 
-<!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteTemplateModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -389,6 +379,8 @@
 var templateTable;
 
 $(document).ready(function() {
+    {% if templates %}
+    if (!$.fn.dataTable.isDataTable('#templateTable')) {
     {% if templates %}
     templateTable = $('#templateTable').DataTable({
         responsive: false,
@@ -422,14 +414,16 @@ $(document).ready(function() {
         }
     });
     {% endif %}
+    }
+    {% endif %}
 });
 
 function applyFilters() {
+    if (!templateTable) return;
     const search = document.getElementById('searchTemplate').value;
     const jenis = document.getElementById('jenisFilter').value;
     const status = document.getElementById('statusFilter').value;
 
-    // Column 1 = Nama, Column 2 = Jenis, Column 5 = Status
     templateTable.column(1).search(search);
     templateTable.column(2).search(jenis);
     templateTable.column(5).search(status);
@@ -437,13 +431,13 @@ function applyFilters() {
 }
 
 function resetFilters() {
+    if (!templateTable) return;
     document.getElementById('searchTemplate').value = '';
     document.getElementById('jenisFilter').value = '';
     document.getElementById('statusFilter').value = '';
     templateTable.search('').columns().search('').draw();
 }
 
-// Pilih Kolom Functions
 function toggleColumns() {
     if (!templateTable) return;
     document.querySelectorAll('.column-checkbox').forEach(function(cb) {
@@ -467,12 +461,14 @@ function deselectAllColumns() {
     toggleColumns();
 }
 
-function exportExcel() {
+function exportToExcel() {
     const title = 'Daftar Template Cetak';
     const headers = ['No', 'Nama Template', 'Jenis Dokumen', 'Nama Perusahaan', 'Telepon', 'Status', 'Terakhir Update'];
     const rows = [];
 
-    document.querySelectorAll('#templateTable tbody tr').forEach((tr, i) => {
+    const tableRows = document.querySelectorAll('#templateTable tbody tr');
+    if (tableRows.length === 0) { if (typeof showExportEmpty === 'function') { showExportEmpty(); } else { showExportEmpty(); } return; }
+    tableRows.forEach((tr, i) => {
         const cells = tr.querySelectorAll('td');
         if (cells.length >= 7) {
             rows.push([
@@ -487,18 +483,16 @@ function exportExcel() {
         }
     });
 
-    // Summary
     const summaryRows = [
         ['RINGKASAN', '', '', '', '', '', ''],
         ['Total Template', '{{ total_template }}', '', '', '', '', ''],
         ['Aktif', '{{ total_aktif }}', '', '', '', '', ''],
-        ['Nonaktif', '{{ total_nonaktif }}', '', '', '', '', '']
     ];
 
     if (typeof ExportUtils !== 'undefined') {
         ExportUtils.exportTableExcel(title, headers, rows, summaryRows, 'template_cetak');
     } else {
-        // Fallback: simple HTML table export
+        
         let html = '<html><head><meta charset="UTF-8"></head><body>';
         html += '<h2>' + title + '</h2>';
         html += '<table border="1" cellpadding="5" cellspacing="0">';
@@ -506,7 +500,7 @@ function exportExcel() {
         rows.forEach(row => {
             html += '<tr>' + row.map(c => '<td>' + c + '</td>').join('') + '</tr>';
         });
-        html += '<tr><td colspan="5" style="text-align:right;font-weight:bold">RINGKASAN:</td><td colspan="2">{{ total_template }} Total | {{ total_aktif }} Aktif | {{ total_nonaktif }} Nonaktif</td></tr>';
+        html += '<tr><td colspan="5" class="text-center py-5">RINGKASAN:</td><td colspan="2"class="text-center py-5">{{ total_template }} Total | {{ total_aktif }} Aktif | {{ total_nonaktif }} Nonaktif</td></tr>';
         html += '</table></body></html>';
 
         const blob = new Blob([html], {type: 'application/vnd.ms-excel'});
@@ -519,12 +513,14 @@ function exportExcel() {
     }
 }
 
-function exportPDF() {
+function exportToPDF() {
     const title = 'Daftar Template Cetak';
     const headers = ['No', 'Nama Template', 'Jenis Dokumen', 'Nama Perusahaan', 'Status'];
     const rows = [];
 
-    document.querySelectorAll('#templateTable tbody tr').forEach((tr, i) => {
+    const tableRows = document.querySelectorAll('#templateTable tbody tr');
+    if (tableRows.length === 0) { if (typeof showExportEmpty === 'function') { showExportEmpty(); } else { showExportEmpty(); } return; }
+    tableRows.forEach((tr, i) => {
         const cells = tr.querySelectorAll('td');
         if (cells.length >= 6) {
             rows.push([
@@ -537,7 +533,6 @@ function exportPDF() {
         }
     });
 
-    // Summary line
     const summaryText = 'Total: {{ total_template }} template | Aktif: {{ total_aktif }} | Nonaktif: {{ total_nonaktif }}';
 
     if (typeof ExportUtils !== 'undefined') {
@@ -577,7 +572,6 @@ function exportPDF() {
     }
 }
 
-// === DELETE FUNCTIONS ===
 var deleteId = null;
 function confirmDelete(id, nama) {
     deleteId = id;

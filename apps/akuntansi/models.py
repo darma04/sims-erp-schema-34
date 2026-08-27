@@ -277,6 +277,7 @@ class JurnalEntry(models.Model):
         ('rekon', 'Rekonsiliasi Kas'),
         ('closing', 'Closing Entry / Tutup Buku'),
         ('pembalik', 'Jurnal Pembalik'),
+        ('reimburse', 'Reimburse'),
     ]
 
     # Nomor jurnal unik — auto-generate: JU-2026-00001
@@ -383,12 +384,12 @@ class JurnalEntry(models.Model):
     def save(self, *args, **kwargs):
         """Override save untuk auto-generate nomor jurnal dan validasi."""
         from django.db import transaction, IntegrityError
-        self.full_clean()
         if not self.nomor:
             with transaction.atomic():
                 self.nomor = self.generate_nomor()
                 super().save(*args, **kwargs)
         else:
+            self.full_clean()
             super().save(*args, **kwargs)
 
     def generate_nomor(self):

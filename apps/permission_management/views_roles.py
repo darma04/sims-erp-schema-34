@@ -331,6 +331,13 @@ class RoleUpdateAjaxView(SuperuserRequiredMixin, View):
         """Handle HTTP POST request."""
         from django.db import transaction
         
+        # Proteksi: Jangan izinkan edit SUPERUSER
+        if role == 'SUPERUSER':
+            return JsonResponse({
+                'success': False,
+                'message': 'Role SUPERUSER memiliki akses penuh dan tidak dapat diedit.'
+            }, status=400)
+        
         # Blok penanganan error — coba jalankan kode di bawah
         try:
             # Cek apakah nama role diubah

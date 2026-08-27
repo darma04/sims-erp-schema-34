@@ -31,7 +31,8 @@
 ==========================================================================
 """
 
-from django.db import models  # Django ORM untuk definisi model database
+from django.db import models
+from django.utils import timezone  # Django ORM untuk definisi model database
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
@@ -66,34 +67,45 @@ class RolePermission(models.Model):
     # ==================== DAFTAR MODUL ====================
     # Semua modul yang tersedia di sistem
     # Setiap modul sesuai dengan 1 menu utama di sidebar
+    # URUTAN HARUS SAMA PERSIS dengan vertical_menu.json (sidebar)
     MODULE_CHOICES = [
-        ('dashboard', 'Dashboard'),                # Halaman utama analytics
-        ('produk', 'Produk'),                      # Manajemen produk, kategori, satuan
-        ('inventory', 'Inventory'),                # Gudang, stok, transfer, adjustment
-        ('pembelian', 'Pembelian'),                # Supplier, purchase order
-        ('penjualan', 'Penjualan'),                # Customer, sales order
-        ('pos', 'POS / Kasir'),                    # Point of Sale / kasir
-        ('kas_bank', 'Kas & Bank / Treasury'),     # Akun kas/bank, mutasi, transfer, rekonsiliasi
-        ('biaya', 'Biaya'),                        # Pengeluaran / biaya operasional
-        ('laporan', 'Laporan'),                    # Laporan: produk, stok, keuangan
-        ('hr', 'HR / Human Resource'),             # Karyawan, absensi, penggajian
-        ('user_management', 'User Management'),    # Kelola user
-        ('activity_log', 'Log Aktivitas'),         # Riwayat aktivitas user
-        ('pengaturan', 'Pengaturan'),              # Pengaturan perusahaan & sistem
-        ('automation', 'Automasi Telegram'),        # Notifikasi Telegram
-        ('access_control', 'Access Control'),       # Kelola role & permission
-        ('ai_assistant', 'AI Manajemen'),            # AI Dashboard & AI Assistant
-        ('fraud_detection', 'Fraud Detection'),      # Deteksi kecurangan
-        # ========== MODUL AKUNTANSI ==========
-        ('akuntansi', 'Akuntansi'),                # CoA, Jurnal, Buku Besar, Periode
-        ('laporan_keuangan', 'Laporan Keuangan'),  # Trial Balance, Laba Rugi, Neraca, Arus Kas
-        ('piutang', 'Piutang (AR)'),               # Accounts Receivable
-        ('hutang', 'Hutang (AP)'),                 # Accounts Payable
-        ('aset', 'Aset Tetap'),                    # Fixed Assets & Penyusutan
-        ('pajak', 'Pajak (PPN)'),                  # Faktur Pajak & Rekap PPN
+        # ========== MASTER DATA ==========
+        ('dashboard', 'Dashboard'),                     # Halaman utama analytics
+        ('produk', 'Produk'),                           # Manajemen produk, kategori, satuan
+        ('inventory', 'Inventory'),                     # Gudang, stok, transfer, adjustment
+        # ========== TRANSAKSI ==========
+        ('pembelian', 'Pembelian'),                     # Supplier, purchase order
+        ('penjualan', 'Penjualan'),                     # Customer, sales order
+        ('pos', 'POS / Kasir'),                         # Point of Sale / kasir
+        ('invoice', 'Invoice'),                         # Daftar invoice/faktur
+        ('kas_bank', 'Kas & Bank / Treasury'),          # Akun kas/bank, mutasi, transfer, rekonsiliasi
+        ('biaya', 'Biaya'),                             # Pengeluaran / biaya operasional
+        ('reimburse', 'Reimburse'),                     # Pengajuan & daftar reimburse
+        # ========== AKUNTANSI ==========
+        ('akuntansi', 'Akuntansi'),                     # CoA, Jurnal, Buku Besar, Periode
+        ('laporan_keuangan', 'Laporan Keuangan'),       # Trial Balance, Laba Rugi, Neraca, Arus Kas
         ('rekonsiliasi_keuangan', 'Rekonsiliasi Keuangan'),  # Perbandingan Operasional vs Akuntansi
-        ('service_center', 'Service Center'),        # Service Center Elektronik
-        ('sparepart', 'Sparepart'),                  # Manajemen sparepart
+        ('piutang', 'Piutang (AR)'),                    # Accounts Receivable
+        ('hutang', 'Hutang (AP)'),                      # Accounts Payable
+        ('aset', 'Aset Tetap'),                         # Fixed Assets & Penyusutan
+        ('pajak', 'Pajak (PPN)'),                       # Faktur Pajak & Rekap PPN
+        # ========== SERVICE CENTER ==========
+        ('service_center', 'Service Center'),           # Service Center Elektronik
+        ('sparepart', 'Sparepart'),                     # Manajemen sparepart
+        # ========== HR MANAGEMENT ==========
+        ('hr', 'HR / Human Resource'),                  # Karyawan, absensi, penggajian
+        # ========== LAPORAN ==========
+        ('laporan', 'Laporan'),                         # Laporan: produk, stok, keuangan
+        ('fraud_detection', 'Fraud Detection'),         # Deteksi kecurangan
+        # ========== AUTOMASI & AI ==========
+        ('automation', 'Automasi Telegram'),             # Notifikasi Telegram
+        ('ai_assistant', 'AI Manajemen'),                # AI Dashboard & AI Assistant
+        # ========== PENGATURAN ==========
+        ('user_management', 'User Management'),         # Kelola user
+        ('access_control', 'Access Control'),           # Kelola role & permission
+        ('activity_log', 'Log Aktivitas'),              # Riwayat aktivitas user
+        ('approval_center', 'Approval Center'),         # Pusat persetujuan
+        ('pengaturan', 'Pengaturan'),                   # Pengaturan perusahaan & sistem
     ]
 
     # ==================== DAFTAR SUB-MODUL ====================
@@ -136,6 +148,10 @@ class RolePermission(models.Model):
         'biaya': [
             ('kategori_biaya', 'Kategori Biaya'),   # CRUD Kategori Biaya
             ('tambah_biaya', 'Tambah Biaya'),       # Form tambah biaya
+        ],
+        'reimburse': [
+            ('daftar_reimburse', 'Daftar Reimburse'),       # List semua reimburse
+            ('pengajuan_reimburse', 'Pengajuan Reimburse'), # Form pengajuan reimburse baru
         ],
         'hr': [
             ('dashboard_hr', 'Dashboard HR'),               # Dashboard HR
@@ -220,20 +236,20 @@ class RolePermission(models.Model):
         # Permission dicek hanya di level modul (can_view, can_create, can_edit, can_delete).
         # ========== SERVICE CENTER ==========
         'service_center': [
-            ('dashboard', 'Dashboard Service'),               # Dashboard Service Center
-            ('order_service', 'Order Service'),               # CRUD Order Service
-            ('pelanggan_sc', 'Pelanggan'),                    # CRUD Pelanggan SC
-            ('perangkat', 'Jenis Perangkat'),                 # CRUD Perangkat
-            ('kategori_service', 'Kategori Service'),         # CRUD Kategori Service
-            ('jenis_service', 'Jenis Service'),               # CRUD Jenis Service
-            ('sparepart', 'Penggunaan Sparepart'),            # Penggunaan Sparepart
-            ('terima_unit', 'Terima Unit Baru'),              # Form terima order baru
-            ('sc_laporan', 'Laporan Service'),           # Laporan service center
+            ('dashboard_service', 'Dashboard Service'),               # CRUD Dashboard SC
+            ('pelanggan_service', 'Pelanggan SC'),                    # CRUD Pelanggan SC
+            ('perangkat', 'Jenis Perangkat'),                         # CRUD Jenis Perangkat
+            ('kategori_service', 'Kategori Service'),                 # CRUD Kategori Service
+            ('jenis_service', 'Jenis Service'),                       # CRUD Jenis Service
+            ('order_service', 'Order Service'),                       # CRUD Order
+            ('sparepart_service', 'Penggunaan Sparepart'),            # Sparepart di SC
+            ('terima_unit', 'Terima Unit Baru'),                      # Form terima order baru
+            ('sc_laporan', 'Laporan Service'),                        # Laporan service center
         ],
         # ========== SPAREPART ==========
         'sparepart': [
-            ('daftar_sparepart', 'Daftar Sparepart'),          # List sparepart
-            ('tambah_sparepart', 'Tambah Sparepart'),          # Form tambah sparepart
+            ('daftar_sparepart', 'Daftar Sparepart'),                  # List sparepart
+            ('tambah_sparepart', 'Tambah Sparepart'),                  # Form tambah sparepart
         ],
     }
 
@@ -278,6 +294,9 @@ class RolePermission(models.Model):
         # === Biaya ===
         'kategori_biaya': 'kategori',
         'tambah_biaya': 'transaksi',
+        # === Reimburse ===
+        'daftar_reimburse': 'list',              # sidebar: reimburse-list
+        'pengajuan_reimburse': 'pengajuan',      # sidebar: reimburse-pengajuan
         # === HR ===
         'dashboard_hr': 'dashboard',
         'departemen': 'departemen',
@@ -341,16 +360,17 @@ class RolePermission(models.Model):
         'faktur_pajak': 'list',
         'rekap_ppn': 'rekap',
         'setting_pajak': 'setting',
-        # === Service Center ===
-        'dashboard': 'dashboard',
-        'order_service': 'order',
-        'pelanggan_sc': 'pelanggan',
-        'perangkat': 'perangkat',
-        'kategori_service': 'kategori',
-        'jenis_service': 'jenis',
-        'sparepart': 'sparepart',
-        'terima_unit': 'terima',
-        'sc_laporan': 'laporan',
+        # === Service Center (SIMS+Acc) ===
+        # Kode DB (dari views.py permission_sub_module) → slug sidebar
+        'dashboard_service': 'dashboard',     # sidebar: service-center-dashboard
+        'pelanggan_service': 'pelanggan',     # sidebar: service-center-pelanggan
+        'perangkat': 'perangkat',             # sidebar: service-center-perangkat
+        'kategori_service': 'kategori',       # sidebar: service-center-kategori
+        'jenis_service': 'jenis',             # sidebar: service-center-jenis
+        'order_service': 'order',             # sidebar: service-center-order
+        'sparepart_service': 'sparepart',     # sidebar: service-center-sparepart
+        'terima_unit': 'terima',              # sidebar: service-center-terima
+        'sc_laporan': 'laporan',              # sidebar: service-center-laporan
         # === Sparepart ===
         'daftar_sparepart': 'daftar_sparepart',
         'tambah_sparepart': 'tambah_sparepart',
@@ -540,3 +560,18 @@ def invalidate_role_permission_cache_on_change(sender, instance, **kwargs):
     from apps.core.cache_utils import invalidate_role_permissions_cache
 
     invalidate_role_permissions_cache(instance.role)
+
+class UserModuleRead(models.Model):
+    """Timestamp kapan user terakhir membaca modul (dasar badge notifikasi sidebar)."""
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='module_reads')
+    module = models.CharField(max_length=50)
+    last_read_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        unique_together = ['user', 'module']
+        verbose_name = "Module Read Timestamp"
+        verbose_name_plural = "Module Read Timestamps"
+
+    def __str__(self):
+        return f"{self.user.username} - {self.module} - {self.last_read_at}"
+

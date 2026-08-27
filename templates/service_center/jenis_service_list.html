@@ -16,15 +16,15 @@
     <!-- Filter Card -->
     <div class="card mb-4"><div class="card-body">
         <div class="row g-3">
-            <div class="col-md-4"><label class="form-label">Cari Layanan</label><input type="text" class="form-control" id="searchInput" placeholder="Nama layanan..."></div>
-            <div class="col-md-3"><label class="form-label">Filter Kategori</label><select class="form-select" id="filterKategori"><option value="">Semua Kategori</option>{% for k in kategori_list %}<option value="{{ k.nama }}">{{ k.nama }}</option>{% endfor %}</select></div>
+            <div class="col-md-6"><label class="form-label">Cari Layanan</label><input type="text" class="form-control" id="searchInput" placeholder="Nama layanan..."></div>
+            <div class="col-md-6"><label class="form-label">Filter Kategori</label><select class="form-select" id="filterKategori"><option value="">Semua Kategori</option>{% for k in kategori_list %}<option value="{{ k.nama }}">{{ k.nama }}</option>{% endfor %}</select></div>
         </div>
         <!-- Filter row: Pilih Kolom kiri, Filter & Reset kanan -->
         <div class="row g-3 mt-2 align-items-end">
-            <div class="col-md-6">
+            <div class="col-md-3">
                 <label class="form-label fw-semibold">Pilih Kolom</label>
                 <div class="dropdown">
-                    <button class="btn btn-label-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside"><i class="ri-layout-column-line me-1"></i>Pilih Kolom Yang Ditampilkan</button>
+                    <button class="btn btn-label-secondary dropdown-toggle w-100" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside"><i class="ri-layout-column-line me-1"></i>Pilih Kolom Yang Ditampilkan</button>
                     <div class="dropdown-menu p-3" style="min-width:280px">
                         <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="0" checked onchange="toggleColumns()"><label class="form-check-label">Foto</label></div>
                         <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="1" checked onchange="toggleColumns()"><label class="form-check-label">Kategori</label></div>
@@ -39,7 +39,7 @@
                 </div>
                 <small class="text-muted">Klik untuk memilih kolom</small>
             </div>
-            <div class="col-md-3"></div>
+            <div class="col-md-6"></div>
             <div class="col-md-3">
                 <div class="d-grid gap-2">
                     <button class="btn btn-primary" onclick="applyFilter()"><i class="ri-filter-3-line me-1"></i>Filter</button>
@@ -50,7 +50,7 @@
     </div></div>
     <!-- Data Table -->
     <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center"><h5 class="mb-0">Daftar Jenis Service</h5><div class="d-flex gap-2"><button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button><button class="btn btn-sm btn-label-danger" onclick="exportToPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button></div></div>
+        <div class="card-header d-flex justify-content-between align-items-center"><h5 class="mb-0 fs-card-title">Daftar Jenis Service</h5><div class="d-flex gap-2"><button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button><button class="btn btn-sm btn-label-danger" onclick="exportToPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button></div></div>
         {% if kategori_list %}
 
         <div class="card-datatable table-responsive">
@@ -135,7 +135,7 @@
                 </p>
                 <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
                     {% if can_create.service_center %}
-                    <a href="{% url 'service_center:jenis_service_add' %}" class="btn btn-primary btn-lg">
+                    <a href="{% url 'service_center:jenis_create' %}" class="btn btn-primary btn-lg">
                         <i class="ri-add-line me-1"></i>Tambah Jenis
                     </a>
                     {% endif %}
@@ -214,7 +214,13 @@ document.getElementById('confirmDeleteBtn').addEventListener('click',function(){
     };
 
     function exportToExcel() {
+        const table = document.getElementById('dataTable');
+        if (!table) { showExportEmpty(); return; }
         const tableObj = new $.fn.dataTable.Api('#dataTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
         let colCount = 0;
         let visibleColumns = [];
 
@@ -239,7 +245,7 @@ document.getElementById('confirmDeleteBtn').addEventListener('click',function(){
         visibleColumns.forEach(col => { html += `<th>${col.text}</th>`; });
         html += '</tr></thead><tbody>';
 
-        tableObj.rows({ search: 'applied' }).every(function (rowIdx) {
+        tableObj.rows({ page: 'current' }).every(function (rowIdx) {
             html += '<tr>';
             visibleColumns.forEach(col => {
                 let cellNode = tableObj.cell(rowIdx, col.index).node();
@@ -252,7 +258,7 @@ document.getElementById('confirmDeleteBtn').addEventListener('click',function(){
         // Add tfoot summary
         html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
         html += `<td colspan="${colCount - 1}">RINGKASAN: {{ total_jenis }} Jenis Service Terdaftar</td>`;
-        html += `<td>{{ total_harga_standar|rupiah }}</td>`;
+        html += `<td class="text-end">{{ total_harga_standar|rupiah }}</td>`;
         html += '</tr>';
 
         html += '</tbody></table>';
@@ -276,7 +282,13 @@ document.getElementById('confirmDeleteBtn').addEventListener('click',function(){
 
     function exportToPDF() {
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
+        const table = document.getElementById('dataTable');
+        if (!table) { showExportEmpty(); return; }
         const tableObj = new $.fn.dataTable.Api('#dataTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
         
         const headers = [];
         const visibleColumns = [];
@@ -289,7 +301,7 @@ document.getElementById('confirmDeleteBtn').addEventListener('click',function(){
         });
 
         const body = [headers];
-        tableObj.rows({ search: 'applied' }).every(function (rowIdx) {
+        tableObj.rows({ page: 'current' }).every(function (rowIdx) {
             const rowData = [];
             visibleColumns.forEach(colIndex => {
                 let cellNode = tableObj.cell(rowIdx, colIndex).node();

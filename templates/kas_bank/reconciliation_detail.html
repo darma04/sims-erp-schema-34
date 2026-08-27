@@ -1,7 +1,22 @@
 {% extends 'layout/layout_vertical.html' %}
+{% load static %}
 {% load currency_filters %}
 
 {% block title %}Detail Rekonsiliasi Kas & Bank{% endblock title %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+{% endblock vendor_js %}
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
@@ -11,7 +26,7 @@
 
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="ri-file-search-line me-2"></i>{{ reconciliation.akun_kas_bank.kode }} - {{ reconciliation.akun_kas_bank.nama }}</h5>
+            <h5 class="mb-0 fs-card-title"><i class="ri-file-search-line me-2"></i>{{ reconciliation.akun_kas_bank.kode }} - {{ reconciliation.akun_kas_bank.nama }}</h5>
             <div class="d-flex gap-2">
                 <a href="{% url 'kas_bank:reconciliation_edit' reconciliation.pk %}" class="btn btn-primary">
                     <i class="ri-edit-line me-1"></i>Edit
@@ -26,70 +41,36 @@
                 <div class="col-md-3">
                     <div class="border rounded p-3 h-100">
                         <small class="text-muted d-block mb-1">Saldo Sistem</small>
-                        <h5 class="mb-0">{{ reconciliation.saldo_sistem|rupiah }}</h5>
+                        <h5 class="mb-0 fs-value-primary">{{ reconciliation.saldo_sistem|rupiah }}</h5>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="border rounded p-3 h-100">
                         <small class="text-muted d-block mb-1">Saldo Statement</small>
-                        <h5 class="mb-0">{{ reconciliation.saldo_statement|rupiah }}</h5>
+                        <h5 class="mb-0 fs-value-primary">{{ reconciliation.saldo_statement|rupiah }}</h5>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="border rounded p-3 h-100">
                         <small class="text-muted d-block mb-1">Selisih</small>
-                        <h5 class="mb-0 {% if reconciliation.selisih == 0 %}text-success{% else %}text-warning{% endif %}">{{ reconciliation.selisih|rupiah }}</h5>
+                        <h5 class="mb-0 fs-value-primary">{{ reconciliation.selisih|rupiah }}</h5>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="border rounded p-3 h-100">
                         <small class="text-muted d-block mb-1">Status</small>
-                        <span class="badge bg-label-{% if reconciliation.status == 'reconciled' %}success{% elif reconciliation.status == 'cancelled' %}danger{% else %}secondary{% endif %}">{{ reconciliation.get_status_display }}</span>
+                        <span class="badge bg-label-{% if reconciliation.status == 'reconciled' %}success{% elif reconciliation.status == 'cancelled' %}danger{% else %}secondary{% endif %} fs-value-secondary">{{ reconciliation.get_status_display }}</span>
                     </div>
                 </div>
             </div>
 
             <div class="row">
                 <div class="col-md-6">
-                    {% if transactions %}
-
                     <table class="table table-borderless">
                         <tr><td class="text-muted" style="width:170px;">Akun Kas/Bank</td><td><a href="{% url 'kas_bank:account_detail' reconciliation.akun_kas_bank.pk %}">{{ reconciliation.akun_kas_bank.kode }} - {{ reconciliation.akun_kas_bank.nama }}</a></td></tr>
                         <tr><td class="text-muted">Tanggal Mulai</td><td>{{ reconciliation.tanggal_mulai|date:"d F Y" }}</td></tr>
                         <tr><td class="text-muted">Tanggal Akhir</td><td>{{ reconciliation.tanggal_akhir|date:"d F Y" }}</td></tr>
                     </table>
-
-                    {% else %}
-
-                    <div class="card-body">
-
-                        <div class="text-center py-4 py-md-5 px-3 px-md-4">
-
-                            <div class="mb-4">
-
-                                <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
-
-                                     style="width: 88px; height: 88px;">
-
-                                    <i class="ri-check-double-line" style="font-size: 2.8rem;"></i>
-
-                                </div>
-
-                            </div>
-
-                            <h5 class="mb-3">Belum Ada Rekonsiliasi</h5>
-
-                            <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
-
-                                Daftar data masih kosong.
-
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                    {% endif %}
                 </div>
                 <div class="col-md-6">
                     <table class="table table-borderless">
@@ -103,12 +84,17 @@
     </div>
 
     <div class="card">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="ri-file-list-3-line me-2"></i>Mutasi Posted dalam Periode</h5>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fs-card-title"><i class="ri-file-list-3-line me-2"></i>Mutasi Posted dalam Periode</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcelFromButton(this)"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDFFromButton(this)"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+            </div>
         </div>
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead class="table-light">
+        {% if transactions %}
+        <div class="card-datatable table-responsive">
+            <table id="mutasiRekonTable" class="datatables-kas-bank accounting-data-table table table-hover" data-export-title="Mutasi Posted dalam Periode - {{ reconciliation.akun_kas_bank.kode }}" data-search-placeholder="Cari mutasi...">
+                <thead>
                     <tr>
                         <th>Nomor</th>
                         <th>Tanggal</th>
@@ -128,8 +114,57 @@
                     </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="3" class="text-start ps-4 py-3">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ transactions|length }} mutasi posted</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="badge bg-label-success d-flex align-items-center gap-1 mb-2" style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    <i class="ri-arrow-up-circle-line"></i><span>{{ total_masuk|rupiah }}</span>
+                                </span>
+                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Masuk</small>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="badge bg-label-danger d-flex align-items-center gap-1 mb-2" style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    <i class="ri-arrow-down-circle-line"></i><span>{{ total_keluar|rupiah }}</span>
+                                </span>
+                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Keluar</small>
+                            </div>
+                        </td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
+        {% else %}
+        <div class="card-body">
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+                <div class="mb-4">
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 88px; height: 88px;">
+                        <i class="ri-file-list-3-line" style="font-size: 2.8rem;"></i>
+                    </div>
+                </div>
+                <h5 class="mb-3">Belum Ada Mutasi Posted</h5>
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+                    Belum ada mutasi posted dalam periode rekonsiliasi ini.
+                </p>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock content %}
+
+{% block page_js %}
+{{ block.super }}
+{% include 'kas_bank/partials/list_tools.html' %}
+{% endblock page_js %}

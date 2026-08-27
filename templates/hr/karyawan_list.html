@@ -1,4 +1,4 @@
-﻿{% extends 'layout/layout_vertical.html' %}
+{% extends 'layout/layout_vertical.html' %}
 {% comment %}
 ==========================================================================
    KARYAWAN LIST - Daftar Karyawan
@@ -154,7 +154,7 @@
     <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Data Karyawan</h5>
+            <h5 class="mb-0 fs-card-title">Data Karyawan</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()">
                     <i class="ri-file-excel-2-line me-1"></i>Export Excel
@@ -187,7 +187,7 @@
                             <div class="d-flex align-items-center">
                                 <div class="avatar avatar-sm me-2 flex-shrink-0">
                                     {% if karyawan.foto %}
-                                    <img src="{{ karyawan.foto.url }}" alt="{{ karyawan.nama }}" class="rounded-circle" style="width: 32px; height: 32px; object-fit: cover;">
+                                    <img src="{{ karyawan.foto.url }}" alt="{{ karyawan.nama }}" class="rounded-circle" style="object-fit: cover;">
                                     {% else %}
                                     <span class="avatar-initial rounded-circle">{{ karyawan.nama|slice:":2"|upper }}</span>
                                     {% endif %}
@@ -276,11 +276,11 @@
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-success d-flex align-items-center gap-1 mb-1"
-                                    style="font-size: 0.85rem; padding: 0.4rem 0.6rem;">
+                                    style="font-size: var(--fs-ui-sm); padding: 0.4rem 0.6rem;">
                                     <i class="ri-user-line"></i>
                                     <span>{{ karyawan_aktif }}</span>
                                 </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.7rem;">Aktif</small>
+                                <small class="text-muted fw-medium" style="font-size: var(--fs-ui-xxs);">Aktif</small>
                             </div>
                         </td>
                         <td class="py-3"></td>
@@ -316,13 +316,10 @@
                 </p>
                 <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
                     {% if can_create.hr %}
-                    <a href="{% url 'hr:karyawan_add' %}" class="btn btn-primary btn-lg">
+                    <a href="{% url 'hr:karyawan-add' %}" class="btn btn-primary btn-lg">
                         <i class="ri-add-line me-1"></i>Tambah Karyawan
                     </a>
                     {% endif %}
-                    <a href="{% url 'hr:karyawan_import' %}" class="btn btn-label-success btn-lg">
-                        <i class="ri-upload-2-line me-1"></i>Import dari Excel
-                    </a>
                 </div>
 
             </div>
@@ -371,7 +368,7 @@
     .dataTables_wrapper .dataTables_info {
         padding: 1rem 1.5rem;
         font-size: 0.875rem;
-        color: #697a8d;
+        ;
     }
 
     .dataTables_wrapper .dataTables_paginate {
@@ -582,9 +579,13 @@ const FOOTER_LABEL = 'RINGKASAN';
 
     function exportToExcel() {
         const table = document.getElementById('karyawanTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#karyawanTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         let colCount = 0;
         let visibleColumns = [];
@@ -673,9 +674,13 @@ const FOOTER_LABEL = 'RINGKASAN';
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('karyawanTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#karyawanTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         const headers = [];
         let visibleColumns = [];

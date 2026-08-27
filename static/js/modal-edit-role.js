@@ -48,54 +48,49 @@
     
     function loadRoleDataForEdit(roleCode) {
         
-        const roleCodeInput = document.getElementById('editRoleCode');     
-        const roleNameInput = document.getElementById('editRoleName');     
-        const container = document.getElementById('editPermissionCheckboxContainer');  
+        const roleCodeInput = document.getElementById('editRoleCode');
+        const roleNameInput = document.getElementById('editRoleName');
+        const container = document.getElementById('editPermissionCheckboxContainer');
 
         if (!roleCodeInput) return;
 
-        
+        // Simpan role code ke input hidden
         roleCodeInput.value = roleCode;
         currentRoleCode = roleCode;
 
-        
-        const alreadyRendered = container && container.querySelectorAll('input[type="checkbox"]').length > 0;
-
-        if (!alreadyRendered && container) {
-            
-            
+        // SELALU clear container dan re-render saat role baru dibuka
+        if (container) {
             container.innerHTML = '<div class="text-center py-4"><span class="spinner-border spinner-border-sm me-2"></span>Memuat permissions...</div>';
-        } else if (alreadyRendered) {
-            
-            
-            container.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
         }
 
-        
+        // Reset guard render agar renderPermissionCheckboxes bisa jalan ulang
+        if (typeof _renderedContainers !== 'undefined') {
+            delete _renderedContainers['editPermissionCheckboxContainer_edit'];
+        }
+
+        // Fetch data permissions dari server
         fetch(`/access/roles/ajax/${roleCode}/data/`)
             .then(response => response.json())
             .then(data => {
                 console.log('[EditRole] Data loaded:', data);
 
                 if (data.success) {
-                    
+                    // Set nama role di input
                     if (roleNameInput) {
-                        
-                        
                         roleNameInput.value = data.role_display || roleCode.replace(/_/g, ' ');
                     }
 
-                    
-                    if (!alreadyRendered && typeof renderPermissionCheckboxes === 'function') {
+                    // Render checkbox (container sudah dikosongkan di atas)
+                    if (container) container.innerHTML = '';
+                    if (typeof renderPermissionCheckboxes === 'function') {
                         renderPermissionCheckboxes('editPermissionCheckboxContainer', 'edit');
                     }
 
-                    
+                    // Populate checkbox berdasarkan data permissions
                     requestAnimationFrame(function() {
                         populatePermissionCheckboxes(data.permissions || []);
                     });
                 } else {
-                    
                     showAlert('error', data.message || 'Gagal memuat data role');
                     if (container) {
                         container.innerHTML = '<div class="alert alert-danger">Gagal memuat data permission</div>';
@@ -103,7 +98,6 @@
                 }
             })
             .catch(error => {
-                
                 console.error('[EditRole] Error loading role data:', error);
                 showAlert('error', 'Gagal memuat data role dari server');
                 if (container) {
@@ -116,42 +110,35 @@
     function populatePermissionCheckboxes(permissions) {
         if (!Array.isArray(permissions)) return;
 
-        
+        // Reset semua checkbox dulu
         document.querySelectorAll('#editRoleForm input[type="checkbox"]').forEach(cb => {
             cb.checked = false;
         });
 
-        
+        // Populate berdasarkan data permissions dari server
         permissions.forEach(perm => {
-            const module = perm.module;         
-            const subModule = perm.sub_module;  
+            const module = perm.module;
+            const subModule = perm.sub_module;
 
             if (subModule) {
-                
-                
-                const cb = document.getElementById(`edit_${module}_${subModule}_view`);
-                if (cb && perm.can_view) {
-                    cb.checked = true;
+                // Sub-module: HANYA centang can_view (1 checkbox saja)
+                // Create/Edit/Delete sub-menu diwakili oleh checkbox menu utama
+                if (perm.can_view) {
+                    const cb = document.getElementById(`edit_${module}_${subModule}_view`);
+                    if (cb) cb.checked = true;
                 }
             } else {
-                
-                
+                // Module-level: centang sesuai masing-masing flag
                 const idPrefix = `edit_${module}_`;
                 const actions = ['view', 'create', 'edit', 'delete'];
 
                 actions.forEach(action => {
-                    
-                    
                     const fieldName = action === 'view' ? 'can_view' :
                                       action === 'create' ? 'can_create' :
                                       action === 'edit' ? 'can_edit' : 'can_delete';
-
-                    
                     if (perm[fieldName]) {
                         const cb = document.getElementById(`${idPrefix}${action}`);
-                        if (cb) {
-                            cb.checked = true;
-                        }
+                        if (cb) cb.checked = true;
                     }
                 });
             }

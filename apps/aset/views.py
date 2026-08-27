@@ -56,6 +56,7 @@ from django.db import transaction
 from django.http import JsonResponse
 from decimal import Decimal
 from django.utils import timezone
+import json
 
 from apps.aset.models import AsetTetap, Penyusutan, DisposalAset
 from apps.aset.forms import AsetTetapForm, DisposalAsetForm
@@ -211,9 +212,9 @@ class AsetDetailView(ReadPermissionMixin, TemplateView):
 
         # Chart data for depreciation
         py_data = aset.penyusutan_set.order_by('tahun', 'bulan')
-        context['chart_labels'] = [f"{p.bulan:02d}/{p.tahun}" for p in py_data]
-        context['chart_akumulasi'] = [float(p.akumulasi) for p in py_data]
-        context['chart_nilai_buku'] = [float(aset.harga_perolehan - p.akumulasi) for p in py_data]
+        context['chart_labels'] = json.dumps([f"{p.bulan:02d}/{p.tahun}" for p in py_data])
+        context['chart_akumulasi'] = json.dumps([float(p.akumulasi) for p in py_data])
+        context['chart_nilai_buku'] = json.dumps([float(aset.harga_perolehan - p.akumulasi) for p in py_data])
 
         return context
 
@@ -356,8 +357,8 @@ class PenyusutanDashboardView(ReadPermissionMixin, TemplateView):
         for m in range(1, 13):
             total = Penyusutan.objects.filter(tahun=tahun, bulan=m, aset__status='aktif').aggregate(t=Sum('jumlah'))['t'] or 0
             monthly.append(float(total))
-        context['chart_months'] = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
-        context['chart_monthly'] = monthly
+        context['chart_months'] = json.dumps(['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'])
+        context['chart_monthly'] = json.dumps(monthly)
 
         return context
 

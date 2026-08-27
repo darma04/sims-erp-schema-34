@@ -48,10 +48,6 @@ def create_penggajian_journal(sender, instance, **kwargs):
         from apps.kas_bank.services import create_operational_mutation, resolve_kas_bank_mapping
         from django.db import transaction as db_transaction
 
-        # Idempotent check — jangan buat duplikat jurnal
-        if JurnalEntry.objects.filter(sumber__in=["payroll", "hr"], sumber_id=instance.pk).exists():
-            return
-
         # ── Resolve akun kas/bank dari metode_pembayaran ──
         # Gunakan metode_pembayaran di Penggajian (jika diset), else fallback ke kas default
         try:
@@ -122,7 +118,22 @@ def create_penggajian_journal(sender, instance, **kwargs):
                 "keterangan": f"Potongan lain gaji {karyawan_nama}",
             })
 
+        # Guard: pastikan debit == kredit sebelum create jurnal
+        total_debit = sum(Decimal(str(line.get("debit", 0))) for line in lines_data)
+        total_kredit = sum(Decimal(str(line.get("kredit", 0))) for line in lines_data)
+        if total_debit != total_kredit:
+            raise ValueError(
+                f"[HR Payroll] Jurnal tidak balance! Debit={total_debit}, Kredit={total_kredit}. "
+                f"Penggajian PK={instance.pk}, Karyawan={karyawan_nama}."
+            )
+
         with db_transaction.atomic():
+            # ── Idempotency guard INSIDE atomic + select_for_update() untuk cegah race condition ──
+            if JurnalEntry.objects.select_for_update().filter(
+                sumber__in=["payroll", "hr"], sumber_id=instance.pk
+            ).exists():
+                return
+
             # ── Buat jurnal: D:6-1000 Beban Gaji  K:Kas/Bank ──
             jurnal = create_jurnal(
                 tanggal=tanggal,

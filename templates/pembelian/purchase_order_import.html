@@ -1,4 +1,4 @@
-{% extends 'layout/layout_vertical.html' %}
+﻿{% extends 'layout/layout_vertical.html' %}
 {% comment %}
 ==========================================================================
    PURCHASE ORDER IMPORT - Import Pembelian dari Excel/CSV
@@ -39,8 +39,9 @@
     <div class="row">
         <div class="col-md-8">
             <div class="card mb-4">
-                <h5 class="card-header">Upload File Purchase Order</h5>
+                <h5 class="card-header fs-card-title">Upload File Purchase Order</h5>
                 <div class="card-body">
+                    
                     <form method="POST" enctype="multipart/form-data">
                         {% csrf_token %}
                         <div class="mb-3">
@@ -50,16 +51,18 @@
                             <small class="text-muted">Format: CSV, XLSX, atau XLS. Maks 10MB</small>
                         </div>
                         <div class="mt-3">
+                        <div class="mt-3">
+                            {% if can_create.pembelian or can_edit.pembelian %}
                             <button type="submit" class="btn btn-primary me-2">
                                 <i class="ri-upload-2-line me-1"></i>Upload & Import
                             </button>
+                            {% endif %}
                             <a href="{% url 'pembelian:purchase-order' %}" class="btn btn-outline-secondary">Batal</a>
                         </div>
                     </form>
                 </div>
             </div>
 
-            <!-- Penjelasan Logika Import -->
             <div class="card mb-4">
                 <div class="card-body">
                     <h6 class="mb-3"><i class="ri-lightbulb-line me-1 text-warning"></i>Cara Kerja Import</h6>
@@ -77,19 +80,19 @@
         <div class="col-md-4">
             <div class="card bg-light">
                 <div class="card-body">
-                    <h5 class="card-title">
+                    <h5 class="card-title fs-card-title">
                         <i class="ri-information-line me-2"></i>Panduan Import
                     </h5>
                     <p class="card-text">File harus memiliki header/kolom berikut:</p>
                     <ul class="small">
-                        <li><strong>supplier</strong> * (wajib — nama supplier)</li>
-                        <li><strong>nama_produk</strong> * (wajib — nama produk)</li>
-                        <li><strong>jumlah</strong> * (wajib — qty pembelian)</li>
-                        <li><strong>harga_satuan</strong> * (wajib — harga beli)</li>
-                        <li><strong>tipe</strong> (opsional — produk/sparepart)</li>
+                        <li><strong>supplier</strong> * (wajib â€” nama supplier)</li>
+                        <li><strong>nama_produk</strong> * (wajib â€” nama produk)</li>
+                        <li><strong>jumlah</strong> * (wajib â€” qty pembelian)</li>
+                        <li><strong>harga_satuan</strong> * (wajib â€” harga beli)</li>
+                        <li><strong>tipe</strong> (opsional â€” produk/sparepart)</li>
                         <li><strong>kategori</strong> (opsional)</li>
                         <li><strong>satuan</strong> (opsional, default: pcs)</li>
-                        <li><strong>gudang</strong> (opsional — nama gudang)</li>
+                        <li><strong>gudang</strong> (opsional â€” nama gudang)</li>
                         <li><strong>catatan</strong> (opsional)</li>
                         <li><strong>pajak</strong> (opsional, default: 0)</li>
                         <li><strong>metode_pembayaran</strong> (opsional)</li>
@@ -116,7 +119,7 @@
 {{ block.super }}
 <script>
 function downloadTemplate(format) {
-    // Header sesuai kolom form PO — supplier, gudang, nama_produk, tipe, kategori, satuan, jumlah, harga_satuan, catatan, pajak, metode_pembayaran
+    
     const header = ['supplier', 'nama_produk', 'tipe', 'kategori', 'satuan', 'jumlah', 'harga_satuan', 'gudang', 'catatan', 'pajak', 'metode_pembayaran'];
     const sampleData = [
         ['PT Maju Jaya', 'Indomie Goreng', 'produk', 'Makanan', 'pcs', '100', '2800', 'Gudang Utama', 'Pembelian rutin', '0', 'Cash'],
@@ -127,7 +130,7 @@ function downloadTemplate(format) {
     let blob, filename;
     
     if (format === 'csv') {
-        // Generate CSV dengan Excel directive
+        
         let csvContent = 'sep=,\n';
         csvContent += header.join(',') + '\n';
         sampleData.forEach(row => {
@@ -138,7 +141,7 @@ function downloadTemplate(format) {
         blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8' });
         filename = 'template_import_purchase_order.csv';
     } else {
-        // Generate Excel HTML table
+        
         let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
         html += '<head>';
         html += '<meta charset="utf-8">';
@@ -150,12 +153,10 @@ function downloadTemplate(format) {
         html += '</head><body>';
         html += '<table border="1">';
         
-        // Header row
         html += '<thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;">';
         header.forEach(h => html += `<th>${h}</th>`);
         html += '</tr></thead>';
         
-        // Data rows
         html += '<tbody>';
         sampleData.forEach(row => {
             html += '<tr>';
@@ -170,7 +171,6 @@ function downloadTemplate(format) {
         filename = 'template_import_purchase_order.xls';
     }
     
-    // Download file
     if (typeof _downloadBlob === 'function') {
         _downloadBlob(blob, filename);
     } else {
@@ -194,7 +194,6 @@ function downloadTemplate(format) {
     }
 }
 
-// AJAX Import Handler with SweetAlert
 $(document).ready(function() {
     $('form[enctype="multipart/form-data"]').on('submit', function(e) {
         e.preventDefault();
@@ -203,7 +202,6 @@ $(document).ready(function() {
         const submitBtn = $(this).find('button[type="submit"]');
         const originalText = submitBtn.html();
        
-        // Nonaktifkan tombol dan tampilkan loading
         submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Uploading...');
         
         $.ajax({

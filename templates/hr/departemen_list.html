@@ -127,7 +127,7 @@
     <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Data Departemen</h5>
+            <h5 class="mb-0 fs-card-title">Data Departemen</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()">
                     <i class="ri-file-excel-2-line me-1"></i>Export Excel
@@ -212,7 +212,7 @@
                             </div>
                         </td>
                         <td class="py-3 text-center">
-                            <span class="badge bg-label-info d-inline-flex align-items-center gap-1" style="font-size: 0.85rem; padding: 0.4rem 0.6rem;">
+                            <span class="badge bg-label-info d-inline-flex align-items-center gap-1" style="font-size: var(--fs-ui-sm); padding: 0.4rem 0.6rem;">
                                 <i class="ri-team-line"></i>
                                 <span>{{ total_karyawan|default:0 }} Karyawan</span>
                             </span>
@@ -250,7 +250,7 @@
                 </p>
                 <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
                     {% if can_create.hr %}
-                    <a href="{% url 'hr:departemen_add' %}" class="btn btn-primary btn-lg">
+                    <a href="{% url 'hr:departemen-add' %}" class="btn btn-primary btn-lg">
                         <i class="ri-add-line me-1"></i>Tambah Departemen
                     </a>
                     {% endif %}
@@ -289,7 +289,7 @@
 
 {% block page_js %}
 <style>
-    .dataTables_wrapper .dataTables_info { padding: 1rem 1.5rem; font-size: 0.875rem; color: #697a8d; }
+    .dataTables_wrapper .dataTables_info { padding: 1rem 1.5rem; font-size: 0.875rem; ; }
     .dataTables_wrapper .dataTables_paginate { padding: 1rem 1.5rem; }
     .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter { padding: 0 1.5rem 1rem 1.5rem; }
     .dataTables_wrapper .dataTables_filter input { border: 1px solid #d9dee3; border-radius: 0.375rem; padding: 0.4375rem 0.875rem; }
@@ -389,9 +389,13 @@ const FOOTER_LABEL = 'RINGKASAN';
 
     function exportToExcel() {
         const table = document.getElementById('departemenTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#departemenTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         let colCount = 0;
         let visibleColumns = [];
@@ -479,9 +483,13 @@ const FOOTER_LABEL = 'RINGKASAN';
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('departemenTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#departemenTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         const headers = [];
         let visibleColumns = [];

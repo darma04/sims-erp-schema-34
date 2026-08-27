@@ -123,7 +123,7 @@
         document.getElementById('viewUserUsername').textContent = user.username;
 
         
-        const avatarEl = document.getElementById('viewUser Avatar');
+        const avatarEl = document.getElementById('viewUserAvatar');
         if (user.avatar) {
             
             avatarEl.innerHTML = `<img src="${user.avatar}" alt="${user.username}" class="rounded-circle">`;

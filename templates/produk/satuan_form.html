@@ -19,7 +19,8 @@
     <div class="row">
         <div class="col-md-12">
             <div class="card mb-4">
-                <h5 class="card-header">{{ title }}</h5>
+                <h5 class="card-header fs-value-primary">{{ title }}</h5>
+                
                 <form method="post">
                     {% csrf_token %}
                     <div class="card-body">
@@ -54,7 +55,9 @@
 
                         <div class="row justify-content-end">
                             <div class="col-sm-10">
-                                <button type="submit" class="btn btn-primary me-2">Simpan</button>
+                                {% if can_create.produk or can_edit.produk %}
+<button type="submit" class="btn btn-primary me-2">Simpan</button>
+{% endif %}
                                 <a href="{% url 'produk:satuan' %}" class="btn btn-outline-secondary">Batal</a>
                             </div>
                         </div>

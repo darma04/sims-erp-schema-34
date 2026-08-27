@@ -23,27 +23,6 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/css/pages/cards-statistics.css' %}" />
 <style>
-    .fraud-stat-card .avatar-initial {
-        width: 42px;
-        height: 42px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 8px;
-        flex-shrink: 0;
-    }
-    @media (max-width: 575.98px) {
-        .fraud-stat-card {
-            gap: 0.75rem !important;
-        }
-        .fraud-stat-card .avatar-initial {
-            width: 36px;
-            height: 36px;
-        }
-        .fraud-stat-card .avatar-initial i {
-            font-size: 18px;
-        }
-    }
 </style>
 {% endblock page_css %}
 
@@ -55,7 +34,7 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
 
     <!-- Row 1: Summary Cards -->
     <div class="row g-6 mb-6">
-        <div class="col-6 col-xl-3">
+        <div class="col-6 col-md-3 col-lg-3">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3 fraud-stat-card">
@@ -66,14 +45,14 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
                         </div>
                         <div>
                             <span class="d-block text-muted small">Total Alert</span>
-                            <h5 class="mb-0 fw-bold">{{ total_alerts }}</h5>
-                            <small class="text-muted">Semua anomali</small>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_alerts }}</h5>
+<small class="text-muted">Semua anomali</small>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-xl-3">
+        <div class="col-6 col-md-3 col-lg-3">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3 fraud-stat-card">
@@ -84,14 +63,14 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
                         </div>
                         <div>
                             <span class="d-block text-muted small">Menunggu Review</span>
-                            <h5 class="mb-0 fw-bold">{{ pending_alerts }}</h5>
-                            <small class="text-muted">Belum dikonfirmasi</small>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ pending_alerts }}</h5>
+<small class="text-muted">Belum dikonfirmasi</small>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-xl-3">
+        <div class="col-6 col-md-3 col-lg-3">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3 fraud-stat-card">
@@ -102,14 +81,14 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
                         </div>
                         <div>
                             <span class="d-block text-muted small">High / Kritis</span>
-                            <h5 class="mb-0 fw-bold">{{ high_critical_alerts }}</h5>
-                            <small class="text-muted">Perlu perhatian segera</small>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ high_critical_alerts }}</h5>
+<small class="text-muted">Perlu perhatian segera</small>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-xl-3">
+        <div class="col-6 col-md-3 col-lg-3">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3 fraud-stat-card">
@@ -120,8 +99,8 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
                         </div>
                         <div>
                             <span class="d-block text-muted small">Potensi Kerugian</span>
-                            <h5 class="mb-0 fw-bold text-danger">Rp {{ total_potensi_kerugian|floatformat:0 }}</h5>
-                            <small class="text-muted">Belum diverifikasi</small>
+<h5  class="mb-0 fw-bold fs-value-primary">Rp {{ total_potensi_kerugian|floatformat:0 }}</h5>
+<small class="text-muted">Belum diverifikasi</small>
                         </div>
                     </div>
                 </div>
@@ -136,7 +115,7 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
                 <div class="card-body d-flex align-items-center justify-content-between py-4">
                     <div>
                         <h6 class="text-white mb-1 fw-semibold">Total Aset Asli Keseluruhan</h6>
-                        <h3 class="text-white mb-1 fw-bold">Rp {{ total_aset_asli|floatformat:0 }}</h3>
+                        <h3 class="fs-value-primary text-white mb-1 fw-bold">Rp {{ total_aset_asli|floatformat:0 }}</h3>
                         <small class="text-white-50">Σ (stok + terjual + adjustment) × harga beli — termasuk data belum
                             dikonfirmasi</small>
                     </div>
@@ -152,7 +131,7 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
     {# Menampilkan gambaran finansial keseluruhan + selisih kas kasir #}
     <div class="row g-6 mb-6">
         {# Card: Total Pemasukan — seluruh pendapatan dari POS + Sales Order #}
-        <div class="col-6 col-xl-3">
+        <div class="col-6 col-md-3 col-lg-3">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3 fraud-stat-card">
@@ -163,8 +142,8 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
                         </div>
                         <div class="flex-grow-1">
                             <span class="d-block text-muted small">Total Pemasukan</span>
-                            <h5 class="mb-0 fw-bold text-success" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>POS paid + Sales Order confirmed/delivered/completed.<br>SO dihitung dari subtotal setelah diskon + ongkir; POS dari subtotal setelah diskon; PPN tidak dihitung sebagai pendapatan.">Rp {{ total_pemasukan|floatformat:0 }}</h5>
-                            <small class="text-muted">Net tanpa PPN</small>
+<h5  class="fs-value-primary mb-0 fw-bold" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>POS paid + Sales Order confirmed/delivered/completed.<br>SO dihitung dari subtotal setelah diskon + ongkir; POS dari subtotal setelah diskon; PPN tidak dihitung sebagai pendapatan.">Rp {{ total_pemasukan|floatformat:0 }}</h5>
+<small class="text-muted">Net tanpa PPN</small>
                         </div>
                     </div>
                 </div>
@@ -176,7 +155,7 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
             </div>
         </div>
         {# Card: Total Pengeluaran — biaya dari Purchase Order + Biaya operasional #}
-        <div class="col-6 col-xl-3">
+        <div class="col-6 col-md-3 col-lg-3">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3 fraud-stat-card">
@@ -187,8 +166,8 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
                         </div>
                         <div class="flex-grow-1">
                             <span class="d-block text-muted small">Total Pengeluaran</span>
-                            <h5 class="mb-0 fw-bold text-danger" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Purchase Order approved/received + Biaya approved.<br>PO dihitung dari DPP/subtotal termasuk ongkir; PPN Masukan dipisahkan dari beban operasional.">Rp {{ total_pengeluaran|floatformat:0 }}</h5>
-                            <small class="text-muted">DPP + biaya</small>
+<h5  class="fs-value-primary mb-0 fw-bold" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Alur Data:</b><br>Purchase Order approved/received + Biaya approved.<br>PO dihitung dari DPP/subtotal termasuk ongkir; PPN Masukan dipisahkan dari beban operasional.">Rp {{ total_pengeluaran|floatformat:0 }}</h5>
+<small class="text-muted">DPP + biaya</small>
                         </div>
                     </div>
                 </div>
@@ -200,7 +179,7 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
             </div>
         </div>
         {# Card: Selisih Keuangan — laba/rugi (pemasukan - pengeluaran) #}
-        <div class="col-6 col-xl-3">
+        <div class="col-6 col-md-3 col-lg-3">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3 fraud-stat-card">
@@ -212,11 +191,10 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
                         </div>
                         <div class="flex-grow-1">
                             <span class="d-block text-muted small">Selisih Keuangan</span>
-                            <h5
-                                class="mb-0 fw-bold {% if selisih_keuangan >= 0 %}text-info{% else %}text-warning{% endif %}" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Rumus:</b><br>Total Pemasukan - Total Pengeluaran.<br>Diskon sudah mengurangi pemasukan, ongkir masuk sesuai sumber SO/PO, dan PPN dipisahkan dari laba/rugi operasional.">
-                                Rp {{ selisih_keuangan|floatformat:0 }}
-                            </h5>
-                            <small class="text-muted">Pemasukan - Pengeluaran</small>
+<h5 
+                                class="mb-0 fw-bold fs-value-primary" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true" title="<b>Rumus:</b><br>Total Pemasukan - Total Pengeluaran.<br>Diskon sudah mengurangi pemasukan, ongkir masuk sesuai sumber SO/PO, dan PPN dipisahkan dari laba/rugi operasional.">
+                                Rp {{ selisih_keuangan|floatformat:0 }}</h5>
+<small class="text-muted">Pemasukan - Pengeluaran</small>
                         </div>
                     </div>
                 </div>
@@ -228,7 +206,7 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
             </div>
         </div>
         {# Card: Selisih Kas — total selisih rekonsiliasi kasir per shift #}
-        <div class="col-6 col-xl-3">
+        <div class="col-6 col-md-3 col-lg-3">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3 fraud-stat-card">
@@ -240,11 +218,9 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
                         </div>
                         <div class="flex-grow-1">
                             <span class="d-block text-muted small">Selisih Kas Kasir</span>
-                            <h5
-                                class="mb-0 fw-bold {% if total_selisih_kas < 0 %}text-danger{% else %}text-success{% endif %}">
-                                Rp {{ total_selisih_kas|floatformat:0 }}
-                            </h5>
-                            <small class="text-muted">Rekonsiliasi Shift</small>
+<h5 
+                                class="mb-0 fw-bold fs-value-primary">Rp {{ total_selisih_kas|floatformat:0 }}</h5>
+<small class="text-muted">Rekonsiliasi Shift</small>
                         </div>
                     </div>
                 </div>
@@ -262,19 +238,17 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
         <!-- Tren Anomali Bulanan — ApexCharts Area (Wave) -->
         <div class="col-lg-8 mb-4">
             <div class="card h-100">
-                <div class="card-header d-flex align-items-center justify-content-between">
-                    <h5 class="card-title mb-0">
-                        <i class="ri-line-chart-line me-2"></i>Tren Anomali Bulanan
-                    </h5>
+                <div class="card-header d-flex flex-nowrap align-items-center justify-content-between">
+                    <h5 class="card-title mb-0 me-2 fs-card-title"><i class="ri-line-chart-line me-2 text-primary" style="color: var(--bs-primary)"></i>Tren Anomali Bulanan</h5>
+                    <div class="dropdown flex-shrink-0">
+                        <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div id="trendAnomalyChart" style="min-height: 320px;"></div>
-                    {% if not trend_labels or trend_labels == '[]' %}
-                    <div class="text-center text-muted py-3">
-                        <i class="ri-bar-chart-box-line ri-48px mb-2 d-block" style="opacity:0.3;"></i>
-                        Belum ada data anomali
-                    </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
@@ -282,19 +256,17 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
         <!-- Distribusi Jenis Anomali — ApexCharts Donut -->
         <div class="col-lg-4 mb-4">
             <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="ri-pie-chart-line me-2"></i>Distribusi Jenis
-                    </h5>
-                </div>
-                <div class="card-body text-center">
-                    <div id="jenisDistChart" style="min-height: 260px;"></div>
-                    {% if not jenis_labels or jenis_labels == '[]' %}
-                    <div class="text-center text-muted py-3">
-                        <i class="ri-pie-chart-line ri-48px mb-2 d-block" style="opacity:0.3;"></i>
-                        Belum ada data
+                <div class="card-header d-flex flex-nowrap align-items-center justify-content-between">
+                    <h5 class="card-title mb-0 me-2 fs-card-title"><i class="ri-pie-chart-line me-2 text-primary" style="color: var(--bs-primary)"></i>Distribusi Jenis</h5>
+                    <div class="dropdown flex-shrink-0">
+                        <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a>
+                        </div>
                     </div>
-                    {% endif %}
+                </div>
+                <div class="card-body pt-2 d-flex flex-column justify-content-center">
+                    <div id="jenisDistChart" style="min-height: 250px;"></div>
                 </div>
             </div>
         </div>
@@ -305,9 +277,9 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
         <!-- Top 5 Karyawan Berisiko -->
         <div class="col-lg-6 mb-4">
             <div class="card h-100">
-                <div class="card-header d-flex align-items-center justify-content-between">
-                    <h5 class="card-title mb-0">
-                        <i class="ri-user-warning-line me-2"></i>Top 5 Karyawan Berisiko
+                <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <h5 class="card-title mb-0 fs-card-title">
+                        <i class="ri-alarm-warning-line me-2 text-primary" style="color: var(--bs-primary)"></i>Top 5 Karyawan Berisiko
                     </h5>
                     <a href="{% url 'fraud_detection:alert_list' %}" class="btn btn-sm btn-label-primary">Lihat
                         Semua</a>
@@ -344,9 +316,19 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
                         </table>
                     </div>
                     {% else %}
-                    <div class="text-center text-muted py-5">
-                        <i class="ri-shield-check-line ri-48px mb-2 d-block" style="opacity:0.3;"></i>
-                        Tidak ada karyawan berisiko saat ini
+                    <div class="card-body">
+                        <div class="text-center py-4 py-md-5 px-3 px-md-4">
+                            <div class="mb-4">
+                                <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                                     style="width: 88px; height: 88px;">
+                                    <i class="ri-shield-check-line" style="font-size: 2.8rem;"></i>
+                                </div>
+                            </div>
+                            <h5 class="mb-3">Belum Ada Risiko</h5>
+                            <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+                                Tidak ada karyawan berisiko terdeteksi.
+                            </p>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
@@ -356,9 +338,9 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
         <!-- Rekonsiliasi Kas Terbaru -->
         <div class="col-lg-6 mb-4">
             <div class="card h-100">
-                <div class="card-header d-flex align-items-center justify-content-between">
-                    <h5 class="card-title mb-0">
-                        <i class="ri-money-dollar-box-line me-2"></i>Rekonsiliasi Kas Terbaru
+                <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <h5 class="card-title mb-0 fs-card-title">
+                        <i class="ri-money-dollar-box-line me-2 text-primary" style="color: var(--bs-primary)"></i>Rekonsiliasi Kas Terbaru
                     </h5>
                     <a href="{% url 'fraud_detection:cash_list' %}" class="btn btn-sm btn-label-primary">Lihat Semua</a>
                 </div>
@@ -395,9 +377,19 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
                         </table>
                     </div>
                     {% else %}
-                    <div class="text-center text-muted py-5">
-                        <i class="ri-money-dollar-box-line ri-48px mb-2 d-block" style="opacity:0.3;"></i>
-                        Belum ada data rekonsiliasi kas
+                    <div class="card-body">
+                        <div class="text-center py-4 py-md-5 px-3 px-md-4">
+                            <div class="mb-4">
+                                <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                                     style="width: 88px; height: 88px;">
+                                    <i class="ri-money-dollar-box-line" style="font-size: 2.8rem;"></i>
+                                </div>
+                            </div>
+                            <h5 class="mb-3">Belum Ada Rekonsiliasi</h5>
+                            <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+                                Belum ada data rekonsiliasi kas.
+                            </p>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
@@ -420,6 +412,7 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
             (document.documentElement.classList.contains('dark-style') ||
                 document.body.classList.contains('dark-style'));
 
+    var cardBgColor = isDark ? '#283046' : '#fff';
         var gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
         var labelColor = isDark ? '#b4b5ba' : '#a5a3ae';
 
@@ -427,21 +420,22 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
         var trendLabels = {{ trend_labels|safe }};
         var trendValues = {{ trend_values|safe }};
 
-    if (trendLabels.length > 0 && document.querySelector('#trendAnomalyChart')) {
+        // Always render chart, use zero-filled data when empty
+        if (!trendLabels || !Array.isArray(trendLabels) || trendLabels.length === 0) {
+            trendLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'];
+        }
+        if (!trendValues || !Array.isArray(trendValues) || trendValues.length === 0) {
+            trendValues = Array(trendLabels.length).fill(0);
+        }
+
+    if (document.querySelector('#trendAnomalyChart')) {
         var trendOptions = {
             chart: {
                 type: 'area',
                 height: 320,
-                fontFamily: 'Inter, -apple-system, sans-serif',
+                fontFamily: '"Inter", sans-serif',
                 background: 'transparent',
-                toolbar: {
-                    show: true,
-                    tools: {
-                        download: '<i class="ri-download-2-line" style="font-size:16px"></i>',
-                        selection: false, zoom: false, zoomin: false,
-                        zoomout: false, pan: false, reset: false
-                    }
-                },
+                toolbar: { show: false },
                 animations: {
                     enabled: true,
                     easing: 'easeinout',
@@ -504,68 +498,107 @@ FRAUD DETECTION DASHBOARD - Grafik gelombang (ApexCharts Area) + Doughnut
             }
         };
 
-        var trendChart = new ApexCharts(document.querySelector('#trendAnomalyChart'), trendOptions);
-        trendChart.render();
+        var trendChart; try { trendChart = new ApexCharts(document.querySelector('#trendAnomalyChart'), trendOptions); trendChart.render(); window.__trendAnomalyChart = trendChart; } catch(e) { console.error('Gagal merender chart trend anomaly:', e); }
     }
 
     // ═══ DISTRIBUSI JENIS — ApexCharts Donut ═══
     var jenisLabels = {{ jenis_labels|safe }};
     var jenisValues = {{ jenis_values|safe }};
 
-    if (jenisLabels.length > 0 && document.querySelector('#jenisDistChart')) {
+    // Placeholder visual when empty
+    var totalJenisData = Array.isArray(jenisValues) ? jenisValues.reduce(function(a, b) { return a + b; }, 0) : 0;
+    if (!jenisLabels || !Array.isArray(jenisLabels) || jenisLabels.length === 0) {
+        jenisLabels = ['Belum ada data'];
+    }
+    if (totalJenisData === 0) {
+        jenisValues = [1];
+        jenisLabels = ["Belum ada data"];
+    }
+
+    if (document.querySelector('#jenisDistChart')) {
         var chartColors = ['#7367f0', '#28c76f', '#ff9f43', '#ea5455', '#00cfe8', '#a855f7', '#f472b6'];
 
         var donutOptions = {
             chart: {
                 type: 'donut',
-                height: 260,
-                fontFamily: 'Inter, -apple-system, sans-serif',
-                background: 'transparent',
-                animations: { enabled: true, easing: 'easeinout', speed: 800 }
+                height: 280,
+                fontFamily: '"Inter", sans-serif',
+                parentHeightOffset: 0,
+                toolbar: { show: false }
             },
-            series: jenisValues,
+            series: totalJenisData > 0 ? jenisValues : [1],
             labels: jenisLabels,
-            colors: chartColors.slice(0, jenisLabels.length),
-            stroke: { width: 2, colors: [isDark ? '#2b2c40' : '#fff'] },
-            dataLabels: { enabled: false },
+            colors: totalJenisData > 0 ? chartColors.slice(0, jenisLabels.length) : ['#e9ecef'],
             plotOptions: {
                 pie: {
+                    endAngle: 130,
+                    startAngle: -130,
+                    customScale: 0.9,
                     donut: {
-                        size: '60%',
+                        size: '83%',
                         labels: {
                             show: true,
-                            name: { show: true, fontSize: '13px', color: labelColor },
+                            name: {
+                                show: true,
+                                offsetY: 25,
+                                fontSize: '0.9375rem',
+                                fontFamily: 'Inter',
+                                color: labelColor
+                            },
                             value: {
-                                show: true, fontSize: '18px', fontWeight: 700,
-                                color: isDark ? '#fff' : '#333',
+                                show: true,
+                                offsetY: -15,
+                                fontWeight: 500,
+                                fontSize: '1.75rem',
+                                fontFamily: 'Inter',
+                                color: isDark ? '#d0d2d6' : '#5e5873',
                                 formatter: function (val) { return val; }
                             },
                             total: {
-                                show: true, label: 'Total',
+                                show: true,
+                                label: 'Total',
+                                fontSize: '0.9375rem',
+                                fontFamily: 'Inter',
                                 color: labelColor,
                                 formatter: function (w) {
-                                    return w.globals.spieSeries.reduce(function (a, b) { return a + b; }, 0);
+                                    var t = w.globals.seriesTotals.reduce(function (a, b) { return a + b; }, 0);
+                                    return totalJenisData > 0 ? t : 0;
                                 }
                             }
                         }
                     }
                 }
             },
+            tooltip: {
+                enabled: totalJenisData > 0,
+                y: { formatter: function (val) { return val + ' kasus'; } }
+            },
+            dataLabels: { enabled: false },
+            stroke: {
+                width: 3,
+                lineCap: 'round',
+                colors: [cardBgColor]
+            },
+            states: {
+                hover: { filter: { type: 'none' } },
+                active: { filter: { type: 'none' } }
+            },
             legend: {
                 position: 'bottom',
-                fontSize: '13px',
-                labels: { colors: isDark ? '#ccc' : '#555' },
-                markers: { size: 6, strokeWidth: 0, offsetX: -3 },
-                itemMargin: { horizontal: 8, vertical: 4 }
+                fontFamily: 'Inter',
+                fontSize: '15px',
+                markers: { offsetX: -3, height: 10, width: 10 },
+                itemMargin: { horizontal: 24, vertical: 8 },
+                offsetY: -10,
+                labels: { colors: labelColor }
             },
-            tooltip: {
-                theme: isDark ? 'dark' : 'light',
-                y: { formatter: function (val) { return val + ' kasus'; } }
-            }
+            responsive: [{
+                breakpoint: 480,
+                options: { chart: { height: 240 } }
+            }]
         };
 
-        var donutChart = new ApexCharts(document.querySelector('#jenisDistChart'), donutOptions);
-        donutChart.render();
+        var donutChart; try { donutChart = new ApexCharts(document.querySelector('#jenisDistChart'), donutOptions); donutChart.render(); window.__jenisDistChart = donutChart; } catch(e) { console.error('Gagal merender chart jenis distribusi:', e); }
     }
 });
 </script>

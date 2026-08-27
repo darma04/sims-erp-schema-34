@@ -13,6 +13,7 @@
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
 <link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+
 {% endblock vendor_css %}
 
 {% block vendor_js %}
@@ -20,6 +21,7 @@
 <script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
 <script src="{% static 'js/export_utils.js' %}"></script>
 {% endblock vendor_js %}
 
@@ -40,7 +42,7 @@
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
-                <div class="col-md-6">
+                <div class="col-md-12">
                     <label class="form-label">Cari Perangkat</label>
                     <input type="text" class="form-control" id="searchPerangkat" placeholder="Nama perangkat...">
                 </div>
@@ -80,7 +82,7 @@
 
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Daftar Perangkat</h5>
+            <h5 class="mb-0 fs-card-title">Daftar Perangkat</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
                 <button class="btn btn-sm btn-label-danger" onclick="exportToPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
@@ -167,7 +169,7 @@
                 </p>
                 <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
                     {% if can_create.service_center %}
-                    <a href="{% url 'service_center:perangkat_add' %}" class="btn btn-primary btn-lg">
+                    <a href="{% url 'service_center:perangkat_create' %}" class="btn btn-primary btn-lg">
                         <i class="ri-add-line me-1"></i>Tambah Perangkat
                     </a>
                     {% endif %}
@@ -203,7 +205,7 @@
 
 {% block page_js %}
 <style>
-    .dataTables_wrapper .dataTables_info { padding:1rem 1.5rem; font-size:.875rem; color:#697a8d } .dataTables_wrapper .dataTables_paginate { padding:1rem 1.5rem } .dataTables_wrapper .dataTables_length,.dataTables_wrapper .dataTables_filter { padding:0 1.5rem 1rem } .dataTables_wrapper .dataTables_filter input { border:1px solid #d9dee3; border-radius:.375rem; padding:.4375rem .875rem } .dataTables_wrapper .dataTables_length select { border:1px solid #d9dee3; border-radius:.375rem; padding:.4375rem 2rem .4375rem .875rem } .dataTables_wrapper .dataTables_paginate .paginate_button { padding:.438rem .875rem; border-radius:.375rem; margin:0 .125rem; border:none; background:transparent; color:#697a8d } .dataTables_wrapper .dataTables_paginate .paginate_button.current { background:#696cff !important; color:white !important; border:none } .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.disabled) { background:rgba(105,108,255,.08) !important; color:#696cff !important; border:none } .card-datatable { padding-bottom:0 }
+    .dataTables_wrapper .dataTables_info { padding:1rem 1.5rem; font-size:.875rem;  } .dataTables_wrapper .dataTables_paginate { padding:1rem 1.5rem } .dataTables_wrapper .dataTables_length,.dataTables_wrapper .dataTables_filter { padding:0 1.5rem 1rem } .dataTables_wrapper .dataTables_filter input { border:1px solid #d9dee3; border-radius:.375rem; padding:.4375rem .875rem } .dataTables_wrapper .dataTables_length select { border:1px solid #d9dee3; border-radius:.375rem; padding:.4375rem 2rem .4375rem .875rem } .dataTables_wrapper .dataTables_paginate .paginate_button { padding:.438rem .875rem; border-radius:.375rem; margin:0 .125rem; border:none; background:transparent; color:#697a8d } .dataTables_wrapper .dataTables_paginate .paginate_button.current { background:#696cff !important; color:white !important; border:none } .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.disabled) { background:rgba(105,108,255,.08) !important; color:#696cff !important; border:none } .card-datatable { padding-bottom:0 }
 </style>
 <script>
 $(document).ready(function(){
@@ -254,7 +256,13 @@ document.getElementById('confirmDeleteBtn').addEventListener('click',function(){
     };
 
     function exportToExcel() {
+        const table = document.getElementById('perangkatTable');
+        if (!table) { showExportEmpty(); return; }
         const tableObj = new $.fn.dataTable.Api('#perangkatTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
         let colCount = 0;
         let visibleColumns = [];
 
@@ -279,7 +287,7 @@ document.getElementById('confirmDeleteBtn').addEventListener('click',function(){
         visibleColumns.forEach(col => { html += `<th>${col.text}</th>`; });
         html += '</tr></thead><tbody>';
 
-        tableObj.rows({ search: 'applied' }).every(function (rowIdx) {
+        tableObj.rows({ page: 'current' }).every(function (rowIdx) {
             html += '<tr>';
             visibleColumns.forEach(col => {
                 let cellNode = tableObj.cell(rowIdx, col.index).node();
@@ -315,7 +323,13 @@ document.getElementById('confirmDeleteBtn').addEventListener('click',function(){
 
     function exportToPDF() {
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
+        const table = document.getElementById('perangkatTable');
+        if (!table) { showExportEmpty(); return; }
         const tableObj = new $.fn.dataTable.Api('#perangkatTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
         
         const headers = [];
         const visibleColumns = [];
@@ -328,7 +342,7 @@ document.getElementById('confirmDeleteBtn').addEventListener('click',function(){
         });
 
         const body = [headers];
-        tableObj.rows({ search: 'applied' }).every(function (rowIdx) {
+        tableObj.rows({ page: 'current' }).every(function (rowIdx) {
             const rowData = [];
             visibleColumns.forEach(colIndex => {
                 let cellNode = tableObj.cell(rowIdx, colIndex).node();

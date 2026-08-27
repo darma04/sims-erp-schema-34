@@ -27,7 +27,7 @@ Fitur: filter tipe akun, export Excel & PDF, cards ringkasan, seed CoA.
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    <!-- Header -->
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -37,12 +37,42 @@ Fitur: filter tipe akun, export Excel & PDF, cards ringkasan, seed CoA.
         </div>
         <div class="d-flex gap-2">
             {% if rbac_can_create %}
+            
             <form method="post" action="{% url 'akuntansi:coa_seed' %}" class="d-inline">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-outline-success" onclick="return confirm('Seed CoA default? Akun yang sudah ada tidak akan ditimpa.')">
+                <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#seedCoAModal">
                     <i class="ri-database-2-line me-1"></i>Seed CoA Default
                 </button>
             </form>
+
+<div class="modal fade" id="seedCoAModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success align-items-center py-3">
+                <h5 class="modal-title text-white mb-0">
+                    <i class="ri-database-2-line me-2"></i>Konfirmasi Seed CoA
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center py-3">
+                    <i class="ri-database-2-line text-success" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 mb-2">Seed Chart of Accounts?</h4>
+                    <p class="text-muted mb-0">Akun default PSAK akan ditambahkan. Akun yang sudah ada tidak akan ditimpa.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
+                    <i class="ri-close-line me-1"></i>Batal
+                </button>
+                <button type="button" class="btn btn-success" id="confirmSeedBtn">
+                    <i class="ri-database-2-line me-1"></i>Ya, Seed CoA
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
             <a href="{% url 'akuntansi:coa_add' %}" class="btn btn-primary">
                 <i class="ri-add-line me-1"></i>Tambah Akun
             </a>
@@ -50,71 +80,69 @@ Fitur: filter tipe akun, export Excel & PDF, cards ringkasan, seed CoA.
         </div>
     </div>
 
-    <!-- Summary Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-sm-6 col-md-4 col-xl-2">
-            <div class="card">
+    <div class="row g-6 mb-6">
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-primary"><i class="ri-book-2-line ri-24px"></i></span></div>
-                        <div><h5 class="mb-0">{{ total_akun }}</h5><small class="text-muted">Total Akun</small></div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-primary"><i class="ri-book-2-line ri-24px"></i></span></div>
+                        <div><span class="d-block text-muted small">Total Akun</span><h5 class="mb-0 fw-bold fs-value-primary">{{ total_akun }}</h5></div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-md-4 col-xl-2">
-            <div class="card">
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-success"><i class="ri-safe-2-line ri-24px"></i></span></div>
-                        <div><h5 class="mb-0">{{ total_aset }}</h5><small class="text-muted">Aset</small></div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-success"><i class="ri-safe-2-line ri-24px"></i></span></div>
+                        <div><span class="d-block text-muted small">Aset</span><h5 class="mb-0 fw-bold fs-value-primary">{{ total_aset }}</h5></div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-md-4 col-xl-2">
-            <div class="card">
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-danger"><i class="ri-bank-card-line ri-24px"></i></span></div>
-                        <div><h5 class="mb-0">{{ total_kewajiban }}</h5><small class="text-muted">Kewajiban</small></div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-danger"><i class="ri-bank-card-line ri-24px"></i></span></div>
+                        <div><span class="d-block text-muted small">Kewajiban</span><h5 class="mb-0 fw-bold fs-value-primary">{{ total_kewajiban }}</h5></div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-md-4 col-xl-2">
-            <div class="card">
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-info"><i class="ri-funds-line ri-24px"></i></span></div>
-                        <div><h5 class="mb-0">{{ total_modal }}</h5><small class="text-muted">Modal</small></div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-info"><i class="ri-funds-line ri-24px"></i></span></div>
+                        <div><span class="d-block text-muted small">Modal</span><h5 class="mb-0 fw-bold fs-value-primary">{{ total_modal }}</h5></div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-md-4 col-xl-2">
-            <div class="card">
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-warning"><i class="ri-money-dollar-circle-line ri-24px"></i></span></div>
-                        <div><h5 class="mb-0">{{ total_pendapatan }}</h5><small class="text-muted">Pendapatan</small></div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-warning"><i class="ri-money-dollar-circle-line ri-24px"></i></span></div>
+                        <div><span class="d-block text-muted small">Pendapatan</span><h5 class="mb-0 fw-bold fs-value-primary">{{ total_pendapatan }}</h5></div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-md-4 col-xl-2">
-            <div class="card">
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-secondary"><i class="ri-wallet-line ri-24px"></i></span></div>
-                        <div><h5 class="mb-0">{{ total_beban|add:total_hpp }}</h5><small class="text-muted">HPP & Beban</small></div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-secondary"><i class="ri-wallet-line ri-24px"></i></span></div>
+                        <div><span class="d-block text-muted small">HPP & Beban</span><h5 class="mb-0 fw-bold fs-value-primary">{{ total_beban|add:total_hpp }}</h5></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -135,7 +163,7 @@ Fitur: filter tipe akun, export Excel & PDF, cards ringkasan, seed CoA.
                     </div>
                 </div>
             </div>
-            <!-- Baris kedua: Pilih Kolom (kiri) dan Tombol Filter (kanan) -->
+            
             <div class="row g-3 mt-2 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
@@ -200,10 +228,9 @@ Fitur: filter tipe akun, export Excel & PDF, cards ringkasan, seed CoA.
         </div>
     </div>
 
-    <!-- Main Table Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Daftar Akun</h5>
+            <h5 class="mb-0 fs-card-title">Daftar Akun</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcel()">
                     <i class="ri-file-excel-2-line me-1"></i>Export Excel
@@ -216,7 +243,7 @@ Fitur: filter tipe akun, export Excel & PDF, cards ringkasan, seed CoA.
         {% if akun_list %}
 
         <div class="card-datatable table-responsive">
-            <table class="datatables-coa accounting-data-table table table-hover" id="coaTable" data-accounting-primary="true" data-export-title="Chart of Accounts" data-export-filename="Chart_of_Accounts" data-search-placeholder="Cari akun...">
+            <table class="datatables-coa {% if akun_list %}accounting-data-table {% endif %}table table-hover" id="coaTable" {% if akun_list %}data-accounting-primary="true" {% endif %}data-export-title="Chart of Accounts" data-export-filename="Chart_of_Accounts" data-search-placeholder="Cari akun...">
                 <thead>
                     <tr>
                         <th>Kode</th>
@@ -306,7 +333,7 @@ Fitur: filter tipe akun, export Excel & PDF, cards ringkasan, seed CoA.
                             <div class="d-flex align-items-center justify-content-start">
                                 <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
                                 <div class="text-start">
-                                    <strong class="d-block" style="font-size: 0.875rem;">RINGKASAN</strong>
+                                    <strong class="d-block">RINGKASAN</strong>
                                     <small class="text-muted">{{ total_akun }} akun terdaftar</small>
                                 </div>
                             </div>
@@ -371,11 +398,7 @@ Fitur: filter tipe akun, export Excel & PDF, cards ringkasan, seed CoA.
                     Chart of Accounts masih kosong.
 
                 </p>
-                <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
-                    <a href="{% url 'akuntansi:coa_import' %}" class="btn btn-label-success btn-lg">
-                        <i class="ri-upload-2-line me-1"></i>Import CoA
-                    </a>
-                </div>
+
 
             </div>
 
@@ -384,7 +407,6 @@ Fitur: filter tipe akun, export Excel & PDF, cards ringkasan, seed CoA.
         {% endif %}
     </div>
 
-    <!-- Delete Modal -->
     <div class="modal fade" id="deleteAkunModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -417,7 +439,7 @@ Fitur: filter tipe akun, export Excel & PDF, cards ringkasan, seed CoA.
 
 {% block page_js %}
 <style>
-    .dataTables_wrapper .dataTables_info { padding: 1rem 1.5rem; font-size: 0.875rem; color: #697a8d; }
+    .dataTables_wrapper .dataTables_info { padding: 1rem 1.5rem; font-size: 0.875rem; ; }
     .dataTables_wrapper .dataTables_paginate { padding: 1rem 1.5rem; }
     .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter { padding: 0 1.5rem 1rem 1.5rem; }
     .dataTables_wrapper .dataTables_filter input { border: 1px solid #d9dee3; border-radius: 0.375rem; padding: 0.4375rem 0.875rem; }
@@ -425,12 +447,58 @@ Fitur: filter tipe akun, export Excel & PDF, cards ringkasan, seed CoA.
     .dataTables_wrapper .dataTables_paginate .paginate_button { padding: 0.438rem 0.875rem; border-radius: 0.375rem; margin: 0 0.125rem; border: none; background: transparent; color: #697a8d; }
     .dataTables_wrapper .dataTables_paginate .paginate_button.current { background: #696cff !important; color: white !important; border: none; }
     .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.disabled) { background: rgba(105, 108, 255, 0.08) !important; border: none; color: #696cff !important; }
-    .card-datatable { padding-bottom: 0; }
+    .card-datatable {
+        padding-bottom: 0;
+        overflow-x: hidden;
+        overflow-y: hidden;
+        max-width: 100%;
+    }
+    .card-datatable .dataTables_wrapper {
+        overflow-x: hidden;
+        overflow-y: hidden;
+        max-width: 100%;
+        width: 100%;
+    }
+    .card-datatable .dataTables_wrapper > .row {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+    .card-datatable .dataTables_wrapper .pagination {
+        flex-wrap: wrap;
+        overflow-x: hidden;
+    }
+    .card-datatable .dataTables_wrapper > .table-responsive {
+        overflow-x: auto !important;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        max-width: 100%;
+        width: 100%;
+    }
     .datatables-coa thead th { font-weight: 600; font-size: 0.8125rem; }
     @media (max-width: 768px) {
-        .card-datatable { overflow-x: hidden !important; -webkit-overflow-scrolling: touch; max-width: 100%; }
+        .card-datatable,
+        .card-datatable .dataTables_wrapper {
+            overflow-x: hidden !important;
+            overflow-y: hidden !important;
+            max-width: 100% !important;
+        }
+        .card-datatable .dataTables_wrapper > .row {
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+        }
+        .card-datatable .dataTables_wrapper > .table-responsive {
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            -webkit-overflow-scrolling: touch;
+            max-width: 100%;
+        }
+    {% if akun_list %}
         .datatables-coa { min-width: 800px !important; }
-        .dataTables_wrapper { overflow-x: hidden !important; max-width: 100% !important; }
+    {% endif %}
+        .card-datatable .dataTables_wrapper .pagination {
+            flex-wrap: wrap;
+            overflow-x: hidden !important;
+        }
     }
 </style>
 
@@ -490,11 +558,6 @@ function deselectAllColumns() {
     toggleColumns();
 }
 
-// ═══════════════════════════════════════════════════════════════
-// EXPORT EXCEL & PDF - STANDARD TEMPLATE (Support Android)
-// Konsisten dengan: Produk, POS, Sales Order, Purchase Order
-// ═══════════════════════════════════════════════════════════════
-
 const EXCEL_INFO = {
     name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
     address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
@@ -512,7 +575,15 @@ const PDF_INFO = {
 };
 
 function exportToExcel() {
+
+    const table = document.getElementById('coaTable');
+    if (!table) { showExportEmpty(); return; }
+
     const tableObj = new $.fn.dataTable.Api('#coaTable');
+    if (!tableObj || tableObj.rows().count() === 0) {
+        showExportEmpty();
+        return;
+    }
     let visibleColumns = [];
     tableObj.columns().every(function(index) {
         const h = this.header(); const t = h ? h.textContent.trim() : '';
@@ -523,13 +594,12 @@ function exportToExcel() {
     html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
     html += '<body>';
     
-    // --- ADD EXCEL HEADER (Company Info) ---
     html += '<table border="0">';
     if (typeof EXCEL_INFO !== 'undefined') {
         html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
         html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
         html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
-        html += `<tr><td colspan="${colCount}"></td></tr>`; // empty row for spacing
+        html += `<tr><td colspan="${colCount}"></td></tr>`; 
         html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:14px; font-weight:bold;">CHART OF ACCOUNTS</td></tr>`;
         html += `<tr><td colspan="${colCount}"></td></tr>`;
     }
@@ -538,7 +608,8 @@ function exportToExcel() {
     html += '<table border="1"><thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;">';
     visibleColumns.forEach(c => { html += `<th>${c.text}</th>`; });
     html += '</tr></thead><tbody>';
-    tableObj.rows({search:'applied'}).every(function(rowIdx) {
+
+          tableObj.rows({search:'applied'}).every(function(rowIdx) {
         html += '<tr>';
         visibleColumns.forEach(c => {
             let cell = tableObj.cell(rowIdx, c.index).node();
@@ -548,9 +619,8 @@ function exportToExcel() {
     });
     html += '</tbody></table>';
     
-    // --- ADD EXCEL FOOTER ---
     html += '<table border="0">';
-    html += `<tr><td colspan="${colCount}"></td></tr>`; // empty spacer
+    html += `<tr><td colspan="${colCount}"></td></tr>`; 
     if (typeof EXCEL_INFO !== 'undefined') {
         html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</td></tr>`;
         html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">${EXCEL_INFO.copyright}</td></tr>`;
@@ -568,7 +638,15 @@ function exportToExcel() {
 function exportToPDF() {
     if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
     
+    
+    const table = document.getElementById('coaTable');
+    if (!table) { showExportEmpty(); return; }
+
     const tableObj = new $.fn.dataTable.Api('#coaTable');
+    if (!tableObj || tableObj.rows().count() === 0) {
+        showExportEmpty();
+        return;
+    }
     const headers = []; let visibleColumns = [];
     
     tableObj.columns().every(function(index) {
@@ -679,4 +757,26 @@ $('#confirmDeleteBtn').on('click', function() {
 });
 </script>
 {% include 'accounting/partials/table_tools.html' %}
+
+<script>
+
+(function() {
+    var seedForm = document.querySelector('form[action*="seed"]');
+
+    document.getElementById('confirmSeedBtn').addEventListener('click', function() {
+        var btn = this;
+        var originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Memproses...';
+        if (seedForm) {
+            seedForm.submit();
+        } else {
+            alert('Form seed tidak ditemukan. Silakan refresh halaman.');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    });
+})();
+</script>
+
 {% endblock page_js %}

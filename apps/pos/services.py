@@ -104,6 +104,23 @@ def ensure_pos_kasbon_accounting(pos_transaction, user=None):
                 'keterangan': f'PPN Keluaran POS kasbon {pos_transaction.nomor_transaksi}'
             })
 
+        # HPP: inline dalam jurnal yang sama (database unique constraint pada sumber+sumber_id)
+        if hpp_total > 0:
+            lines_data.extend([
+                {
+                    'akun_kode': '5-1000',  # HPP
+                    'debit': hpp_total,
+                    'kredit': Decimal('0'),
+                    'keterangan': f'HPP penjualan POS kasbon {pos_transaction.nomor_transaksi}'
+                },
+                {
+                    'akun_kode': '1-3000',  # Persediaan
+                    'debit': Decimal('0'),
+                    'kredit': hpp_total,
+                    'keterangan': f'Pengurangan persediaan POS kasbon {pos_transaction.nomor_transaksi}'
+                },
+            ])
+
         jurnal_penjualan = create_jurnal(
             tanggal=tanggal,
             deskripsi=f'Penjualan POS Kasbon - {pos_transaction.nomor_transaksi}',
@@ -115,33 +132,6 @@ def ensure_pos_kasbon_accounting(pos_transaction, user=None):
             user=user,
             auto_post=True,
         )
-
-        # ── Jurnal HPP: D:HPP K:Persediaan ──
-        if hpp_total > 0:
-            create_jurnal(
-                tanggal=tanggal,
-                deskripsi=f'HPP POS Kasbon - {pos_transaction.nomor_transaksi}',
-                lines_data=[
-                    {
-                        'akun_kode': '5-1000',  # HPP
-                        'debit': hpp_total,
-                        'kredit': Decimal('0'),
-                        'keterangan': f'HPP penjualan POS kasbon {pos_transaction.nomor_transaksi}'
-                    },
-                    {
-                        'akun_kode': '1-3000',  # Persediaan
-                        'debit': Decimal('0'),
-                        'kredit': hpp_total,
-                        'keterangan': f'Pengurangan persediaan POS kasbon {pos_transaction.nomor_transaksi}'
-                    },
-                ],
-                sumber='pos',
-                sumber_id=pos_transaction.pk,
-                sumber_ref=f'{pos_transaction.nomor_transaksi}_hpp',
-                cabang=pos_transaction.gudang,
-                user=user,
-                auto_post=True,
-            )
 
         # ── Buat record Piutang ──
         _ensure_piutang_for_kasbon(pos_transaction, user)

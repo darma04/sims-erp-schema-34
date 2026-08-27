@@ -109,6 +109,8 @@ if _USE_MULTI_TENANT:
         "apps.hutang.apps.HutangConfig",
         "apps.aset.apps.AsetConfig",
         "apps.pajak.apps.PajakConfig",
+        "apps.reimburse.apps.ReimburseConfig",
+        "apps.approval_center",
         "apps.kas_bank.apps.KasBankConfig",
         "apps.service_center",
         "apps.pages",
@@ -145,6 +147,8 @@ if _USE_MULTI_TENANT:
         "apps.hutang.apps.HutangConfig",
         "apps.aset.apps.AsetConfig",
         "apps.pajak.apps.PajakConfig",
+        "apps.reimburse.apps.ReimburseConfig",
+        "apps.approval_center",
         "apps.kas_bank.apps.KasBankConfig",
         "apps.service_center",
         "apps.pages",
@@ -192,6 +196,8 @@ else:
         "apps.hutang.apps.HutangConfig",
         "apps.aset.apps.AsetConfig",
         "apps.pajak.apps.PajakConfig",
+        "apps.reimburse.apps.ReimburseConfig",
+        "apps.approval_center",
         "apps.kas_bank.apps.KasBankConfig",
         "apps.service_center",
         "apps.pages",
@@ -226,10 +232,8 @@ else:
 # ==========================================================================
 
 MIDDLEWARE = [
-    # TenantMainMiddleware hanya diperlukan saat multi-tenant mode (PostgreSQL)
-    *(["django_tenants.middleware.main.TenantMainMiddleware"
-    'apps.core.clean_code_middleware.HTMLCommentStripperMiddleware',
-] if _USE_MULTI_TENANT else []),
+    # TenantMainMiddleware hanya diperlukan saat multi-tenant mode (PostgreSQL). WAJIB koma antar item list.
+    *(["django_tenants.middleware.main.TenantMainMiddleware"] if _USE_MULTI_TENANT else []),
     "django.middleware.security.SecurityMiddleware",
     "apps.core.csp_middleware.CSPMiddleware",
     "django.middleware.gzip.GZipMiddleware",
@@ -247,6 +251,8 @@ MIDDLEWARE = [
     "apps.activity_log.middleware.ActivityLogMiddleware",
     "apps.core.license_middleware.LicenseMiddleware",
     "apps.core.maintenance_middleware.MaintenanceMiddleware",
+    # HARUS terakhir (response bottom-up): strip komentar HTML setelah GZip
+    "apps.core.clean_code_middleware.HTMLCommentStripperMiddleware",
 ]
 
 # ==========================================================================
@@ -422,6 +428,7 @@ LOGIN_REDIRECT_URL = "/"
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_AGE = 86400  # 24 hours
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Sesi tetap persisten (user tetap login setelah browser ditutup)
 SESSION_SAVE_EVERY_REQUEST = os.environ.get("SESSION_SAVE_EVERY_REQUEST", "False").lower() in ['true', 'yes', '1']
 
 # Cookie name unik per aplikasi — WAJIB agar session & CSRF tidak saling tabrakan

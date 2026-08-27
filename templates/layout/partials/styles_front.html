@@ -23,7 +23,120 @@
 <link rel="stylesheet" href="{% static 'vendor/css/theme-default.css' %}" class="{{ has_customizer|yesno:'template-customizer-theme-css,' }}" />
 {% endif %}
 
-<link rel="stylesheet" href="{% static 'css/demo.css' %}" />
+<link rel="stylesheet" href="{% static 'css/demo.css' %}?v=14" />
 <link rel="stylesheet" href="{% static 'vendor/css/pages/front-page.css' %}" />
 <link rel="stylesheet" href="{% static 'vendor/libs/node-waves/node-waves.css' %}" />
+
+<style>
+
+:root {
+  /* FONT SCALE — variabel tunggal (Tingkat 1: Heading, Tingkat 2: Body/UI)
+     Identik dgn halaman admin (styles.html) — front mengikuti skala yang sama. */
+  --fs-h3: 0.875rem;      /* 21.6px — judul section besar */
+  --fs-h4: 1.125rem;     /* 18px   — judul halaman */
+  --fs-h5: 0.875rem;         /* 16px   — judul card / sub-judul */
+  --fs-h6: 0.75rem;     /* 14px   — judul kecil / label section */
+  --fs-ui-title: 1.125rem;      /* 24px — .fs-title (angka statistik besar) */
+  --fs-ui-subtitle: 0.875rem; /* 18px — .fs-subtitle */
+  --fs-ui-stat: 0.875rem;         /* 16px — .fs-card-title & . */
+  --fs-ui-value: 0.75rem;    /* 14px — . */
+  --fs-ui-body: 0.75rem;    /* 15px — .fs-body */
+  --fs-ui-sm: 0.75rem;      /* 13px — .fs-small, tombol, form */
+  --fs-ui-xs: 0.75rem;        /* 12px — .fs-label, form-label, alert */
+  --fs-ui-xxs: 0.6875rem;     /* 11px — .fs-tiny, btn-sm, pagination */
+  --fs-ui-3xs: 0.625rem;      /* 10px — badge, tombol aksi tabel */
+  --fs-ui-micro: 0.5625rem;   /* 9px  — badge HP kecil */
+  --fs-brand: 1.25rem;        /* 20px — .app-brand-text */
+}
+@media (max-width: 576px) {
+:root {
+  --fs-h3: 0.75rem;             /* 16px — h3 mobile */
+  --fs-h4: 0.9375rem;        /* 15px — judul halaman mobile */
+  --fs-h5: 0.75rem;        /* 13px — judul card mobile */
+  --fs-h6: 0.625rem;          /* 12px — judul kecil mobile */
+  --fs-ui-title: 0.9375rem;   /* 18px — .fs-title mobile */
+  --fs-ui-subtitle: 0.75rem; /* 15px — .fs-subtitle mobile */
+  --fs-ui-stat: 0.75rem;    /* 14px — .fs-card-title mobile */
+  --fs-ui-value: 0.625rem;    /* 12px — . mobile */
+  --fs-ui-body: 0.625rem;   /* 13px — .fs-body mobile */
+  --fs-ui-xs: 0.625rem;     /* 11px — .fs-label & badge mobile */
+  --fs-ui-xxs: 0.6875rem;    /* 11px — pagination & info mobile */
+  --fs-ui-3xs: 0.625rem;     /* 10px — .fs-tiny mobile */
+  --fs-ui-micro: 0.5625rem;  /* 9px  — badge HP kecil */
+}
+}
+/* ══════════════════════════════════════════════════════════════
+   FONT SCALE — Sistem Tabel (konsisten dgn halaman admin)
+   Normalisasi heading, digit sejajar, & utility fs-*
+   ══════════════════════════════════════════════════════════════ */
+/* --- Heading: tablet & desktop (>=768px) --- */
+@media (min-width: 768px) {
+  h3, .h3 { font-size: var(--fs-h3) !important; }    /* 14px */
+  h4, .h4 { font-size: var(--fs-h4) !important; }   /* 18px */
+  h5, .h5 { font-size: var(--fs-h5) !important; }   /* 14px */
+  h6, .h6 { font-size: var(--fs-h6) !important; }   /* 12px */
+}
+/* --- Heading: mobile (<=576px) --- */
+@media (max-width: 576px) {
+  h3, .h3 { font-size: var(--fs-h3) !important; }
+  h4, .h4 { font-size: var(--fs-h4) !important; }
+  h5, .h5 { font-size: var(--fs-h5) !important; }
+  h6, .h6 { font-size: var(--fs-h6) !important; }
+}
+/* Nominal & angka di heading: digit sejajar (tabular-nums) */
+h4, .h4, h5, .h5 { font-variant-numeric: tabular-nums; }
+
+/* --- Utility fs-* (desktop default) --- */
+.fs-title        { font-size: var(--fs-ui-title); }
+.fs-subtitle     { font-size: var(--fs-ui-subtitle); }
+.fs-card-title   { font-size: var(--fs-ui-stat); }
+. { font-size: var(--fs-num-lg) !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
+. { font-size: var(--fs-num-sm) !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fs-label        { font-size: var(--fs-ui-xs); }
+.fs-body         { font-size: var(--fs-ui-body); }
+.fs-small        { font-size: var(--fs-ui-sm); }
+.fs-tiny         { font-size: var(--fs-ui-xxs); }
+/* --- Tablet (768-1199px) --- */
+@media (min-width: 768px) and (max-width: 1199.98px) {
+  .fs-title        { font-size: 1.35rem; }
+  .fs-subtitle     { font-size: 1rem; }
+  .fs-card-title   { font-size: 0.9375rem; }
+  . { font-size: 0.9375rem; }
+  . { font-size: 0.8125rem; }
+  .fs-label        { font-size: var(--fs-ui-xs); }
+  .fs-body         { font-size: 0.875rem; }
+  .fs-small        { font-size: 0.75rem; }
+  .fs-tiny         { font-size: var(--fs-ui-xxs); }
+}
+/* --- Mobile (<=576px) --- */
+@media (max-width: 576px) {
+  .fs-title        { font-size: var(--fs-ui-title); }
+  .fs-subtitle     { font-size: 0.9375rem; }
+  .fs-card-title   { font-size: 0.875rem; }
+  . { font-size: 0.875rem; }
+  . { font-size: 0.75rem; }
+  .fs-label        { font-size: var(--fs-ui-xs); }
+  .fs-body         { font-size: 0.8125rem; }
+  .fs-small        { font-size: 0.75rem; }
+  .fs-tiny         { font-size: var(--fs-ui-3xs); }
+}
+:root {
+  /* TIER NOMINAL — 2 ukuran wajib (spesifikasi): BESAR 14px / KECIL 12px, mobile 12/10 */
+  --fs-num-lg: 0.875rem;  /* 14px — nominal BESAR (desktop/tablet 577px ke atas) */
+  --fs-num-sm: 0.75rem;   /* 12px — nominal KECIL (desktop/tablet 577px ke atas) */
+}
+@media (max-width: 576px) {
+  :root {
+    --fs-num-lg: 0.75rem;   /* 12px — nominal BESAR mobile */
+    --fs-num-sm: 0.625rem;  /* 10px — nominal KECIL mobile */
+  }
+}
+/* 2 ukuran wajib — menang atas heading h4/h5/h6 (yang !important) dan konsisten di 13 project */
+. { font-size: var(--fs-num-lg) !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
+. { font-size: var(--fs-num-sm) !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* Nominal di dalam TABEL tidak ikut skala card (tetap) */
+.table ., td ., th . { font-size: var(--fs-ui-stat) !important; }
+.table ., td ., th . { font-size: var(--fs-ui-value) !important; }
+
+</style>
 <!--Vendor CSS-->

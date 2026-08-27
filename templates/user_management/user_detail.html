@@ -19,30 +19,33 @@
     <div class="row">
         <div class="col-md-12">
             <div class="card mb-4">
-                <h5 class="card-header">Detail Profil User</h5>
+                <h5 class="card-header fs-card-title">Detail Profil User</h5>
                 <!-- User Info Display -->
                 <div class="card-body">
                     <div class="d-flex align-items-start align-items-sm-center gap-4 mb-4">
                         <div class="avatar avatar-xl">
+                            {% if user_obj.profile.avatar %}
+                            <img src="{{ user_obj.profile.avatar.url }}" alt="{{ user_obj.username }}" class="rounded" style="object-fit: cover;">
+                            {% else %}
                             <span class="avatar-initial rounded bg-label-primary" style="font-size: 2.5rem;">
-                                <i class="ri-user-line"></i>
+                                {{ user_obj.username|first|upper }}
                             </span>
+                            {% endif %}
                         </div>
                         <div class="button-wrapper">
-                            <h5 class="mb-1">{{ user_obj.username }}</h5>
-                            <div class="mb-2">
+                            <h5 class="mb-1 fs-value-primary">{{ user_obj.username }}</h5>
+                            <div class="d-flex flex-wrap gap-2 mt-1">
                                 {% if user_obj.is_superuser %}
-                                <span class="badge bg-label-danger me-1"><i class="ri-shield-star-line me-1"></i>Superuser</span>
+                                <span class="badge bg-label-danger px-2 py-1"><i class="ri-shield-star-line me-1"></i>Superuser</span>
                                 {% elif user_obj.is_staff %}
-                                <span class="badge bg-label-warning me-1"><i class="ri-shield-user-line me-1"></i>Staff</span>
+                                <span class="badge bg-label-warning px-2 py-1"><i class="ri-shield-user-line me-1"></i>Staff</span>
                                 {% else %}
-                                <span class="badge bg-label-info me-1"><i class="ri-user-line me-1"></i>User</span>
+                                <span class="badge bg-label-info px-2 py-1"><i class="ri-user-line me-1"></i>User</span>
                                 {% endif %}
-                                
                                 {% if user_obj.is_active %}
-                                <span class="badge bg-label-success"><i class="ri-check-line me-1"></i>Aktif</span>
+                                <span class="badge bg-label-success px-2 py-1"><i class="ri-check-line me-1"></i>Aktif</span>
                                 {% else %}
-                                <span class="badge bg-label-secondary"><i class="ri-close-line me-1"></i>Nonaktif</span>
+                                <span class="badge bg-label-secondary px-2 py-1"><i class="ri-close-line me-1"></i>Nonaktif</span>
                                 {% endif %}
                             </div>
                             <div class="text-muted small">Bergabung sejak {{ user_obj.date_joined|date:"d M Y" }}</div>
@@ -106,7 +109,7 @@
 
             <!-- Permissions Card -->
             <div class="card mb-4">
-                <h5 class="card-header"><i class="ri-shield-check-line me-2"></i>Hak Akses & Permissions</h5>
+                <h5 class="card-header fs-card-title"><i class="ri-shield-check-line me-2"></i>Hak Akses & Permissions</h5>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-4 mb-3">
@@ -156,10 +159,10 @@
             {% if can_delete.user_management %}
             <div class="card border-danger">
                 <div class="card-header bg-label-danger">
-                    <h5 class="mb-0 text-danger"><i class="ri-alert-line me-2"></i>Danger Zone</h5>
+                    <h5 class="mb-0 text-danger fs-card-title"><i class="ri-alert-line me-2"></i>Danger Zone</h5>
                 </div>
-                <div class="card-body">
-                    <p class="text-muted mb-3">Tindakan berikut tidak dapat dibatalkan. Gunakan dengan hati-hati.</p>
+                <div class="card-body py-4">
+                    <p class="text-muted" style="margin-bottom: 1rem !important;">Tindakan berikut tidak dapat dibatalkan. Gunakan dengan hati-hati.</p>
                     <a href="{% url 'user_management:user_delete' user_obj.pk %}" class="btn btn-danger">
                         <i class="ri-delete-bin-line me-1"></i>Hapus User
                     </a>

@@ -44,7 +44,7 @@
                 <!-- Konfigurasi Bot -->
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Konfigurasi Bot</h5>
+                        <h5 class="mb-0 fs-card-title">Konfigurasi Bot</h5>
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="aktif" name="aktif"
                                    {% if pengaturan.aktif %}checked{% endif %}>
@@ -94,7 +94,7 @@
 
                 <!-- Toggle Notifikasi -->
                 <div class="card mb-4">
-                    <h5 class="card-header">Notifikasi per Transaksi</h5>
+                    <h5 class="card-header fs-card-title">Notifikasi per Transaksi</h5>
                     <div class="card-body">
                         <div class="alert alert-primary" role="alert">
                             <i class="ri-information-line me-1"></i>
@@ -194,7 +194,7 @@
                 <!-- System Prompt Bot AI -->
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="ri-robot-line me-2"></i>System Prompt Bot AI</h5>
+                        <h5 class="mb-0 fs-card-title"><i class="ri-robot-line me-2"></i>System Prompt Bot AI</h5>
                         <span class="badge bg-label-info">Chatbot Telegram</span>
                     </div>
                     <div class="card-body">
@@ -217,9 +217,11 @@
                 <!-- Tombol Simpan -->
                 <div class="card mb-4">
                     <div class="card-body">
+                        {% if can_create.automation or can_edit.automation %}
                         <button type="submit" class="btn btn-primary me-2" id="btnSimpan">
                             <i class="ri-save-line me-1"></i>Simpan Pengaturan
                         </button>
+                        {% endif %}
                         <button type="button" class="btn btn-label-secondary" onclick="testKirim()" id="testBtn">
                             <i class="ri-send-plane-line me-1"></i>Test Kirim
                         </button>
@@ -231,7 +233,7 @@
             <div class="col-lg-4">
                 <!-- Statistik -->
                 <div class="card mb-4">
-                    <h5 class="card-header">Statistik Pengiriman</h5>
+                    <h5 class="card-header fs-card-title">Statistik Pengiriman</h5>
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div class="d-flex align-items-center">
@@ -260,7 +262,7 @@
 
                 <!-- Panduan -->
                 <div class="card mb-4">
-                    <h5 class="card-header">Panduan Setup</h5>
+                    <h5 class="card-header fs-card-title">Panduan Setup</h5>
                     <div class="card-body">
                         <ol class="mb-0" style="padding-left: 1.2rem;">
                             <li class="mb-2">Buka <a href="https://t.me/BotFather" target="_blank">@BotFather</a> di Telegram</li>
@@ -277,7 +279,7 @@
                 <!-- Log Terbaru -->
                 {% if log_terbaru %}
                 <div class="card">
-                    <h5 class="card-header">Log Terbaru</h5>
+                    <h5 class="card-header fs-card-title">Log Terbaru</h5>
                     <div class="card-body p-0">
                         <div class="list-group list-group-flush">
                             {% for log in log_terbaru %}
@@ -451,7 +453,7 @@ if (btnDeteksi) {
                     item.style.transition = 'all 0.2s';
                     item.innerHTML = '<div class="avatar avatar-xs me-2"><span class="avatar-initial rounded ' + badgeClass + '"><i class="' + icon + '"></i></span></div>' +
                         '<div class="flex-grow-1">' +
-                            '<div class="fw-medium" style="font-size:0.85rem">' + chat.title + '</div>' +
+                            '<div class="fw-medium" style="font-size: var(--fs-ui-sm)">' + chat.title + '</div>' +
                             '<small class="text-muted">ID: <code>' + chat.chat_id + '</code> &middot; <span class="badge ' + badgeClass + ' badge-sm">' + typeLabel + '</span></small>' +
                         '</div>' + activeIcon;
 

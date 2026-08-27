@@ -96,8 +96,8 @@
   font-size: 16px; flex-shrink: 0;
 }
 .ai-chat-header-info { flex: 1; }
-.ai-chat-header-info h6 { margin: 0; font-size: 0.9rem; font-weight: 600; color: #fff; }
-.ai-chat-header-info small { opacity: 0.8; font-size: 0.7rem; }
+.ai-chat-header-info h6 { margin: 0; font-size: var(--fs-ui-value); font-weight: 600; color: #fff; }
+.ai-chat-header-info small { opacity: 0.8; font-size: var(--fs-ui-xxs); }
 .ai-chat-header-actions { display: flex; gap: 2px; }
 .ai-chat-header-actions .btn {
   width: 30px; height: 30px; padding: 0;
@@ -130,7 +130,7 @@
 
 .ai-msg {
   padding: 8px 12px;
-  font-size: 0.82rem;
+  font-size: var(--fs-ui-sm);
   line-height: 1.6;
   word-wrap: break-word;
   animation: aiMsgIn 0.2s ease;
@@ -163,7 +163,7 @@
   width: max-content;
   min-width: 100%;
   border-collapse: collapse;
-  font-size: 0.78rem;
+  font-size: var(--fs-ui-xs);
   border-radius: 6px;
   overflow: hidden;
   margin: 0;
@@ -207,7 +207,7 @@
   background: none;
   border: none;
   padding: 2px 6px;
-  font-size: 0.7rem;
+  font-size: var(--fs-ui-xxs);
   cursor: pointer;
   color: #888;
   border-radius: 4px;
@@ -230,7 +230,7 @@
   border: 1px solid #666cff;
   border-radius: 0.5rem;
   padding: 8px 12px;
-  font-size: 0.82rem;
+  font-size: var(--fs-ui-sm);
   line-height: 1.5;
   resize: none;
   outline: none;
@@ -244,7 +244,7 @@
   margin-top: 4px;
   justify-content: flex-end;
 }
-.ai-msg-edit-actions .btn { font-size: 0.72rem; padding: 2px 10px; }
+.ai-msg-edit-actions .btn { font-size: var(--fs-ui-xs); padding: 2px 10px; }
 
 /* Typing */
 .ai-typing {
@@ -282,7 +282,7 @@
 .ai-chat-input-wrap input {
   flex: 1; border: 1px solid var(--bs-border-color, #e7e7e8);
   border-radius: 1.5rem; padding: 7px 14px;
-  font-size: 0.82rem; outline: none;
+  font-size: var(--fs-ui-sm); outline: none;
   background: transparent; color: inherit;
   transition: border-color 0.2s;
 }
@@ -303,7 +303,7 @@
   color: #fff;
   padding: 8px 16px;
   border-radius: 8px;
-  font-size: 0.78rem;
+  font-size: var(--fs-ui-xs);
   z-index: 9999;
   animation: aiToastIn 0.3s ease;
   pointer-events: none;

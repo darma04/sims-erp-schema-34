@@ -3,7 +3,7 @@
 {% load static %}
 {% load i18n %}
 
-{% block title %}Not Authorized - Pages{% endblock %}
+{% block title %}Akses Ditolak{% endblock %}
 
 {% block page_css %}
 {{ block.super }}
@@ -14,8 +14,8 @@
 
 <div class="misc-wrapper">
   <h1 class="mb-2 mx-2" style="font-size: 6rem;">{{ status|default:403 }}</h1>
-  <h4 class="mb-2">You are not authorized! 🔐</h4>
-  <p class="mb-2 mx-2">You don’t have permission to access this page. Go Home!</p>
+  <h4 class="mb-2">Akses Ditolak</h4>
+  <p class="mb-2 mx-2">Anda tidak memiliki izin untuk mengakses halaman ini.</p>
   <div class="d-flex justify-content-center mt-5">
     <img src="{% static 'img/illustrations/misc-not-authorized-object.png' %}" alt="misc-not-authorized"
       class="img-fluid misc-object d-none d-lg-inline-block" width="190">
@@ -36,7 +36,7 @@
         class="img-fluid z-1" width="160">
       {% endif %}
       <div>
-        <a href="{% url 'dashboard:index' %}" class="btn btn-primary text-center my-4">Back to home</a>
+        <a href="{% url 'dashboard:index' %}" class="btn btn-primary text-center my-4">Kembali ke Beranda</a>
       </div>
     </div>
   </div>

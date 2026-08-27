@@ -21,9 +21,23 @@ Terhubung dengan:
 
 {% block title %}Detail Anomali #{{ alert.pk }} - Fraud Detection{% endblock title %}
 
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+{% endblock vendor_js %}
+
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    {# ─── HEADER HALAMAN ─── #}
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1"><i class="ri-shield-keyhole-line me-2"></i>Detail Anomali #{{ alert.pk }}</h4>
@@ -34,72 +48,67 @@ Terhubung dengan:
         </a>
     </div>
 
-    {# ─── SUMMARY BADGES ─── #}
-    {# Baris badge cepat untuk melihat jenis, severity, status dalam 1 baris #}
     <div class="d-flex flex-wrap gap-2 mb-4">
-        {# Badge Jenis Anomali #}
+        
         {% if alert.jenis == 'hapus_lunas' %}
-        <span class="badge bg-label-danger px-3 py-2"><i class="ri-delete-bin-line me-1"></i>{{ alert.get_jenis_display }}</span>
+        <span class="badge bg-label-danger px-3 py-2 fs-value-secondary"><i class="ri-delete-bin-line me-1"></i>{{ alert.get_jenis_display }}</span>
         {% elif alert.jenis == 'diskon_besar' %}
-        <span class="badge bg-label-warning px-3 py-2"><i class="ri-percent-line me-1"></i>{{ alert.get_jenis_display }}</span>
+        <span class="badge bg-label-warning px-3 py-2 fs-value-secondary"><i class="ri-percent-line me-1"></i>{{ alert.get_jenis_display }}</span>
         {% elif alert.jenis == 'po_markup' %}
-        <span class="badge bg-label-info px-3 py-2"><i class="ri-price-tag-3-line me-1"></i>{{ alert.get_jenis_display }}</span>
+        <span class="badge bg-label-info px-3 py-2 fs-value-secondary"><i class="ri-price-tag-3-line me-1"></i>{{ alert.get_jenis_display }}</span>
         {% elif alert.jenis == 'diluar_jam' %}
-        <span class="badge bg-label-dark px-3 py-2"><i class="ri-time-line me-1"></i>{{ alert.get_jenis_display }}</span>
+        <span class="badge bg-label-dark px-3 py-2 fs-value-secondary"><i class="ri-time-line me-1"></i>{{ alert.get_jenis_display }}</span>
         {% else %}
-        <span class="badge bg-label-secondary px-3 py-2"><i class="ri-error-warning-line me-1"></i>{{ alert.get_jenis_display }}</span>
+        <span class="badge bg-label-secondary px-3 py-2 fs-value-secondary"><i class="ri-error-warning-line me-1"></i>{{ alert.get_jenis_display }}</span>
         {% endif %}
 
-        {# Badge Severity #}
         {% if alert.severity == 'critical' %}
-        <span class="badge bg-danger px-3 py-2"><i class="ri-fire-line me-1"></i>{{ alert.get_severity_display }}</span>
+        <span class="badge bg-danger px-3 py-2 fs-value-secondary"><i class="ri-fire-line me-1"></i>{{ alert.get_severity_display }}</span>
         {% elif alert.severity == 'high' %}
-        <span class="badge bg-label-danger px-3 py-2"><i class="ri-arrow-up-line me-1"></i>{{ alert.get_severity_display }}</span>
+        <span class="badge bg-label-danger px-3 py-2 fs-value-secondary"><i class="ri-arrow-up-line me-1"></i>{{ alert.get_severity_display }}</span>
         {% elif alert.severity == 'medium' %}
-        <span class="badge bg-label-warning px-3 py-2"><i class="ri-subtract-line me-1"></i>{{ alert.get_severity_display }}</span>
+        <span class="badge bg-label-warning px-3 py-2 fs-value-secondary"><i class="ri-subtract-line me-1"></i>{{ alert.get_severity_display }}</span>
         {% else %}
-        <span class="badge bg-label-info px-3 py-2"><i class="ri-arrow-down-line me-1"></i>{{ alert.get_severity_display }}</span>
+        <span class="badge bg-label-info px-3 py-2 fs-value-secondary"><i class="ri-arrow-down-line me-1"></i>{{ alert.get_severity_display }}</span>
         {% endif %}
 
-        {# Badge Status #}
         {% if alert.status == 'pending' %}
-        <span class="badge bg-label-warning px-3 py-2"><i class="ri-time-line me-1"></i>{{ alert.get_status_display }}</span>
+        <span class="badge bg-label-warning px-3 py-2 fs-value-secondary"><i class="ri-time-line me-1"></i>{{ alert.get_status_display }}</span>
         {% elif alert.status == 'investigated' %}
-        <span class="badge bg-label-info px-3 py-2"><i class="ri-search-eye-line me-1"></i>{{ alert.get_status_display }}</span>
+        <span class="badge bg-label-info px-3 py-2 fs-value-secondary"><i class="ri-search-eye-line me-1"></i>{{ alert.get_status_display }}</span>
         {% elif alert.status == 'cleared' %}
-        <span class="badge bg-label-success px-3 py-2"><i class="ri-check-double-line me-1"></i>{{ alert.get_status_display }}</span>
+        <span class="badge bg-label-success px-3 py-2 fs-value-secondary"><i class="ri-check-double-line me-1"></i>{{ alert.get_status_display }}</span>
         {% elif alert.status == 'rejected' %}
-        <span class="badge bg-label-danger px-3 py-2"><i class="ri-close-circle-line me-1"></i>{{ alert.get_status_display }}</span>
+        <span class="badge bg-label-danger px-3 py-2 fs-value-secondary"><i class="ri-close-circle-line me-1"></i>{{ alert.get_status_display }}</span>
         {% endif %}
 
-        {# Badge Nominal #}
-        <span class="badge bg-danger px-3 py-2"><i class="ri-money-dollar-circle-line me-1"></i>{{ alert.nominal|rupiah }}</span>
+        <span class="badge bg-danger px-3 py-2 fs-value-secondary"><i class="ri-money-dollar-circle-line me-1"></i>{{ alert.nominal|rupiah }}</span>
     </div>
 
     <div class="row g-4">
-        {# ═══ KOLOM KIRI: Informasi Detail ═══ #}
+        
         <div class="col-lg-8">
-            {# ─── CARD: INFORMASI ANOMALI ─── #}
+            
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="ri-information-line me-2"></i>Informasi Anomali</h5>
+                    <h5 class="mb-0 fs-card-title"><i class="ri-information-line me-2"></i>Informasi Anomali</h5>
                 </div>
                 <div class="card-body">
                     <div class="row g-4">
-                        {# Baris 1: Jenis + Severity #}
+                        
                         <div class="col-md-6">
                             <label class="form-label text-muted small text-uppercase">Jenis Anomali</label>
                             <p class="fw-semibold mb-0">
                                 {% if alert.jenis == 'hapus_lunas' %}
-                                <span class="badge bg-label-danger">{{ alert.get_jenis_display }}</span>
+                                <span class="badge bg-label-danger fs-value-secondary">{{ alert.get_jenis_display }}</span>
                                 {% elif alert.jenis == 'diskon_besar' %}
-                                <span class="badge bg-label-warning">{{ alert.get_jenis_display }}</span>
+                                <span class="badge bg-label-warning fs-value-secondary">{{ alert.get_jenis_display }}</span>
                                 {% elif alert.jenis == 'po_markup' %}
-                                <span class="badge bg-label-info">{{ alert.get_jenis_display }}</span>
+                                <span class="badge bg-label-info fs-value-secondary">{{ alert.get_jenis_display }}</span>
                                 {% elif alert.jenis == 'diluar_jam' %}
-                                <span class="badge bg-label-dark">{{ alert.get_jenis_display }}</span>
+                                <span class="badge bg-label-dark fs-value-secondary">{{ alert.get_jenis_display }}</span>
                                 {% else %}
-                                <span class="badge bg-label-secondary">{{ alert.get_jenis_display }}</span>
+                                <span class="badge bg-label-secondary fs-value-secondary">{{ alert.get_jenis_display }}</span>
                                 {% endif %}
                             </p>
                         </div>
@@ -107,17 +116,17 @@ Terhubung dengan:
                             <label class="form-label text-muted small text-uppercase">Tingkat Keparahan</label>
                             <p class="mb-0">
                                 {% if alert.severity == 'critical' %}
-                                <span class="badge bg-danger">{{ alert.get_severity_display }}</span>
+                                <span class="badge bg-danger fs-value-secondary">{{ alert.get_severity_display }}</span>
                                 {% elif alert.severity == 'high' %}
-                                <span class="badge bg-label-danger">{{ alert.get_severity_display }}</span>
+                                <span class="badge bg-label-danger fs-value-secondary">{{ alert.get_severity_display }}</span>
                                 {% elif alert.severity == 'medium' %}
-                                <span class="badge bg-label-warning">{{ alert.get_severity_display }}</span>
+                                <span class="badge bg-label-warning fs-value-secondary">{{ alert.get_severity_display }}</span>
                                 {% else %}
-                                <span class="badge bg-label-info">{{ alert.get_severity_display }}</span>
+                                <span class="badge bg-label-info fs-value-secondary">{{ alert.get_severity_display }}</span>
                                 {% endif %}
                             </p>
                         </div>
-                        {# Baris 2: User + Nominal #}
+                        
                         <div class="col-md-6">
                             <label class="form-label text-muted small text-uppercase">User Terkait</label>
                             <p class="fw-semibold mb-0">
@@ -128,9 +137,9 @@ Terhubung dengan:
                         </div>
                         <div class="col-md-6">
                             <label class="form-label text-muted small text-uppercase">Nominal Terkait</label>
-                            <p class="fw-bold text-danger mb-0" style="font-size: 1.1rem;">{{ alert.nominal|rupiah }}</p>
+                            <p class="fw-bold mb-0 fs-value-primary">{{ alert.nominal|rupiah }}</p>
                         </div>
-                        {# Baris 3: Tanggal + Status #}
+                        
                         <div class="col-md-6">
                             <label class="form-label text-muted small text-uppercase">Tanggal Terdeteksi</label>
                             <p class="mb-0"><i class="ri-calendar-line me-1 text-muted"></i>{{ alert.created_at|date:"d M Y H:i:s" }}</p>
@@ -139,24 +148,24 @@ Terhubung dengan:
                             <label class="form-label text-muted small text-uppercase">Status Saat Ini</label>
                             <p class="mb-0">
                                 {% if alert.status == 'pending' %}
-                                <span class="badge bg-label-warning">{{ alert.get_status_display }}</span>
+                                <span class="badge bg-label-warning fs-value-secondary">{{ alert.get_status_display }}</span>
                                 {% elif alert.status == 'investigated' %}
-                                <span class="badge bg-label-info">{{ alert.get_status_display }}</span>
+                                <span class="badge bg-label-info fs-value-secondary">{{ alert.get_status_display }}</span>
                                 {% elif alert.status == 'cleared' %}
-                                <span class="badge bg-label-success">{{ alert.get_status_display }}</span>
+                                <span class="badge bg-label-success fs-value-secondary">{{ alert.get_status_display }}</span>
                                 {% elif alert.status == 'rejected' %}
-                                <span class="badge bg-label-danger">{{ alert.get_status_display }}</span>
+                                <span class="badge bg-label-danger fs-value-secondary">{{ alert.get_status_display }}</span>
                                 {% endif %}
                             </p>
                         </div>
-                        {# Baris 4: Deskripsi (full width) #}
+                        
                         <div class="col-12">
                             <label class="form-label text-muted small text-uppercase">Deskripsi Lengkap</label>
                             <div class="bg-lighter rounded p-3">
                                 <p class="mb-0" style="line-height: 1.6;">{{ alert.deskripsi }}</p>
                             </div>
                         </div>
-                        {# Baris 5: Referensi Model/Objek (opsional) #}
+                        
                         {% if alert.model_name or alert.object_id %}
                         <div class="col-12">
                             <hr class="my-1">
@@ -174,7 +183,6 @@ Terhubung dengan:
                             <p class="mb-0"><code class="text-primary">{{ alert.object_id }}</code></p>
                         </div>
                         
-                        {# NEW REALTIME DATALINK #}
                         <div class="col-12 mt-3">
                             {% if related_object_pos %}
                                 <a href="{% url 'pos:invoice_detail' related_object_pos.id %}" class="btn btn-sm btn-outline-primary" target="_blank"><i class="ri-external-link-line me-1"></i>Lihat Data POS Terkait (Realtime)</a>
@@ -193,26 +201,28 @@ Terhubung dengan:
                 </div>
             </div>
 
-            {# ─── CARD: DATA SNAPSHOT (Before/After) ─── #}
             {% if snapshot_pretty %}
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="ri-code-s-slash-line me-2"></i>Snapshot Data (Before / After)</h5>
+                    <h5 class="mb-0 fs-card-title"><i class="ri-code-s-slash-line me-2"></i>Snapshot Data (Before / After)</h5>
                 </div>
                 <div class="card-body">
-                    <pre class="bg-dark text-light p-3 rounded" style="max-height:400px; overflow:auto; font-size:0.85rem;">{{ snapshot_pretty }}</pre>
+                    <pre class="bg-dark text-light p-3 rounded" style="max-height:400px; overflow:auto; font-size: var(--fs-ui-sm);">{{ snapshot_pretty }}</pre>
                 </div>
             </div>
             {% endif %}
 
-            {# ─── CARD: RIWAYAT AKTIVITAS USER ─── #}
             {% if user_activities %}
             <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="ri-history-line me-2"></i>Riwayat Aktivitas User Terkait (20 Terbaru)</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fs-card-title"><i class="ri-history-line me-2"></i>Riwayat Aktivitas User Terkait (20 Terbaru)</h5>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcelFromButton(this)"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                        <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDFFromButton(this)"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+                    </div>
                 </div>
                 <div class="card-datatable table-responsive">
-                    <table class="table table-hover table-sm">
+                    <table id="userActivitiesTable" class="accounting-data-table table table-hover table-sm" data-export-title="Riwayat Aktivitas User - Anomali #{{ alert.pk }}" data-search-placeholder="Cari aktivitas...">
                         <thead>
                             <tr>
                                 <th>Waktu</th>
@@ -231,21 +241,41 @@ Terhubung dengan:
                             </tr>
                             {% endfor %}
                         </tbody>
+                        <tfoot class="table-footer-summary">
+                            <tr>
+                                <td colspan="3" class="text-start ps-4 py-3">
+                                    <div class="d-flex align-items-center justify-content-start">
+                                        <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                        <div class="text-start">
+                                            <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
+                                            <small class="text-muted" style="font-size: 0.75rem;">{{ user_activities|length }} aktivitas terbaru</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-3">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <span class="badge bg-label-info d-flex align-items-center gap-1 mb-2" style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
+                                            <i class="ri-history-line"></i><span>{{ user_activities|length }}</span>
+                                        </span>
+                                        <small class="text-muted fw-medium" style="font-size: 0.75rem;">Jumlah Aktivitas</small>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>
             {% endif %}
         </div>
 
-        {# ═══ KOLOM KANAN: Sidebar Aksi & Review ═══ #}
         <div class="col-lg-4">
-            {# ─── CARD: TINDAK LANJUT — hanya muncul jika pending/investigated ─── #}
+            
             {% if alert.status == 'pending' or alert.status == 'investigated' %}
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0 text-white"><i class="ri-tools-line me-2"></i>Tindak Lanjut</h5>
+                    <h5 class="mb-0 text-white fs-card-title"><i class="ri-tools-line me-2"></i>Tindak Lanjut</h5>
                 </div>
-                {# Diberi pt-4 agar ada jarak antara header "Tindak Lanjut" dan "Catatan Owner/SPV" #}
+                
                 <div class="card-body pt-4">
                     <div class="mb-4">
                         <label class="form-label fw-semibold">Catatan Owner/SPV</label>
@@ -253,7 +283,7 @@ Terhubung dengan:
                         <div class="form-text">Tambahkan catatan untuk dokumentasi audit.</div>
                     </div>
                     <div class="d-grid gap-2">
-                        {# Tombol aksi — masing-masing membuka modal konfirmasi #}
+                        
                         <button class="btn btn-success" onclick="openActionModal('cleared')">
                             <i class="ri-check-double-line me-1"></i>Tandai Aman / Wajar
                         </button>
@@ -268,11 +298,10 @@ Terhubung dengan:
             </div>
             {% endif %}
 
-            {# ─── CARD: INFO REVIEW — muncul jika sudah di-review ─── #}
             {% if alert.reviewed_by %}
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="ri-user-star-line me-2"></i>Info Review</h5>
+                    <h5 class="mb-0 fs-card-title"><i class="ri-user-star-line me-2"></i>Info Review</h5>
                 </div>
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3 mb-3">
@@ -298,10 +327,9 @@ Terhubung dengan:
             </div>
             {% endif %}
 
-            {# ─── CARD: INFORMASI SISTEM ─── #}
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="ri-database-2-line me-2"></i>Informasi Sistem</h5>
+                    <h5 class="mb-0 fs-card-title"><i class="ri-database-2-line me-2"></i>Informasi Sistem</h5>
                 </div>
                 <div class="card-body">
                     <ul class="list-unstyled mb-0">
@@ -330,8 +358,6 @@ Terhubung dengan:
     </div>
 </div>
 
-{# ═══ MODAL KONFIRMASI AKSI — Pop up untuk setiap tindak lanjut ═══ #}
-{# Modal yang sama seperti di alert_list.html, konsisten dan profesional #}
 <div class="modal fade" id="actionModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -342,9 +368,9 @@ Terhubung dengan:
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
             </div>
             <div class="modal-body">
-                {# Hidden input untuk menyimpan status baru yang dipilih #}
+                
                 <input type="hidden" id="modalNewStatus">
-                {# Pesan konfirmasi yang berubah sesuai aksi #}
+                
                 <div class="text-center mb-3" id="actionModalIcon"></div>
                 <p class="text-center fw-semibold" id="actionModalMessage"></p>
                 <div class="alert alert-light d-flex align-items-start" id="actionModalInfo">
@@ -366,15 +392,14 @@ Terhubung dengan:
 {% endblock content %}
 
 {% block page_js %}
+{{ block.super }}
+{% include 'kas_bank/partials/list_tools.html' %}
 <script>
-    // ═══════════════════════════════════════════════════════════════
-    // MODAL KONFIRMASI — Membuka modal dan mengatur konten sesuai aksi
-    // ═══════════════════════════════════════════════════════════════
+    
     function openActionModal(newStatus) {
-        // Simpan status baru ke hidden input
+        
         document.getElementById('modalNewStatus').value = newStatus;
 
-        // Konfigurasi tampilan modal berdasarkan status
         const config = {
             'cleared': {
                 icon: '<i class="ri-check-double-line text-success" style="font-size: 3rem;"></i>',
@@ -408,7 +433,6 @@ Terhubung dengan:
         const cfg = config[newStatus];
         if (!cfg) return;
 
-        // Terapkan konfigurasi ke elemen modal
         document.getElementById('actionModalIcon').innerHTML = cfg.icon;
         document.getElementById('actionModalTitle').innerHTML = cfg.title;
         document.getElementById('actionModalMessage').innerHTML = cfg.message;
@@ -417,18 +441,13 @@ Terhubung dengan:
         confirmBtn.className = 'btn ' + cfg.btnClass;
         confirmBtn.innerHTML = cfg.btnText;
 
-        // Tampilkan modal Bootstrap
         new bootstrap.Modal(document.getElementById('actionModal')).show();
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // SUBMIT AKSI — Kirim request AJAX ke backend
-    // ═══════════════════════════════════════════════════════════════
     function submitAction() {
         const newStatus = document.getElementById('modalNewStatus').value;
         const catatan = document.getElementById('catatanReview').value;
 
-        // Kirim POST request ke endpoint update status
         fetch('{% url "fraud_detection:alert_update_status" alert.pk %}', {
             method: 'POST',
             headers: {
@@ -440,7 +459,7 @@ Terhubung dengan:
         .then(r => r.json())
         .then(data => {
             if (data.success) {
-                // Tutup modal dan reload halaman untuk menampilkan status baru
+                
                 bootstrap.Modal.getInstance(document.getElementById('actionModal')).hide();
                 location.reload();
             } else {

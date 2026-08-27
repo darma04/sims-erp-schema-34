@@ -1,4 +1,4 @@
-﻿{% extends 'layout/layout_vertical.html' %}
+{% extends 'layout/layout_vertical.html' %}
 {% comment %}
 ==========================================================================
    HR DASHBOARD - Dashboard SDM
@@ -14,12 +14,10 @@
 
 {% block vendor_css %}
 {{ block.super }}
-<link rel="stylesheet" href="{% static 'vendor/libs/apex-charts/apex-charts.css' %}" />
 {% endblock vendor_css %}
 
 {% block vendor_js %}
 {{ block.super }}
-<script src="{% static 'vendor/libs/apex-charts/apexcharts.js' %}"></script>
 {% endblock vendor_js %}
 
 {% block content %}
@@ -46,72 +44,56 @@
     </div>
 
     <!-- Stats Cards Row 1 -->
-    <div class="row g-3 mb-4">
-        <div class="col-lg-3 col-sm-6">
-            <div class="card">
+    <div class="row g-6 mb-6">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Total Karyawan</p>
-                            <h4 class="mb-0">{{ total_karyawan|default:0 }}</h4>
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-primary"><i class="ri-team-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Total Karyawan</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_karyawan|default:0 }}</h5>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-primary rounded p-2">
-                                <i class="ri-team-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-sm-6">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Total Departemen</p>
-                            <h4 class="mb-0">{{ total_departemen|default:0 }}</h4>
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-info"><i class="ri-building-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Total Departemen</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_departemen|default:0 }}</h5>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-info rounded p-2">
-                                <i class="ri-building-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-sm-6">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Total Jabatan</p>
-                            <h4 class="mb-0">{{ total_jabatan|default:0 }}</h4>
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-warning"><i class="ri-user-settings-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Total Jabatan</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_jabatan|default:0 }}</h5>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-warning rounded p-2">
-                                <i class="ri-user-settings-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-sm-6">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Gaji Bulan Ini</p>
-                            <h4 class="mb-0 text-success">Rp {{ total_gaji_bulan_ini|floatformat:0|default:"0" }}</h4>
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-success"><i class="ri-money-dollar-box-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Gaji Bulan Ini</span>
+<h5  class="mb-0 fw-bold fs-value-primary">Rp {{ total_gaji_bulan_ini|floatformat:0|default:"0" }}</h5>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-success rounded p-2">
-                                <i class="ri-money-dollar-box-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
@@ -121,33 +103,33 @@
     <div class="row g-4 mb-4">
         <div class="col-md-8">
             <div class="card h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="ri-calendar-check-line me-2"></i>Absensi Hari Ini</h5>
+                <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+                     <h5 class="mb-0 fs-card-title"><i class="ri-calendar-check-line me-2 text-primary" style="color: var(--bs-primary)"></i>Absensi Hari Ini</h5>
                     <span class="badge bg-label-primary">{{ today|date:"d M Y" }}</span>
                 </div>
                 <div class="card-body">
                     <div class="row g-3 text-center">
-                        <div class="col-6 col-md-3">
+                        <div class="col-6">
                             <div class="border rounded p-3">
-                                <h3 class="text-success mb-1">{{ absensi_hadir|default:0 }}</h3>
+                                <h3 class="fs-value-primary mb-1">{{ absensi_hadir|default:0 }}</h3>
                                 <small class="text-muted">Hadir</small>
                             </div>
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6">
                             <div class="border rounded p-3">
-                                <h3 class="text-warning mb-1">{{ absensi_terlambat|default:0 }}</h3>
+                                <h3 class="fs-value-primary mb-1">{{ absensi_terlambat|default:0 }}</h3>
                                 <small class="text-muted">Terlambat</small>
                             </div>
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6">
                             <div class="border rounded p-3">
-                                <h3 class="text-info mb-1">{{ absensi_izin|default:0 }}</h3>
+                                <h3 class="fs-value-primary mb-1">{{ absensi_izin|default:0 }}</h3>
                                 <small class="text-muted">Izin/Sakit/Cuti</small>
                             </div>
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6">
                             <div class="border rounded p-3">
-                                <h3 class="text-danger mb-1">{{ absensi_alpha|default:0 }}</h3>
+                                <h3 class="fs-value-primary mb-1">{{ absensi_alpha|default:0 }}</h3>
                                 <small class="text-muted">Alpha</small>
                             </div>
                         </div>
@@ -157,7 +139,7 @@
                     <div class="mt-4">
                         <div class="d-flex justify-content-between mb-2">
                             <span class="text-muted">Tingkat Kehadiran</span>
-                            <span class="fw-medium">{{ tingkat_kehadiran|default:0 }}%</span>
+                            <span class="fw-medium fs-value-secondary">{{ tingkat_kehadiran|default:0 }}%</span>
                         </div>
                         <div class="progress" style="height: 10px;">
                             <div class="progress-bar bg-success" style="width: {{ tingkat_kehadiran|default:0 }}%"></div>
@@ -170,7 +152,7 @@
         <div class="col-md-4">
             <div class="card h-100">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="ri-links-line me-2"></i>Aksi Cepat</h5>
+                     <h5 class="mb-0 fs-card-title"><i class="ri-links-line me-2 text-primary" style="color: var(--bs-primary)"></i>Aksi Cepat</h5>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
@@ -196,8 +178,8 @@
     <div class="row g-4">
         <div class="col-md-6">
             <div class="card h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="ri-team-line me-2"></i>Karyawan Terbaru</h5>
+                <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+                     <h5 class="mb-0 fs-card-title"><i class="ri-team-line me-2 text-primary" style="color: var(--bs-primary)"></i>Karyawan Terbaru</h5>
                     <a href="{% url 'hr:karyawan' %}" class="btn btn-sm btn-label-primary">Lihat Semua</a>
                 </div>
                 <div class="table-responsive">
@@ -220,7 +202,11 @@
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <div class="avatar avatar-sm me-2 flex-shrink-0">
+                                            {% if karyawan.foto %}
+                                            <img src="{{ karyawan.foto.url }}" alt="{{ karyawan.nama }}" class="rounded-circle" style="object-fit: cover;">
+                                            {% else %}
                                             <span class="avatar-initial rounded-circle">{{ karyawan.nama|slice:":2"|upper }}</span>
+                                            {% endif %}
                                         </div>
                                         <div>
                                             <strong>{{ karyawan.nama }}</strong>
@@ -325,11 +311,12 @@
         </div>
         <div class="col-md-6">
             <div class="card h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="ri-calendar-check-line me-2"></i>Absensi Terbaru</h5>
+                <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+                     <h5 class="mb-0 fs-card-title"><i class="ri-calendar-check-line me-2 text-primary" style="color: var(--bs-primary)"></i>Absensi Terbaru</h5>
                     <a href="{% url 'hr:absensi' %}" class="btn btn-sm btn-label-primary">Lihat Semua</a>
                 </div>
                 <div class="table-responsive">
+                    {% if absensi_terbaru %}
                     <table class="table table-hover mb-0">
                         <thead>
                             <tr>
@@ -358,6 +345,22 @@
                     {% endfor %}
                         </tbody>
                     </table>
+                    {% else %}
+                    <div class="card-body">
+                        <div class="text-center py-4 py-md-5 px-3 px-md-4">
+                            <div class="mb-4">
+                                <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                                     style="width: 88px; height: 88px;">
+                                    <i class="ri-calendar-check-line" style="font-size: 2.8rem;"></i>
+                                </div>
+                            </div>
+                            <h5 class="mb-3">Belum Ada Absensi</h5>
+                            <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+                                Belum ada data absensi terbaru.
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -373,18 +376,7 @@
         justify-content: center !important;
         font-size: 0.75rem !important;
     }
-    .avatar-lg {
-        width: 48px !important;
-        height: 48px !important;
-    }
-    .avatar-lg .avatar-initial {
-        width: 48px !important;
-        height: 48px !important;
-        font-size: 1.25rem !important;
-    }
-    .avatar-lg .avatar-initial i {
-        font-size: 1.5rem !important;
-    }
+
     .card {
         border: none;
         box-shadow: 0 2px 6px 0 rgba(67, 89, 113, 0.12);

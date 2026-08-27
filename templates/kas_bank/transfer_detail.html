@@ -1,7 +1,22 @@
 {% extends 'layout/layout_vertical.html' %}
+{% load static %}
 {% load currency_filters %}
 
 {% block title %}{{ transfer.nomor }} - Detail Transfer Kas & Bank{% endblock title %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+{% endblock vendor_js %}
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
@@ -11,7 +26,7 @@
 
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="ri-arrow-left-right-line me-2"></i>{{ transfer.nomor }}</h5>
+            <h5 class="mb-0 fs-card-title"><i class="ri-arrow-left-right-line me-2"></i>{{ transfer.nomor }}</h5>
             <div class="d-flex gap-2">
                 {% if not transfer.jurnal_entry_id %}
                 <a href="{% url 'kas_bank:transfer_edit' transfer.pk %}" class="btn btn-primary">
@@ -28,65 +43,31 @@
                 <div class="col-md-4">
                     <div class="border rounded p-3 h-100">
                         <small class="text-muted d-block mb-1">Jumlah Transfer</small>
-                        <h4 class="mb-0">{{ transfer.jumlah|rupiah }}</h4>
+                        <h4 class="mb-0 fs-value-primary">{{ transfer.jumlah|rupiah }}</h4>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="border rounded p-3 h-100">
                         <small class="text-muted d-block mb-1">Biaya Admin</small>
-                        <h4 class="mb-0 text-warning">{{ transfer.biaya_admin|rupiah }}</h4>
+                        <h4 class="mb-0 fs-value-primary">{{ transfer.biaya_admin|rupiah }}</h4>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="border rounded p-3 h-100">
                         <small class="text-muted d-block mb-1">Status</small>
-                        <span class="badge bg-label-{% if transfer.status == 'posted' %}success{% elif transfer.status == 'cancelled' %}danger{% else %}secondary{% endif %}">{{ transfer.get_status_display }}</span>
+                        <span class="badge bg-label-{% if transfer.status == 'posted' %}success{% elif transfer.status == 'cancelled' %}danger{% else %}secondary{% endif %} fs-value-secondary">{{ transfer.get_status_display }}</span>
                     </div>
                 </div>
             </div>
 
             <div class="row">
                 <div class="col-md-6">
-                    {% if mutasi_list %}
-
                     <table class="table table-borderless">
                         <tr><td class="text-muted" style="width:170px;">Tanggal</td><td>{{ transfer.tanggal|date:"d F Y H:i" }}</td></tr>
                         <tr><td class="text-muted">Dari Akun</td><td><a href="{% url 'kas_bank:account_detail' transfer.dari_akun.pk %}">{{ transfer.dari_akun.kode }} - {{ transfer.dari_akun.nama }}</a></td></tr>
                         <tr><td class="text-muted">Ke Akun</td><td><a href="{% url 'kas_bank:account_detail' transfer.ke_akun.pk %}">{{ transfer.ke_akun.kode }} - {{ transfer.ke_akun.nama }}</a></td></tr>
                         <tr><td class="text-muted">Cabang</td><td>{{ transfer.cabang.nama|default:"-" }}</td></tr>
                     </table>
-
-                    {% else %}
-
-                    <div class="card-body">
-
-                        <div class="text-center py-4 py-md-5 px-3 px-md-4">
-
-                            <div class="mb-4">
-
-                                <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
-
-                                     style="width: 88px; height: 88px;">
-
-                                    <i class="ri-arrow-left-right-line" style="font-size: 2.8rem;"></i>
-
-                                </div>
-
-                            </div>
-
-                            <h5 class="mb-3">Belum Ada Transfer Stok</h5>
-
-                            <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
-
-                                Daftar data masih kosong.
-
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                    {% endif %}
                 </div>
                 <div class="col-md-6">
                     <table class="table table-borderless">
@@ -107,12 +88,17 @@
     </div>
 
     <div class="card">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="ri-file-list-3-line me-2"></i>Mutasi yang Terbentuk</h5>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fs-card-title"><i class="ri-file-list-3-line me-2"></i>Mutasi yang Terbentuk</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcelFromButton(this)"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDFFromButton(this)"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+            </div>
         </div>
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead class="table-light">
+        {% if mutasi_list %}
+        <div class="card-datatable table-responsive">
+            <table id="mutasiTransferTable" class="datatables-kas-bank accounting-data-table table table-hover" data-export-title="Mutasi yang Terbentuk - {{ transfer.nomor }}" data-search-placeholder="Cari mutasi...">
+                <thead>
                     <tr>
                         <th>Nomor</th>
                         <th>Akun</th>
@@ -132,8 +118,57 @@
                     </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="2" class="text-start ps-4 py-3">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ mutasi_list|length }} mutasi terbentuk</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3" colspan="2">
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="badge bg-label-info d-flex align-items-center gap-1 mb-2" style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    <i class="ri-arrow-left-right-line"></i><span>{{ transfer.jumlah|rupiah }}</span>
+                                </span>
+                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Transfer</small>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="badge bg-label-warning d-flex align-items-center gap-1 mb-2" style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    <i class="ri-bank-card-line"></i><span>{{ transfer.biaya_admin|rupiah }}</span>
+                                </span>
+                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Biaya Admin</small>
+                            </div>
+                        </td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
+        {% else %}
+        <div class="card-body">
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+                <div class="mb-4">
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 88px; height: 88px;">
+                        <i class="ri-arrow-left-right-line" style="font-size: 2.8rem;"></i>
+                    </div>
+                </div>
+                <h5 class="mb-3">Belum Ada Mutasi</h5>
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+                    Belum ada mutasi yang terbentuk untuk transfer ini.
+                </p>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock content %}
+
+{% block page_js %}
+{{ block.super }}
+{% include 'kas_bank/partials/list_tools.html' %}
+{% endblock page_js %}

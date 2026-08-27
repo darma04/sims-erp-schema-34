@@ -350,9 +350,9 @@
                         <strong>{{ item.produk.nama }}</strong><br>
                         <small style="color: #666;">{{ item.produk.sku }}</small>
                     </td>
-                    <td class="text-right">{{ item.harga_satuan|rupiah }}</td>
+                    <td class="text-right text-end">{{ item.harga_satuan|rupiah }}</td>
                     <td class="text-center">{{ item.jumlah }} {{ item.produk.satuan.nama|default:"pcs" }}</td>
-                    <td class="text-right">{{ item.diskon|rupiah }}</td>
+                    <td class="text-right text-end">{{ item.diskon|rupiah }}</td>
                     <td class="text-right"><strong>{{ item.subtotal|rupiah }}</strong></td>
                 </tr>
                 {% endfor %}
@@ -364,18 +364,18 @@
             {% if transaction.diskon > 0 %}
             <tr>
                 <td>Diskon:</td>
-                <td style="text-align: right; color: #dc3545;">- {{ transaction.diskon|rupiah }}</td>
+                <td class="text-end" style="text-align: right; color: #dc3545;">- {{ transaction.diskon|rupiah }}</td>
             </tr>
             {% endif %}
             {% if transaction.pajak > 0 %}
             <tr>
                 <td>Pajak:</td>
-                <td style="text-align: right;">{{ transaction.pajak|rupiah }}</td>
+                <td class="text-end" style="text-align: right;">{{ transaction.pajak|rupiah }}</td>
             </tr>
             {% endif %}
             <tr class="grand-total">
                 <td>TOTAL:</td>
-                <td style="text-align: right;">{{ transaction.total_harga|rupiah }}</td>
+                <td class="text-end" style="text-align: right;">{{ transaction.total_harga|rupiah }}</td>
             </tr>
         </table>
 

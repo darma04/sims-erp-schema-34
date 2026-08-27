@@ -32,7 +32,7 @@
             </h4>
             <p class="text-muted mb-0">Kelola akses dan permission untuk setiap role</p>
         </div>
-        {% if user_role == 'SUPERUSER' %}
+        {% if is_superuser %}
         <div>
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPermissionModal">
                 <i class="ri-add-line me-2"></i>Tambah Permission
@@ -44,7 +44,7 @@
     <!-- Permission Matrix -->
     <div class="card">
         <div class="card-header pb-0">
-            <h5 class="card-title mb-0">Permission Matrix</h5>
+            <h5 class="card-title mb-0 fs-card-title">Permission Matrix</h5>
             <p class="text-muted small mb-0">Overview permission untuk semua role</p>
         </div>
         <div class="card-body">
@@ -158,7 +158,7 @@
     <!-- Legend -->
     <div class="card mt-3">
         <div class="card-body">
-            <h6 class="card-title mb-3">
+            <h6 class="card-title mb-3 fs-card-title">
                 <i class="ri-information-line me-2"></i>Legend
             </h6>
             <div class="row">
@@ -185,7 +185,7 @@
     <!-- Detailed List -->
     <div class="card mt-3">
         <div class="card-header">
-            <h5 class="card-title mb-0">Detailed Permission List</h5>
+            <h5 class="card-title mb-0 fs-card-title">Detailed Permission List</h5>
         </div>
         <div class="card-body">
             <div class="table-responsive">

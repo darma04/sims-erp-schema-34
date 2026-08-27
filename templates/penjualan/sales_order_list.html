@@ -24,6 +24,9 @@ Fitur: export Excel & PDF, filter, search.
 <script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
 <script src="{% static 'vendor/libs/flatpickr/flatpickr.js' %}"></script>
 <script src="https://npmcdn.com/flatpickr/dist/l10n/id.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
 {% endblock vendor_js %}
 
 {% block content %}
@@ -158,7 +161,7 @@ Fitur: export Excel & PDF, filter, search.
     <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Daftar Sales Order</h5>
+            <h5 class="mb-0 fs-card-title">Daftar Sales Order</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()">
                     <i class="ri-file-excel-2-line me-1"></i>Export Excel
@@ -303,7 +306,7 @@ Fitur: export Excel & PDF, filter, search.
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-primary d-flex align-items-center gap-1 mb-2"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
                                     <i class="ri-money-dollar-circle-line"></i>
                                     <span>Rp {{ total_nominal_so|floatformat:0 }}</span>
                                 </span>
@@ -344,7 +347,7 @@ Fitur: export Excel & PDF, filter, search.
                 </p>
                 <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
                     {% if can_create.penjualan %}
-                    <a href="{% url 'penjualan:sales_order_add' %}" class="btn btn-primary btn-lg">
+                    <a href="{% url 'penjualan:sales-order-add' %}" class="btn btn-primary btn-lg">
                         <i class="ri-add-line me-1"></i>Tambah Sales Order
                     </a>
                     {% endif %}
@@ -396,7 +399,7 @@ Fitur: export Excel & PDF, filter, search.
     .dataTables_wrapper .dataTables_info {
         padding: 1rem 1.5rem;
         font-size: 0.875rem;
-        color: #697a8d;
+        ;
     }
 
     .dataTables_wrapper .dataTables_paginate {
@@ -459,10 +462,11 @@ Fitur: export Excel & PDF, filter, search.
 
     /* Mobile Horizontal Scroll */
     @media (max-width: 768px) {
-        .card-datatable {
-            overflow-x: auto !important;
-            -webkit-overflow-scrolling: touch;
-            max-width: 100%;
+        .card-datatable,
+        .card-datatable .dataTables_wrapper {
+            overflow-x: hidden !important;
+            overflow-y: hidden !important;
+            max-width: 100% !important;
         }
 
         .datatables-so {
@@ -471,9 +475,11 @@ Fitur: export Excel & PDF, filter, search.
             table-layout: auto !important;
         }
 
-        .dataTables_wrapper {
+        .card-datatable .dataTables_wrapper > .table-responsive {
             overflow-x: auto !important;
-            max-width: 100% !important;
+            overflow-y: hidden !important;
+            -webkit-overflow-scrolling: touch;
+            max-width: 100%;
         }
     }
 </style>
@@ -493,7 +499,7 @@ Fitur: export Excel & PDF, filter, search.
 
         // Inisialisasi DataTable
         {% if sales_order_list %}
-        {% if customer_list %}
+        {% if sales_order_list %}
         const table = $('#soTable').DataTable({
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini",
@@ -551,7 +557,7 @@ Fitur: export Excel & PDF, filter, search.
     // Company Information (from Template Cetak settings)
     function toggleColumns() {
         const table = new $.fn.dataTable.Api('#soTable');
-        if (!table) return;
+        if (!table) { showExportEmpty(); return; }
         document.querySelectorAll('.column-checkbox').forEach(cb => {
             const colIdx = parseInt(cb.value);
             table.column(colIdx).visible(cb.checked);
@@ -600,9 +606,13 @@ Fitur: export Excel & PDF, filter, search.
 
     function exportToExcel() {
         const table = document.getElementById('soTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#soTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         let colCount = 0;
         let visibleColumns = [];
@@ -700,9 +710,13 @@ Fitur: export Excel & PDF, filter, search.
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('soTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#soTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         const headers = [];
         let visibleColumns = [];

@@ -2,6 +2,30 @@
 {% load static %}
 {% load currency_filters %}
 
+{% comment %}
+  ==========================================================================
+  KAS BANK - Daftar Account (List View)
+  ==========================================================================
+  Menampilkan daftar semua account menggunakan DataTables (tabel interaktif).
+  DataTables menyediakan: search, sorting, pagination, dan export PDF/Excel
+  secara otomatis tanpa perlu coding JavaScript tambahan.
+
+  FLOW DATA:
+  - URL: /kas_bank/ -> kas_bank.views.AccountListView- View: Mengambil data dari database via model Account- Template: File ini merender data ke HTML- Response: Browser menampilkan tabel + tombol aksi (edit/hapus/detail)
+
+  RELASI KE MODUL LAIN:
+  - apps/kas_bank/models.py -> Model Account (sumber data)- apps/kas_bank/views.py -> AccountListView (handler)- apps/kas_bank/urls.py -> URL routing ke view ini- apps/core/mixins.py -> ReadPermissionMixin (cek hak akses)- layout/layout_vertical.html -> Template induk (sidebar, header)
+
+  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
+  - BOLEH diubah: Tampilan kolom tabel, tombol aksi, filter- BOLEH diubah: Tambah kolom baru (sesuaikan juga di views.py queryset)- JANGAN diubah: {% extends %} dan {% block %} structure- JANGAN diubah: class DataTables (break JavaScript)
+
+  TIPS & DEBUGGING:
+  - Error 'TemplateDoesNotExist'? Cek path di views.py template_name- Data tidak muncul? Cek get_queryset() di views.py- Tambah kolom? Edit <th> di <thead> dan <td> di <tbody>- Export gagal? Cek fungsi export_di_kas_bank_list() di <script>
+
+  ==========================================================================
+{% endcomment %}
+
+
 {% block title %}Akun Kas & Bank - Treasury{% endblock title %}
 
 {% block vendor_css %}
@@ -27,48 +51,58 @@
             </h4>
             <p class="text-muted mb-0">Master rekening kas, bank, QRIS, e-wallet, dan clearing</p>
         </div>
+        {% if can_create.kas_bank %}
         <a href="{% url 'kas_bank:account_add' %}" class="btn btn-primary">
             <i class="ri-add-line me-1"></i>Tambah Akun
         </a>
+        {% endif %}
     </div>
 
-    <div class="row g-6 mb-4">
-        <div class="col-sm-6 col-xl-3">
+    <div class="row g-6 mb-6">
+        <div class="col-6 col-md-3 col-lg-3">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3 treasury-stat-card">
                         <div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-primary"><i class="ri-bank-card-line ri-24px"></i></span></div>
-                        <div><span class="d-block text-muted small">Total Akun</span><h5 class="mb-0 fw-bold">{{ total_accounts }}</h5><small class="text-muted">Semua rekening</small></div>
+                        <div><span class="d-block text-muted small">Total Akun</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_accounts }}</h5>
+<small class="text-muted">Semua rekening</small></div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-3">
+        <div class="col-6 col-md-3 col-lg-3">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3 treasury-stat-card">
                         <div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-success"><i class="ri-checkbox-circle-line ri-24px"></i></span></div>
-                        <div><span class="d-block text-muted small">Akun Aktif</span><h5 class="mb-0 fw-bold text-success">{{ active_accounts }}</h5><small class="text-muted">Siap transaksi</small></div>
+                        <div><span class="d-block text-muted small">Akun Aktif</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ active_accounts }}</h5>
+<small class="text-muted">Siap transaksi</small></div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-3">
+        <div class="col-6 col-md-3 col-lg-3">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3 treasury-stat-card">
                         <div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-info"><i class="ri-wallet-3-line ri-24px"></i></span></div>
-                        <div><span class="d-block text-muted small">Saldo Awal</span><h5 class="mb-0 fw-bold">{{ total_saldo_awal|rupiah }}</h5><small class="text-muted">Nilai pembukaan</small></div>
+                        <div><span class="d-block text-muted small">Saldo Awal</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_saldo_awal|rupiah }}</h5>
+<small class="text-muted">Nilai pembukaan</small></div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-3">
+        <div class="col-6 col-md-3 col-lg-3">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3 treasury-stat-card">
                         <div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-warning"><i class="ri-star-line ri-24px"></i></span></div>
-                        <div><span class="d-block text-muted small">Default</span><h5 class="mb-0 fw-bold text-warning">{{ default_accounts }}</h5><small class="text-muted">Akun prioritas</small></div>
+                        <div><span class="d-block text-muted small">Default</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ default_accounts }}</h5>
+<small class="text-muted">Akun prioritas</small></div>
                     </div>
                 </div>
             </div>
@@ -80,10 +114,10 @@
             <form method="get">
                 <div class="row g-3">
                     <div class="col-md-3">
-                        <label class="form-label">Cari Akun</label>
+                        <label class="form-label" for="searchAkun">Cari Akun</label>
                         <div class="input-group input-group-merge">
                             <span class="input-group-text"><i class="ri-search-line"></i></span>
-                            <input type="text" name="q" value="{{ request.GET.q }}" class="form-control" placeholder="Kode, nama, bank">
+                            <input type="text" name="q" id="searchAkun" value="{{ request.GET.q }}" class="form-control" placeholder="Kode, nama, bank">
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -154,7 +188,7 @@
 
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="ri-list-check-3 me-2"></i>Daftar Akun</h5>
+            <h5 class="mb-0 fs-card-title"><i class="ri-list-check-3 me-2"></i>Daftar Akun</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
                 <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
@@ -162,7 +196,7 @@
         </div>
                 {% if accounts %}
 <div class="card-datatable table-responsive">
-            <table id="dataTable" class="datatables-kas-bank accounting-data-table table table-hover" data-accounting-primary="true" data-export-title="Akun Kas Bank" data-search-placeholder="Cari akun kas/bank...">
+            <table id="dataTable" class="datatables-kas-bank {% if accounts %}accounting-data-table {% endif %}table table-hover" {% if accounts %}data-accounting-primary="true"{% endif %} data-export-title="Akun Kas Bank" data-search-placeholder="Cari akun kas/bank...">
                 <thead>
                     <tr>
                         <th>Kode</th>
@@ -185,24 +219,28 @@
                         <td>{{ account.akun.kode }} - {{ account.akun.nama }}</td>
                         <td>{{ account.nama_bank|default:"-" }}</td>
                         <td>{{ account.nomor_rekening|default:"-" }}</td>
-                        <td>{{ account.saldo_awal|rupiah }}</td>
+                        <td class="text-end">{{ account.saldo_awal|rupiah }}</td>
                         <td>{% if account.aktif %}<span class="badge bg-label-success">Aktif</span>{% else %}<span class="badge bg-label-secondary">Nonaktif</span>{% endif %}</td>
                         <td>
+                            {% if can_view.kas_bank or can_edit.kas_bank or can_delete.kas_bank %}
                             <div class="dropdown">
                                 <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ri-more-2-line"></i></button>
                                 <div class="dropdown-menu">
-                                    <a class="dropdown-item" href="{% url 'kas_bank:account_detail' account.pk %}"><i class="ri-eye-line me-2"></i>Detail</a>
-                                    <a class="dropdown-item" href="{% url 'kas_bank:account_edit' account.pk %}"><i class="ri-edit-line me-2"></i>Edit</a>
-                                    <button type="button" class="dropdown-item text-danger" onclick="deleteKasBank('{% url 'kas_bank:account_delete' account.pk %}', '{{ account.kode }}')"><i class="ri-delete-bin-line me-2"></i>Hapus</button>
+                                    {% if can_view.kas_bank %}<a class="dropdown-item" href="{% url 'kas_bank:account_detail' account.pk %}"><i class="ri-eye-line me-2"></i>Detail</a>{% endif %}
+                                    {% if can_edit.kas_bank %}<a class="dropdown-item" href="{% url 'kas_bank:account_edit' account.pk %}"><i class="ri-edit-line me-2"></i>Edit</a>{% endif %}
+                                    {% if can_delete.kas_bank %}<button type="button" class="dropdown-item text-danger" onclick="deleteKasBank('{% url 'kas_bank:account_delete' account.pk %}', '{{ account.kode }}')"><i class="ri-delete-bin-line me-2"></i>Hapus</button>{% endif %}
                                 </div>
                             </div>
+                            {% else %}
+                            <span class="badge bg-label-secondary"><i class="ri-eye-line me-1"></i>View Only</span>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
                 <tfoot class="table-footer-summary">
                     <tr>
-                        <td colspan="5" class="text-start ps-4 py-3">
+                        <td colspan="1" class="text-start ps-4 py-3">
                             <div class="d-flex align-items-center justify-content-start">
                                 <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
                                 <div class="text-start">
@@ -211,9 +249,9 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="py-3" colspan="2">
+                        <td class="py-3" colspan="7">
                             <div class="d-flex flex-column align-items-center">
-                                <span class="badge bg-label-info d-flex align-items-center gap-1 mb-2" style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 120px;">
+                                <span class="badge bg-label-info d-flex align-items-center gap-1 mb-2" style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
                                     <i class="ri-wallet-3-line"></i><span>{{ total_saldo_awal|rupiah }}</span>
                                 </span>
                                 <small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Saldo Awal</small>
@@ -221,13 +259,13 @@
                         </td>
                         <td class="py-3">
                             <div class="d-flex flex-column align-items-center">
-                                <span class="badge bg-label-success d-flex align-items-center gap-1 mb-2" style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 100px;">
+                                <span class="badge bg-label-success d-flex align-items-center gap-1 mb-2" style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 100px;">
                                     <i class="ri-checkbox-circle-line"></i><span>{{ active_accounts }}</span>
                                 </span>
                                 <small class="text-muted fw-medium" style="font-size: 0.75rem;">Aktif</small>
                             </div>
+
                         </td>
-                        <td class="py-3"></td>
                     </tr>
                 </tfoot>
             </table>

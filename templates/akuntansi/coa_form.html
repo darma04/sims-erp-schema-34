@@ -1,4 +1,4 @@
-{% extends 'layout/layout_vertical.html' %}
+﻿{% extends 'layout/layout_vertical.html' %}
 {% comment %}
 ==========================================================================
 COA FORM - Form Tambah/Edit Akun Chart of Accounts
@@ -17,9 +17,10 @@ COA FORM - Form Tambah/Edit Akun Chart of Accounts
     <div class="row">
         <div class="col-md-12">
             <div class="card mb-4">
-                <h5 class="card-header">
+                <h5 class="card-header fs-value-primary">
                     <i class="ri-book-2-line me-2"></i>{{ title }}
                 </h5>
+                
                 <form method="post">
                     {% csrf_token %}
                     <div class="card-body">
@@ -87,6 +88,7 @@ COA FORM - Form Tambah/Edit Akun Chart of Accounts
                             </div>
                         </div>
 
+                        {% if can_create.akuntansi or can_edit.akuntansi %}
                         <div class="row justify-content-end">
                             <div class="col-sm-10">
                                 <button type="submit" class="btn btn-primary me-2">
@@ -95,6 +97,7 @@ COA FORM - Form Tambah/Edit Akun Chart of Accounts
                                 <a href="{% url 'akuntansi:coa' %}" class="btn btn-outline-secondary">Batal</a>
                             </div>
                         </div>
+                        {% endif %}
                     </div>
                 </form>
             </div>
@@ -105,7 +108,7 @@ COA FORM - Form Tambah/Edit Akun Chart of Accounts
 
 {% block page_js %}
 <script>
-// Auto-set saldo_normal based on tipe selection
+
 $('#id_tipe').on('change', function() {
     const tipe = $(this).val();
     const saldoNormal = $('#id_saldo_normal');

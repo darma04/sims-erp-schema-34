@@ -32,60 +32,62 @@
         <div class="d-flex gap-2">
             <a href="{% url 'piutang:aging' %}" class="btn btn-outline-info"><i class="ri-bar-chart-box-line me-1"></i>Aging Report</a>
             {% if rbac_can_create %}
+            {% if can_create.piutang %}
             <a href="{% url 'piutang:add' %}" class="btn btn-primary"><i class="ri-add-line me-1"></i>Input Piutang</a>
+            {% endif %}
             {% endif %}
         </div>
     </div>
 
     <!-- Summary Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-sm-6 col-md-3">
-            <div class="card">
+    <div class="row g-6 mb-6">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-primary"><i class="ri-file-list-3-line ri-24px"></i></span></div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-primary"><i class="ri-file-list-3-line ri-24px"></i></span></div>
                         <div>
-                            <h5 class="mb-0">{{ count_total }}</h5>
-                            <small class="text-muted">Total Piutang</small>
+                            <span class="d-block text-muted small">Total Piutang</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ count_total }}</h5>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-md-3">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-danger"><i class="ri-money-dollar-circle-line ri-24px"></i></span></div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-danger"><i class="ri-money-dollar-circle-line ri-24px"></i></span></div>
                         <div>
-                            <h5 class="mb-0 text-danger">{{ total_sisa|rupiah }}</h5>
-                            <small class="text-muted">Sisa Piutang</small>
+                            <span class="d-block text-muted small">Sisa Piutang</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_sisa|rupiah }}</h5>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-md-3">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-success"><i class="ri-checkbox-circle-line ri-24px"></i></span></div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-success"><i class="ri-checkbox-circle-line ri-24px"></i></span></div>
                         <div>
-                            <h5 class="mb-0">{{ count_lunas }}</h5>
-                            <small class="text-muted">Lunas</small>
+                            <span class="d-block text-muted small">Lunas</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ count_lunas }}</h5>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-md-3">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-warning"><i class="ri-time-line ri-24px"></i></span></div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-warning"><i class="ri-time-line ri-24px"></i></span></div>
                         <div>
-                            <h5 class="mb-0">{{ count_belum }}</h5>
-                            <small class="text-muted">Belum Bayar</small>
+                            <span class="d-block text-muted small">Belum Bayar</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ count_belum }}</h5>
                         </div>
                     </div>
                 </div>
@@ -174,7 +176,7 @@
     <!-- Main Table -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Daftar Piutang</h5>
+            <h5 class="mb-0 fs-card-title">Daftar Piutang</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
                 <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>

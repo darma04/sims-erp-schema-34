@@ -20,13 +20,15 @@
       {% with has_module_view=can_view|attr:item.slug %}
         {% if has_module_view or accessible_list %}
           <li class="menu-item {% if is_group %}active open{% endif %}">
-            <a href="javascript:void(0);" class="menu-link menu-toggle">
-              <i class="{{ item.icon }}"></i>
-              <div>{% trans item.name %}</div>
-              {% if item.badge %}
-                <div class="badge bg-{{ item.badge.0 }} rounded-pill ms-auto">{{ item.badge.1 }}</div>
-              {% endif %}
-            </a>
+             <a href="javascript:void(0);" class="menu-link menu-toggle">
+               <i class="{{ item.icon }}"></i>
+               <div class="text-truncate">{% trans item.name %}</div>
+               {% with badge_count=sidebar_badges|get_item:item.slug %}
+               {% if badge_count %}
+               <span class="badge rounded-pill bg-danger flex-shrink-0 ms-2 fs-value-secondary" style="font-size: var(--fs-ui-3xs);padding:2px 5px;min-width:18px;">{% if badge_count > 99 %}99+{% else %}{{ badge_count }}{% endif %}</span>
+               {% endif %}
+               {% endwith %}
+             </a>
             <ul class="menu-sub">
               {% for sub_item in item.submenu %}
                 {% comment %} Extract sub-module name from slug (e.g., "produk-kategori" -> "kategori") {% endcomment %}

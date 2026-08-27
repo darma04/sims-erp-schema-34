@@ -110,12 +110,12 @@ Filter akun/periode/cabang, tabel mutasi D/K/saldo berjalan, export.
 
     {% if buku_besar %}
     <!-- Summary Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-sm-6 col-md-3">
-            <div class="card">
+    <div class="row g-6 mb-6">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar avatar-md me-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0">
                             <span class="avatar-initial rounded bg-label-primary"><i class="ri-book-2-line ri-24px"></i></span>
                         </div>
                         <div>
@@ -126,46 +126,46 @@ Filter akun/periode/cabang, tabel mutasi D/K/saldo berjalan, export.
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-md-3">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar avatar-md me-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0">
                             <span class="avatar-initial rounded bg-label-info"><i class="ri-wallet-3-line ri-24px"></i></span>
                         </div>
                         <div>
-                            <h5 class="mb-0">{{ buku_besar.saldo_awal|rupiah }}</h5>
-                            <small class="text-muted">Saldo Awal</small>
+                            <span class="d-block text-muted small">Saldo Awal</span>
+                            <h5 class="mb-0 fw-bold fs-value-primary">{{ buku_besar.saldo_awal|rupiah }}</h5>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-md-3">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar avatar-md me-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0">
                             <span class="avatar-initial rounded bg-label-success"><i class="ri-arrow-up-circle-line ri-24px"></i></span>
                         </div>
                         <div>
-                            <h5 class="mb-0 text-success">{{ buku_besar.total_debit|rupiah }}</h5>
-                            <small class="text-muted">Total Debit</small>
+                            <span class="d-block text-muted small">Total Debit</span>
+                            <h5 class="mb-0 fw-bold fs-value-primary">{{ buku_besar.total_debit|rupiah }}</h5>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-md-3">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar avatar-md me-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0">
                             <span class="avatar-initial rounded {% if buku_besar.saldo_akhir >= 0 %}bg-label-success{% else %}bg-label-danger{% endif %}"><i class="ri-bar-chart-box-line ri-24px"></i></span>
                         </div>
                         <div>
-                            <h5 class="mb-0 {% if buku_besar.saldo_akhir >= 0 %}text-success{% else %}text-danger{% endif %}">{{ buku_besar.saldo_akhir|rupiah }}</h5>
-                            <small class="text-muted">Saldo Akhir</small>
+                            <span class="d-block text-muted small">Saldo Akhir</span>
+                            <h5 class="mb-0 fw-bold fs-value-primary">{{ buku_besar.saldo_akhir|rupiah }}</h5>
                         </div>
                     </div>
                 </div>
@@ -175,9 +175,10 @@ Filter akun/periode/cabang, tabel mutasi D/K/saldo berjalan, export.
 
     <!-- Chart -->
     <div class="card mb-4" id="chartCard" style="display:none;">
-        <div class="card-header"><h5 class="mb-0"><i class="ri-line-chart-line me-2"></i>Grafik Saldo Berjalan</h5></div>
+        <div class="card-header d-flex flex-nowrap align-items-center justify-content-between"><h5 class="mb-0 fs-card-title"><i class="ri-line-chart-line me-2"></i>Grafik Saldo Berjalan</h5><div class="dropdown flex-shrink-0"><button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button><div class="dropdown-menu dropdown-menu-end"><a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a></div></div></div>
         <div class="card-body">
             <canvas id="saldoChart" height="80"></canvas>
+            <div id="saldoChartEmpty" class="text-center text-muted py-4" style="display:none;"><i class="ri-bar-chart-2-line ri-3x d-block mb-2" style="opacity:0.3"></i><small>Belum ada data untuk ditampilkan</small></div>
         </div>
     </div>
 
@@ -185,7 +186,7 @@ Filter akun/periode/cabang, tabel mutasi D/K/saldo berjalan, export.
     <!-- Mutasi Table -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Mutasi - {{ buku_besar.akun.nama }}</h5>
+            <h5 class="mb-0 fs-card-title">Mutasi - {{ buku_besar.akun.nama }}</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
                 <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
@@ -196,7 +197,7 @@ Filter akun/periode/cabang, tabel mutasi D/K/saldo berjalan, export.
             <div class="alert alert-warning d-flex align-items-center py-2 mb-0" role="alert" style="border-radius:6px;">
                 <i class="ri-wallet-3-line me-2 fs-5"></i>
                 <span class="fw-semibold me-2">Saldo Awal:</span>
-                <span class="fw-bold fs-6">{{ buku_besar.saldo_awal|rupiah }}</span>
+                <span class="fw-bold fs-value-primary">{{ buku_besar.saldo_awal|rupiah }}</span>
                 <span class="ms-3 text-muted small">— periode sebelum filter yang dipilih</span>
             </div>
         </div>
@@ -302,15 +303,14 @@ Filter akun/periode/cabang, tabel mutasi D/K/saldo berjalan, export.
     {% elif selected_akun %}
     <div class="card">
         <div class="card-body text-center py-5">
-            <i class="ri-book-open-line ri-3x text-muted mb-3 d-block"></i>
-            <p class="text-muted">Tidak ada data buku besar untuk akun ini pada periode yang dipilih</p>
+            <i class="ri-book-open-line ri-48px mb-2 d-block" style="opacity:0.3;"></i>
+            Tidak ada data buku besar untuk akun ini pada periode yang dipilih
         </div>
     </div>
     {% else %}
     <div class="card">
         <div class="card-body text-center py-5">
-            <i class="ri-search-eye-line ri-3x text-muted mb-3 d-block"></i>
-            <h5 class="text-muted">Pilih Akun</h5>
+            <i class="ri-search-eye-line ri-48px mb-2 d-block" style="opacity:0.3;"></i>
             <p class="text-muted">Silakan pilih akun untuk melihat buku besar</p>
         </div>
     </div>
@@ -339,6 +339,11 @@ $(document).ready(function() {
     const chartLabels = [{% for m in buku_besar.mutasi %}'{{ m.tanggal|date:"d/m" }}',{% endfor %}];
     const chartSaldo = [{% for m in buku_besar.mutasi %}{{ m.saldo }},{% endfor %}];
 
+    document.getElementById('chartCard').style.display = '';
+    if (chartLabels.length === 0 && document.getElementById('saldoChartEmpty')) {
+        document.getElementById('saldoChart').style.display = 'none';
+        document.getElementById('saldoChartEmpty').style.display = '';
+    }
     if (chartLabels.length > 0) {
         document.getElementById('chartCard').style.display = '';
         new Chart(document.getElementById('saldoChart').getContext('2d'), {

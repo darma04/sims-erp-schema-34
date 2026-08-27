@@ -2,7 +2,44 @@
 {% load static %}
 {% load currency_filters %}
 
+{% comment %}
+  ==========================================================================
+  HUTANG - Detail Hutang
+  ==========================================================================
+  Menampilkan informasi lengkap satu hutang termasuk data relasi.
+  Detail page biasanya menampilkan data read-only (tidak bisa diedit langsung).
+
+  FLOW DATA:
+  - URL: /hutang/hutang/<pk>/- View: DetailView mengambil 1 object berdasarkan primary key- Context: object + data relasi (items, history, dll)- Template: Render semua informasi ke HTML
+
+  RELASI KE MODUL LAIN:
+  - apps/hutang/views.py -> HutangDetailView- apps/hutang/models.py -> Model Hutang- get_context_data(): Menambahkan data relasi ke context
+
+  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
+  - BOLEH diubah: Layout detail, urutan informasi- BOLEH ditambah: Informasi baru dari relasi- JANGAN diubah: {% extends %} dan {% block %} structure
+
+  TIPS & DEBUGGING:
+  - Error 'DoesNotExist'? Primary key tidak ditemukan di database- Data relasi kosong? Cek get_context_data() di views.py
+
+  ==========================================================================
+{% endcomment %}
+
+
 {% block title %}{{ hutang.nomor }} - Detail Hutang{% endblock title %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+{% endblock vendor_js %}
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
@@ -10,61 +47,26 @@
         <span class="text-muted fw-light">Akuntansi / <a href="{% url 'hutang:list' %}">Hutang</a> /</span> {{ hutang.nomor }}
     </h4>
 
-    <!-- Header -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="ri-hand-coin-line me-2"></i>{{ hutang.nomor }}</h5>
+            <h5 class="mb-0 fs-card-title"><i class="ri-hand-coin-line me-2"></i>{{ hutang.nomor }}</h5>
             <a href="{% url 'hutang:list' %}" class="btn btn-outline-secondary"><i class="ri-arrow-left-line me-1"></i>Kembali</a>
         </div>
         <div class="card-body">
             <div class="row">
                 <div class="col-md-6">
-                    {% if pembayaran_list %}
-
                     <table class="table table-borderless">
                         <tr><td class="text-muted" style="width:150px;">Supplier</td><td class="fw-semibold">{{ hutang.supplier.nama }}</td></tr>
                         <tr><td class="text-muted">Sumber</td><td>{{ hutang.get_sumber_display }} {% if hutang.sumber_ref %}<small>({{ hutang.sumber_ref }})</small>{% endif %}</td></tr>
                         <tr><td class="text-muted">Tanggal</td><td>{{ hutang.tanggal|date:"d F Y" }}</td></tr>
                         <tr><td class="text-muted">Jatuh Tempo</td><td>{% if hutang.jatuh_tempo %}<span class="{% if hutang.is_overdue %}text-danger fw-bold{% endif %}">{{ hutang.jatuh_tempo|date:"d F Y" }}</span>{% if hutang.is_overdue %} <span class="badge bg-danger">Telat {{ hutang.hari_overdue }} hari</span>{% endif %}{% else %}-{% endif %}</td></tr>
                     </table>
-
-                    {% else %}
-
-                    <div class="card-body">
-
-                        <div class="text-center py-4 py-md-5 px-3 px-md-4">
-
-                            <div class="mb-4">
-
-                                <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
-
-                                     style="width: 88px; height: 88px;">
-
-                                    <i class="ri-bill-line" style="font-size: 2.8rem;"></i>
-
-                                </div>
-
-                            </div>
-
-                            <h5 class="mb-3">Belum Ada Hutang</h5>
-
-                            <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
-
-                                Daftar data masih kosong.
-
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                    {% endif %}
                 </div>
                 <div class="col-md-6">
                     <table class="table table-borderless">
-                        <tr><td class="text-muted" style="width:150px;">Total Hutang</td><td class="fw-bold fs-5">{{ hutang.jumlah_total|rupiah }}</td></tr>
-                        <tr><td class="text-muted">Dibayar</td><td class="text-success fw-semibold">{{ hutang.jumlah_dibayar|rupiah }}</td></tr>
-                        <tr><td class="text-muted">Sisa</td><td class="fw-bold fs-5 {% if hutang.sisa > 0 %}text-danger{% else %}text-success{% endif %}">{{ hutang.sisa|rupiah }}</td></tr>
+                        <tr><td class="text-muted" style="width:150px;">Total Hutang</td><td class="fw-bold fs-value-primary text-end">{{ hutang.jumlah_total|rupiah }}</td></tr>
+                        <tr><td class="text-muted">Dibayar</td><td class="text-success fw-semibold text-end">{{ hutang.jumlah_dibayar|rupiah }}</td></tr>
+                        <tr><td class="text-muted">Sisa</td><td class="fw-bold fs-value-primary text-end {% if hutang.sisa > 0 %}text-danger{% else %}text-success{% endif %}">{{ hutang.sisa|rupiah }}</td></tr>
                         <tr><td class="text-muted">Status</td><td>
                             {% if hutang.status == 'lunas' %}<span class="badge bg-success fs-6">Lunas</span>
                             {% elif hutang.status == 'sebagian' %}<span class="badge bg-warning fs-6">Bayar Sebagian</span>
@@ -79,7 +81,7 @@
             <div class="mt-3">
                 <div class="d-flex justify-content-between mb-1">
                     <small class="text-muted">Progress Pembayaran</small>
-                    <small class="fw-semibold">{{ persen_bayar }}%</small>
+                    <small class="fw-semibold fs-value-secondary">{{ persen_bayar }}%</small>
                 </div>
                 <div class="progress" style="height: 10px;">
                     <div class="progress-bar {% if persen_bayar == '100' %}bg-success{% elif persen_bayar > '50' %}bg-info{% else %}bg-warning{% endif %}" style="width: {{ persen_bayar }}%"></div>
@@ -90,13 +92,19 @@
     </div>
 
     <div class="row">
-        <!-- Riwayat Pembayaran -->
+        
         <div class="col-md-7">
             <div class="card mb-4">
-                <div class="card-header"><h5 class="mb-0"><i class="ri-history-line me-2"></i>Riwayat Pembayaran</h5></div>
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="table-light">
+                <div class="card-header d-flex justify-content-between align-items-center"><h5 class="mb-0 fs-card-title"><i class="ri-history-line me-2"></i>Riwayat Pembayaran</h5>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcelFromButton(this)"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                        <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDFFromButton(this)"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+                    </div>
+                </div>
+                {% if pembayaran_list %}
+                <div class="card-datatable table-responsive">
+                    <table id="pembayaranHutangTable" class="accounting-data-table table table-hover" data-export-title="Riwayat Pembayaran - {{ hutang.nomor }}" data-search-placeholder="Cari pembayaran...">
+                        <thead>
                             <tr><th>#</th><th>Tanggal</th><th class="text-end">Jumlah</th><th>Metode</th><th>Jurnal</th><th>Keterangan</th></tr>
                         </thead>
                         <tbody>
@@ -111,18 +119,62 @@
                             </tr>
                     {% endfor %}
                         </tbody>
+                        <tfoot class="table-footer-summary">
+                            <tr>
+                                <td colspan="2" class="text-start ps-4 py-3">
+                                    <div class="d-flex align-items-center justify-content-start">
+                                        <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                        <div class="text-start">
+                                            <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
+                                            <small class="text-muted" style="font-size: 0.75rem;">{{ pembayaran_list|length }} pembayaran</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-3" colspan="2">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <span class="badge bg-label-success d-flex align-items-center gap-1 mb-2" style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
+                                            <i class="ri-hand-coin-line"></i><span>{{ hutang.jumlah_dibayar|rupiah }}</span>
+                                        </span>
+                                        <small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Dibayar</small>
+                                    </div>
+                                </td>
+                                <td class="py-3" colspan="2">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <span class="badge bg-label-info d-flex align-items-center gap-1 mb-2" style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
+                                            <i class="ri-wallet-3-line"></i><span>{{ hutang.sisa|rupiah }}</span>
+                                        </span>
+                                        <small class="text-muted fw-medium" style="font-size: 0.75rem;">Sisa Hutang</small>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
+                {% else %}
+                <div class="card-body">
+                    <div class="text-center py-4 py-md-5 px-3 px-md-4">
+                        <div class="mb-4">
+                            <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 88px; height: 88px;">
+                                <i class="ri-history-line" style="font-size: 2.8rem;"></i>
+                            </div>
+                        </div>
+                        <h5 class="mb-3">Belum Ada Pembayaran</h5>
+                        <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+                            Belum ada pembayaran untuk hutang ini.
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
 
-        <!-- Form Pembayaran -->
         {% if hutang.status != 'lunas' and rbac_can_create %}
         <div class="col-md-5">
             <div class="card mb-4">
                 <div class="card-header bg-primary">
-                    <h5 class="mb-0 text-white"><i class="ri-hand-coin-line me-2"></i>Catat Pembayaran</h5>
+                    <h5 class="mb-0 text-white fs-card-title"><i class="ri-hand-coin-line me-2"></i>Catat Pembayaran</h5>
                 </div>
+                
                 <form method="post" action="{% url 'hutang:bayar' hutang.pk %}">
                     {% csrf_token %}
                     <div class="card-body">
@@ -145,7 +197,9 @@
                             <label class="form-label">Keterangan</label>
                             {{ bayar_form.keterangan }}
                         </div>
-                        <button type="submit" class="btn btn-primary w-100"><i class="ri-hand-coin-line me-1"></i>Simpan Pembayaran</button>
+                        {% if can_create.hutang or can_edit.hutang %}
+<button type="submit" class="btn btn-primary w-100"><i class="ri-hand-coin-line me-1"></i>Simpan Pembayaran</button>
+{% endif %}
                     </div>
                 </form>
             </div>
@@ -154,3 +208,8 @@
     </div>
 </div>
 {% endblock content %}
+
+{% block page_js %}
+{{ block.super }}
+{% include 'kas_bank/partials/list_tools.html' %}
+{% endblock page_js %}

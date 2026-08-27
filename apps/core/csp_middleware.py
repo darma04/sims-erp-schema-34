@@ -22,11 +22,11 @@ class CSPMiddleware:
         # Directive CSP yang seimbang antara kemudahan integrasi UI & keamanan
         csp_directives = [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-            "font-src 'self' https://fonts.gstatic.com",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com https://npmcdn.com",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com https://npmcdn.com",
+            "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com https://npmcdn.com data:",
             "img-src 'self' data: blob: https:",
-            "connect-src 'self'",
+            "connect-src 'self' https://cdnjs.cloudflare.com",
             "frame-src 'none'",
             "object-src 'none'",
             "base-uri 'self'",

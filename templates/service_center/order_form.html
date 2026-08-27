@@ -1,4 +1,4 @@
-{% extends layout_path %}
+﻿{% extends layout_path %}
 
 {% load i18n %}
 
@@ -7,7 +7,7 @@
 {% block content %}
 <div class="d-flex align-items-center justify-content-between mb-6">
   <div>
-    <h4 class="mb-1"><i class="ri-tools-line me-2"></i>{{ form_title }}</h4>
+    <h4 class="mb-1 fs-value-primary"><i class="ri-tools-line me-2"></i>{{ form_title }}</h4>
     <p class="text-muted mb-0">Isi formulir penerimaan unit service</p>
   </div>
   <a href="{% url 'service_center:order_list' %}" class="btn btn-outline-secondary">
@@ -36,7 +36,7 @@
   <!-- Data Pelanggan & Perangkat -->
   <div class="card mb-6">
     <div class="card-header">
-      <h5 class="card-title mb-0"><i class="ri-user-line me-2"></i>Data Pelanggan & Perangkat</h5>
+      <h5 class="card-title mb-0 fs-card-title"><i class="ri-user-line me-2"></i>Data Pelanggan & Perangkat</h5>
     </div>
     <div class="card-body">
       <div class="row g-4">
@@ -80,7 +80,7 @@
   <!-- Keluhan & Kondisi -->
   <div class="card mb-6">
     <div class="card-header">
-      <h5 class="card-title mb-0"><i class="ri-stethoscope-line me-2"></i>Keluhan & Kondisi</h5>
+      <h5 class="card-title mb-0 fs-card-title"><i class="ri-stethoscope-line me-2">pe-line me-2"></i>Keluhan & Kondisi</h5>
     </div>
     <div class="card-body">
       <div class="row g-4">
@@ -107,7 +107,7 @@
   <!-- Pengaturan Service -->
   <div class="card mb-6">
     <div class="card-header">
-      <h5 class="card-title mb-0"><i class="ri-settings-3-line me-2"></i>Pengaturan Service</h5>
+      <h5 class="card-title mb-0 fs-card-title"><i class="ri-settings-3-line me-2"></i>Pengaturan Service</h5>
     </div>
     <div class="card-body">
       <div class="row g-4">
@@ -146,7 +146,7 @@
   <!-- Detail Layanan (Formset) -->
   <div class="card mb-6">
     <div class="card-header d-flex align-items-center justify-content-between">
-      <h5 class="card-title mb-0"><i class="ri-list-check me-2"></i>Detail Layanan / Perbaikan</h5>
+      <h5 class="card-title mb-0 fs-card-title"><i class="ri-list-check me-2">t-check me-2"></i>Detail Layanan / Perbaikan</h5>
       <button type="button" class="btn btn-outline-primary" id="addItemBtn">
         <i class="ri-add-line me-1"></i>Tambah Layanan
       </button>
@@ -229,11 +229,13 @@
   </script>
 
   <!-- Tombol Submit -->
+  {% if can_create.service_center or can_edit.service_center %}
   <div class="d-flex gap-2">
     <button type="submit" class="btn btn-primary">
       <i class="ri-save-line me-1"></i> Simpan Order Service
     </button>
     <a href="{% url 'service_center:order_list' %}" class="btn btn-outline-secondary">Batal</a>
   </div>
+  {% endif %}
 </form>
 {% endblock %}

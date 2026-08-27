@@ -273,7 +273,15 @@ def extract_submodule(slug):
         slug_lower = slug_str.lower()
         for prefix in known_prefixes:
             if slug_lower.startswith(prefix):
-                return slug_lower[len(prefix):]
+                result = slug_lower[len(prefix):]
+                # Strip redundant prefix components from module name
+                # e.g., 'kas-bank-bank-dashboard' -> after 'kas-bank-' -> 'bank-dashboard'
+                # strip redundant 'bank-' -> 'dashboard'
+                for component in prefix.strip('-').split('-'):
+                    comp_prefix = component + '-'
+                    if result.startswith(comp_prefix):
+                        result = result[len(comp_prefix):]
+                return result
 
         parts = slug_str.split('-')
         if len(parts) > 1:
@@ -299,3 +307,11 @@ Ringkasan semua tag/filter yang terdaftar:
 6. extract_submodule → Filter: {{ slug|extract_submodule }}
 7. has_permission    → Filter: {{ user|has_permission:"produk:view" }}
 """
+
+
+@register.filter(name='get_item')
+def get_item(dictionary, key):
+    if not dictionary:
+        return None
+    return dictionary.get(key, None)
+

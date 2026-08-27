@@ -31,7 +31,10 @@
 ==========================================================================
 """
 
+import logging
 from decimal import Decimal
+
+logger = logging.getLogger(__name__)
 
 from django.db import models, transaction, OperationalError    # Django ORM + atomic + lock error
 from django.contrib.auth.models import User  # Model User bawaan Django (akun login)

@@ -7,7 +7,6 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('pos', '0006_add_customer_fk'),
         ('produk', '0006_produk_metode_pembayaran'),
     ]
 

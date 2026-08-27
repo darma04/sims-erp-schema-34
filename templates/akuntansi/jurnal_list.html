@@ -28,7 +28,7 @@ Fitur: filter tanggal/sumber/cabang/status, export Excel & PDF, cards.
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    <!-- Header -->
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1"><i class="ri-file-text-line me-2"></i>Jurnal Entry</h4>
@@ -41,65 +41,64 @@ Fitur: filter tanggal/sumber/cabang/status, export Excel & PDF, cards.
         {% endif %}
     </div>
 
-    <!-- Summary Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-sm-6 col-md-3">
-            <div class="card">
+    <div class="row g-6 mb-6">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar avatar-md me-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0">
                             <span class="avatar-initial rounded bg-label-primary"><i class="ri-file-text-line ri-24px"></i></span>
                         </div>
                         <div>
-                            <h5 class="mb-0">{{ total_jurnal }}</h5>
-                            <small class="text-muted">Total Jurnal</small>
+                            <span class="d-block text-muted small">Total Jurnal</span>
+                            <h5 class="mb-0 fw-bold fs-value-primary">{{ total_jurnal }}</h5>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-md-3">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar avatar-md me-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0">
                             <span class="avatar-initial rounded bg-label-success"><i class="ri-checkbox-circle-line ri-24px"></i></span>
                         </div>
                         <div>
-                            <h5 class="mb-0">{{ total_posted }}</h5>
-                            <small class="text-muted">Posted</small>
+                            <span class="d-block text-muted small">Posted</span>
+                            <h5 class="mb-0 fw-bold fs-value-primary">{{ total_posted }}</h5>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-md-3">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar avatar-md me-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0">
                             <span class="avatar-initial rounded bg-label-warning"><i class="ri-edit-line ri-24px"></i></span>
                         </div>
                         <div>
-                            <h5 class="mb-0">{{ total_draft }}</h5>
-                            <small class="text-muted">Draft</small>
+                            <span class="d-block text-muted small">Draft</span>
+                            <h5 class="mb-0 fw-bold fs-value-primary">{{ total_draft }}</h5>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-md-3">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar avatar-md me-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0">
                             <span class="avatar-initial rounded bg-label-info"><i class="ri-scales-3-line ri-24px"></i></span>
                         </div>
                         <div>
-                            <h5 class="mb-0 {% if total_debit == total_kredit %}text-success{% else %}text-danger{% endif %}">
+                            <span class="d-block text-muted small">Status D/K</span>
+                            <h5 class="mb-0 fw-bold {% if total_debit == total_kredit %}text-success{% else %}text-danger{% endif %}">
                                 {% if total_debit == total_kredit %}Balance{% else %}Unbalanced!{% endif %}
                             </h5>
-                            <small class="text-muted">Status D/K</small>
                         </div>
                     </div>
                 </div>
@@ -107,7 +106,6 @@ Fitur: filter tanggal/sumber/cabang/status, export Excel & PDF, cards.
         </div>
     </div>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -182,10 +180,9 @@ Fitur: filter tanggal/sumber/cabang/status, export Excel & PDF, cards.
         </div>
     </div>
 
-    <!-- Main Table -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Daftar Jurnal</h5>
+            <h5 class="mb-0 fs-card-title">Daftar Jurnal</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
                 <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
@@ -194,8 +191,8 @@ Fitur: filter tanggal/sumber/cabang/status, export Excel & PDF, cards.
         {% if jurnal_list %}
 
         <div class="card-datatable table-responsive">
-            <table class="datatables-jurnal accounting-data-table table table-hover" id="jurnalTable"
-                data-accounting-primary="true"
+            <table class="datatables-jurnal {% if jurnal_list %}accounting-data-table {% endif %}table table-hover" id="jurnalTable"
+                {% if jurnal_list %}data-accounting-primary="true"{% endif %}
                 data-export-title="Jurnal Umum"
                 data-export-filename="Jurnal_Umum"
                 data-search-placeholder="Cari nomor/deskripsi..."
@@ -276,8 +273,8 @@ Fitur: filter tanggal/sumber/cabang/status, export Excel & PDF, cards.
                             <div class="d-flex align-items-center justify-content-start">
                                 <i class="ri-calculator-line me-2 text-primary" style="font-size:1.5rem;"></i>
                                 <div class="text-start">
-                                    <strong class="d-block" style="font-size:1rem;">RINGKASAN</strong>
-                                    <small class="text-muted" style="font-size:.75rem;">{{ total_jurnal }} Jurnal Terdaftar</small>
+                                    <strong class="d-block">RINGKASAN</strong>
+                                    <small class="text-muted fs-label">{{ total_jurnal }} Jurnal Terdaftar</small>
                                 </div>
                             </div>
                         </td>
@@ -335,7 +332,6 @@ Fitur: filter tanggal/sumber/cabang/status, export Excel & PDF, cards.
         {% endif %}
     </div>
 
-    <!-- Delete Modal -->
     <div class="modal fade" id="deleteJurnalModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -362,7 +358,7 @@ Fitur: filter tanggal/sumber/cabang/status, export Excel & PDF, cards.
 
 {% block page_js %}
 <style>
-    .dataTables_wrapper .dataTables_info { padding: 1rem 1.5rem; font-size: 0.875rem; color: #697a8d; }
+    .dataTables_wrapper .dataTables_info { padding: 1rem 1.5rem; font-size: 0.875rem; ; }
     .dataTables_wrapper .dataTables_paginate { padding: 1rem 1.5rem; }
     .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter { padding: 0 1.5rem 1rem 1.5rem; }
     .dataTables_wrapper .dataTables_filter input { border: 1px solid #d9dee3; border-radius: 0.375rem; padding: 0.4375rem 0.875rem; }
@@ -370,12 +366,11 @@ Fitur: filter tanggal/sumber/cabang/status, export Excel & PDF, cards.
     .dataTables_wrapper .dataTables_paginate .paginate_button { padding: 0.438rem 0.875rem; border-radius: 0.375rem; margin: 0 0.125rem; border: none; background: transparent; color: #697a8d; }
     .dataTables_wrapper .dataTables_paginate .paginate_button.current { background: #696cff !important; color: white !important; border: none; }
     .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.disabled) { background: rgba(105,108,255,0.08) !important; border: none; color: #696cff !important; }
-    .card-datatable { padding-bottom: 0; }
     .datatables-jurnal thead th { font-weight: 600; font-size: 0.8125rem; }
     @media (max-width: 768px) {
-        .card-datatable { overflow-x: hidden !important; max-width: 100%; }
+    {% if jurnal_list %}
         .datatables-jurnal { min-width: 900px !important; }
-        .dataTables_wrapper { overflow-x: hidden !important; max-width: 100% !important; }
+    {% endif %}
     }
 </style>
 <script>
@@ -398,8 +393,6 @@ function toggleColumns() { const cbs = document.querySelectorAll('.column-checkb
 function selectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(cb => { cb.checked = true; }); toggleColumns(); }
 function deselectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(cb => { cb.checked = false; }); toggleColumns(); }
 
-// ═══════════════════════════════════════════════════════════════
-// AJAX Actions
 const csrfToken = () => document.querySelector('[name=csrfmiddlewaretoken]').value;
 
 function postJurnal(id, name) {

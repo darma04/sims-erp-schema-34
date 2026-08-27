@@ -33,6 +33,8 @@ import threading
 from collections import defaultdict
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
+from django.db.models import Sum, Value
+from django.db.models.functions import Coalesce
 
 logger = logging.getLogger(__name__)
 
@@ -516,7 +518,6 @@ def _gather_comprehensive_data():
     apapun tentang bisnis tanpa terbatas pada satu intent saja.
     """
     from django.utils import timezone
-    from django.db.models import Sum, Count
     today = timezone.now().date()
     month_start = today.replace(day=1)
     sections = []
@@ -559,13 +560,16 @@ def _gather_comprehensive_data():
     try:
         from apps.produk.models import Produk
         total_produk = Produk.objects.filter(aktif=True).count()
-        stok_habis = Produk.objects.filter(aktif=True, stok__lte=0).count()
-        stok_rendah = Produk.objects.filter(aktif=True, stok__gt=0, stok__lt=10).count()
+        produk_annotated = Produk.objects.filter(aktif=True).annotate(
+            total_stok=Coalesce(Sum('stok_set__jumlah'), Value(0))
+        )
+        stok_habis = produk_annotated.filter(total_stok=0).count()
+        stok_rendah = produk_annotated.filter(total_stok__gt=0, total_stok__lt=10).count()
 
         produk_list = ""
-        low = Produk.objects.filter(aktif=True, stok__lt=10).order_by('stok')[:5]
+        low = produk_annotated.filter(total_stok__lt=10).order_by('total_stok')[:5]
         for p in low:
-            produk_list += f"\n  - {p.nama}: stok {p.stok}"
+            produk_list += f"\n  - {p.nama}: stok {p.total_stok}"
 
         sections.append(f"""PRODUK & STOK:
 - Total produk aktif: {total_produk}

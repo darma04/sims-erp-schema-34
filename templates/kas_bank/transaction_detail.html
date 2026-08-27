@@ -1,7 +1,22 @@
 {% extends 'layout/layout_vertical.html' %}
+{% load static %}
 {% load currency_filters %}
 
 {% block title %}{{ transaction.nomor }} - Detail Mutasi Kas & Bank{% endblock title %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+{% endblock vendor_js %}
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
@@ -11,7 +26,7 @@
 
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="ri-exchange-dollar-line me-2"></i>{{ transaction.nomor }}</h5>
+            <h5 class="mb-0 fs-card-title"><i class="ri-exchange-dollar-line me-2"></i>{{ transaction.nomor }}</h5>
             <div class="d-flex gap-2">
                 {% if not transaction.jurnal_entry_id %}
                 <a href="{% url 'kas_bank:transaction_edit' transaction.pk %}" class="btn btn-primary">
@@ -28,19 +43,19 @@
                 <div class="col-md-4">
                     <div class="border rounded p-3 h-100">
                         <small class="text-muted d-block mb-1">Jumlah</small>
-                        <h4 class="mb-0 {% if transaction.is_debit_kas %}text-success{% else %}text-danger{% endif %}">{{ transaction.jumlah|rupiah }}</h4>
+                        <h4 class="mb-0 fs-value-primary">{{ transaction.jumlah|rupiah }}</h4>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="border rounded p-3 h-100">
                         <small class="text-muted d-block mb-1">Tipe</small>
-                        <span class="badge bg-label-info">{{ transaction.get_tipe_display }}</span>
+                        <span class="badge bg-label-info fs-value-secondary">{{ transaction.get_tipe_display }}</span>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="border rounded p-3 h-100">
                         <small class="text-muted d-block mb-1">Status</small>
-                        <span class="badge bg-label-{% if transaction.status == 'posted' %}success{% elif transaction.status == 'cancelled' %}danger{% else %}secondary{% endif %}">{{ transaction.get_status_display }}</span>
+                        <span class="badge bg-label-{% if transaction.status == 'posted' %}success{% elif transaction.status == 'cancelled' %}danger{% else %}secondary{% endif %} fs-value-secondary">{{ transaction.get_status_display }}</span>
                     </div>
                 </div>
             </div>
@@ -81,16 +96,20 @@
     {% if jurnal_lines %}
     <div class="card mt-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="ri-file-list-3-line me-2"></i>Detail Jurnal Akuntansi</h5>
-            {% if transaction.jurnal_entry %}
-            <a href="{% url 'akuntansi:jurnal_detail' transaction.jurnal_entry.pk %}" class="btn btn-sm btn-outline-primary">
-                <i class="ri-external-link-line me-1"></i>Buka Jurnal {{ transaction.jurnal_entry.nomor }}
-            </a>
-            {% endif %}
+            <h5 class="mb-0 fs-card-title"><i class="ri-file-list-3-line me-2"></i>Detail Jurnal Akuntansi</h5>
+            <div class="d-flex gap-2">
+                {% if transaction.jurnal_entry %}
+                <a href="{% url 'akuntansi:jurnal_detail' transaction.jurnal_entry.pk %}" class="btn btn-sm btn-outline-primary">
+                    <i class="ri-external-link-line me-1"></i>Buka Jurnal {{ transaction.jurnal_entry.nomor }}
+                </a>
+                {% endif %}
+                <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcelFromButton(this)"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDFFromButton(this)"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+            </div>
         </div>
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
+        <div class="card-datatable table-responsive">
+            <table id="jurnalLinesTable" class="datatables-kas-bank accounting-data-table table table-hover mb-0" data-export-title="Detail Jurnal Akuntansi - {{ transaction.nomor }}" data-search-placeholder="Cari baris jurnal...">
+                <thead>
                     <tr>
                         <th>Kode Akun</th>
                         <th>Nama Akun</th>
@@ -110,6 +129,35 @@
                     </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="3" class="text-start ps-4 py-3">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ jurnal_lines|length }} baris jurnal</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="badge bg-label-success d-flex align-items-center gap-1 mb-2" style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    <i class="ri-arrow-up-circle-line"></i><span>{{ total_debit|rupiah }}</span>
+                                </span>
+                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Debit</small>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="badge bg-label-danger d-flex align-items-center gap-1 mb-2" style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    <i class="ri-arrow-down-circle-line"></i><span>{{ total_kredit|rupiah }}</span>
+                                </span>
+                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Kredit</small>
+                            </div>
+                        </td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
@@ -117,19 +165,23 @@
 
     {% if related_transactions %}
     <div class="card mt-4">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="ri-link me-2"></i>Mutasi Terkait (Pasangan Transfer)</h5>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fs-card-title"><i class="ri-link me-2"></i>Mutasi Terkait (Pasangan Transfer)</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcelFromButton(this)"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDFFromButton(this)"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+            </div>
         </div>
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
+        <div class="card-datatable table-responsive">
+            <table id="mutasiTerkaitTable" class="datatables-kas-bank accounting-data-table table table-hover mb-0" data-export-title="Mutasi Terkait - {{ transaction.nomor }}" data-search-placeholder="Cari mutasi terkait...">
+                <thead>
                     <tr>
                         <th>Nomor</th>
                         <th>Tanggal</th>
                         <th>Akun Kas/Bank</th>
                         <th>Tipe</th>
                         <th class="text-end">Jumlah</th>
-                        <th>Aksi</th>
+                        <th data-export-ignore="true" data-action-icon="ri-eye-line">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -144,9 +196,35 @@
                     </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="5" class="text-start ps-4 py-3">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ related_transactions|length }} mutasi terkait</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="badge bg-label-info d-flex align-items-center gap-1 mb-2" style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    <i class="ri-link"></i><span>{{ related_transactions|length }} pasangan</span>
+                                </span>
+                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Jumlah Mutasi</small>
+                            </div>
+                        </td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
     {% endif %}
 </div>
 {% endblock content %}
+
+{% block page_js %}
+{{ block.super }}
+{% include 'kas_bank/partials/list_tools.html' %}
+{% endblock page_js %}

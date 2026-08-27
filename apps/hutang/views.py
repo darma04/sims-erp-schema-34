@@ -60,6 +60,7 @@ from django.http import JsonResponse
 from django.core.exceptions import ValidationError
 from decimal import Decimal
 from django.utils import timezone
+import json
 
 from apps.hutang.models import Hutang, PembayaranHutang
 from apps.hutang.forms import HutangForm, PembayaranHutangForm
@@ -251,8 +252,8 @@ class AgingReportView(ReadPermissionMixin, TemplateView):
 
         context['buckets'] = buckets
         context['grand_total'] = sum(b['total'] for b in buckets.values())
-        context['chart_labels'] = [b['label'] for b in buckets.values()]
-        context['chart_data'] = [float(b['total']) for b in buckets.values()]
+        context['chart_labels'] = json.dumps([b['label'] for b in buckets.values()])
+        context['chart_data'] = json.dumps([float(b['total']) for b in buckets.values()])
 
         from apps.produk.models import Gudang
         context['cabang_list'] = Gudang.objects.filter(aktif=True)

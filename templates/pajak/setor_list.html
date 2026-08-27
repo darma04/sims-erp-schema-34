@@ -2,6 +2,30 @@
 {% load static %}
 {% load currency_filters %}
 
+{% comment %}
+  ==========================================================================
+  PAJAK - Daftar Setor (List View)
+  ==========================================================================
+  Menampilkan daftar semua setor menggunakan DataTables (tabel interaktif).
+  DataTables menyediakan: search, sorting, pagination, dan export PDF/Excel
+  secara otomatis tanpa perlu coding JavaScript tambahan.
+
+  FLOW DATA:
+  - URL: /pajak/ -> pajak.views.SetorListView- View: Mengambil data dari database via model Setor- Template: File ini merender data ke HTML- Response: Browser menampilkan tabel + tombol aksi (edit/hapus/detail)
+
+  RELASI KE MODUL LAIN:
+  - apps/pajak/models.py -> Model Setor (sumber data)- apps/pajak/views.py -> SetorListView (handler)- apps/pajak/urls.py -> URL routing ke view ini- apps/core/mixins.py -> ReadPermissionMixin (cek hak akses)- layout/layout_vertical.html -> Template induk (sidebar, header)
+
+  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
+  - BOLEH diubah: Tampilan kolom tabel, tombol aksi, filter- BOLEH diubah: Tambah kolom baru (sesuaikan juga di views.py queryset)- JANGAN diubah: {% extends %} dan {% block %} structure- JANGAN diubah: class DataTables (break JavaScript)
+
+  TIPS & DEBUGGING:
+  - Error 'TemplateDoesNotExist'? Cek path di views.py template_name- Data tidak muncul? Cek get_queryset() di views.py- Tambah kolom? Edit <th> di <thead> dan <td> di <tbody>- Export gagal? Cek fungsi export_di_pajak_list() di <script>
+
+  ==========================================================================
+{% endcomment %}
+
+
 {% block title %}Setor / Restitusi PPN - Akuntansi ERP{% endblock title %}
 
 {% block vendor_css %}{{ block.super }}
@@ -19,11 +43,12 @@
         </div>
         <div class="d-flex gap-2">
             <a href="{% url 'pajak:rekap' %}" class="btn btn-outline-secondary"><i class="ri-bar-chart-box-line me-1"></i>Rekap PPN</a>
+            {% if can_create.pajak %}
             <a href="{% url 'pajak:setor_add' %}" class="btn btn-primary"><i class="ri-add-line me-1"></i>Buat Setor PPN</a>
+            {% endif %}
         </div>
     </div>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <form method="get">
@@ -60,35 +85,37 @@
         </div>
     </div>
 
-    <!-- Summary Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-sm-6 col-lg-3">
-            <div class="card"><div class="card-body"><div class="d-flex align-items-center">
-                <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-primary"><i class="ri-file-list-3-line ri-24px"></i></span></div>
-                <div><h5 class="mb-0">{{ count_total }}</h5><small class="text-muted">Total Settlement</small></div>
+    <div class="row g-6 mb-6">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100"><div class="card-body"><div class="d-flex align-items-center gap-3">
+                <div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-primary"><i class="ri-file-list-3-line ri-24px"></i></span></div>
+                <div><span class="d-block text-muted small">Total Settlement</span>
+<h5  class="mb-0 fw-bold">{{ count_total }}</h5></div>
             </div></div></div>
         </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="card"><div class="card-body"><div class="d-flex align-items-center">
-                <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-success"><i class="ri-arrow-up-circle-line ri-24px"></i></span></div>
-                <div><h5 class="mb-0 text-success">{{ total_keluaran|rupiah }}</h5><small class="text-muted">Total PPN Keluaran</small></div>
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100"><div class="card-body"><div class="d-flex align-items-center gap-3">
+                <div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-success"><i class="ri-arrow-up-circle-line ri-24px"></i></span></div>
+                <div><span class="d-block text-muted small">Total PPN Keluaran</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_keluaran|rupiah }}</h5></div>
             </div></div></div>
         </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="card"><div class="card-body"><div class="d-flex align-items-center">
-                <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-warning"><i class="ri-arrow-down-circle-line ri-24px"></i></span></div>
-                <div><h5 class="mb-0 text-warning">{{ total_masukan|rupiah }}</h5><small class="text-muted">Total PPN Masukan</small></div>
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100"><div class="card-body"><div class="d-flex align-items-center gap-3">
+                <div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-warning"><i class="ri-arrow-down-circle-line ri-24px"></i></span></div>
+                <div><span class="d-block text-muted small">Total PPN Masukan</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_masukan|rupiah }}</h5></div>
             </div></div></div>
         </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="card"><div class="card-body"><div class="d-flex align-items-center">
-                <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-danger"><i class="ri-bank-line ri-24px"></i></span></div>
-                <div><h5 class="mb-0 text-danger">{{ total_setor|rupiah }}</h5><small class="text-muted">Total Disetor / Restitusi</small></div>
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100"><div class="card-body"><div class="d-flex align-items-center gap-3">
+                <div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-danger"><i class="ri-bank-line ri-24px"></i></span></div>
+                <div><span class="d-block text-muted small">Total Disetor / Restitusi</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_setor|rupiah }}</h5></div>
             </div></div></div>
         </div>
     </div>
 
-    <!-- Table -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="ri-list-check me-2"></i>Daftar Settlement PPN</h5>

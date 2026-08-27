@@ -40,42 +40,42 @@ Tabel: tanggal, tipe, penerima, status, pesan.
     </div>
 
     <!-- Statistik -->
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-body d-flex align-items-center">
-                    <div class="avatar avatar-md me-3">
-                        <span class="avatar-initial rounded bg-label-primary"><i class="ri-send-plane-line"></i></span>
+    <div class="row g-6 mb-6">
+        <div class="col-lg-4 col-md-4 col-6">
+            <div class="card h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="avatar flex-shrink-0">
+                        <span class="avatar-initial rounded bg-label-primary"><i class="ri-send-plane-line ri-24px"></i></span>
                     </div>
                     <div>
-                        <h4 class="mb-0">{{ total_semua }}</h4>
-                        <small class="text-muted">Total Notifikasi</small>
+                        <span class="d-block text-muted small">Total Notifikasi</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_semua }}</h5>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-body d-flex align-items-center">
-                    <div class="avatar avatar-md me-3">
-                        <span class="avatar-initial rounded bg-label-success"><i class="ri-check-line"></i></span>
+        <div class="col-lg-4 col-md-4 col-6">
+            <div class="card h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="avatar flex-shrink-0">
+                        <span class="avatar-initial rounded bg-label-success"><i class="ri-check-line ri-24px"></i></span>
                     </div>
                     <div>
-                        <h4 class="mb-0">{{ total_sukses }}</h4>
-                        <small class="text-muted">Terkirim</small>
+                        <span class="d-block text-muted small">Terkirim</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_sukses }}</h5>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-body d-flex align-items-center">
-                    <div class="avatar avatar-md me-3">
-                        <span class="avatar-initial rounded bg-label-danger"><i class="ri-close-line"></i></span>
+        <div class="col-lg-4 col-md-4 col-12">
+            <div class="card h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="avatar flex-shrink-0">
+                        <span class="avatar-initial rounded bg-label-danger"><i class="ri-close-line ri-24px"></i></span>
                     </div>
                     <div>
-                        <h4 class="mb-0">{{ total_gagal }}</h4>
-                        <small class="text-muted">Gagal</small>
+                        <span class="d-block text-muted small">Gagal</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_gagal }}</h5>
                     </div>
                 </div>
             </div>
@@ -185,7 +185,7 @@ Tabel: tanggal, tipe, penerima, status, pesan.
     <!-- Tabel Log -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Riwayat Notifikasi</h5>
+            <h5 class="mb-0 fs-card-title">Riwayat Notifikasi</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()">
                     <i class="ri-file-excel-2-line me-1"></i>Export Excel
@@ -270,7 +270,7 @@ Tabel: tanggal, tipe, penerima, status, pesan.
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-success d-flex align-items-center gap-1 mb-1"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 80px;">
+                                    style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 80px;">
                                     <i class="ri-check-line"></i>
                                     <span>{{ total_sukses }}</span>
                                 </span>
@@ -280,7 +280,7 @@ Tabel: tanggal, tipe, penerima, status, pesan.
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-danger d-flex align-items-center gap-1 mb-1"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 80px;">
+                                    style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 80px;">
                                     <i class="ri-close-line"></i>
                                     <span>{{ total_gagal }}</span>
                                 </span>
@@ -333,7 +333,7 @@ Tabel: tanggal, tipe, penerima, status, pesan.
     .dataTables_wrapper .dataTables_info {
         padding: 1rem 1.5rem;
         font-size: 0.875rem;
-        color: #697a8d;
+        ;
     }
 
     .dataTables_wrapper .dataTables_paginate {
@@ -436,7 +436,7 @@ Tabel: tanggal, tipe, penerima, status, pesan.
     // Pilih Kolom Functions
     function toggleColumns() {
         {% if logs %}
-        if (!table) return;
+        if (!table) { showExportEmpty(); return; }
         document.querySelectorAll('.column-checkbox').forEach(function (cb) {
             var colIdx = parseInt(cb.value);
             var column = table.column(colIdx);
@@ -495,9 +495,13 @@ Tabel: tanggal, tipe, penerima, status, pesan.
 
     function exportToExcel() {
         const table = document.getElementById('logTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#logTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         let colCount = 0;
         let visibleColumns = [];
@@ -585,9 +589,13 @@ Tabel: tanggal, tipe, penerima, status, pesan.
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('logTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#logTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         const headers = [];
         let visibleColumns = [];

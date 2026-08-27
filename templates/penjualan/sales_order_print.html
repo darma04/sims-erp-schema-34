@@ -184,7 +184,7 @@
                         <strong>{{ item.produk.nama }}</strong><br>
                         <small style="color: #666;">SKU: {{ item.produk.sku }}</small>
                     </td>
-                    <td class="text-right">{{ item.harga_satuan|rupiah }}</td>
+                    <td class="text-right text-end">{{ item.harga_satuan|rupiah }}</td>
                     <td class="text-center">{{ item.jumlah }}</td>
                     <td class="text-right"><strong>{{ item.subtotal|rupiah }}</strong></td>
                 </tr>
@@ -198,29 +198,29 @@
 <table class="totals-table">
             <tr>
                 <td>Subtotal:</td>
-                <td style="text-align: right;">{{ sales_order.subtotal|rupiah }}</td>
+                <td class="text-end" style="text-align: right;">{{ sales_order.subtotal|rupiah }}</td>
             </tr>
             {% if sales_order.diskon > 0 %}
             <tr>
                 <td>Diskon:</td>
-                <td style="text-align: right;">-{{ sales_order.diskon|rupiah }}</td>
+                <td class="text-end" style="text-align: right;">-{{ sales_order.diskon|rupiah }}</td>
             </tr>
             
             {% if sales_order.biaya_pengiriman > 0 %}
             <tr>
                 <td>Ongkir:</td>
-                <td style="text-align: right;">{{ sales_order.biaya_pengiriman|rupiah }}</td>
+                <td class="text-end" style="text-align: right;">{{ sales_order.biaya_pengiriman|rupiah }}</td>
             </tr>
             {% endif %}
             {% if sales_order.pajak > 0 %}
             <tr>
                 <td>Pajak:</td>
-                <td style="text-align: right;">{{ sales_order.nilai_pajak|rupiah }}</td>
+                <td class="text-end" style="text-align: right;">{{ sales_order.nilai_pajak|rupiah }}</td>
             </tr>
             {% endif %}
             <tr class="grand-total">
                 <td>TOTAL:</td>
-                <td style="text-align: right;">{{ sales_order.total_harga|rupiah }}</td>
+                <td class="text-end" style="text-align: right;">{{ sales_order.total_harga|rupiah }}</td>
             </tr>
         </table>
 {% else %}

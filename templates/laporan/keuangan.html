@@ -37,181 +37,147 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
     </div>
 
     <!-- 4 Summary Cards -->
-    <div class="row g-2 g-md-3 mb-4">
-        <div class="col-6 col-lg-3">
-            <div class="card">
+    <div class="row g-6 mb-6">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Pendapatan Bersih</p>
-                            <h4 class="mb-0 text-success summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-success"><i class="ri-arrow-down-circle-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Pendapatan Bersih</span>
+<h5  class="mb-0 fw-bold fs-value-primary" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
                                 title="<b>Alur Data:</b><br>SO dihitung sebagai subtotal setelah diskon + ongkir, POS dari subtotal setelah diskon, tanpa PPN Keluaran.<br><br><b>Sumber:</b> SalesOrder + POSTransaction.<br><b>Catatan:</b> PPN Keluaran masuk akun pajak/kas, bukan pendapatan.">
-                                {{ total_pemasukan|rupiah }}</h4>
-                            <small class="text-muted">Tanpa PPN</small>
+                                {{ total_pemasukan|rupiah }}</h5>
+<small class="text-muted">Tanpa PPN</small>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-success rounded p-2">
-                                <i class="ri-arrow-down-circle-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Beban/DPP Operasional</p>
-                            <h4 class="mb-0 text-danger summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-danger"><i class="ri-arrow-up-circle-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Beban/DPP Operasional</span>
+<h5  class="mb-0 fw-bold fs-value-primary" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
                                 title="<b>Alur Data:</b><br>Biaya approved + DPP/subtotal PO termasuk ongkir + modal produk. PPN Masukan dipisahkan dari beban.<br><br><b>Sumber:</b> Biaya + PurchaseOrder + Produk.<br>Qty historis = stok saat ini + terjual + adj_out.">
-                                {{ total_pengeluaran|rupiah }}</h4>
-                            <small class="text-muted">Tanpa PPN Masukan</small>
+                                {{ total_pengeluaran|rupiah }}</h5>
+<small class="text-muted">Tanpa PPN Masukan</small>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-danger rounded p-2">
-                                <i class="ri-arrow-up-circle-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Laba/Rugi Bersih</p>
-                            <h4 class="mb-0 {% if laba_rugi >= 0 %}text-success{% else %}text-danger{% endif %} summary-nominal"
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded {% if laba_rugi >= 0 %}bg-label-success{% else %}bg-label-danger{% endif %}"><i class="ri-funds-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Laba/Rugi Bersih</span>
+<h5  class="mb-0 fw-bold fs-value-primary"
                                 style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom"
                                 data-bs-html="true"
                                 title="<b>Alur Data:</b><br>Pendapatan bersih - beban/DPP operasional. Diskon sudah mengurangi pendapatan. PPN tidak dihitung sebagai laba/rugi.">
-                                {{ laba_rugi|rupiah }}
-                            </h4>
-                            <small class="text-muted">{% if laba_rugi >= 0 %}Laba{% else %}Rugi{% endif %}</small>
+                                {{ laba_rugi|rupiah }}</h5>
+<small class="text-muted">{% if laba_rugi >= 0 %}Laba{% else %}Rugi{% endif %}</small>
                         </div>
-                        <div class="card-icon">
-                            <span
-                                class="badge {% if laba_rugi >= 0 %}bg-label-success{% else %}bg-label-danger{% endif %} rounded p-2">
-                                <i class="ri-funds-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Total Aset</p>
-                            <h4 class="mb-0 text-primary summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-primary"><i class="ri-safe-2-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Total Aset</span>
+<h5  class="mb-0 fw-bold fs-value-primary" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
                                 title="<b>Alur Data:</b><br>Σ (harga_beli × qty_total_pernah_masuk)<br><br><b>Sumber:</b> Semua produk yang pernah masuk (stok + terjual + adjustment).<br>Bersifat kumulatif historis, tidak dipengaruhi filter tanggal.">
-                                {{ total_aset|rupiah }}</h4>
-                            <small class="text-muted">Nilai inventori historis</small>
+                                {{ total_aset|rupiah }}</h5>
+<small class="text-muted">Nilai inventori historis</small>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-primary rounded p-2">
-                                <i class="ri-safe-2-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Ringkasan Keuntungan & Stok -->
-    <div class="row g-2 g-md-3 mb-4">
-        <div class="col-6 col-lg-3">
-            <div class="card">
+    <div class="row g-6 mb-6">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Keuntungan Kotor</p>
-                            <h4 class="mb-0 {% if keuntungan_kotor >= 0 %}text-success{% else %}text-danger{% endif %} summary-nominal"
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-success"><i class="ri-money-dollar-circle-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Keuntungan Kotor</span>
+<h5  class="mb-0 fw-bold fs-value-primary"
                                 style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom"
                                 data-bs-html="true"
                                 title="<b>Alur Data:</b><br>Σ (harga_jual − harga_beli) × qty per item terjual.<br>SO: qty transaksi, POS: qty konversi (satuan dasar).<br><br><b>Sumber:</b> SalesOrderItem + POSTransactionItem.<br>Mendukung filter tanggal dan cabang.">
-                                {{ keuntungan_kotor|rupiah }}</h4>
-                            <small class="text-muted">Margin penjualan</small>
+                                {{ keuntungan_kotor|rupiah }}</h5>
+<small class="text-muted">Margin penjualan</small>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-success rounded p-2">
-                                <i class="ri-money-dollar-circle-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Total Harga Beli (Ready)</p>
-                            <h4 class="mb-0 text-info summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-info"><i class="ri-shopping-bag-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Total Harga Beli (Ready)</span>
+<h5  class="mb-0 fw-bold fs-value-primary" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
                                 title="<b>Alur Data:</b><br>Σ (harga_beli × stok_saat_ini)<br><br><b>Sumber:</b> Hanya produk yang stoknya > 0.<br>Dari tabel Produk × Stok.">
-                                {{ total_harga_beli_ready|rupiah }}</h4>
-                            <small class="text-muted">Produk stok > 0</small>
+                                {{ total_harga_beli_ready|rupiah }}</h5>
+<small class="text-muted">Produk stok > 0</small>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-info rounded p-2">
-                                <i class="ri-shopping-bag-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Total Harga Jual (Ready)</p>
-                            <h4 class="mb-0 text-info summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-info"><i class="ri-price-tag-3-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Total Harga Jual (Ready)</span>
+<h5  class="mb-0 fw-bold fs-value-primary" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
                                 title="<b>Alur Data:</b><br>Σ (harga_jual × stok_saat_ini)<br><br><b>Sumber:</b> Hanya produk yang stoknya > 0.<br>Dari tabel Produk × Stok.">
-                                {{ total_harga_jual_ready|rupiah }}</h4>
-                            <small class="text-muted">Produk stok > 0</small>
+                                {{ total_harga_jual_ready|rupiah }}</h5>
+<small class="text-muted">Produk stok > 0</small>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-info rounded p-2">
-                                <i class="ri-price-tag-3-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Estimasi Keuntungan</p>
-                            <h4 class="mb-0 {% if estimasi_keuntungan >= 0 %}text-success{% else %}text-danger{% endif %} summary-nominal"
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-warning"><i class="ri-line-chart-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Estimasi Keuntungan</span>
+<h5  class="mb-0 fw-bold fs-value-primary"
                                 style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom"
                                 data-bs-html="true"
                                 title="<b>Alur Data:</b><br>Total Harga Jual (Ready) − Total Harga Beli (Ready).<br><br><b>Sumber:</b> Selisih harga jual dan harga beli dari produk stok > 0.<br>Potensi keuntungan jika semua stok terjual.">
-                                {{ estimasi_keuntungan|rupiah }}</h4>
-                            <small class="text-muted">Jika semua stok terjual</small>
+                                {{ estimasi_keuntungan|rupiah }}</h5>
+<small class="text-muted">Jika semua stok terjual</small>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-warning rounded p-2">
-                                <i class="ri-line-chart-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
@@ -384,7 +350,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
     <!-- Tabel Pemasukan -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between">
-            <h5 class="mb-0"><i class="ri-arrow-down-line me-2 text-success"></i>Pendapatan Bersih (Penjualan)</h5>
+            <h5 class="mb-0 fs-card-title"><i class="ri-arrow-down-line me-2 text-success"></i>Pendapatan Bersih (Penjualan)</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i
                         class="ri-file-excel-2-line me-1"></i>Export Excel</button>
@@ -415,7 +381,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         <td>{{ so.customer.nama }}</td>
                         <td>{{ so.gudang.nama|default:"-" }}</td>
                         <td>{{ so.metode_pembayaran.nama|default:"-" }}</td>
-                        <td class="text-success fw-semibold">+{{ so.nilai_laporan|rupiah }}</td>
+                        <td class="text-success fw-semibold text-end">+{{ so.nilai_laporan|rupiah }}</td>
                         <td>
                             {% if so.status == 'completed' %}
                             <span class="badge bg-label-success">Selesai</span>
@@ -446,7 +412,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         </td>
                         <td>{{ pos.gudang.nama|default:"-" }}</td>
                         <td>{{ pos.metode_pembayaran.nama|default:"-" }}</td>
-                        <td class="text-success fw-semibold">+{{ pos.nilai_laporan|rupiah }}</td>
+                        <td class="text-success fw-semibold text-end">+{{ pos.nilai_laporan|rupiah }}</td>
                         <td>
                             {% if pos.status == 'paid' %}
                             <span class="badge bg-label-success">Lunas</span>
@@ -491,7 +457,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-success d-flex align-items-center gap-1 mb-2"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 140px;">
+                                    style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 140px;">
                                     <i class="ri-arrow-down-circle-line"></i>
                                     <span>{{ total_pemasukan|rupiah }}</span>
                                 </span>
@@ -526,7 +492,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
     <!-- Tabel Pengeluaran -->
     <div class="card">
         <div class="card-header d-flex justify-content-between">
-            <h5 class="mb-0"><i class="ri-arrow-up-line me-2 text-danger"></i>Beban/DPP Operasional (PO + Biaya + Produk)</h5>
+            <h5 class="mb-0 fs-card-title"><i class="ri-arrow-up-line me-2 text-danger"></i>Beban/DPP Operasional (PO + Biaya + Produk)</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i
                         class="ri-file-excel-2-line me-1"></i>Export Excel</button>
@@ -556,7 +522,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         <td>{{ po.nomor_po }} - {{ po.supplier.nama }}</td>
                         <td>{{ po.gudang.nama|default:"-" }}</td>
                         <td>{{ po.metode_pembayaran.nama|default:"-" }}</td>
-                        <td class="text-danger fw-semibold">-{{ po.nilai_laporan|rupiah }}</td>
+                        <td class="text-danger fw-semibold text-end">-{{ po.nilai_laporan|rupiah }}</td>
                         <td>
                             <div class="dropdown">
                                 <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow"
@@ -579,7 +545,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         <td>{{ biaya.kategori.nama }} - {{ biaya.deskripsi|truncatechars:40 }}</td>
                         <td>{{ biaya.cabang.nama|default:"-" }}</td>
                         <td>{{ biaya.metode_pembayaran.nama|default:"-" }}</td>
-                        <td class="text-danger fw-semibold">-{{ biaya.jumlah|rupiah }}</td>
+                        <td class="text-danger fw-semibold text-end">-{{ biaya.jumlah|rupiah }}</td>
                         <td>
                             <div class="dropdown">
                                 <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow"
@@ -602,7 +568,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         <td>{{ produk.sku }} - {{ produk.nama }} <small class="text-muted">(Harga beli: {{ produk.harga_beli|rupiah }} × {{ produk.stok_total|floatformat:0 }})</small></td>
                         <td>{{ produk.cabang.nama|default:"-" }}</td>
                         <td>{{ produk.metode_pembayaran.nama|default:"-" }}</td>
-                        <td class="text-danger fw-semibold">-{{ produk.total_pengeluaran_produk|rupiah }}</td>
+                        <td class="text-danger fw-semibold text-end">-{{ produk.total_pengeluaran_produk|rupiah }}</td>
                         <td>
                             <div class="dropdown">
                                 <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow"
@@ -640,7 +606,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-danger d-flex align-items-center gap-1 mb-2"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 140px;">
+                                    style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 140px;">
                                     <i class="ri-arrow-up-circle-line"></i>
                                     <span>{{ total_pengeluaran|rupiah }}</span>
                                 </span>
@@ -737,7 +703,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
     function exportToExcel() {
         // Ambil semua tabel di halaman (Pemasukan dan Pengeluaran)
         const tables = document.querySelectorAll('.table-responsive table');
-        if (tables.length === 0) { alert('Tabel tidak ditemukan!'); return; }
+        if (tables.length === 0) { showExportEmpty(); return; }
 
         // Buat tabel HTML untuk Excel (format .xls)
         let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
@@ -841,7 +807,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
     function exportToPDF() {
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
         const tables = document.querySelectorAll('.table-responsive table');
-        if (tables.length === 0) { alert('Tabel tidak ditemukan!'); return; }
+        if (tables.length === 0) { showExportEmpty(); return; }
 
         const allContent = [];
 
@@ -1010,7 +976,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
             });
         } else {
             const table = document.getElementById('tabelPemasukan');
-            if (!table) return;
+            if (!table) { showExportEmpty(); return; }
             checkboxes.forEach(cb => {
                 const colIndex = parseInt(cb.value);
                 const visible = cb.checked;
@@ -1042,7 +1008,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
             });
         } else {
             const table = document.getElementById('tabelPengeluaran');
-            if (!table) return;
+            if (!table) { showExportEmpty(); return; }
             checkboxes.forEach(cb => {
                 const colIndex = parseInt(cb.value);
                 const visible = cb.checked;
@@ -1077,20 +1043,8 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
         justify-content: center;
     }
 
-    @media (max-width: 575.98px) {
-        .summary-nominal {
-            font-size: 10px !important;
-            white-space: nowrap;
-        }
-
-        .card-info .card-text {
-            font-size: 0.68rem;
-            margin-bottom: 0.15rem !important;
-            line-height: 1.2;
-        }
-
-        .card-info small {
-            font-size: 0.6rem;
+    .card-info small {
+            font-size: var(--fs-ui-3xs);
         }
 
         .card-body {
@@ -1111,16 +1065,12 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
     }
 
     @media (min-width: 576px) and (max-width: 767.98px) {
-        .summary-nominal {
-            font-size: 0.9rem !important;
-        }
-
-        .card-info .card-text {
-            font-size: 0.72rem;
+.card-info .card-text {
+            font-size: var(--fs-ui-xs);
         }
 
         .card-info small {
-            font-size: 0.62rem;
+            font-size: var(--fs-ui-3xs);
         }
 
         .card-body {
@@ -1133,10 +1083,7 @@ Filter: periode, kategori. Grafik dan tabel ringkasan.
     }
 
     @media (min-width: 768px) and (max-width: 991.98px) {
-        .summary-nominal {
-            font-size: 1.05rem !important;
-        }
-    }
+}
 </style>
 <script>
     // Inisialisasi Bootstrap Tooltip

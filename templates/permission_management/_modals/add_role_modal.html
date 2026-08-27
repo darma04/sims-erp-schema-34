@@ -5,7 +5,7 @@
    Field: nama role, deskripsi.
    ==========================================================================
 {% endcomment %}
-<!-- Add Role Modal with SubCRUD Permission Support -->
+
 <div class="modal fade" id="addRoleModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content p-3">
@@ -33,12 +33,15 @@
 
           <div class="col-12 mt-4">
             <h6 class="mb-3"><i class="ri-shield-check-line me-2"></i>Module Permissions</h6>
-            <small class="text-muted">Toggle sub-pages for granular permission control</small>
+            <small class="text-muted">
+              <i class="ri-information-line me-1"></i>
+              Centang <strong>View</strong> pada menu utama agar menu muncul. Centang <strong>Create/Edit/Delete</strong> untuk kontrol aksi CRUD.<br>
+              Klik <i class="ri-arrow-down-s-line"></i> untuk mengatur sub-menu mana yang tampil di sidebar.
+            </small>
           </div>
 
-          <!-- Permission checkboxes rendered by JavaScript based on RolePermission.SUB_MODULE_CHOICES -->
           <div id="permissionCheckboxContainer" class="col-12">
-            <!-- Will be populated by JavaScript -->
+            
           </div>
 
           <div class="col-12 text-center mt-4">
@@ -54,7 +57,7 @@
 </div>
 
 <style>
-  /* ═══ Permission Card Styles ═══ */
+  
   .perm-card {
     border: 1px solid rgba(0,0,0,.08);
     border-radius: .5rem;
@@ -101,7 +104,6 @@
     line-height: 1;
   }
 
-  /* Sub-module table */
   .perm-sub-table {
     width: 100%;
     border-collapse: collapse;
@@ -136,14 +138,12 @@
   .perm-sub-table tbody td:not(:first-child) { text-align: center; }
   .perm-sub-table tbody tr:hover { background: rgba(var(--bs-primary-rgb), .02); }
 
-  /* Module icon */
   .perm-card-header .module-icon {
     font-size: 1.125rem;
     color: rgba(var(--bs-primary-rgb), .7);
     flex-shrink: 0;
   }
 
-  /* Collapse button */
   .perm-toggle-btn {
     width: 28px;
     height: 28px;
@@ -164,10 +164,9 @@
 </style>
 
 <script>
-// Module and Sub-Module structure (from RolePermission model)
+
 const MODULE_STRUCTURE = {{ module_structure|safe }};
 
-// Icon mapping — sesuai dengan sidebar (vertical_menu.json)
 const MODULE_ICONS = {
   'dashboard': 'ri-home-smile-line',
   'produk': 'ri-box-3-line',
@@ -184,8 +183,6 @@ const MODULE_ICONS = {
   'pengaturan': 'ri-settings-3-line',
   'automation': 'ri-telegram-line',
   'access_control': 'ri-shield-user-line',
-  'service_center': 'ri-customer-service-2-line',
-  'sparepart': 'ri-tools-line',
   'akuntansi': 'ri-book-2-line',
   'laporan_keuangan': 'ri-bar-chart-horizontal-line',
   'piutang': 'ri-money-dollar-circle-line',
@@ -195,14 +192,27 @@ const MODULE_ICONS = {
   'rekonsiliasi_keuangan': 'ri-git-merge-line',
   'fraud_detection': 'ri-shield-flash-line',
   'ai_assistant': 'ri-robot-2-line',
+  'invoice': 'ri-file-list-3-line',
+  'reimburse': 'ri-refund-2-line',
+  'approval_center': 'ri-checkbox-circle-line',
+  'service_center': 'ri-tools-line',
+  'properti': 'ri-building-4-line',
+  'penyewa': 'ri-user-heart-line',
+  'sewa': 'ri-key-2-line',
+  'licenses': 'ri-key-line',
+  'insight': 'ri-line-chart-line',
+  'artikel': 'ri-article-line',
+  'kontak': 'ri-mail-line',
+  'media': 'ri-image-line',
+  'produk_manager': 'ri-box-3-line',
+  'konten_website': 'ri-pages-line',
+  'download_manager': 'ri-download-line',
 };
 
-// Track apakah checkbox sudah di-render per container
 const _renderedContainers = {};
 
-// Render checkbox permission dengan sub-module yang bisa di-collapse
 function renderPermissionCheckboxes(containerId, mode = 'add') {
-  // Guard: jangan re-render jika sudah pernah render untuk mode ini
+  
   const guardKey = `${containerId}_${mode}`;
   if (_renderedContainers[guardKey]) {
     console.log(`[Permissions] Skipping render — already rendered: ${guardKey}`);
@@ -270,17 +280,17 @@ function renderPermissionCheckboxes(containerId, mode = 'add') {
             <table class="perm-sub-table">
               <thead>
                 <tr>
-                  <th>Sub-Halaman</th>
-                  <th>Tampilkan</th>
+                  <th>Sub-Menu</th>
+                  <th class="text-center" style="width:130px" title="Centang agar sub-menu tampil di sidebar">Tampilkan di Sidebar</th>
                 </tr>
               </thead>
               <tbody>
                 ${subModules.map(sub => `
                 <tr>
                   <td>${sub.name}</td>
-                  <td>
+                  <td class="text-center">
                     <input class="form-check-input sub-perm" type="checkbox"
-                           id="${prefix}_${moduleCode}_${sub.code}_view" 
+                           id="${prefix}_${moduleCode}_${sub.code}_view"
                            name="perms[${moduleCode}][subs][${sub.code}][view]"
                            data-module="${moduleCode}" data-sub="${sub.code}" data-action="view"
                            style="cursor:pointer">
@@ -298,27 +308,35 @@ function renderPermissionCheckboxes(containerId, mode = 'add') {
   container.innerHTML = html;
   _renderedContainers[guardKey] = true;
   console.log(`[Permissions] Rendered checkboxes: ${guardKey}`);
+
+  // QoL: Saat module-level View diceklis → otomatis centang semua sub-menu
+  container.querySelectorAll('.module-perm[data-action="view"]').forEach(function(viewCb) {
+    viewCb.addEventListener('change', function() {
+      const moduleCode = this.getAttribute('data-module');
+      if (this.checked) {
+        container.querySelectorAll(`.sub-perm[data-module="${moduleCode}"][data-action="view"]`).forEach(function(sub) {
+          sub.checked = true;
+        });
+      }
+    });
+  });
 }
 
-// Inisialisasi Add Role Modal
 document.addEventListener('DOMContentLoaded', function() {
   const addModal = document.getElementById('addRoleModal');
   const addForm = document.getElementById('addRoleForm');
   
-  // Render checkbox saat modal pertama kali dibuka
   if (addModal) {
     addModal.addEventListener('show.bs.modal', function() {
       renderPermissionCheckboxes('permissionCheckboxContainer', 'add');
     });
     
-    // Reset checkboxes saat modal ditutup (tanpa re-render DOM)
     addModal.addEventListener('hidden.bs.modal', function() {
       addModal.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
       if (addForm) addForm.reset();
     });
   }
   
-  // Tangani submit Tambah Role
   if (addForm) {
     addForm.addEventListener('submit', function(e) {
       e.preventDefault();
@@ -327,20 +345,17 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-// Submit Add Role form via AJAX
 function submitAddRole(form) {
   const formData = new FormData(form);
   const submitBtn = form.querySelector('button[type="submit"]');
   const originalBtnText = submitBtn.innerHTML;
   
-  // Loading state
   submitBtn.disabled = true;
   submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Membuat...';
   
-  // CSRF token
   const csrfToken = document.querySelector('#addRoleForm [name=csrfmiddlewaretoken]').value;
   
-  fetch('/access/roles/ajax/create/', {
+  fetch('{% url 'permission_management:role_create' %}', {
     method: 'POST',
     headers: {
       'X-CSRFToken': csrfToken,
@@ -350,7 +365,7 @@ function submitAddRole(form) {
   .then(response => response.json())
   .then(data => {
     if (data.success) {
-      // Notifikasi berhasil
+      
       if (typeof Swal !== 'undefined') {
         Swal.fire({
           icon: 'success',
@@ -363,11 +378,9 @@ function submitAddRole(form) {
         alert(data.message || 'Role berhasil ditambahkan!');
       }
       
-      // Tutup modal
       const modalInstance = bootstrap.Modal.getInstance(document.getElementById('addRoleModal'));
       if (modalInstance) modalInstance.hide();
       
-      // Reload halaman
       setTimeout(() => location.reload(), 1500);
     } else {
       if (typeof Swal !== 'undefined') {
@@ -391,4 +404,3 @@ function submitAddRole(form) {
   });
 }
 </script>
-<!--/ Add Role Modal -->

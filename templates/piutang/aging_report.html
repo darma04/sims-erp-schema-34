@@ -123,23 +123,20 @@
     </div>
 
     <!-- Summary Cards — Aging Buckets -->
-    <div class="row g-3 mb-4">
+    <div class="row g-6 mb-6">
         {% for key, bucket in buckets.items %}
-        <div class="col-sm-6 col-md">
-            <div class="card">
+        <div class="{% if forloop.last and forloop.counter|add:1|divisibleby:2 %}col-12{% else %}col-6{% endif %} col-md col-lg">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar avatar-md me-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0">
                             <span class="avatar-initial rounded {% if key == 'current' %}bg-label-success{% elif key == '1-30' %}bg-label-info{% elif key == '31-60' %}bg-label-warning{% elif key == '61-90' %}bg-label-danger{% else %}bg-label-secondary{% endif %}">
                                 <i class="{% if key == 'current' %}ri-checkbox-circle-line{% elif key == '1-30' %}ri-time-line{% elif key == '31-60' %}ri-alarm-warning-line{% elif key == '61-90' %}ri-error-warning-line{% else %}ri-skull-line{% endif %} ri-24px"></i>
                             </span>
                         </div>
                         <div>
-                            <h5 class="mb-0 {% if key == 'current' %}text-success{% elif key == '1-30' %}text-info{% elif key == '31-60' %}text-warning{% elif key == '61-90' %}text-danger{% else %}text-secondary{% endif %}">
-                                {{ bucket.total|rupiah }}
-                            </h5>
-                            <small class="text-muted">{{ bucket.label }}</small>
-                            <br><small class="text-muted">{{ bucket.items|length }} piutang</small>
+                            <span class="d-block text-muted small">{{ bucket.label }}</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ bucket.total|rupiah }}</h5>
                         </div>
                     </div>
                 </div>
@@ -150,8 +147,14 @@
 
     <!-- Chart -->
     <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="ri-bar-chart-2-line me-2"></i>Grafik Aging Piutang</h5>
+        <div class="card-header d-flex flex-nowrap align-items-center justify-content-between">
+            <h5 class="mb-0 me-2 fs-card-title"><i class="ri-bar-chart-2-line me-2"></i>Grafik Aging Piutang</h5>
+            <div class="dropdown flex-shrink-0">
+                <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button>
+                <div class="dropdown-menu dropdown-menu-end">
+                    <a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a>
+                </div>
+            </div>
         </div>
         <div class="card-body">
             <div id="agingChart" style="min-height:300px;"></div>
@@ -162,7 +165,7 @@
     {% for key, bucket in buckets.items %}
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
+            <h5 class="mb-0 fs-value-primary">
                 {% if key == 'current' %}<i class="ri-circle-fill me-2 text-success"></i>
                 {% elif key == '1-30' %}<i class="ri-circle-fill me-2 text-info"></i>
                 {% elif key == '31-60' %}<i class="ri-circle-fill me-2 text-warning"></i>
@@ -171,7 +174,7 @@
                 {{ bucket.label }}
             </h5>
             <div class="d-flex gap-2 align-items-center">
-                <span class="fw-bold">{{ bucket.total|rupiah }}</span>
+                <span class="fw-bold fs-value-primary">{{ bucket.total|rupiah }}</span>
                 <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcelFromButton(this)"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
                 <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDFFromButton(this)"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
@@ -271,10 +274,10 @@
     <!-- Grand Total -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Grand Total Piutang Outstanding</h5>
+            <h5 class="mb-0 fs-card-title">Grand Total Piutang Outstanding</h5>
         </div>
         <div class="card-body text-center">
-            <h3 class="fw-bold text-danger">{{ grand_total|rupiah }}</h3>
+            <div class="fw-bold fs-value-primary">{{ grand_total|rupiah }}</div>
         </div>
     </div>
 </div>
@@ -299,11 +302,11 @@ $(document).ready(function() {
         var gridColor  = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
         var labelColor = isDark ? '#b4b5ba' : '#a5a3ae';
         var chartColor = ['#7367f0'];
-        new ApexCharts(el, {
+        var __piutangAgingChart; try { __piutangAgingChart = new ApexCharts(el, {
             chart: {
                 type: 'area', height: 300,
                 fontFamily: 'Inter, -apple-system, sans-serif', background: 'transparent',
-                toolbar: { show: true, tools: { download: '<i class="ri-download-2-line" style="font-size:16px"></i>', selection:false,zoom:false,zoomin:false,zoomout:false,pan:false,reset:false } },
+                toolbar: { show: false },
                 animations: { enabled:true, easing:'easeinout', speed:800, dynamicAnimation:{enabled:true,speed:350} },
                 dropShadow: { enabled:true, top:6, left:0, blur:6, opacity:isDark?0.15:0.08, color:chartColor }
             },
@@ -311,7 +314,7 @@ $(document).ready(function() {
             dataLabels: { enabled:false },
             stroke: { curve:'smooth', width:3, lineCap:'round' },
             fill: { type:'gradient', gradient:{ shade:isDark?'dark':'light', type:'vertical', shadeIntensity:0.3, opacityFrom:isDark?0.25:0.4, opacityTo:0.02, stops:[0,95,100] } },
-            series: [{name:'Sisa Piutang (Rp)',data:data}],
+            series: [{name:'Sisa Piutang (Rp)',data:(Array.isArray(data) && data.length > 0 ? data : Array((data&&data.length)||1).fill(0))}],
             xaxis: {
                 categories: labels,
                 labels: { style:{ colors:labelColor, fontSize:'13px', fontWeight:400 } },
@@ -329,7 +332,7 @@ $(document).ready(function() {
             markers: { size:0, hover:{size:6,sizeOffset:3}, strokeWidth:2, strokeColors:isDark?'#2b2c40':'#fff' },
             grid: { borderColor:gridColor, strokeDashArray:4, padding:{top:-10,left:10,right:10,bottom:0}, xaxis:{lines:{show:false}}, yaxis:{lines:{show:true}} },
             responsive: [{ breakpoint:768, options:{ chart:{height:240}, legend:{fontSize:'11px'}, stroke:{width:2} } }]
-        }).render();
+        }); __piutangAgingChart.render(); window.__piutangAgingChart = __piutangAgingChart; } catch(e) { console.error('Gagal merender chart Aging Piutang:', e); }
     }
 });
 
@@ -352,6 +355,9 @@ const PDF_INFO = {
 };
 
 function exportAgingExcel(){
+    var hasData = false;
+    {% for key, bucket in buckets.items %}{% if bucket.items %}hasData = true;{% endif %}{% endfor %}
+    if (!hasData) { if (typeof showEmptyDataModal === 'function') { showEmptyDataModal(); } else if (typeof showExportEmpty === 'function') { showExportEmpty(); } else { alert('Data masih kosong. Tidak ada data yang dapat di-export.'); } return; }
     let colCount = 3;
     let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
     html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
@@ -391,6 +397,9 @@ function exportAgingExcel(){
     link.click();
 }
 function exportAgingPDF(){
+    var hasData = false;
+    {% for key, bucket in buckets.items %}{% if bucket.items %}hasData = true;{% endif %}{% endfor %}
+    if (!hasData) { if (typeof showEmptyDataModal === 'function') { showEmptyDataModal(); } else if (typeof showExportEmpty === 'function') { showExportEmpty(); } else { alert('Data masih kosong. Tidak ada data yang dapat di-export.'); } return; }
     if(typeof pdfMake==='undefined'){alert('pdfMake belum tersedia');return;}
     const body=[
         [{text:'Kategori',bold:true,fillColor:'#696CFF',color:'#FFF'},{text:'Jumlah Piutang',bold:true,fillColor:'#696CFF',color:'#FFF'},{text:'Count',bold:true,fillColor:'#696CFF',color:'#FFF'}],

@@ -1,4 +1,4 @@
-{% extends 'layout/layout_vertical.html' %}
+﻿{% extends 'layout/layout_vertical.html' %}
 {% comment %}
 ==========================================================================
    PENGATURAN PROFIL - Profil Pengguna
@@ -28,13 +28,12 @@
     <div class="row">
         <div class="col-md-12">
             <div class="card mb-4">
-                <h5 class="card-header">Detail Profil</h5>
-                <!-- Account -->
+                <h5 class="card-header fs-card-title">Detail Profil</h5>
+                
                 <div class="card-body">
                     <form id="formAccountSettings" method="POST" enctype="multipart/form-data">
                         {% csrf_token %}
                         
-                        <!-- Avatar Section -->
                         <div class="d-flex align-items-start align-items-sm-center gap-4 mb-4">
                             <img src="{{ profile.get_avatar_url }}" alt="user-avatar"
                                 class="d-block w-px-100 h-px-100 rounded" id="uploadedAvatar" 
@@ -90,14 +89,17 @@
                             </div>
                         </div>
                         <div class="mt-2">
+                        <div class="mt-2">
+                            {% if can_create.pengaturan or can_edit.pengaturan %}
                             <button type="submit" class="btn btn-primary me-2">
                                 <i class="ri-save-line me-1"></i>Simpan Perubahan
                             </button>
+                            {% endif %}
                             <a href="{% url 'dashboard:index' %}" class="btn btn-outline-secondary">Batal</a>
                         </div>
                     </form>
                 </div>
-                <!-- /Account -->
+                
             </div>
         </div>
     </div>
@@ -113,7 +115,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const removeInput = document.getElementById('removeAvatarInput');
     let originalSrc = avatarPreview.src;
     
-    // Preview avatar on select
     if (avatarInput) {
         avatarInput.addEventListener('change', function(e) {
             if (e.target.files && e.target.files[0]) {
@@ -123,7 +124,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 reader.readAsDataURL(e.target.files[0]);
                 
-                // Reset remove flag if new file selected
                 if (removeInput) {
                     removeInput.value = '0';
                 }
@@ -131,10 +131,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Reset avatar
     if (resetBtn) {
         resetBtn.addEventListener('click', function() {
-            avatarPreview.src = '/static/img/avatars/1.png';
+            avatarPreview.src = '/static/img/avatars/logo.webp';
             avatarInput.value = '';
             removeInput.value = '1';
         });

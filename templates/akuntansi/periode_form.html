@@ -1,4 +1,4 @@
-{% extends 'layout/layout_vertical.html' %}
+﻿{% extends 'layout/layout_vertical.html' %}
 {% comment %}
 ==========================================================================
 PERIODE FORM - Form Tambah/Edit Periode Akuntansi
@@ -21,8 +21,9 @@ Lebar form konsisten dengan form lain (col-xxl-9 centered)
         <div class="col-12">
             <div class="card mb-4">
                 <div class="card-header d-flex align-items-center">
-                    <h5 class="mb-0"><i class="ri-calendar-check-line me-2"></i>{{ title }}</h5>
+                    <h5 class="mb-0 fs-value-primary"><i class="ri-calendar-check-line me-2"></i>{{ title }}</h5>
                 </div>
+                
                 <form method="post">
                     {% csrf_token %}
                     <div class="card-body">
@@ -81,6 +82,7 @@ Lebar form konsisten dengan form lain (col-xxl-9 centered)
 
                         <hr class="my-4">
 
+                        {% if can_create.akuntansi or can_edit.akuntansi %}
                         <div class="row justify-content-end">
                             <div class="col-sm-9">
                                 <button type="submit" class="btn btn-primary me-2">
@@ -91,6 +93,7 @@ Lebar form konsisten dengan form lain (col-xxl-9 centered)
                                 </a>
                             </div>
                         </div>
+                        {% endif %}
                     </div>
                 </form>
             </div>

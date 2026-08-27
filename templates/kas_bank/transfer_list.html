@@ -2,6 +2,30 @@
 {% load static %}
 {% load currency_filters %}
 
+{% comment %}
+  ==========================================================================
+  KAS BANK - Daftar Transfer (List View)
+  ==========================================================================
+  Menampilkan daftar semua transfer menggunakan DataTables (tabel interaktif).
+  DataTables menyediakan: search, sorting, pagination, dan export PDF/Excel
+  secara otomatis tanpa perlu coding JavaScript tambahan.
+
+  FLOW DATA:
+  - URL: /kas_bank/ -> kas_bank.views.TransferListView- View: Mengambil data dari database via model Transfer- Template: File ini merender data ke HTML- Response: Browser menampilkan tabel + tombol aksi (edit/hapus/detail)
+
+  RELASI KE MODUL LAIN:
+  - apps/kas_bank/models.py -> Model Transfer (sumber data)- apps/kas_bank/views.py -> TransferListView (handler)- apps/kas_bank/urls.py -> URL routing ke view ini- apps/core/mixins.py -> ReadPermissionMixin (cek hak akses)- layout/layout_vertical.html -> Template induk (sidebar, header)
+
+  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
+  - BOLEH diubah: Tampilan kolom tabel, tombol aksi, filter- BOLEH diubah: Tambah kolom baru (sesuaikan juga di views.py queryset)- JANGAN diubah: {% extends %} dan {% block %} structure- JANGAN diubah: class DataTables (break JavaScript)
+
+  TIPS & DEBUGGING:
+  - Error 'TemplateDoesNotExist'? Cek path di views.py template_name- Data tidak muncul? Cek get_queryset() di views.py- Tambah kolom? Edit <th> di <thead> dan <td> di <tbody>- Export gagal? Cek fungsi export_di_kas_bank_list() di <script>
+
+  ==========================================================================
+{% endcomment %}
+
+
 {% block title %}Transfer Kas & Bank - Treasury{% endblock title %}
 
 {% block vendor_css %}
@@ -25,75 +49,77 @@
             <h4 class="mb-1"><i class="ri-arrow-left-right-line me-2"></i>Transfer Kas & Bank</h4>
             <p class="text-muted mb-0">Pemindahan saldo antar akun kas/bank internal</p>
         </div>
+        {% if can_create.kas_bank %}
         <a href="{% url 'kas_bank:transfer_add' %}" class="btn btn-primary">
             <i class="ri-add-line me-1"></i>Tambah Transfer
         </a>
+        {% endif %}
     </div>
 
-    <div class="row g-6 mb-4">
-        <div class="col-xl-3 col-sm-6">
+    <div class="row g-6 mb-6">
+        <div class="col-6 col-md-3 col-lg-3">
             <div class="card treasury-stat-card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar me-4">
-                            <div class="avatar-initial bg-label-primary rounded-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0">
+                            <span class="avatar-initial rounded bg-label-primary">
                                 <i class="ri-file-list-3-line ri-24px"></i>
-                            </div>
+                            </span>
                         </div>
                         <div>
-                            <p class="mb-0 text-muted">Total Data</p>
-                            <h5 class="mb-0">{{ total_rows }}</h5>
+                            <span class="d-block text-muted small">Total Data</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_rows }}</h5>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-sm-6">
+        <div class="col-6 col-md-3 col-lg-3">
             <div class="card treasury-stat-card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar me-4">
-                            <div class="avatar-initial bg-label-success rounded-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0">
+                            <span class="avatar-initial rounded bg-label-success">
                                 <i class="ri-checkbox-circle-line ri-24px"></i>
-                            </div>
+                            </span>
                         </div>
                         <div>
-                            <p class="mb-0 text-muted">Posted</p>
-                            <h5 class="mb-0">{{ posted_count }}</h5>
+                            <span class="d-block text-muted small">Posted</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ posted_count }}</h5>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-sm-6">
+        <div class="col-6 col-md-3 col-lg-3">
             <div class="card treasury-stat-card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar me-4">
-                            <div class="avatar-initial bg-label-info rounded-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0">
+                            <span class="avatar-initial rounded bg-label-info">
                                 <i class="ri-exchange-funds-line ri-24px"></i>
-                            </div>
+                            </span>
                         </div>
                         <div>
-                            <p class="mb-0 text-muted">Transfer Posted</p>
-                            <h5 class="mb-0">{{ total_transfer|rupiah }}</h5>
+                            <span class="d-block text-muted small">Transfer Posted</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_transfer|rupiah }}</h5>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-sm-6">
+        <div class="col-6 col-md-3 col-lg-3">
             <div class="card treasury-stat-card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar me-4">
-                            <div class="avatar-initial bg-label-warning rounded-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0">
+                            <span class="avatar-initial rounded bg-label-warning">
                                 <i class="ri-bank-card-line ri-24px"></i>
-                            </div>
+                            </span>
                         </div>
                         <div>
-                            <p class="mb-0 text-muted">Biaya Admin</p>
-                            <h5 class="mb-0">{{ total_biaya_admin|rupiah }}</h5>
+                            <span class="d-block text-muted small">Biaya Admin</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_biaya_admin|rupiah }}</h5>
                         </div>
                     </div>
                 </div>
@@ -197,7 +223,7 @@
 
     <div class="card">
         <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-3">
-            <h5 class="mb-0">Daftar Transfer</h5>
+            <h5 class="mb-0 fs-card-title">Daftar Transfer</h5>
             <div class="d-flex gap-2">
                 <button type="button" class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcel()">
                     <i class="ri-file-excel-2-line me-1"></i>Export Excel
@@ -209,7 +235,7 @@
         </div>
                 {% if transfers %}
 <div class="card-datatable table-responsive">
-            <table id="dataTable" class="datatables-kas-bank accounting-data-table table table-hover" data-accounting-primary="true" data-export-title="Transfer Kas Bank" data-search-placeholder="Cari transfer kas/bank...">
+            <table id="dataTable" class="datatables-kas-bank {% if transfers %}accounting-data-table {% endif %}table table-hover" {% if transfers %}data-accounting-primary="true"{% endif %} data-export-title="Transfer Kas Bank" data-search-placeholder="Cari transfer kas/bank...">
                 <thead>
                     <tr>
                         <th>Nomor</th>
@@ -229,33 +255,43 @@
                         <td>{{ item.tanggal|date:"d/m/Y H:i" }}</td>
                         <td>{{ item.dari_akun.kode }} - {{ item.dari_akun.nama }}</td>
                         <td>{{ item.ke_akun.kode }} - {{ item.ke_akun.nama }}</td>
-                        <td>{{ item.jumlah|rupiah }}</td>
-                        <td>{{ item.biaya_admin|rupiah }}</td>
+                        <td class="text-end">{{ item.jumlah|rupiah }}</td>
+                        <td class="text-end">{{ item.biaya_admin|rupiah }}</td>
                         <td><span class="badge bg-label-{% if item.status == 'posted' %}success{% elif item.status == 'cancelled' %}danger{% else %}secondary{% endif %}">{{ item.get_status_display }}</span></td>
                         <td>
+                            {% if can_view.kas_bank or can_edit.kas_bank or can_delete.kas_bank %}
                             <div class="dropdown">
                                 <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
                                     <i class="ri-more-2-line"></i>
                                 </button>
                                 <div class="dropdown-menu">
+                                    {% if can_view.kas_bank %}
                                     <a class="dropdown-item" href="{% url 'kas_bank:transfer_detail' item.pk %}">
                                         <i class="ri-eye-line me-2"></i>Detail
                                     </a>
+                                    {% endif %}
+                                    {% if can_edit.kas_bank %}
                                     <a class="dropdown-item" href="{% url 'kas_bank:transfer_edit' item.pk %}">
                                         <i class="ri-edit-line me-2"></i>Edit
                                     </a>
+                                    {% endif %}
+                                    {% if can_delete.kas_bank %}
                                     <button type="button" class="dropdown-item text-danger" onclick="deleteKasBank('{% url 'kas_bank:transfer_delete' item.pk %}', '{{ item.nomor }}')">
                                         <i class="ri-delete-bin-line me-2"></i>Hapus
                                     </button>
+                                    {% endif %}
                                 </div>
                             </div>
+                            {% else %}
+                            <span class="badge bg-label-secondary"><i class="ri-eye-line me-1"></i>View Only</span>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
                 <tfoot class="table-footer-summary">
                     <tr>
-                        <td colspan="3" class="text-start ps-4 py-3">
+                        <td colspan="1" class="text-start ps-4 py-3">
                             <div class="d-flex align-items-center justify-content-start">
                                 <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
                                 <div class="text-start">
@@ -264,7 +300,7 @@
                                 </div>
                             </div>
                         </td>
-                        <td colspan="2" class="py-3">
+                        <td colspan="5" class="py-3">
                             <div class="text-center">
                                 <span class="badge bg-label-primary">{{ total_transfer|rupiah }}</span>
                                 <small class="d-block text-muted mt-1">Total Transfer</small>
@@ -282,7 +318,6 @@
                                 <small class="d-block text-muted mt-1">Status</small>
                             </div>
                         </td>
-                        <td></td>
                     </tr>
                 </tfoot>
             </table>

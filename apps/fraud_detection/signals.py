@@ -495,7 +495,7 @@ def detect_sparepart_anomali(sender, instance, created, **kwargs):
             # 1. Deteksi jumlah sparepart yang sangat besar (> threshold)
             if jumlah > max_qty:
                 FraudAlert.objects.create(
-                    jenis='anomali_lainnya',
+                    jenis='lainnya',
                     severity='medium',
                     deskripsi=(
                         f"Penggunaan sparepart dalam jumlah besar: {produk_nama} x{jumlah} "
@@ -514,7 +514,7 @@ def detect_sparepart_anomali(sender, instance, created, **kwargs):
                 if harga_modal > 0 and harga_satuan < harga_modal:
                     selisih = harga_modal - harga_satuan
                     FraudAlert.objects.create(
-                        jenis='anomali_lainnya',
+                        jenis='lainnya',
                         severity='high',
                         deskripsi=(
                             f"Harga sparepart di bawah modal: {produk_nama} dijual Rp {harga_satuan:,.0f} "
@@ -559,7 +559,7 @@ def detect_biaya_service_anomali(sender, instance, created, **kwargs):
                 user = getattr(instance, 'teknisi', None) or getattr(instance, 'diterima_oleh', None)
 
                 FraudAlert.objects.create(
-                    jenis='anomali_lainnya',
+                    jenis='lainnya',
                     severity='medium',
                     deskripsi=(
                         f"Order Service {instance.nomor_service} berstatus '{instance.get_status_display()}' "
@@ -616,7 +616,7 @@ def detect_anomali_pembayaran_piutang(sender, instance, created, **kwargs):
         if piutang.jumlah_dibayar > piutang.jumlah_total:
             user = getattr(instance, 'created_by', None)
             FraudAlert.objects.create(
-                jenis='anomali_lainnya',
+                jenis='lainnya',
                 severity='high',
                 deskripsi=(
                     f"Overpayment Piutang {piutang.nomor}: "

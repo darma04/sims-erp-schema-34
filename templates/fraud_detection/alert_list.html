@@ -47,9 +47,9 @@
     </div>
 
     {# ─── SUMMARY CARDS — 3 kartu ringkasan data anomali ─── #}
-    <div class="row g-6 mb-4">
+    <div class="row g-6 mb-6">
         {# Card 1: Total Anomali — jumlah seluruh anomali yang tercatat #}
-        <div class="col-sm-6 col-lg-4">
+        <div class="col-lg-4 col-md-4 col-6">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
@@ -60,14 +60,14 @@
                         </div>
                         <div>
                             <span class="d-block text-muted small">Total Anomali</span>
-                            <h5 class="mb-0 fw-bold">{{ total_alerts }}</h5>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_alerts }}</h5>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         {# Card 2: Menunggu Review — anomali berstatus pending #}
-        <div class="col-sm-6 col-lg-4">
+        <div class="col-lg-4 col-md-4 col-6">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
@@ -78,14 +78,14 @@
                         </div>
                         <div>
                             <span class="d-block text-muted small">Menunggu Review</span>
-                            <h5 class="mb-0 fw-bold text-warning">{{ pending_count }}</h5>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ pending_count }}</h5>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         {# Card 3: Total Nominal — total rupiah dari semua anomali #}
-        <div class="col-sm-6 col-lg-4">
+        <div class="col-lg-4 col-md-4 col-12">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
@@ -96,7 +96,7 @@
                         </div>
                         <div>
                             <span class="d-block text-muted small">Total Nominal</span>
-                            <h5 class="mb-0 fw-bold text-danger">{{ total_nominal|rupiah }}</h5>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_nominal|rupiah }}</h5>
                         </div>
                     </div>
                 </div>
@@ -234,7 +234,7 @@
     {# Card header berisi judul + tombol Export Excel & PDF #}
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="ri-list-check-3 me-2"></i>Data Anomali</h5>
+            <h5 class="mb-0 fs-card-title"><i class="ri-list-check-3 me-2"></i>Data Anomali</h5>
             <div class="d-flex gap-2">
                 {# Tombol Export Excel — generate file .xls dari data tabel #}
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()">
@@ -297,7 +297,7 @@
                             {% else %}-{% endif %}
                         </td>
                         <td>{{ alert.deskripsi|truncatechars:60 }}</td>
-                        <td class="text-danger fw-semibold">{{ alert.nominal|rupiah }}</td>
+                        <td class="text-danger fw-semibold text-end">{{ alert.nominal|rupiah }}</td>
                         <td>
                             {% if alert.status == 'pending' %}
                             <span class="badge bg-label-warning">{{ alert.get_status_display }}</span>
@@ -324,21 +324,21 @@
                                 </button>
                                 <div class="dropdown-menu">
                                     {% if can_view.fraud_detection %}
-                                    <a class="dropdown-item" href="#" onclick="showAlertDetail({{ alert.pk }}, '{{ alert.created_at|date:"d M Y H:i" }}', '{{ alert.get_jenis_display|escapejs }}', '{{ alert.get_severity_display|escapejs }}', '{% if alert.user_terkait %}{{ alert.user_terkait.get_full_name|default:alert.user_terkait.username|escapejs }}{% else %}-{% endif %}', '{{ alert.deskripsi|escapejs }}', '{{ alert.nominal }}', '{{ alert.get_status_display|escapejs }}', '{{ alert.catatan_owner|default:""|escapejs }}', '{{ alert.reviewed_by.get_full_name|default:"-"|escapejs }}', '{{ alert.reviewed_at|date:"d M Y H:i"|default:"-" }}', '{{ alert.model_name|default:"-"|escapejs }}', '{{ alert.object_id|default:"-"|escapejs }}')">
+                                    <a class="dropdown-item" href="#" onclick="showAlertDetail({{ alert.pk }}, '{{ alert.created_at|date:"d M Y H:i" }}', '{{ alert.get_jenis_display|escapejs }}', '{{ alert.get_severity_display|escapejs }}', '{% if alert.user_terkait %}{{ alert.user_terkait.get_full_name|default:alert.user_terkait.username|escapejs }}{% else %}-{% endif %}', '{{ alert.deskripsi|escapejs }}', '{{ alert.nominal }}', '{{ alert.get_status_display|escapejs }}', '{{ alert.catatan_owner|default:""|escapejs }}', '{{ alert.reviewed_by.get_full_name|default:"-"|escapejs }}', '{{ alert.reviewed_at|date:"d M Y H:i"|default:"-" }}', '{{ alert.model_name|default:"-"|escapejs }}', '{{ alert.object_id|default:"-"|escapejs }}'); return false;">
                                         <i class="ri-eye-line me-2"></i>Detail
                                     </a>
                                     {% endif %}
                                     {% if can_edit.fraud_detection %}
                                     {% if alert.status == 'pending' %}
-                                    <a class="dropdown-item" href="#" onclick="updateStatus({{ alert.pk }}, 'investigated')">
+                                    <a class="dropdown-item" href="#" onclick="updateStatus({{ alert.pk }}, 'investigated'); return false;">
                                         <i class="ri-search-eye-line me-2 text-info"></i>Sedang Diinvestigasi
                                     </a>
                                     {% endif %}
                                     {% if alert.status == 'pending' or alert.status == 'investigated' %}
-                                    <a class="dropdown-item" href="#" onclick="updateStatus({{ alert.pk }}, 'cleared')">
+                                    <a class="dropdown-item" href="#" onclick="updateStatus({{ alert.pk }}, 'cleared'); return false;">
                                         <i class="ri-check-line me-2 text-success"></i>Tandai Aman
                                     </a>
-                                    <a class="dropdown-item" href="#" onclick="updateStatus({{ alert.pk }}, 'rejected')">
+                                    <a class="dropdown-item" href="#" onclick="updateStatus({{ alert.pk }}, 'rejected'); return false;">
                                         <i class="ri-close-line me-2 text-danger"></i>Terbukti Fraud
                                     </a>
                                     {% endif %}
@@ -371,7 +371,7 @@
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-danger d-flex align-items-center gap-1 mb-2"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
                                     <i class="ri-money-dollar-circle-line"></i>
                                     <span>{{ total_nominal|rupiah }}</span>
                                 </span>
@@ -381,7 +381,7 @@
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-warning d-flex align-items-center gap-1 mb-2"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 100px;">
+                                    style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 100px;">
                                     <i class="ri-time-line"></i>
                                     <span>{{ pending_count }}</span>
                                 </span>
@@ -561,7 +561,7 @@
     .dataTables_wrapper .dataTables_info {
         padding: 1rem 1.5rem;
         font-size: 0.875rem;
-        color: #697a8d;
+        ;
     }
     .dataTables_wrapper .dataTables_paginate {
         padding: 1rem 1.5rem;
@@ -777,8 +777,12 @@
     // ═══════════════════════════════════════════════════════════════
     function exportToExcel() {
         const table = document.getElementById('tabelAnomali');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
         const tableObj = new $.fn.dataTable.Api('#tabelAnomali');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         // Kumpulkan kolom yang terlihat (kecuali Aksi)
         let colCount = 0;
@@ -868,8 +872,12 @@
     function exportToPDF() {
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
         const table = document.getElementById('tabelAnomali');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
         const tableObj = new $.fn.dataTable.Api('#tabelAnomali');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         // Kumpulkan header kolom (kecuali Aksi)
         const headers = [];

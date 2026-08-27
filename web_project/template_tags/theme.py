@@ -49,8 +49,12 @@ def filter_by_url(submenu, url):
     if submenu:
         for subitem in submenu:
             subitem_url = subitem.get("url")
-            if subitem_url == url.path or subitem_url == url.resolver_match.url_name:
-                return True
+            if subitem_url:
+                resolver = getattr(url, 'resolver_match', None)
+                if (subitem_url == url.path or
+                    subitem_url == getattr(resolver, 'url_name', '') or
+                    subitem_url == getattr(resolver, 'view_name', '')):
+                    return True
 
             # Recursively check for submenus
             elif subitem.get("submenu"):

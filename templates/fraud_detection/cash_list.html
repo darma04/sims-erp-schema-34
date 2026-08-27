@@ -63,9 +63,9 @@
     </div>
 
     {# ─── SUMMARY CARDS — 4 kartu ringkasan rekonsiliasi kas ─── #}
-    <div class="row g-6 mb-4">
+    <div class="row g-6 mb-6">
         {# Card 1: Total Record — jumlah seluruh tutup shift yang tercatat #}
-        <div class="col-sm-6 col-lg-3">
+        <div class="col-6 col-md-3 col-lg-3">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
@@ -76,14 +76,14 @@
                         </div>
                         <div>
                             <span class="d-block text-muted small">Total Record</span>
-                            <h5 class="mb-0 fw-bold">{{ total_records }}</h5>
+                            <h5 class="mb-0 fw-bold fs-value-primary">{{ total_records }}</h5>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         {# Card 2: Total Selisih — jumlah keseluruhan selisih kas (bisa negatif) #}
-        <div class="col-sm-6 col-lg-3">
+        <div class="col-6 col-md-3 col-lg-3">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
@@ -94,14 +94,14 @@
                         </div>
                         <div>
                             <span class="d-block text-muted small">Total Selisih</span>
-                            <h5 class="mb-0 fw-bold text-warning">{{ total_discrepancy|rupiah }}</h5>
+                            <h5 class="mb-0 fw-bold fs-value-primary">{{ total_discrepancy|rupiah }}</h5>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         {# Card 3: Kurang (Shortage) — jumlah shift dgn selisih negatif #}
-        <div class="col-sm-6 col-lg-3">
+        <div class="col-6 col-md-3 col-lg-3">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
@@ -112,14 +112,14 @@
                         </div>
                         <div>
                             <span class="d-block text-muted small">Kurang (Shortage)</span>
-                            <h5 class="mb-0 fw-bold text-danger">{{ shortage_count }}</h5>
+                            <h5 class="mb-0 fw-bold fs-value-primary">{{ shortage_count }}</h5>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         {# Card 4: Lebih (Overage) — jumlah shift dgn selisih positif #}
-        <div class="col-sm-6 col-lg-3">
+        <div class="col-6 col-md-3 col-lg-3">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
@@ -130,7 +130,7 @@
                         </div>
                         <div>
                             <span class="d-block text-muted small">Lebih (Overage)</span>
-                            <h5 class="mb-0 fw-bold text-success">{{ overage_count }}</h5>
+                            <h5 class="mb-0 fw-bold fs-value-primary">{{ overage_count }}</h5>
                         </div>
                     </div>
                 </div>
@@ -267,7 +267,7 @@
     {# ─── MAIN DATA TABLE CARD ─── #}
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="ri-safe-2-line me-2"></i>Data Rekonsiliasi Kas</h5>
+            <h5 class="mb-0 fs-card-title"><i class="ri-safe-2-line me-2"></i>Data Rekonsiliasi Kas</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()">
                     <i class="ri-file-excel-2-line me-1"></i>Export Excel
@@ -303,8 +303,8 @@
                         <td>
                             {{ recon.shift_start|date:"H:i" }} - {{ recon.shift_end|date:"H:i" }}
                         </td>
-                        <td>{{ recon.expected_amount|rupiah }}</td>
-                        <td>{{ recon.actual_amount|rupiah }}</td>
+                        <td class="text-end">{{ recon.expected_amount|rupiah }}</td>
+                        <td class="text-end">{{ recon.actual_amount|rupiah }}</td>
                         <td>
                             {# Tampilkan selisih dgn warna: merah jika kurang, hijau jika lebih, default jika sesuai #}
                             {% if recon.discrepancy < 0 %}
@@ -333,15 +333,15 @@
                                 </button>
                                 <div class="dropdown-menu">
                                     {% if can_view.fraud_detection %}
-                                    <a class="dropdown-item" href="#" onclick="showReconDetail({{ recon.pk }}, '{{ recon.kasir.get_full_name|default:recon.kasir.username|escapejs }}', '{{ recon.gudang.nama|default:"-"|escapejs }}', '{{ recon.shift_start|date:"d M Y H:i" }}', '{{ recon.shift_end|date:"H:i" }}', '{{ recon.expected_amount }}', '{{ recon.actual_amount }}', '{{ recon.discrepancy }}', '{{ recon.status }}', '{{ recon.catatan|escapejs }}', '{{ recon.reviewed_by.get_full_name|default:"-"|escapejs }}')">
+                                    <a class="dropdown-item" href="#" onclick="showReconDetail({{ recon.pk }}, '{{ recon.kasir.get_full_name|default:recon.kasir.username|escapejs }}', '{{ recon.gudang.nama|default:"-"|escapejs }}', '{{ recon.shift_start|date:"d M Y H:i" }}', '{{ recon.shift_end|date:"H:i" }}', '{{ recon.expected_amount }}', '{{ recon.actual_amount }}', '{{ recon.discrepancy }}', '{{ recon.status }}', '{{ recon.catatan|escapejs }}', '{{ recon.reviewed_by.get_full_name|default:"-"|escapejs }}'); return false;">
                                         <i class="ri-eye-line me-2"></i>Detail
                                     </a>
                                     {% endif %}
                                     {% if recon.status != 'reviewed' and can_edit.fraud_detection %}
-                                    <a class="dropdown-item" href="#" onclick="openEditModal({{ recon.pk }}, '{{ recon.kasir.get_full_name|default:recon.kasir.username|escapejs }}', '{{ recon.actual_amount }}')">
+                                    <a class="dropdown-item" href="#" onclick="openEditModal({{ recon.pk }}, '{{ recon.kasir.get_full_name|default:recon.kasir.username|escapejs }}', '{{ recon.actual_amount }}'); return false;">
                                         <i class="ri-pencil-line me-2 text-warning"></i>Edit Uang Fisik
                                     </a>
-                                    <a class="dropdown-item" href="#" onclick="openReviewModal({{ recon.pk }}, '{{ recon.kasir.get_full_name|default:recon.kasir.username|escapejs }}', '{{ recon.discrepancy }}')">
+                                    <a class="dropdown-item" href="#" onclick="openReviewModal({{ recon.pk }}, '{{ recon.kasir.get_full_name|default:recon.kasir.username|escapejs }}', '{{ recon.discrepancy }}'); return false;">
                                         <i class="ri-check-double-line me-2 text-success"></i>Review / Setujui
                                     </a>
                                     {% endif %}
@@ -373,7 +373,7 @@
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-info d-flex align-items-center gap-1 mb-2"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
                                     <i class="ri-money-dollar-circle-line"></i>
                                     <span>{{ total_expected|rupiah }}</span>
                                 </span>
@@ -383,7 +383,7 @@
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-primary d-flex align-items-center gap-1 mb-2"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
                                     <i class="ri-wallet-line"></i>
                                     <span>{{ total_actual|rupiah }}</span>
                                 </span>
@@ -393,7 +393,7 @@
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-danger d-flex align-items-center gap-1 mb-2"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
                                     <i class="ri-exchange-funds-line"></i>
                                     <span>{{ total_discrepancy|rupiah }}</span>
                                 </span>
@@ -578,7 +578,7 @@
     <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-warning align-items-center py-3">
+                <div class="modal-header align-items-center py-3" style="background-color: #666CFF;">
                     <h5 class="modal-title text-white mb-0"><i class="ri-pencil-line me-2"></i>Edit Uang Fisik</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -610,7 +610,7 @@
 {% block page_js %}
 {# ═══ CUSTOM CSS — DataTables Pagination Styling ═══ #}
 <style>
-    .dataTables_wrapper .dataTables_info { padding: 1rem 1.5rem; font-size: 0.875rem; color: #697a8d; }
+    .dataTables_wrapper .dataTables_info { padding: 1rem 1.5rem; font-size: 0.875rem; ; }
     .dataTables_wrapper .dataTables_paginate { padding: 1rem 1.5rem; }
     .dataTables_wrapper .dataTables_length,
     .dataTables_wrapper .dataTables_filter { padding: 0 1.5rem 1rem 1.5rem; }
@@ -712,7 +712,7 @@
     // ═══════════════════════════════════════════════════════════════
     function applyDTFilter() {
         const table = $.fn.dataTable.isDataTable('#tabelRekon') ? new $.fn.dataTable.Api('#tabelRekon') : null;
-        if (!table) return;
+        if (!table) { showExportEmpty(); return; }
         // Gabungkan semua nilai filter menjadi satu search query
         const kasir = document.getElementById('searchKasir').value;
         const cabang = document.getElementById('filterCabang').value;
@@ -737,7 +737,7 @@
     function toggleColumns() {
         const checkboxes = document.querySelectorAll('.column-checkbox');
         const table = $.fn.dataTable.isDataTable('#tabelRekon') ? new $.fn.dataTable.Api('#tabelRekon') : null;
-        if (!table) return;
+        if (!table) { showExportEmpty(); return; }
         const columnMap = { '0': 0, '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8 };
         checkboxes.forEach(cb => {
             const colIdx = columnMap[cb.value];
@@ -778,8 +778,12 @@
     // ═══════════════════════════════════════════════════════════════
     function exportToExcel() {
         const table = document.getElementById('tabelRekon');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
         const tableObj = new $.fn.dataTable.Api('#tabelRekon');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
         let colCount = 0, visibleColumns = [];
         tableObj.columns().every(function (index) {
             const h = this.header(); const t = h ? h.textContent.trim() : '';
@@ -840,6 +844,10 @@
     function exportToPDF() {
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
         const tableObj = new $.fn.dataTable.Api('#tabelRekon');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
         const headers = []; let visibleColumns = [];
         tableObj.columns().every(function (index) {
             const h = this.header(); const t = h ? h.textContent.trim() : '';

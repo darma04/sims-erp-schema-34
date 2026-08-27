@@ -106,7 +106,7 @@
           max-width: 100% !important;
           display: flex !important;
           flex-wrap: wrap !important;
-          justify-content: flex-start !important;
+          justify-content: center !important;
           gap: 0.25rem;
       }
 
@@ -119,7 +119,7 @@
 
       .dataTables_wrapper .dataTables_paginate .paginate_button {
           padding: 0.35rem 0.65rem !important;
-          font-size: 0.8rem !important;
+          font-size: var(--fs-ui-sm) !important;
           margin: 0 !important;
       }
 
@@ -127,7 +127,7 @@
       .dataTables_wrapper .dataTables_info {
           overflow-x: hidden !important;
           max-width: 100% !important;
-          font-size: 0.8rem !important;
+          font-size: var(--fs-ui-sm) !important;
           white-space: normal !important;
           word-wrap: break-word !important;
       }
@@ -148,7 +148,7 @@
       /* Tabel cell styling */
       #riwayatTable th,
       #riwayatTable td {
-          font-size: 0.8rem;
+          font-size: var(--fs-ui-sm);
           white-space: nowrap;
           min-width: 80px;
       }
@@ -164,7 +164,7 @@
     .container-p-y { padding-top: 1rem !important; padding-bottom: 1rem !important; }
     .action-card-backup, .action-card-restore, .action-card-reset { border-left-width: 5px !important; }
     .stat-card .card-body { padding: 0.875rem !important; }
-    .stat-card h4 { font-size: 1.15rem; }
+    .stat-card h4 { font-size: var(--fs-ui-subtitle); }
     .stat-card h6 { font-size: 0.75rem; }
   }
 
@@ -221,76 +221,74 @@
     {% endif %}
 
     <!-- Info Card: Statistik Database -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-6 mb-4">
+    <div class="row g-6 mb-6">
+        <div class="col-6 mb-4 col-md-3 col-lg-3">
             <div class="card h-100 stat-card">
                 <div class="card-body">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="avatar me-2 me-sm-3">
+                    <div class="d-flex align-items-center mb-2 gap-3">
+                        <div class="avatar flex-shrink-0">
                             <span class="avatar-initial rounded bg-label-primary">
                                 <i class="ri-database-2-line ri-24px"></i>
                             </span>
                         </div>
                         <div>
-                            <h6 class="mb-0 text-muted">Ukuran Database</h6>
-                            <h4 class="mb-0">{{ db_size }}</h4>
+                            <span class="d-block text-muted small">Ukuran Database</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ db_size }}</h5>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-6 mb-4">
+        <div class="col-6 mb-4 col-md-3 col-lg-3">
             <div class="card h-100 stat-card">
                 <div class="card-body">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="avatar me-2 me-sm-3">
+                    <div class="d-flex align-items-center mb-2 gap-3">
+                        <div class="avatar flex-shrink-0">
                             <span class="avatar-initial rounded bg-label-success">
                                 <i class="ri-stack-line ri-24px"></i>
                             </span>
                         </div>
                         <div>
-                            <h6 class="mb-0 text-muted">Total Record</h6>
-                            <h4 class="mb-0">{{ total_record }}</h4>
+                            <span class="d-block text-muted small">Total Record</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_record }}</h5>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-6 mb-4">
+        <div class="col-6 mb-4 col-md-3 col-lg-3">
             <div class="card h-100 stat-card">
                 <div class="card-body">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="avatar me-2 me-sm-3">
+                    <div class="d-flex align-items-center mb-2 gap-3">
+                        <div class="avatar flex-shrink-0">
                             <span class="avatar-initial rounded bg-label-warning">
                                 <i class="ri-exchange-line ri-24px"></i>
                             </span>
                         </div>
                         <div>
-                            <h6 class="mb-0 text-muted">Total Transaksi</h6>
-                            <h4 class="mb-0">{{ total_transaksi }}</h4>
+                            <span class="d-block text-muted small">Total Transaksi</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_transaksi }}</h5>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-6 mb-4">
+        <div class="col-6 mb-4 col-md-3 col-lg-3">
             <div class="card h-100 stat-card">
                 <div class="card-body">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="avatar me-2 me-sm-3">
+                    <div class="d-flex align-items-center mb-2 gap-3">
+                        <div class="avatar flex-shrink-0">
                             <span class="avatar-initial rounded bg-label-info">
                                 <i class="ri-time-line ri-24px"></i>
                             </span>
                         </div>
                         <div>
-                            <h6 class="mb-0 text-muted">Backup Terakhir</h6>
-                            <h5 class="mb-0">
-                                {% if last_backup %}
+                            <span class="d-block text-muted small">Backup Terakhir</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{% if last_backup %}
                                 {{ last_backup.dibuat_pada|date:"d/m/Y H:i" }}
                                 {% else %}
                                 <span class="text-muted">Belum pernah</span>
-                                {% endif %}
-                            </h5>
+                                {% endif %}</h5>
                         </div>
                     </div>
                 </div>
@@ -302,13 +300,13 @@
     <div class="row mb-4">
         <!-- Backup Card -->
         {% if can_create.pengaturan %}
-        <div class="col-lg-4 col-md-6 col-sm-12 mb-4">
+        <div class="col-12 col-md-4 col-lg-4 mb-4">
             <div class="card h-100 action-card-backup">
                 <div class="card-body">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="avatar avatar-lg me-3">
+                    <div class="d-flex align-items-center mb-3 gap-3">
+                        <div class="avatar flex-shrink-0">
                             <span class="avatar-initial rounded bg-label-primary">
-                                <i class="ri-download-cloud-2-line ri-28px"></i>
+                                <i class="ri-download-cloud-2-line ri-24px"></i>
                             </span>
                         </div>
                         <div>
@@ -334,13 +332,13 @@
 
         <!-- Restore Card -->
         {% if can_create.pengaturan %}
-        <div class="col-lg-4 col-md-6 col-sm-12 mb-4">
+        <div class="col-12 col-md-4 col-lg-4 mb-4">
             <div class="card h-100 action-card-restore">
                 <div class="card-body">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="avatar avatar-lg me-3">
+                    <div class="d-flex align-items-center mb-3 gap-3">
+                        <div class="avatar flex-shrink-0">
                             <span class="avatar-initial rounded bg-label-success">
-                                <i class="ri-upload-cloud-2-line ri-28px"></i>
+                                <i class="ri-upload-cloud-2-line ri-24px"></i>
                             </span>
                         </div>
                         <div>
@@ -363,13 +361,13 @@
 
         <!-- Reset Card -->
         {% if can_delete.pengaturan %}
-        <div class="col-lg-4 col-md-6 col-sm-12 mb-4">
+        <div class="col-lg-4 col-md-4 col-12 mb-4">
             <div class="card h-100 action-card-reset">
                 <div class="card-body">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="avatar avatar-lg me-3">
+                    <div class="d-flex align-items-center mb-3 gap-3">
+                        <div class="avatar flex-shrink-0">
                             <span class="avatar-initial rounded bg-label-danger">
-                                <i class="ri-delete-bin-7-line ri-28px"></i>
+                                <i class="ri-delete-bin-7-line ri-24px"></i>
                             </span>
                         </div>
                         <div>
@@ -394,7 +392,7 @@
     <!-- Detail Statistik -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="ri-bar-chart-box-line me-2"></i>Detail Statistik Database</h5>
+            <h5 class="mb-0 fs-card-title"><i class="ri-bar-chart-box-line me-2"></i>Detail Statistik Database</h5>
             <span class="badge bg-label-danger">Semua data dihapus saat reset</span>
         </div>
         <div class="card-body">
@@ -430,6 +428,8 @@
                                 <tr><td>Item PO</td><td class="fw-bold">{{ stats.purchase_order_item }}</td></tr>
                                 <tr><td>Transaksi Biaya</td><td class="fw-bold">{{ stats.biaya }}</td></tr>
                                 <tr><td>Kategori Biaya</td><td class="fw-bold">{{ stats.kategori_biaya }}</td></tr>
+                                <tr><td>Reimburse</td><td class="fw-bold">{{ stats.reimburse }}</td></tr>
+                                <tr><td>Item Reimburse</td><td class="fw-bold">{{ stats.reimburse_item }}</td></tr>
                                 <tr><td>Transfer Stok</td><td class="fw-bold">{{ stats.transfer_stok }}</td></tr>
                                 <tr><td>Adjustment Stok</td><td class="fw-bold">{{ stats.adjustment_stok }}</td></tr>
                             </tbody>
@@ -483,23 +483,23 @@
     {% if can_delete.pengaturan %}
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="ri-brush-line me-2"></i>Bersihkan Data Log</h5>
+            <h5 class="mb-0 fs-card-title"><i class="ri-brush-line me-2"></i>Bersihkan Data Log</h5>
         </div>
         <div class="card-body">
             <div class="row g-3">
                 <!-- Bersihkan Log Aktivitas -->
-                <div class="col-lg-6 col-md-6">
+                <div class="col-12 col-md-4 col-lg-4">
                     <div class="card border shadow-none h-100">
                         <div class="card-body">
-                            <div class="d-flex align-items-center mb-3">
-                                <div class="avatar me-3">
+                            <div class="d-flex align-items-center mb-3 gap-3">
+                                <div class="avatar flex-shrink-0">
                                     <span class="avatar-initial rounded bg-label-warning">
                                         <i class="ri-history-line ri-24px"></i>
                                     </span>
                                 </div>
                                 <div>
                                     <h6 class="mb-0">Log Aktivitas</h6>
-                                    <small class="text-muted">{{ stats.activity_log }} record</small>
+                                    <small class="text-muted fs-value-secondary">{{ stats.activity_log }} record</small>
                                 </div>
                             </div>
                             <p class="mb-3 small text-muted">
@@ -515,18 +515,18 @@
                     </div>
                 </div>
                 <!-- Bersihkan Log Notifikasi -->
-                <div class="col-lg-6 col-md-6">
+                <div class="col-12 col-md-4 col-lg-4">
                     <div class="card border shadow-none h-100">
                         <div class="card-body">
-                            <div class="d-flex align-items-center mb-3">
-                                <div class="avatar me-3">
+                            <div class="d-flex align-items-center mb-3 gap-3">
+                                <div class="avatar flex-shrink-0">
                                     <span class="avatar-initial rounded bg-label-info">
                                         <i class="ri-telegram-line ri-24px"></i>
                                     </span>
                                 </div>
                                 <div>
                                     <h6 class="mb-0">Log Notifikasi Telegram</h6>
-                                    <small class="text-muted">{{ stats.log_notifikasi }} record</small>
+                                    <small class="text-muted fs-value-secondary">{{ stats.log_notifikasi }} record</small>
                                 </div>
                             </div>
                             <p class="mb-3 small text-muted">
@@ -549,12 +549,12 @@
     <!-- Riwayat Backup/Restore/Reset -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="ri-history-line me-2"></i>Riwayat Aktivitas</h5>
+            <h5 class="mb-0 fs-card-title"><i class="ri-history-line me-2"></i>Riwayat Aktivitas</h5>
         </div>
-        {% if messages %}
+        {% if riwayat_list %}
 
-        <div class="card-datatable">
-                <table class="table table-hover" id="riwayatTable">
+        <div class="card-datatable table-responsive">
+            <table class="table table-hover" id="riwayatTable">
                     <thead>
                         <tr>
                             <th>#</th>
@@ -885,7 +885,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     // DataTable untuk riwayat
     if (document.getElementById('riwayatTable') && typeof $.fn.DataTable !== 'undefined') {
-        {% if messages %}
+        {% if riwayat_list %}
         $('#riwayatTable').DataTable({
             responsive: false,
             ordering: true,

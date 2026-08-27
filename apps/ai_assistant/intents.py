@@ -20,7 +20,7 @@ from decimal import Decimal
 # Import dari framework Django
 from django.utils import timezone
 # Import dari framework Django
-from django.db.models import Sum, Count, Avg, Q, F, ExpressionWrapper, DecimalField
+from django.db.models import Sum, Count, Avg, Q, F, Value, ExpressionWrapper, DecimalField
 # Import dari framework Django
 from django.db.models.functions import Coalesce
 
@@ -1851,9 +1851,9 @@ def _gather_kebocoran_profit(today, month_start):
 
     slow_moving = []
     # Query database — ambil data for p in Produk.objects.filter(aktif yang sesuai filter
-    for p in Produk.objects.filter(aktif=True, stok__gt=5):
+    for p in Produk.objects.filter(aktif=True).annotate(total_stok=Coalesce(Sum('stok_set__jumlah'), Value(0, output_field=DecimalField()))).filter(total_stok__gt=5):
         if p.id not in sold_product_ids:
-            slow_moving.append({'nama': p.nama, 'stok': p.stok})
+            slow_moving.append({'nama': p.nama, 'stok': p.total_stok})
     slow_moving.sort(key=lambda x: x['stok'], reverse=True)
 
     # 4. Revenue comparison
@@ -2000,12 +2000,12 @@ def _gather_copywriter():
     # Ambil produk aktif untuk inspirasi copywriting
     produk_list = []
     # Query database — ambil data for p in Produk.objects.filter(aktif yang sesuai filter
-    for p in Produk.objects.filter(aktif=True).order_by('-stok')[:15]:
+    for p in Produk.objects.filter(aktif=True).annotate(total_stok=Coalesce(Sum('stok_set__jumlah'), Value(0, output_field=DecimalField()))).order_by('-total_stok')[:15]:
         produk_list.append({
             'nama': p.nama,
             'harga': float(p.harga_jual),
             'kategori': p.kategori.nama if p.kategori else 'Umum',
-            'stok': p.stok,
+            'stok': p.total_stok,
         })
 
     produk_text = '\n'.join([f"  - {p['nama']} (Kategori: {p['kategori']}, Harga: Rp {p['harga']:,.0f}, Stok: {p['stok']})" for p in produk_list])
@@ -2049,12 +2049,12 @@ def _gather_marketing(today, month_start):
     # 1. Top selling products untuk highlight marketing
     top_products = []
     # Query database — ambil data for p in Produk.objects.filter(aktif yang sesuai filter
-    for p in Produk.objects.filter(aktif=True).order_by('-stok')[:10]:
+    for p in Produk.objects.filter(aktif=True).annotate(total_stok=Coalesce(Sum('stok_set__jumlah'), Value(0, output_field=DecimalField()))).order_by('-total_stok')[:10]:
         top_products.append({
             'nama': p.nama,
             'harga': float(p.harga_jual),
             'kategori': p.kategori.nama if p.kategori else 'Umum',
-            'stok': p.stok,
+            'stok': p.total_stok,
         })
 
     # 2. Revenue trend
@@ -2086,9 +2086,9 @@ def _gather_marketing(today, month_start):
     )
     slow_moving = []
     # Query database — ambil data for p in Produk.objects.filter(aktif yang sesuai filter
-    for p in Produk.objects.filter(aktif=True, stok__gt=5):
+    for p in Produk.objects.filter(aktif=True).annotate(total_stok=Coalesce(Sum('stok_set__jumlah'), Value(0, output_field=DecimalField()))).filter(total_stok__gt=5):
         if p.id not in sold_ids:
-            slow_moving.append({'nama': p.nama, 'stok': p.stok, 'harga': float(p.harga_jual)})
+            slow_moving.append({'nama': p.nama, 'stok': p.total_stok, 'harga': float(p.harga_jual)})
     slow_moving.sort(key=lambda x: x['stok'], reverse=True)
 
     top_text = '\n'.join([f"  - {p['nama']} ({p['kategori']}) — Rp {p['harga']:,.0f}" for p in top_products[:5]])
@@ -2160,8 +2160,8 @@ def _gather_campaign_planner(today, month_start):
     from apps.penjualan.models import SalesOrderItem
     # Query database — ambil data top_sold yang sesuai filter
     top_sold = POSTransactionItem.objects.filter(
-        transaksi__tanggal__date__gte=thirty_days_ago,
-        transaksi__status='paid'
+        transaction__tanggal__date__gte=thirty_days_ago,
+        transaction__status='paid'
     ).values('produk__nama').annotate(
         total_qty=Sum('jumlah')
     ).order_by('-total_qty')[:5]
@@ -2171,14 +2171,14 @@ def _gather_campaign_planner(today, month_start):
     # Produk slow moving (kandidat promo agresif)
     sold_ids = set(
         POSTransactionItem.objects.filter(
-            transaksi__tanggal__date__gte=thirty_days_ago
+            transaction__tanggal__date__gte=thirty_days_ago
         ).values_list('produk_id', flat=True).distinct()
     )
     slow_moving = []
     # Query database — ambil data for p in Produk.objects.filter(aktif yang sesuai filter
-    for p in Produk.objects.filter(aktif=True, stok__gt=5):
+    for p in Produk.objects.filter(aktif=True).annotate(total_stok=Coalesce(Sum('stok_set__jumlah'), Value(0, output_field=DecimalField()))).filter(total_stok__gt=5):
         if p.id not in sold_ids:
-            slow_moving.append({'nama': p.nama, 'stok': p.stok, 'harga': float(p.harga_jual)})
+            slow_moving.append({'nama': p.nama, 'stok': p.total_stok, 'harga': float(p.harga_jual)})
     slow_moving.sort(key=lambda x: x['stok'], reverse=True)
     slow_text = '\n'.join([f"  - {p['nama']} (stok: {p['stok']})" for p in slow_moving[:5]])
 
@@ -2468,13 +2468,13 @@ def _gather_content_generator():
     # Ambil produk-produk untuk bahan konten
     products = []
     # Query database — ambil data for p in Produk.objects.filter(aktif yang sesuai filter
-    for p in Produk.objects.filter(aktif=True).order_by('-harga_jual')[:10]:
+    for p in Produk.objects.filter(aktif=True).annotate(total_stok=Coalesce(Sum('stok_set__jumlah'), Value(0, output_field=DecimalField()))).order_by('-harga_jual')[:10]:
         products.append({
             'nama': p.nama,
             'harga': float(p.harga_jual),
             'kategori': p.kategori.nama if p.kategori else 'Umum',
             'deskripsi': p.deskripsi or '',
-            'stok': p.stok,
+            'stok': p.total_stok,
         })
 
     prod_text = '\n'.join([

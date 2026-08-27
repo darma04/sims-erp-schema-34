@@ -73,7 +73,7 @@
         <div class="col-12">
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0">Informasi Transaksi</h5>
+                    <h5 class="mb-0 fs-card-title">Informasi Transaksi</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -99,7 +99,7 @@
                             <table class="table table-borderless">
                                 <tr>
                                     <td class="fw-medium" width="180">Jumlah:</td>
-                                    <td class="text-danger fw-bold fs-5">{{ transaksi.jumlah|rupiah }}</td>
+                                    <td class="text-danger fw-bold fs-value-primary">{{ transaksi.jumlah|rupiah }}</td>
                                 </tr>
                                 <tr>
                                     <td class="fw-medium">Status:</td>
@@ -136,10 +136,10 @@
             {% if transaksi.deskripsi %}
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">Deskripsi</h5>
+                    <h5 class="mb-0 fs-card-title">Deskripsi</h5>
                 </div>
                 <div class="card-body">
-                    <p class="mb-0">{{ transaksi.deskripsi }}</p>
+                    <p class="mb-0 fs-value-secondary">{{ transaksi.deskripsi }}</p>
                 </div>
             </div>
             {% endif %}
@@ -147,7 +147,7 @@
             <!-- Riwayat Aktivitas Transaksi Biaya -->
             <div class="card mt-4">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="ri-history-line me-2"></i>Riwayat Aktivitas Transaksi Biaya</h5>
+                    <h5 class="mb-0 fs-card-title"><i class="ri-history-line me-2"></i>Riwayat Aktivitas Transaksi Biaya</h5>
                 </div>
                 <div class="card-body">
                     {% include 'laporan/partials/timeline_style.html' %}
@@ -194,9 +194,9 @@
                         {% endfor %}
                     </ul>
                     {% else %}
-                    <div class="text-center py-4">
-                        <i class="ri-history-line ri-3x text-muted mb-3 d-block"></i>
-                        <p class="text-muted">Belum ada riwayat aktivitas untuk transaksi biaya ini</p>
+                    <div class="text-center text-muted py-5">
+                        <i class="ri-history-line ri-48px mb-2 d-block" style="opacity:0.3;"></i>
+                        Belum ada riwayat aktivitas untuk transaksi biaya ini
                     </div>
                     {% endif %}
                 </div>

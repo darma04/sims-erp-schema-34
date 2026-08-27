@@ -32,3 +32,6 @@ class AuthConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'  # Tipe ID otomatis
     name = 'auth'       # Nama modul Python (folder 'auth/')
     label = 'accounts'  # Label unik di Django (menghindari konflik dengan 'django.contrib.auth')
+
+    def ready(self):
+        import auth.signals  # lazy import

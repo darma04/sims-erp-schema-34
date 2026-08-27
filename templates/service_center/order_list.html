@@ -14,6 +14,7 @@
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
 <link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+
 {% endblock vendor_css %}
 
 {% block vendor_js %}
@@ -21,6 +22,7 @@
 <script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
 <script src="{% static 'js/export_utils.js' %}"></script>
 {% endblock vendor_js %}
 
@@ -42,7 +44,7 @@
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label">Cari Order</label>
                     <input type="text" class="form-control" id="searchOrder" placeholder="Nomor service, pelanggan, merek...">
                 </div>
@@ -55,11 +57,11 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <label class="form-label">Dari Tanggal</label>
                     <input type="date" class="form-control" id="filterDateFrom">
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <label class="form-label">Sampai Tanggal</label>
                     <input type="date" class="form-control" id="filterDateTo">
                 </div>
@@ -99,7 +101,7 @@
 
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Order Service</h5>
+            <h5 class="mb-0 fs-card-title">Order Service</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
                 <button class="btn btn-sm btn-label-danger" onclick="exportToPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
@@ -138,9 +140,10 @@
                         </td>
                         <td><span class="badge bg-label-{{ order.status_badge_class }}">{{ order.get_status_display }}</span></td>
                         <td><span class="badge bg-label-{{ order.prioritas_badge_class }}">{{ order.get_prioritas_display }}</span></td>
-                        <td>{{ order.biaya_akhir|rupiah }}</td>
+                        <td class="text-end">{{ order.biaya_akhir|rupiah }}</td>
                         <td>{{ order.tanggal_masuk|date:"d/m/Y H:i" }}</td>
                         <td>
+                            {% if can_view.service_center or can_edit.service_center or can_delete.service_center %}
                             <div class="dropdown">
                                 <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ri-more-2-line"></i></button>
                                 <div class="dropdown-menu">
@@ -158,6 +161,9 @@
                                     {% endif %}
                                 </div>
                             </div>
+                            {% else %}
+                            <span class="badge bg-label-secondary"><i class="ri-eye-line me-1"></i>View Only</span>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
@@ -211,7 +217,7 @@
                 </p>
                 <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
                     {% if can_create.service_center %}
-                    <a href="{% url 'service_center:order_add' %}" class="btn btn-primary btn-lg">
+                    <a href="{% url 'service_center:order_create' %}" class="btn btn-primary btn-lg">
                         <i class="ri-add-line me-1"></i>Tambah Order
                     </a>
                     {% endif %}
@@ -272,7 +278,13 @@ function applyFilter(){
     };
 
     function exportToExcel() {
+        const table = document.getElementById('orderTable');
+        if (!table) { showExportEmpty(); return; }
         const tableObj = new $.fn.dataTable.Api('#orderTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
         let colCount = 0;
         let visibleColumns = [];
 
@@ -297,7 +309,7 @@ function applyFilter(){
         visibleColumns.forEach(col => { html += `<th>${col.text}</th>`; });
         html += '</tr></thead><tbody>';
 
-        tableObj.rows({ search: 'applied' }).every(function (rowIdx) {
+        tableObj.rows({ page: 'current' }).every(function (rowIdx) {
             html += '<tr>';
             visibleColumns.forEach(col => {
                 let cellNode = tableObj.cell(rowIdx, col.index).node();
@@ -310,7 +322,7 @@ function applyFilter(){
         // Add tfoot summary
         html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
         html += `<td colspan="${colCount - 1}">RINGKASAN: {{ total_order }} Order | {{ order_aktif }} Aktif</td>`;
-        html += `<td>{{ total_pendapatan|rupiah|escapejs }}</td>`;
+        html += `<td class="text-end">{{ total_pendapatan|rupiah|escapejs }}</td>`;
         html += '</tr>';
 
         html += '</tbody></table>';
@@ -334,7 +346,13 @@ function applyFilter(){
 
     function exportToPDF() {
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
+        const table = document.getElementById('orderTable');
+        if (!table) { showExportEmpty(); return; }
         const tableObj = new $.fn.dataTable.Api('#orderTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
         
         const headers = [];
         const visibleColumns = [];
@@ -347,7 +365,7 @@ function applyFilter(){
         });
 
         const body = [headers];
-        tableObj.rows({ search: 'applied' }).every(function (rowIdx) {
+        tableObj.rows({ page: 'current' }).every(function (rowIdx) {
             const rowData = [];
             visibleColumns.forEach(colIndex => {
                 let cellNode = tableObj.cell(rowIdx, colIndex).node();

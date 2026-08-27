@@ -101,6 +101,7 @@ from django.db import transaction
 from django.shortcuts import redirect, get_object_or_404
 # Import dari framework Django
 from django.contrib.auth.decorators import login_required
+from apps.core.permissions import permission_required
 # Import dari framework Django
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView, DetailView
 # Import dari framework Django
@@ -991,6 +992,7 @@ class AbsensiDeteksiWajahView(ReadPermissionMixin, TemplateView):
 
 # Wajib login - redirect ke login page jika belum login
 @login_required
+@permission_required('create', 'hr')
 def absensi_clock_in(request):
     """
     API endpoint untuk melakukan Clock In karyawan.
@@ -1117,6 +1119,7 @@ def absensi_clock_in(request):
 
 # Wajib login - redirect ke login page jika belum login
 @login_required
+@permission_required('update', 'hr')
 def absensi_clock_out(request):
     """
     API endpoint untuk melakukan Clock Out karyawan.
@@ -2250,6 +2253,7 @@ class RegistrasiWajahView(CreatePermissionMixin, TemplateView):
 
 # Wajib login - redirect ke login page jika belum login
 @login_required
+@permission_required('update', 'hr')
 def save_face_encoding(request):
     """
     API endpoint untuk menyimpan encoding wajah karyawan.
@@ -2360,6 +2364,7 @@ def save_face_encoding(request):
 
 # Wajib login - redirect ke login page jika belum login
 @login_required
+@permission_required('delete', 'hr')
 def delete_face(request, pk):
     """
     API untuk menghapus foto wajah terdaftar (soft delete).
@@ -2408,6 +2413,7 @@ def delete_face(request, pk):
 
 # Wajib login - redirect ke login page jika belum login
 @login_required
+@permission_required('read', 'hr')
 def detect_face_api(request):
     """
     API endpoint untuk mendeteksi wajah dan mencocokkan dengan karyawan terdaftar.
@@ -2510,6 +2516,7 @@ def detect_face_api(request):
 
 # Wajib login - redirect ke login page jika belum login
 @login_required
+@permission_required('create', 'hr')
 def absensi_face_clock_in(request):
     """
     API untuk clock in menggunakan face recognition.
@@ -2719,6 +2726,7 @@ def absensi_face_clock_in(request):
 
 # Wajib login - redirect ke login page jika belum login
 @login_required
+@permission_required('update', 'hr')
 def absensi_face_clock_out(request):
     """
     API untuk clock out menggunakan face recognition.

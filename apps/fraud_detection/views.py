@@ -162,37 +162,45 @@ class FraudDashboardView(SubModulePermissionMixin, TemplateView):
             status__in=['pending', 'investigated']
         ).aggregate(total=Sum('nominal'))['total'] or 0  # Total potensi kerugian dari anomali aktif
 
-        # === TOTAL ASET ASLI (Termasuk data fraud yang belum dikonfirmasi) ===
-        # Menghitung total aset berdasarkan: stok saat ini + stok terjual + stok adjustment
-        # Ini adalah aset "seharusnya" jika tidak ada kecurangan
+        # === TOTAL ASET ASLI (Single-query optimization — avoid N+1) ===
         from apps.produk.models import Produk
         from apps.inventory.models import Stok, AdjustmentStok
         from apps.penjualan.models import SalesOrderItem
         from apps.pos.models import POSTransactionItem
+        from collections import defaultdict
 
+        # Build lookup: produk_id → harga_beli
+        produk_harga = dict(Produk.objects.values_list('id', 'harga_beli'))
+
+        # Build lookup: produk_id → total semua kuantitas
+        produk_qty = defaultdict(int)
+
+        # Stok fisik saat ini di semua gudang
+        for item in Stok.objects.values('produk').annotate(total=Sum('jumlah')):
+            produk_qty[item['produk']] += item['total'] or 0
+
+        # Stok terjual via SO
+        for item in SalesOrderItem.objects.filter(
+            sales_order__status__in=['confirmed', 'delivered', 'completed']
+        ).values('produk').annotate(total=Sum('jumlah')):
+            produk_qty[item['produk']] += item['total'] or 0
+
+        # Stok terjual via POS
+        for item in POSTransactionItem.objects.filter(
+            transaction__status='paid'
+        ).values('produk').annotate(total=Sum('jumlah_konversi')):
+            produk_qty[item['produk']] += item['total'] or 0
+
+        # Adjustment stok keluar
+        for item in AdjustmentStok.objects.filter(tipe='out').values('produk').annotate(total=Sum('jumlah')):
+            produk_qty[item['produk']] += item['total'] or 0
+
+        # Hitung total aset
         total_aset = Decimal('0')
-        for produk in Produk.objects.all():
-            # Stok fisik saat ini di semua gudang
-            stok_sekarang = Stok.objects.filter(produk=produk).aggregate(
-                total=Sum('jumlah'))['total'] or 0
-            # Stok yang sudah terjual via Sales Order (SO)
-            total_terjual_so = SalesOrderItem.objects.filter(
-                produk=produk,
-                sales_order__status__in=['confirmed', 'delivered', 'completed']
-            ).aggregate(total=Sum('jumlah'))['total'] or 0
-            # Stok yang sudah terjual via Point of Sale (POS)
-            total_terjual_pos = POSTransactionItem.objects.filter(
-                produk=produk,
-                transaction__status='paid'
-            ).aggregate(total=Sum('jumlah_konversi'))['total'] or 0
-            # Stok yang keluar via adjustment manual
-            total_adj_out = AdjustmentStok.objects.filter(
-                produk=produk, tipe='out'
-            ).aggregate(total=Sum('jumlah'))['total'] or 0
-            # Total kuantitas seharusnya = semua stok + semua yang keluar
-            qty_total = stok_sekarang + total_terjual_so + total_terjual_pos + total_adj_out
-            # Nilai aset = kuantitas × harga beli per unit
-            total_aset += Decimal(str(qty_total)) * produk.harga_beli
+        for produk_id, qty in produk_qty.items():
+            harga = produk_harga.get(produk_id, Decimal('0'))
+            total_aset += Decimal(str(qty)) * harga
+
         context['total_aset_asli'] = total_aset
 
         # === DATA KEUANGAN — Total pemasukan, pengeluaran, dan selisih ===

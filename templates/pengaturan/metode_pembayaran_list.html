@@ -165,7 +165,7 @@
     <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Daftar Metode Pembayaran</h5>
+            <h5 class="mb-0 fs-card-title">Daftar Metode Pembayaran</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()">
                     <i class="ri-file-excel-2-line me-1"></i>Export Excel
@@ -224,8 +224,8 @@
                             </span>
                             <br><small class="text-muted">Awal: {{ metode.saldo|rupiah }}</small>
                         </td>
-                        <td class="text-success fw-semibold">{{ metode.total_pendapatan|rupiah }}</td>
-                        <td class="text-danger fw-semibold">{{ metode.total_pengeluaran|rupiah }}</td>
+                        <td class="text-success fw-semibold text-end">{{ metode.total_pendapatan|rupiah }}</td>
+                        <td class="text-danger fw-semibold text-end">{{ metode.total_pengeluaran|rupiah }}</td>
                         <td class="text-center">
                             <span class="badge bg-label-info">{{ metode.total_transaksi_count }}</span>
                         </td>
@@ -283,8 +283,8 @@
                             <div class="d-flex align-items-center">
                                 <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.25rem;"></i>
                                 <div>
-                                    <strong style="font-size: 0.9rem;">RINGKASAN</strong>
-                                    <br><small class="text-muted" style="font-size: 0.7rem;">{{ metode_list|length }} Metode Terdaftar</small>
+                                    <strong style="font-size: var(--fs-ui-value);">RINGKASAN</strong>
+                                    <br><small class="text-muted" style="font-size: var(--fs-ui-xxs);">{{ metode_list|length }} Metode Terdaftar</small>
                                 </div>
                             </div>
                         </td>
@@ -295,8 +295,8 @@
                                 {{ ringkasan_saldo|rupiah }}
                             </strong>
                         </td>
-                        <td class="py-3 text-success fw-bold">{{ ringkasan_pendapatan|rupiah }}</td>
-                        <td class="py-3 text-danger fw-bold">{{ ringkasan_pengeluaran|rupiah }}</td>
+                        <td class="py-3 text-success fw-bold text-end">{{ ringkasan_pendapatan|rupiah }}</td>
+                        <td class="py-3 text-danger fw-bold text-end">{{ ringkasan_pengeluaran|rupiah }}</td>
                         <td class="py-3 text-center">
                             <span class="badge bg-label-info">{{ ringkasan_transaksi }}</span>
                         </td>
@@ -332,7 +332,7 @@
 
                 </p>
                 <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
-                    <a href="{% url 'pengaturan:metode_pembayaran_add' %}" class="btn btn-primary btn-lg">
+                    <a href="{% url 'pengaturan:metode_pembayaran_create' %}" class="btn btn-primary btn-lg">
                         <i class="ri-add-line me-1"></i>Tambah Metode
                     </a>
                     <a href="{% url 'pengaturan:metode_pembayaran_seed' %}" class="btn btn-label-success btn-lg">
@@ -385,7 +385,7 @@
     .dataTables_wrapper .dataTables_info {
         padding: 1rem 1.5rem;
         font-size: 0.875rem;
-        color: #697a8d;
+        ;
     }
 
     .dataTables_wrapper .dataTables_paginate {
@@ -489,21 +489,21 @@
 
     // Filter berdasarkan Status
     function filterByStatus() {
-        if (!table) return;
+        if (!table) { showExportEmpty(); return; }
         var val = $('#filterStatus').val();
         table.column(8).search(val).draw(); // kolom 8 = Status
     }
 
     // Filter berdasarkan Nama Pemilik
     function filterByPemilik() {
-        if (!table) return;
+        if (!table) { showExportEmpty(); return; }
         var val = $('#filterPemilik').val();
         table.column(2).search(val).draw(); // kolom 2 = Nama Pemilik
     }
 
     // Toggle visibilitas kolom
     function toggleColumns() {
-        if (!table) return;
+        if (!table) { showExportEmpty(); return; }
         const checkboxes = document.querySelectorAll('.column-checkbox');
         checkboxes.forEach(checkbox => {
             const column = table.column(parseInt(checkbox.value));
@@ -571,9 +571,13 @@ const FOOTER_LABEL = 'RINGKASAN';
 
     function exportToExcel() {
         const table = document.getElementById('metodeTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#metodeTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         let colCount = 0;
         let visibleColumns = [];
@@ -662,9 +666,13 @@ const FOOTER_LABEL = 'RINGKASAN';
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('metodeTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#metodeTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         const headers = [];
         let visibleColumns = [];

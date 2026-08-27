@@ -34,84 +34,68 @@ Filter: gudang, kategori. Export Excel & PDF.
     </div>
 
     <!-- Summary Cards -->
-    <div class="row g-2 g-md-3 mb-4">
-        <div class="col-6 col-lg-3">
-            <div class="card">
+    <div class="row g-6 mb-6">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Total Produk</p>
-                            <h4 class="mb-0 summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-primary"><i class="ri-box-3-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Total Produk</span>
+<h5  class="mb-0 fw-bold fs-value-primary" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
                                 title="<b>Alur Data:</b><br>Jumlah produk unik yang memiliki entri stok di gudang.<br><br><b>Sumber:</b> Tabel Stok (relasi Produk ├ù Gudang).">
-                                {{ total_produk }}</h4>
+                                {{ total_produk }}</h5>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-primary rounded p-2">
-                                <i class="ri-box-3-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Total Gudang</p>
-                            <h4 class="mb-0 summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-info"><i class="ri-building-2-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Total Gudang</span>
+<h5  class="mb-0 fw-bold fs-value-primary" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
                                 title="<b>Alur Data:</b><br>Jumlah gudang aktif dalam sistem.<br><br><b>Sumber:</b> Tabel Gudang.">
-                                {{ total_gudang }}</h4>
+                                {{ total_gudang }}</h5>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-info rounded p-2">
-                                <i class="ri-building-2-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Stok Habis</p>
-                            <h4 class="mb-0 text-danger summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-danger"><i class="ri-error-warning-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Stok Habis</span>
+<h5  class="mb-0 fw-bold fs-value-primary" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
                                 title="<b>Alur Data:</b><br>Jumlah entri stok dengan jumlah = 0.<br><br><b>Sumber:</b> Tabel Stok dimana jumlah = 0.">
-                                {{ stok_habis }}</h4>
+                                {{ stok_habis }}</h5>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-danger rounded p-2">
-                                <i class="ri-error-warning-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Stok Rendah</p>
-                            <h4 class="mb-0 text-warning summary-nominal" style="cursor:help" data-bs-toggle="tooltip"
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-warning"><i class="ri-alert-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Stok Rendah</span>
+<h5  class="mb-0 fw-bold fs-value-primary" style="cursor:help" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" data-bs-html="true"
                                 title="<b>Alur Data:</b><br>Jumlah entri stok dengan jumlah > 0 dan ≤ 10.<br><br><b>Sumber:</b> Tabel Stok dimana 0 < jumlah ≤ 10.">
-                                {{ stok_rendah }}</h4>
+                                {{ stok_rendah }}</h5>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-warning rounded p-2">
-                                <i class="ri-alert-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
@@ -215,7 +199,7 @@ Filter: gudang, kategori. Export Excel & PDF.
 
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Data Stok</h5>
+            <h5 class="mb-0 fs-card-title">Data Stok</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i
                         class="ri-file-excel-2-line me-1"></i>Export Excel</button>
@@ -284,7 +268,7 @@ Filter: gudang, kategori. Export Excel & PDF.
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-info d-flex align-items-center gap-1 mb-2"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 100px;">
+                                    style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 100px;">
                                     <i class="ri-stack-line"></i>
                                     <span>{{ total_stok|floatformat:0 }}</span>
                                 </span>
@@ -339,7 +323,7 @@ Filter: gudang, kategori. Export Excel & PDF.
     .dataTables_wrapper .dataTables_info {
         padding: 1rem 1.5rem;
         font-size: 0.875rem;
-        color: #697a8d
+        
     }
 
     .dataTables_wrapper .dataTables_paginate {
@@ -442,9 +426,13 @@ Filter: gudang, kategori. Export Excel & PDF.
 
     function exportToExcel() {
         const table = document.getElementById('stokTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#stokTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         let colCount = 0;
         let visibleColumns = [];
@@ -533,9 +521,13 @@ Filter: gudang, kategori. Export Excel & PDF.
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('stokTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#stokTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         const headers = [];
         let visibleColumns = [];
@@ -677,19 +669,19 @@ Filter: gudang, kategori. Export Excel & PDF.
 </script>
 <style>
     @media (max-width: 575.98px) {
-        .summary-nominal {
+        .{
             font-size: 10px !important;
             white-space: nowrap;
         }
 
         .card-info .card-text {
-            font-size: 0.68rem;
+            font-size: var(--fs-ui-xxs);
             margin-bottom: 0.15rem !important;
             line-height: 1.2;
         }
 
         .card-info small {
-            font-size: 0.6rem;
+            font-size: var(--fs-ui-3xs);
         }
 
         .card-body {
@@ -710,16 +702,16 @@ Filter: gudang, kategori. Export Excel & PDF.
     }
 
     @media (min-width: 576px) and (max-width: 767.98px) {
-        .summary-nominal {
-            font-size: 0.9rem !important;
+        .{
+            font-size: var(--fs-ui-value) !important;
         }
 
         .card-info .card-text {
-            font-size: 0.72rem;
+            font-size: var(--fs-ui-xs);
         }
 
         .card-info small {
-            font-size: 0.62rem;
+            font-size: var(--fs-ui-3xs);
         }
 
         .card-body {
@@ -732,8 +724,8 @@ Filter: gudang, kategori. Export Excel & PDF.
     }
 
     @media (min-width: 768px) and (max-width: 991.98px) {
-        .summary-nominal {
-            font-size: 1.05rem !important;
+        .{
+            font-size: var(--fs-ui-stat) !important;
         }
     }
 </style>

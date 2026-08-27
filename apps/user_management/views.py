@@ -86,7 +86,7 @@ from web_project import TemplateLayout
 from django.contrib.auth.models import User
 from django.urls import reverse_lazy
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import Http404,  JsonResponse
 from auth.models import Profile
 from apps.core.models import RolePermission
 from apps.core.mixins import AdminOrSuperuserMixin, UpdatePermissionMixin, DeletePermissionMixin, CreatePermissionMixin, ReadPermissionMixin
@@ -191,18 +191,24 @@ class UserAddView(CreatePermissionMixin, CreateView):
     
     def form_valid(self, form):
         """Dipanggil saat form valid — proses penyimpanan data."""
+        password = self.request.POST.get('password', '').strip()
+        password_confirm = self.request.POST.get('password_confirm', '').strip()
+        if len(password) < 8:
+            messages.error(self.request, 'Gagal menambahkan user: Password harus minimal 8 digit/karakter!')
+            return self.form_invalid(form)
+        if password != password_confirm:
+            messages.error(self.request, 'Gagal menambahkan user: Konfirmasi password tidak cocok!')
+            return self.form_invalid(form)
+
         user = form.save(commit=False)
-        password = self.request.POST.get('password', 'defaultPassword123')
         user.set_password(password)
         user.save()
         
-        # Set role dari form
         role = self.request.POST.get('role', 'USER')
         try:
             user.profile.role = role
             user.profile.save()
         except Exception:
-            # Buat profile jika belum ada
             Profile.objects.create(user=user, email=user.email, role=role)
         
         messages.success(self.request, f'User {user.username} berhasil ditambahkan dengan role {role}!')
@@ -302,6 +308,11 @@ class UserDetailAjaxView(ReadPermissionMixin, View):
                     'permissions': permissions[:10] if permissions else ['No specific permissions'],
                 }
             })
+        except Http404:
+            return JsonResponse({
+                'success': False,
+                'message': 'User tidak ditemukan'
+            }, status=404)
         except Exception as e:
             return JsonResponse({
                 'success': False,
@@ -370,6 +381,8 @@ class UserEditView(UpdatePermissionMixin, UpdateView):
 
     def form_valid(self, form):
         """Dipanggil saat form valid — proses penyimpanan data."""
+        response = super().form_valid(form)
+
         role = self.request.POST.get('role')
         if role:
             try:
@@ -378,9 +391,25 @@ class UserEditView(UpdatePermissionMixin, UpdateView):
             except Exception:
                 # Buat profile jika belum ada
                 Profile.objects.create(user=self.object, email=self.object.email, role=role)
-    
-        messages.success(self.request, f'User {form.instance.username} berhasil diupdate')
-        return super().form_valid(form)
+
+                # Proses update password baru jika diisi oleh admin/user
+        new_password = self.request.POST.get('new_password', '').strip() or self.request.POST.get('password', '').strip()
+        new_password_confirm = self.request.POST.get('new_password_confirm', '').strip()
+
+        if new_password:
+            if len(new_password) < 8:
+                messages.error(self.request, 'Gagal memperbarui password: Password harus minimal 8 digit/karakter!')
+                return self.form_invalid(form)
+            if new_password_confirm and new_password != new_password_confirm:
+                messages.error(self.request, 'Gagal memperbarui password: Konfirmasi password baru tidak cocok!')
+                return self.form_invalid(form)
+
+            self.object.set_password(new_password)
+            self.object.save()
+            messages.info(self.request, f'Password untuk user {form.instance.username} berhasil diperbarui!')
+
+        messages.success(self.request, f'User {form.instance.username} berhasil diupdate!')
+        return response
 
 
 @method_decorator(login_required, name='dispatch')

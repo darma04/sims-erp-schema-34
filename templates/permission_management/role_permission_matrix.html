@@ -1,0 +1,139 @@
+{% extends "layout/layout_vertical.html" %}
+{% load i18n %}
+{% load permission_tags %}
+
+{% block head_title %}{{ title }}{% endblock %}
+
+{% block vendor_css %}
+{{ block.super }}
+{% load static %}
+<link rel="stylesheet" href="{% static 'vendor/libs/sweetalert2/sweetalert2.css' %}" />
+{% endblock %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="mb-1 fs-value-primary"><i class="ri-shield-user-line me-2"></i>{{ title }}</h4>
+      <p class="text-muted mb-0">Centang permission untuk setiap modul (4 permission) dan sub-modul (1 permission View)</p>
+    </div>
+    <div>
+      <a href="{% url 'permission_management:role_list' %}" class="btn btn-label-secondary">
+        <i class="ri-arrow-left-line me-2"></i>Kembali
+      </a>
+    </div>
+  </div>
+
+  <form method="post" id="permissionMatrixForm">
+    {% csrf_token %}
+    <div class="row mb-4">
+      <div class="col-md-4">
+        <label class="form-label fw-bold">Pilih Role</label>
+        <select name="role" class="form-select" id="roleSelect" onchange="this.form.submit()">
+          {% for r_code, r_name in roles %}
+          <option value="{{ r_code }}" {% if r_code == selected_role %}selected{% endif %}>{{ r_name }} ({{ r_code }})</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      {% for module_code, module_name in modules %}
+      {% with mp=mod_perms|get_item:module_code %}
+      <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0 fs-card-title">
+              <i class="ri-folder-line me-2 text-primary"></i>{{ module_name }}
+            </h5>
+            <div class="d-flex gap-2">
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input module-view" type="checkbox" name="mod_{{ module_code }}_view"
+                       id="{{ module_code }}_view" {% if mp and mp.can_view %}checked{% endif %}
+                       onchange="toggleSubModules('{{ module_code }}', this.checked)">
+                <label class="form-check-label small" for="{{ module_code }}_view">View</label>
+              </div>
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" name="mod_{{ module_code }}_create"
+                       id="{{ module_code }}_create" {% if mp and mp.can_create %}checked{% endif %}>
+                <label class="form-check-label small" for="{{ module_code }}_create">Create</label>
+              </div>
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" name="mod_{{ module_code }}_edit"
+                       id="{{ module_code }}_edit" {% if mp and mp.can_edit %}checked{% endif %}>
+                <label class="form-check-label small" for="{{ module_code }}_edit">Edit</label>
+              </div>
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" name="mod_{{ module_code }}_delete"
+                       id="{{ module_code }}_delete" {% if mp and mp.can_delete %}checked{% endif %}>
+                <label class="form-check-label small" for="{{ module_code }}_delete">Delete</label>
+              </div>
+            </div>
+          </div>
+
+          {% with subs=sub_module_choices|get_item:module_code %}
+          {% if subs %}
+          <div class="card-body pt-2 sub-module-section" id="subSection_{{ module_code }}"
+               style="{% if not mp or not mp.can_view %}display:none;{% endif %}">
+            <div class="d-flex align-items-center mb-2">
+              <small class="text-muted"><i class="ri-menu-line me-1"></i>Sub Menu (centang untuk menampilkan di sidebar):</small>
+            </div>
+            <div class="row g-2">
+              {% for sub_code, sub_name in subs %}
+              {% with sub_dict=sub_perms_dict|get_item:module_code %}
+              <div class="col-md-6">
+                <div class="form-check">
+                  <input class="form-check-input sub-module-check" type="checkbox"
+                         name="sub_{{ module_code }}_{{ sub_code }}"
+                         id="sub_{{ module_code }}_{{ sub_code }}"
+                         {% if sub_dict|get_item:sub_code %}checked{% endif %}>
+                  <label class="form-check-label" for="sub_{{ module_code }}_{{ sub_code }}">
+                    {{ sub_name }}
+                  </label>
+                </div>
+              </div>
+              {% endwith %}
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+          {% endwith %}
+        </div>
+      </div>
+      {% endwith %}
+      {% endfor %}
+    </div>
+
+    <div class="row mt-2">
+      <div class="col-12">
+        <button type="submit" class="btn btn-primary btn-lg">
+          <i class="ri-save-line me-2"></i>Simpan Semua Permission
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.module-view').forEach(function(cb) {
+    var moduleCode = cb.id.replace('_view', '');
+    toggleSubModules(moduleCode, cb.checked);
+  });
+});
+
+function toggleSubModules(moduleCode, show) {
+  var section = document.getElementById('subSection_' + moduleCode);
+  if (section) {
+    section.style.display = show ? '' : 'none';
+    if (!show) {
+      var checks = section.querySelectorAll('.sub-module-check');
+      checks.forEach(function(c) { c.checked = false; });
+    }
+  }
+}
+</script>
+{% endblock %}
+% endblock %}

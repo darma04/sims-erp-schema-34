@@ -792,17 +792,15 @@ class InvoiceDeleteView(DeletePermissionMixin, DetailView):
         from django.db import transaction as db_transaction
         from apps.produk.models import Stok
         from apps.fraud_detection.signals import set_current_delete_user, clear_current_delete_user
+        from apps.core.propagation import handle_document_delete
         self.object = self.get_object()
         
         try:
             nomor_transaksi = self.object.nomor_transaksi
 
-            # Reversal jurnal + cancel mutasi/piutang (propagation service)
-            from apps.core.propagation import handle_document_delete
-            handle_document_delete(self.object, user=request.user)
-
             if self.object.status in ('paid', 'unpaid'):
                 with db_transaction.atomic():
+                    handle_document_delete(self.object, user=request.user)
                     for item in self.object.items.select_related('produk'):
                         qty_rollback = item.jumlah_konversi if item.jumlah_konversi else item.jumlah
                         stok, _ = Stok.objects.select_for_update().get_or_create(
@@ -826,6 +824,7 @@ class InvoiceDeleteView(DeletePermissionMixin, DetailView):
                     self.object.delete()
                     clear_current_delete_user()
             else:
+                handle_document_delete(self.object, user=request.user)
                 set_current_delete_user(request.user)
                 self.object.delete()
                 clear_current_delete_user()

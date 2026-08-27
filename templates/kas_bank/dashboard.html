@@ -2,6 +2,29 @@
 {% load static %}
 {% load currency_filters %}
 
+{% comment %}
+  ==========================================================================
+  KAS BANK - Dashboard
+  ==========================================================================
+  Halaman Dashboard untuk modul Kas Bank.
+  Template ini merender data dari view ke HTML yang ditampilkan di browser.
+
+  FLOW DATA:
+  - URL: /kas_bank/ -> View di apps/kas_bank/views.py- View: Mengambil data, menyiapkan context, render template ini- Template: File ini (HTML + Django template tags)- Response: HTML yang ditampilkan di browser user
+
+  RELASI KE MODUL LAIN:
+  - apps/kas_bank/views.py -> View (handler untuk halaman ini)- apps/kas_bank/models.py -> Model (sumber data)- apps/kas_bank/urls.py -> URL routing- layout/ -> Template induk (sidebar, header, footer)
+
+  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
+  - BOLEH diubah: Tampilan HTML, CSS inline, JavaScript- JANGAN diubah: {% extends %} dan {% block %} structure- JANGAN dihapus: {% csrf_token %} di form
+
+  TIPS & DEBUGGING:
+  - Error 'TemplateDoesNotExist'? Cek template_name di views.py- Variabel {{ }} kosong? Cek get_context_data() di views.py- Layout rusak? Pastikan TemplateLayout.init() dipanggil di view
+
+  ==========================================================================
+{% endcomment %}
+
+
 {% block title %}Kas & Bank - Treasury{% endblock title %}
 
 {% block vendor_css %}
@@ -25,17 +48,19 @@
             <p class="text-muted mb-0">Kontrol saldo, mutasi, transfer, dan rekonsiliasi treasury. Saldo kas mengikuti uang aktual, termasuk PPN bila ada pada pembayaran.</p>
         </div>
         <div class="d-flex flex-wrap gap-2">
-            <a href="{% url 'kas_bank:transaction_add' %}" class="btn btn-primary">
+            {% if can_create.kas_bank %}
+        <a href="{% url 'kas_bank:transaction_add' %}" class="btn btn-primary">
                 <i class="ri-add-line me-1"></i>Tambah Mutasi
             </a>
+        {% endif %}
             <a href="{% url 'kas_bank:transfer_add' %}" class="btn btn-outline-primary">
                 <i class="ri-arrow-left-right-line me-1"></i>Transfer
             </a>
         </div>
     </div>
 
-    <div class="row g-6 mb-4">
-        <div class="col-xl-3 col-sm-6">
+    <div class="row g-6 mb-6">
+        <div class="col-6 col-md-3 col-lg-3">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3 treasury-stat-card">
@@ -46,14 +71,14 @@
                         </div>
                         <div>
                             <span class="d-block text-muted small">Akun Aktif</span>
-                            <h5 class="mb-0 fw-bold">{{ active_accounts }} / {{ total_accounts }}</h5>
-                            <small class="text-muted">Kas, bank, QRIS, e-wallet</small>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ active_accounts }} / {{ total_accounts }}</h5>
+<small class="text-muted">Kas, bank, QRIS, e-wallet</small>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-sm-6">
+        <div class="col-6 col-md-3 col-lg-3">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3 treasury-stat-card">
@@ -64,14 +89,14 @@
                         </div>
                         <div>
                             <span class="d-block text-muted small">Total Masuk</span>
-                            <h5 class="mb-0 fw-bold text-success" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total mutasi kas/bank masuk berstatus posted. Nilai mengikuti uang aktual, sehingga penerimaan SO/POS dan pelunasan piutang dapat mencakup PPN bila transaksi asal memilikinya.">{{ total_masuk|rupiah }}</h5>
-                            <small class="text-muted">Mutasi posted</small>
+<h5  class="mb-0 fw-bold fs-value-primary" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total mutasi kas/bank masuk berstatus posted. Nilai mengikuti uang aktual, sehingga penerimaan SO/POS dan pelunasan piutang dapat mencakup PPN bila transaksi asal memilikinya.">{{ total_masuk|rupiah }}</h5>
+<small class="text-muted">Mutasi posted</small>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-sm-6">
+        <div class="col-6 col-md-3 col-lg-3">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3 treasury-stat-card">
@@ -82,14 +107,14 @@
                         </div>
                         <div>
                             <span class="d-block text-muted small">Total Keluar</span>
-                            <h5 class="mb-0 fw-bold text-danger" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total mutasi kas/bank keluar berstatus posted. Nilai mengikuti pembayaran aktual, sehingga pembayaran PO/hutang dan settlement PPN dapat mencakup arus pajak.">{{ total_keluar|rupiah }}</h5>
-                            <small class="text-muted">Mutasi posted</small>
+<h5  class="mb-0 fw-bold fs-value-primary" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total mutasi kas/bank keluar berstatus posted. Nilai mengikuti pembayaran aktual, sehingga pembayaran PO/hutang dan settlement PPN dapat mencakup arus pajak.">{{ total_keluar|rupiah }}</h5>
+<small class="text-muted">Mutasi posted</small>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-sm-6">
+        <div class="col-6 col-md-3 col-lg-3">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3 treasury-stat-card">
@@ -100,8 +125,8 @@
                         </div>
                         <div>
                             <span class="d-block text-muted small">Net Cashflow</span>
-                            <h5 class="mb-0 fw-bold" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Net cashflow = total kas/bank masuk - keluar. Berbeda dari laba rugi: kas/bank memakai uang aktual, sedangkan laba rugi memisahkan PPN dari pendapatan/beban.">{{ net_cashflow|rupiah }}</h5>
-                            <small class="text-muted">Masuk - keluar</small>
+<h5  class="mb-0 fw-bold fs-value-primary" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Net cashflow = total kas/bank masuk - keluar. Berbeda dari laba rugi: kas/bank memakai uang aktual, sedangkan laba rugi memisahkan PPN dari pendapatan/beban.">{{ net_cashflow|rupiah }}</h5>
+<small class="text-muted">Masuk - keluar</small>
                         </div>
                     </div>
                 </div>
@@ -112,10 +137,16 @@
     <div class="row g-6 mb-4">
         <div class="col-lg-8">
             <div class="card h-100">
-                <div class="card-header d-flex align-items-center justify-content-between">
-                    <h5 class="card-title mb-0">
-                        <i class="ri-line-chart-line me-2"></i>Arus Kas Posted
+                <div class="card-header d-flex flex-nowrap align-items-center justify-content-between">
+                    <h5 class="card-title mb-0 me-2 fs-card-title">
+                        <i class="ri-line-chart-line me-2 text-primary" style="color: var(--bs-primary)"></i>Arus Kas Posted
                     </h5>
+                    <div class="dropdown flex-shrink-0">
+                        <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div id="cashflowChart" style="min-height: 320px;"></div>
@@ -124,16 +155,22 @@
         </div>
         <div class="col-lg-4">
             <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="ri-pie-chart-line me-2"></i>Status Mutasi
+                <div class="card-header d-flex flex-nowrap align-items-center justify-content-between">
+                    <h5 class="card-title mb-0 me-2 fs-card-title">
+                        <i class="ri-pie-chart-line me-2 text-primary" style="color: var(--bs-primary)"></i>Status Mutasi
                     </h5>
+                    <div class="dropdown flex-shrink-0">
+                        <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body text-center">
-                    <div id="statusChart" style="min-height: 260px;"></div>
+                <div class="card-body pt-2 d-flex flex-column justify-content-center">
+                    <div id="statusChart" style="min-height: 250px;"></div>
                     <div class="d-flex align-items-center justify-content-between border-top pt-3 mt-3">
                         <span class="text-muted">Rekonsiliasi Draft</span>
-                        <span class="fw-semibold">{{ pending_reconciliation }}</span>
+                        <span class="fw-semibold fs-value-secondary">{{ pending_reconciliation }}</span>
                     </div>
                 </div>
             </div>
@@ -145,8 +182,8 @@
             <div class="card h-100">
                 <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-3">
                     <div>
-                        <h5 class="mb-1">Saldo Akun Aktif</h5>
-                        <p class="text-muted mb-0">Total saldo terhitung: <span class="fw-semibold">{{ total_saldo_aktif|rupiah }}</span></p>
+                        <h5 class="mb-1 fs-card-title"><i class="ri-safe-2-line me-2 text-primary" style="color: var(--bs-primary)"></i>Saldo Akun Aktif</h5>
+                        <p class="text-muted mb-0">Total saldo terhitung: <span class="fw-semibold fs-value-secondary">{{ total_saldo_aktif|rupiah }}</span></p>
                     </div>
                     <a href="{% url 'kas_bank:account_list' %}" class="btn btn-sm btn-label-primary">
                         Lihat Semua
@@ -169,9 +206,9 @@
                             <tr>
                                 <td class="fw-semibold">{{ row.account.kode }} - {{ row.account.nama }}</td>
                                 <td>{{ row.account.get_tipe_display }}</td>
-                                <td class="text-success">{{ row.masuk|rupiah }}</td>
-                                <td class="text-danger">{{ row.keluar|rupiah }}</td>
-                                <td class="fw-semibold">{{ row.saldo|rupiah }}</td>
+                                <td class="text-success text-end">{{ row.masuk|rupiah }}</td>
+                                <td class="text-danger text-end">{{ row.keluar|rupiah }}</td>
+                                <td class="fw-semibold text-end">{{ row.saldo|rupiah }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -199,7 +236,7 @@
         <div class="col-lg-6">
             <div class="card h-100">
                 <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-3">
-                    <h5 class="mb-0">Mutasi Terakhir</h5>
+                    <h5 class="mb-0 fs-card-title"><i class="ri-exchange-line me-2 text-primary" style="color: var(--bs-primary)"></i>Mutasi Terakhir</h5>
                     <a href="{% url 'kas_bank:transaction_list' %}" class="btn btn-sm btn-label-primary">
                         Lihat Semua
                     </a>
@@ -224,7 +261,7 @@
                                 <td>{{ item.tanggal|date:"d/m/Y H:i" }}</td>
                                 <td>{{ item.akun_kas_bank.nama }}</td>
                                 <td>{{ item.get_tipe_display }}</td>
-                                <td class="{% if item.is_debit_kas %}text-success{% else %}text-danger{% endif %} fw-semibold">{{ item.jumlah|rupiah }}</td>
+                                <td class="{% if item.is_debit_kas %}text-success{% else %}text-danger{% endif %} fw-semibold text-end">{{ item.jumlah|rupiah }}</td>
                                 <td>{{ item.sumber_ref|default:"-" }}</td>
                             </tr>
                             {% endfor %}
@@ -257,15 +294,6 @@
 {% block page_js %}
 {{ block.super }}
 <style>
-.treasury-stat-card .avatar-initial {
-    width: 42px;
-    height: 42px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    flex-shrink: 0;
-}
 .dashboard-datatable thead th {
     font-weight: 600;
     font-size: 0.8125rem;
@@ -279,18 +307,6 @@
 .dataTables_wrapper .dataTables_filter {
     padding: 0 1.5rem 1rem 1.5rem;
 }
-@media (max-width: 575.98px) {
-    .treasury-stat-card {
-        gap: 0.75rem !important;
-    }
-    .treasury-stat-card .avatar-initial {
-        width: 36px;
-        height: 36px;
-    }
-    .treasury-stat-card .avatar-initial i {
-        font-size: 18px;
-    }
-}
 </style>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -301,13 +317,14 @@ document.addEventListener('DOMContentLoaded', function () {
     var isDark = typeof isDarkStyle !== 'undefined' ? isDarkStyle :
         (document.documentElement.classList.contains('dark-style') ||
             document.body.classList.contains('dark-style'));
+    var cardBgColor = isDark ? '#283046' : '#fff';
     var gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
     var labelColor = isDark ? '#b4b5ba' : '#a5a3ae';
 
     if (typeof $ !== 'undefined') {
+        {% if account_cards %}
         ['#accountBalanceTable', '#recentTransactionTable'].forEach(function (selector) {
             if ($(selector).length && !$.fn.dataTable.isDataTable(selector)) {
-                {% if account_cards %}
                 $(selector).DataTable({
                     language: {
                         sEmptyTable: 'Tidak ada data yang tersedia',
@@ -328,142 +345,171 @@ document.addEventListener('DOMContentLoaded', function () {
                     pageLength: 5,
                     lengthMenu: [[5, 10, 25, -1], ['5', '10', '25', 'Semua']],
                     order: [],
-                    responsive: false
+                    responsive: false,
+                    dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
                 });
-                {% endif %}
             }
         });
+        {% endif %}
     }
-
-    if (typeof ApexCharts === 'undefined') return;
 
     var cashflowEl = document.querySelector('#cashflowChart');
     var cashflowLabels = {{ cashflow_chart_labels|safe }};
     var cashflowValues = {{ cashflow_chart_values|safe }};
+
+    // Approach B: Always render chart, use zero-filled data when empty
+    if (!cashflowLabels || !Array.isArray(cashflowLabels) || cashflowLabels.length === 0) {
+        cashflowLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'];
+    }
+    if (!cashflowValues || !Array.isArray(cashflowValues) || cashflowValues.length === 0) {
+        cashflowValues = Array(cashflowLabels.length).fill(0);
+    }
+
     if (cashflowEl) {
-        new ApexCharts(cashflowEl, {
-            chart: {
-                type: 'area',
-                height: 320,
-                fontFamily: 'Inter, -apple-system, sans-serif',
-                background: 'transparent',
-                toolbar: {
-                    show: true,
-                    tools: {
-                        download: '<i class="ri-download-2-line" style="font-size:16px"></i>',
-                        selection: false,
-                        zoom: false,
-                        zoomin: false,
-                        zoomout: false,
-                        pan: false,
-                        reset: false
+        try {
+            var cashflowChartInstance = new ApexCharts(cashflowEl, {
+                chart: {
+                    type: 'area',
+                    height: 320,
+                    fontFamily: '"Inter", sans-serif',
+                    background: 'transparent',
+                    toolbar: { show: false },
+                    animations: { enabled: true, easing: 'easeinout', speed: 800 }
+                },
+                colors: ['#7367f0'],
+                dataLabels: { enabled: false },
+                states: { hover: { filter: { type: 'none' } }, active: { filter: { type: 'none' } } },
+                stroke: { curve: 'smooth', width: 3, lineCap: 'round' },
+                fill: {
+                    type: 'gradient',
+                    gradient: {
+                        shade: isDark ? 'dark' : 'light',
+                        type: 'vertical',
+                        shadeIntensity: 0.3,
+                        opacityFrom: isDark ? 0.25 : 0.4,
+                        opacityTo: 0.02,
+                        stops: [0, 95, 100]
                     }
                 },
-                animations: { enabled: true, easing: 'easeinout', speed: 800 }
-            },
-            colors: ['#7367f0'],
-            dataLabels: { enabled: false },
-            stroke: { curve: 'smooth', width: 3, lineCap: 'round' },
-            fill: {
-                type: 'gradient',
-                gradient: {
-                    shade: isDark ? 'dark' : 'light',
-                    type: 'vertical',
-                    shadeIntensity: 0.3,
-                    opacityFrom: isDark ? 0.25 : 0.4,
-                    opacityTo: 0.02,
-                    stops: [0, 95, 100]
+                series: [{ name: 'Nilai', data: cashflowValues }],
+                xaxis: {
+                    categories: cashflowLabels,
+                    labels: { style: { colors: labelColor, fontSize: '13px' } },
+                    axisBorder: { show: false },
+                    axisTicks: { show: false }
+                },
+                yaxis: {
+                    labels: {
+                        style: { colors: labelColor, fontSize: '13px' },
+                        formatter: function (val) { return 'Rp ' + Math.round(val).toLocaleString('id-ID'); }
+                    }
+                },
+                tooltip: {
+                    theme: isDark ? 'dark' : 'light',
+                    y: { formatter: function (val) { return 'Rp ' + Math.round(val).toLocaleString('id-ID'); } }
+                },
+                markers: {
+                    size: 5,
+                    hover: { size: 7, sizeOffset: 2 },
+                    strokeWidth: 2,
+                    strokeColors: isDark ? '#2b2c40' : '#fff'
+                },
+                grid: {
+                    borderColor: gridColor,
+                    strokeDashArray: 4,
+                    padding: { top: -10, left: 10, right: 10, bottom: 0 }
                 }
-            },
-            series: [{ name: 'Nilai', data: cashflowValues }],
-            xaxis: {
-                categories: cashflowLabels,
-                labels: { style: { colors: labelColor, fontSize: '13px' } },
-                axisBorder: { show: false },
-                axisTicks: { show: false }
-            },
-            yaxis: {
-                labels: {
-                    style: { colors: labelColor, fontSize: '13px' },
-                    formatter: function (val) { return 'Rp ' + Math.round(val).toLocaleString('id-ID'); }
-                }
-            },
-            tooltip: {
-                theme: isDark ? 'dark' : 'light',
-                y: { formatter: function (val) { return 'Rp ' + Math.round(val).toLocaleString('id-ID'); } }
-            },
-            markers: {
-                size: 5,
-                hover: { size: 7, sizeOffset: 2 },
-                strokeWidth: 2,
-                strokeColors: isDark ? '#2b2c40' : '#fff'
-            },
-            grid: {
-                borderColor: gridColor,
-                strokeDashArray: 4,
-                padding: { top: -10, left: 10, right: 10, bottom: 0 }
-            }
-        }).render();
+            });
+            cashflowChartInstance.render();
+            window.__cashflowChart = cashflowChartInstance;
+        } catch (e) {
+            console.error('CashflowChart error:', e);
+        }
     }
 
     var statusEl = document.querySelector('#statusChart');
     var statusLabels = {{ status_chart_labels|safe }};
     var statusValues = {{ status_chart_values|safe }};
     if (statusEl) {
-        if (!statusValues.length) {
-            statusLabels = ['Tidak Ada Data'];
-            statusValues = [1];
+        // Placeholder visual when empty
+        var statusTotalData = Array.isArray(statusValues) ? statusValues.reduce(function(a, b) { return a + b; }, 0) : 0;
+        if (!statusLabels || !Array.isArray(statusLabels) || statusLabels.length === 0) {
+            statusLabels = ['Belum ada data'];
         }
-        new ApexCharts(statusEl, {
-            chart: {
-                type: 'donut',
-                height: 260,
-                fontFamily: 'Inter, -apple-system, sans-serif',
-                background: 'transparent',
-                animations: { enabled: true, easing: 'easeinout', speed: 800 }
-            },
-            labels: statusLabels,
-            series: statusValues,
-            colors: ['#7367f0', '#28c76f', '#ff9f43', '#ea5455'],
-            dataLabels: { enabled: false },
-            stroke: { width: 2, colors: [isDark ? '#2b2c40' : '#fff'] },
-            plotOptions: {
-                pie: {
-                    donut: {
-                        size: '60%',
-                        labels: {
-                            show: true,
-                            name: { show: true, fontSize: '13px', color: labelColor },
-                            value: {
+        if (statusTotalData === 0) {
+            statusValues = [1];
+            statusLabels = ["Belum ada data"];
+        }
+        try {
+            var statusChartInstance = new ApexCharts(statusEl, {
+                chart: {
+                    type: 'donut',
+                    height: 280, parentHeightOffset: 0,
+                    fontFamily: '"Inter", sans-serif',
+                    background: 'transparent',
+                    toolbar: { show: false },
+                    animations: { enabled: true, easing: 'easeinout', speed: 800 }
+                },
+                labels: statusLabels,
+                series: statusTotalData > 0 ? statusValues : [1],
+                colors: statusTotalData > 0 ? ['#7367f0', '#28c76f', '#ff9f43', '#ea5455'] : ['#e9ecef'],
+                dataLabels: { enabled: false },
+                states: { hover: { filter: { type: 'none' } }, active: { filter: { type: 'none' } } },
+                stroke: { width: 3, lineCap: 'round', colors: [cardBgColor] },
+                plotOptions: {
+                    pie: { endAngle: 130, startAngle: -130, customScale: 0.9,
+                        donut: {
+                            size: '83%',
+                            labels: {
                                 show: true,
-                                fontSize: '18px',
-                                fontWeight: 700,
-                                color: isDark ? '#fff' : '#333'
-                            },
-                            total: {
-                                show: true,
-                                label: 'Total',
-                                color: labelColor,
-                                formatter: function (w) {
-                                    return w.globals.seriesTotals.reduce(function (a, b) { return a + b; }, 0);
+                                name: { show: true, offsetY: 25, fontSize: '0.9375rem', fontFamily: 'Inter', color: labelColor },
+                                value: {
+                                    show: true,
+                                    offsetY: -15,
+                                    fontSize: '1.75rem',
+                                    fontWeight: 500,
+                                    fontFamily: 'Inter',
+                                    color: isDark ? '#d0d2d6' : '#5e5873'
+                                },
+                                total: {
+                                    show: true,
+                                    label: 'Total',
+                                    fontSize: '0.9375rem',
+                                    fontFamily: 'Inter',
+                                    color: labelColor,
+                                    formatter: function (w) {
+                                        var t = w.globals.seriesTotals.reduce(function (a, b) { return a + b; }, 0);
+                                        return statusTotalData > 0 ? t : 0;
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            },
-            legend: {
-                position: 'bottom',
-                fontSize: '13px',
-                labels: { colors: isDark ? '#ccc' : '#555' },
-                markers: { size: 6, strokeWidth: 0, offsetX: -3 },
-                itemMargin: { horizontal: 8, vertical: 4 }
-            },
-            tooltip: {
-                theme: isDark ? 'dark' : 'light',
-                y: { formatter: function (val) { return val + ' mutasi'; } }
-            }
-        }).render();
+                },
+                legend: {
+                    position: 'bottom',
+                    fontFamily: 'Inter',
+                    fontSize: '15px',
+                    markers: { offsetX: -3, height: 10, width: 10 },
+                    itemMargin: { horizontal: 24, vertical: 8 },
+                    offsetY: -10,
+                    labels: { colors: labelColor }
+                },
+                tooltip: {
+                    enabled: statusTotalData > 0,
+                    theme: isDark ? 'dark' : 'light',
+                    y: { formatter: function (val) { return val + ' mutasi'; } }
+                },
+                responsive: [{
+                    breakpoint: 480,
+                    options: { chart: { height: 240 } }
+                }]
+            });
+            statusChartInstance.render();
+            window.__statusChart = statusChartInstance;
+        } catch (e) {
+            console.error('StatusChart error:', e);
+        }
     }
 });
 </script>

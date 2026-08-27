@@ -17,4 +17,5 @@ class PermissionManagementConfig(AppConfig):
     verbose_name = 'Permission Management'
 
     def ready(self):
+        import apps.permission_management.signals  # lazy import
         post_migrate.connect(auto_seed_permissions_first_run, sender=self)

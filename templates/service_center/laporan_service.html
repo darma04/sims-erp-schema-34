@@ -4,6 +4,7 @@
 {% block title %}Laporan Service{% endblock %}
 {% block vendor_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'vendor/libs/apex-charts/apex-charts.css' %}" /><link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" /><link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />{% endblock %}
 {% block vendor_js %}{{ block.super }}<script src="{% static 'vendor/libs/apex-charts/apexcharts.js' %}"></script><script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
 <script src="{% static 'js/export_utils.js' %}"></script>{% endblock %}
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
@@ -11,39 +12,92 @@
         <div><h4 class="mb-1"><i class="ri-bar-chart-box-line me-2"></i>Laporan Service</h4><p class="text-muted mb-0">Analisis dan laporan operasional service center</p></div>
     </div>
 
-    <!-- Filter Tanggal -->
     <div class="card mb-4">
         <div class="card-body">
-            <form method="get" class="row g-3 align-items-end">
-                <div class="col-md-3"><label class="form-label">Dari Tanggal</label><input type="date" name="start_date" class="form-control" value="{{ start_date }}"></div>
-                <div class="col-md-3"><label class="form-label">Sampai Tanggal</label><input type="date" name="end_date" class="form-control" value="{{ end_date }}"></div>
-                <div class="col-md-3"><button type="submit" class="btn btn-primary w-100"><i class="ri-filter-3-line me-1"></i>Filter</button></div>
-                <div class="col-md-3"><a href="{% url 'service_center:laporan' %}" class="btn btn-label-secondary w-100"><i class="ri-refresh-line me-1"></i>Reset</a></div>
+            <form method="get">
+                <div class="row g-3 align-items-end">
+                    <div class="col-12 col-md">
+                        <label class="form-label">Dari Tanggal</label>
+                        <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
+                    </div>
+                    <div class="col-12 col-md">
+                        <label class="form-label">Sampai Tanggal</label>
+                        <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
+                    </div>
+                </div>
+                <div class="row g-3 mt-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Pilih Kolom</label>
+                        <div class="dropdown">
+                            <button class="btn btn-label-secondary dropdown-toggle w-100" type="button" id="columnFilterDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                                <i class="ri-layout-column-line me-1"></i>Pilih Kolom yang Ditampilkan
+                            </button>
+                            <div class="dropdown-menu p-3" aria-labelledby="columnFilterDropdown" style="min-width:280px">
+                                <h6 class="dropdown-header px-0 mb-2">Kolom Tabel</h6>
+                                <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="0" checked onchange="toggleColumns()"><label class="form-check-label">No. Service</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="1" checked onchange="toggleColumns()"><label class="form-check-label">Pelanggan</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="2" checked onchange="toggleColumns()"><label class="form-check-label">Perangkat</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="3" checked onchange="toggleColumns()"><label class="form-check-label">Status</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="4" checked onchange="toggleColumns()"><label class="form-check-label">Biaya</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="5" checked onchange="toggleColumns()"><label class="form-check-label">Tanggal</label></div>
+                                <div class="dropdown-divider my-2"></div>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-primary flex-fill" onclick="selectAllColumns()">Semua</button>
+                                    <button type="button" class="btn btn-sm btn-label-secondary flex-fill" onclick="deselectAllColumns()">Kosongkan</button>
+                                </div>
+                            </div>
+                        </div>
+                        <small class="text-muted d-block mt-1">Klik untuk memilih kolom</small>
+                    </div>
+                    <div class="col-md-6"></div>
+                    <div class="col-md-3">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary"><i class="ri-filter-3-line me-1"></i>Terapkan Filter</button>
+                            <a href="{% url 'service_center:laporan' %}" class="btn btn-label-secondary"><i class="ri-refresh-line me-1"></i>Reset</a>
+                        </div>
+                    </div>
+                </div>
             </form>
         </div>
     </div>
 
     <!-- Statistik Cards -->
     <div class="row g-6 mb-6">
-        <div class="col-sm-6 col-xl-3"><div class="card h-100"><div class="card-body"><div class="d-flex align-items-center justify-content-between"><div><h6 class="mb-2 text-muted">Total Order</h6><h3 class="mb-0">{{ total_order }}</h3></div><div class="avatar"><div class="avatar-initial bg-label-primary rounded"><i class="ri-file-list-3-line ri-24px"></i></div></div></div></div></div></div>
-        <div class="col-sm-6 col-xl-3"><div class="card h-100"><div class="card-body"><div class="d-flex align-items-center justify-content-between"><div><h6 class="mb-2 text-muted">Selesai</h6><h3 class="mb-0 text-success">{{ total_selesai }}</h3></div><div class="avatar"><div class="avatar-initial bg-label-success rounded"><i class="ri-checkbox-circle-line ri-24px"></i></div></div></div></div></div></div>
-        <div class="col-sm-6 col-xl-3"><div class="card h-100"><div class="card-body"><div class="d-flex align-items-center justify-content-between"><div><h6 class="mb-2 text-muted">Dibatalkan</h6><h3 class="mb-0 text-danger">{{ total_batal }}</h3></div><div class="avatar"><div class="avatar-initial bg-label-danger rounded"><i class="ri-close-circle-line ri-24px"></i></div></div></div></div></div></div>
-        <div class="col-sm-6 col-xl-3"><div class="card h-100"><div class="card-body"><div class="d-flex align-items-center justify-content-between"><div><h6 class="mb-2 text-muted">Total Pendapatan</h6><h3 class="mb-0 text-info">{{ total_pendapatan|rupiah }}</h3></div><div class="avatar"><div class="avatar-initial bg-label-info rounded"><i class="ri-money-dollar-circle-line ri-24px"></i></div></div></div></div></div></div>
+        <div class="col-6 col-md-3 col-lg-3"><div class="card h-100"><div class="card-body"><div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-primary"><i class="ri-file-list-3-line ri-24px"></i></span>
+<div><span class="d-block text-muted small">Total Order</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_order }}</h5></div>
+</div></div></div></div></div>
+        <div class="col-6 col-md-3 col-lg-3"><div class="card h-100"><div class="card-body"><div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-success"><i class="ri-checkbox-circle-line ri-24px"></i></span>
+<div><span class="d-block text-muted small">Selesai</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_selesai }}</h5></div>
+</div></div></div></div></div>
+        <div class="col-6 col-md-3 col-lg-3"><div class="card h-100"><div class="card-body"><div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-danger"><i class="ri-close-circle-line ri-24px"></i></span>
+<div><span class="d-block text-muted small">Dibatalkan</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_batal }}</h5></div>
+</div></div></div></div></div>
+        <div class="col-6 col-md-3 col-lg-3"><div class="card h-100"><div class="card-body"><div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-info"><i class="ri-money-dollar-circle-line ri-24px"></i></span>
+<div><span class="d-block text-muted small">Total Pendapatan</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_pendapatan|rupiah }}</h5></div>
+</div></div></div></div></div>
     </div>
 
     <!-- Charts -->
     <div class="row g-6 mb-6">
         <div class="col-lg-8">
-            <div class="card h-100"><div class="card-header"><h5 class="mb-0">Tren Order & Pendapatan</h5></div><div class="card-body"><div id="trenChart" style="min-height:320px"></div></div></div>
+            <div class="card h-100"><div class="card-header d-flex flex-nowrap align-items-center justify-content-between"><h5 class="card-title mb-0 me-2 fs-card-title"><i class="ri-line-chart-line me-2"></i>Tren Order & Pendapatan</h5><div class="dropdown flex-shrink-0"><button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button><div class="dropdown-menu dropdown-menu-end"><a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a></div></div></div><div class="card-body"><div id="trenChart" style="min-height:320px"></div></div></div>
         </div>
         <div class="col-lg-4">
-            <div class="card h-100"><div class="card-header"><h5 class="mb-0">Distribusi Status</h5></div><div class="card-body d-flex align-items-center justify-content-center"><div id="statusChart" style="min-height:280px;width:100%"></div></div></div>
+            <div class="card h-100"><div class="card-header d-flex flex-nowrap align-items-center justify-content-between"><h5 class="card-title mb-0 me-2 fs-card-title"><i class="ri-pie-chart-line me-2"></i>Distribusi Status</h5><div class="dropdown flex-shrink-0"><button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button><div class="dropdown-menu dropdown-menu-end"><a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a></div></div></div><div class="card-body pt-2 d-flex flex-column justify-content-center"><div id="statusChart" style="min-height:280px;width:100%"></div></div></div>
         </div>
     </div>
 
     <!-- Tabel Data -->
     <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center"><h5 class="mb-0">Detail Order</h5><div class="d-flex gap-2"><button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button><button class="btn btn-sm btn-label-danger" onclick="exportToPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button></div></div>
+        <div class="card-header d-flex justify-content-between align-items-center"><h5 class="mb-0 fs-card-title">Detail Order</h5><div class="d-flex gap-2"><button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button><button class="btn btn-sm btn-label-danger" onclick="exportToPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button></div></div>
         {% if order_list %}
 
         <div class="card-datatable table-responsive">
@@ -56,7 +110,7 @@
                         <td>{{ order.pelanggan.nama }}</td>
                         <td>{{ order.merek }} {{ order.model_tipe|default:"" }}</td>
                         <td><span class="badge bg-label-{{ order.status_badge_class }}">{{ order.get_status_display }}</span></td>
-                        <td>{{ order.biaya_akhir|rupiah }}</td>
+                        <td class="text-end">{{ order.biaya_akhir|rupiah }}</td>
                         <td>{{ order.tanggal_masuk|date:"d/m/Y" }}</td>
                     </tr>
                     {% endfor %}
@@ -78,7 +132,7 @@
                                 <strong class="d-block text-success" style="font-size: 1rem;">{{ total_pendapatan|rupiah }}</strong>
                                 <small class="text-muted" style="font-size: 0.75rem;">Total Pendapatan</small>
                                 {% if total_dp %}
-                                <br><small class="text-warning" style="font-size: 0.7rem;">DP: {{ total_dp|rupiah }}</small>
+                                <br><small class="text-warning" style="font-size: var(--fs-ui-xxs);">DP: {{ total_dp|rupiah }}</small>
                                 {% endif %}
                             </div>
                         </td>
@@ -123,71 +177,191 @@
 </div>
 {% endblock %}
 {% block page_js %}
-<style>.dataTables_wrapper .dataTables_info{padding:1rem 1.5rem;font-size:.875rem;color:#697a8d}.dataTables_wrapper .dataTables_paginate{padding:1rem 1.5rem}.dataTables_wrapper .dataTables_length,.dataTables_wrapper .dataTables_filter{padding:0 1.5rem 1rem}.dataTables_wrapper .dataTables_filter input{border:1px solid #d9dee3;border-radius:.375rem;padding:.4375rem .875rem}.dataTables_wrapper .dataTables_length select{border:1px solid #d9dee3;border-radius:.375rem;padding:.4375rem 2rem .4375rem .875rem}.dataTables_wrapper .dataTables_paginate .paginate_button{padding:.438rem .875rem;border-radius:.375rem;margin:0 .125rem;border:none;background:transparent;color:#697a8d}.dataTables_wrapper .dataTables_paginate .paginate_button.current{background:#696cff!important;color:white!important;border:none}.dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.disabled){background:rgba(105,108,255,.08)!important;color:#696cff!important;border:none}.card-datatable{padding-bottom:0}</style>
+<style>.dataTables_wrapper .dataTables_info{padding:1rem 1.5rem;font-size:.875rem;color:#697a8d}.dataTables_wrapper .dataTables_paginate{padding:1rem 1.5rem}.dataTables_wrapper .dataTables_length,.dataTables_wrapper .dataTables_filter{padding:0 1.5rem 1rem}.dataTables_wrapper .dataTables_filter input{border:1px solid #d9dee3;border-radius:.375rem;padding:.4375rem .875rem}.dataTables_wrapper .dataTables_length select{border:1px solid #d9dee3;border-radius:.375rem;padding:.4375rem 2rem .4375rem .875rem}.dataTables_wrapper .dataTables_paginate .paginate_button{padding:.438rem .875rem;border-radius:.375rem;margin:0 .125rem;border:none;background:transparent;color:#697a8d}.dataTables_wrapper .dataTables_paginate .paginate_button.current{background:#696cff!important;color:white!important;border:none}.dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.disabled){background:rgba(105,108,255,.08)!important;color:#696cff!important;border:none}.card-datatable{padding-bottom:0}
+@media(max-width:768px){.card-datatable{overflow-x:hidden!important}#laporanTable{min-width:800px!important}}
+</style>
 <script>
-document.addEventListener('DOMContentLoaded',function(){
-    var isDark = (typeof isDarkStyle!=='undefined'&&isDarkStyle) || document.documentElement.classList.contains('dark-style');
+// ════════════════════════════════════════════════
+//  GRAFIK: Tren Order & Pendapatan (Area Chart) +
+//          Distribusi Status (Donut Chart)
+// ════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function () {
+    var isDark = (typeof isDarkStyle !== 'undefined' && isDarkStyle) || document.documentElement.classList.contains('dark-style');
+    var cardBgColor = isDark ? '#283046' : '#fff';
     var labelColor = isDark ? '#b4b5ba' : '#a5a3ae';
-    var borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
-    // Tren Chart (style Penjualan per Cabang)
-    var trenEl=document.getElementById('trenChart');
-    if(trenEl){
-        new ApexCharts(trenEl,{
-            chart:{type:'area',height:320,fontFamily:'Inter, -apple-system, sans-serif',background:'transparent',
-                toolbar:{show:true,tools:{download:'<i class="ri-download-2-line" style="font-size:16px"></i>',selection:false,zoom:false,zoomin:false,zoomout:false,pan:false,reset:false}},
-                animations:{enabled:true,easing:'easeinout',speed:800,dynamicAnimation:{enabled:true,speed:350}},
-                dropShadow:{enabled:true,top:6,left:0,blur:6,opacity:isDark?0.15:0.08,color:['#7367f0','#28c76f']}
-            },
-            colors:['#7367f0','#28c76f'],
-            series:[{name:'Jumlah Order',data:{{ tren_data_json|safe }}},{name:'Pendapatan (Rp)',data:{{ tren_revenue_json|safe }}}],
-            xaxis:{categories:{{ tren_labels_json|safe }},labels:{style:{colors:labelColor,fontSize:'13px',fontWeight:400}},axisBorder:{show:false},axisTicks:{show:false},crosshairs:{stroke:{color:isDark?'#555':'#ddd',dashArray:4}}},
-            yaxis:[{labels:{style:{colors:labelColor,fontSize:'13px'}}},{opposite:true,labels:{style:{colors:labelColor,fontSize:'13px'},formatter:function(v){return 'Rp'+Math.round(v/1000)+'K'}}}],
-            stroke:{curve:'smooth',width:[3,2],lineCap:'round'},
-            fill:{type:'gradient',gradient:{shade:isDark?'dark':'light',type:'vertical',shadeIntensity:0.3,opacityFrom:isDark?0.25:0.4,opacityTo:0.02,stops:[0,95,100]}},
-            grid:{borderColor:borderColor,strokeDashArray:4,padding:{top:-10,left:10,right:10,bottom:0},xaxis:{lines:{show:false}},yaxis:{lines:{show:true}}},
-            tooltip:{theme:isDark?'dark':'light',shared:true,intersect:false,style:{fontSize:'13px'},x:{show:true},y:{formatter:function(val,opts){if(opts.seriesIndex===1)return 'Rp '+val.toLocaleString('id-ID');return val;}},marker:{show:true}},
-            legend:{position:'top',horizontalAlign:'left',fontSize:'13px',fontWeight:500,labels:{colors:isDark?'#ccc':'#555'},markers:{size:5,shape:'circle',strokeWidth:0,offsetX:-3},itemMargin:{horizontal:12,vertical:4}},
-            markers:{size:0,hover:{size:6,sizeOffset:3},strokeWidth:2,strokeColors:isDark?'#2b2c40':'#fff'},
-            dataLabels:{enabled:false},
-            responsive:[{breakpoint:768,options:{chart:{height:280},legend:{fontSize:'11px'},stroke:{width:[2,2]}}}]
-        }).render();
+    var gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+
+    // --- Area Chart: Tren Order & Pendapatan ---
+    var trenLabels = {{ tren_labels_json|safe }};
+    var trenData = {{ tren_data_json|safe }};
+    var trenRevenue = {{ tren_revenue_json|safe }};
+
+    if (!trenLabels || !Array.isArray(trenLabels) || trenLabels.length === 0) {
+        trenLabels = ['H-5', 'H-4', 'H-3', 'H-2', 'H-1', 'Hari Ini'];
     }
-    // Status Donut (style Skor Kesehatan)
-    var statusEl=document.getElementById('statusChart');
-    if(statusEl){
-        var data={{ status_data_json|safe }};
-        if(data.length>0){
-            new ApexCharts(statusEl,{
-                chart:{type:'donut',height:280,fontFamily:'Inter, -apple-system, sans-serif'},
-                labels:{{ status_labels_json|safe }},
-                series:data,
-                colors:['#03c3ec','#ff9f43','#696cff','#ffab00','#28c76f','#8592a3','#ea5455'],
-                stroke:{width:2,colors:[isDark?'#2b2c40':'#fff']},
-                legend:{position:'bottom',fontSize:'13px',fontWeight:500,labels:{colors:labelColor},markers:{size:5,shape:'circle',strokeWidth:0,offsetX:-3},itemMargin:{horizontal:8,vertical:4}},
-                plotOptions:{pie:{donut:{size:'65%',labels:{show:true,name:{fontSize:'14px',fontWeight:600,color:labelColor},value:{fontSize:'22px',fontWeight:700,color:isDark?'#fff':'#2b2c40',formatter:function(val){return val;}},total:{show:true,label:'Total Order',fontSize:'12px',fontWeight:500,color:labelColor,formatter:function(w){return w.globals.seriesTotals.reduce(function(a,b){return a+b;},0);}}}}}},
-                dataLabels:{enabled:false},
-                responsive:[{breakpoint:480,options:{chart:{height:250},legend:{position:'bottom',fontSize:'11px'}}}]
-            }).render();
-        } else {
-            statusEl.innerHTML='<div class="text-center text-muted py-5"><i class="ri-pie-chart-line ri-3x mb-2 d-block"></i>Belum ada data</div>';
+    if (!trenData || !Array.isArray(trenData) || trenData.length === 0) {
+        trenData = Array(trenLabels.length).fill(0);
+    }
+    if (!trenRevenue || !Array.isArray(trenRevenue) || trenRevenue.length === 0) {
+        trenRevenue = Array(trenLabels.length).fill(0);
+    }
+
+    var trenEl = document.querySelector('#trenChart');
+    if (trenEl) {
+        var trenOptions = {
+            chart: {
+                type: 'area', height: 320,
+                fontFamily: '"Inter", sans-serif',
+                background: 'transparent',
+                toolbar: { show: false },
+                animations: { enabled: true, easing: 'easeinout', speed: 800, dynamicAnimation: { enabled: true, speed: 350 } },
+                dropShadow: { enabled: true, top: 6, left: 0, blur: 6, opacity: isDark ? 0.15 : 0.08, color: ['#7367f0', '#28c76f'] }
+            },
+            colors: ['#7367f0', '#28c76f'],
+            series: [
+                { name: 'Jumlah Order', data: trenData },
+                { name: 'Pendapatan (Rp)', data: trenRevenue }
+            ],
+            xaxis: {
+                categories: trenLabels,
+                labels: { style: { colors: labelColor, fontSize: '13px', fontWeight: 400 } },
+                axisBorder: { show: false }, axisTicks: { show: false },
+                crosshairs: { stroke: { color: isDark ? '#555' : '#ddd', dashArray: 4 } }
+            },
+            yaxis: [
+                { labels: { style: { colors: labelColor, fontSize: '13px' } } },
+                { opposite: true, labels: { style: { colors: labelColor, fontSize: '13px' }, formatter: function (v) { return 'Rp' + Math.round(v / 1000) + 'K'; } } }
+            ],
+            stroke: { curve: 'smooth', width: [3, 2], lineCap: 'round' },
+            fill: { type: 'gradient', gradient: { shade: isDark ? 'dark' : 'light', type: 'vertical', shadeIntensity: 0.3, opacityFrom: isDark ? 0.25 : 0.4, opacityTo: 0.02, stops: [0, 95, 100] } },
+            grid: { borderColor: gridColor, strokeDashArray: 4, padding: { top: -10, left: 10, right: 10, bottom: 0 }, xaxis: { lines: { show: false } }, yaxis: { lines: { show: true } } },
+            tooltip: { theme: isDark ? 'dark' : 'light', shared: true, intersect: false, style: { fontSize: '13px' }, x: { show: true }, y: { formatter: function (val, opts) { if (opts.seriesIndex === 1) return 'Rp ' + val.toLocaleString('id-ID'); return val; } }, marker: { show: true } },
+            legend: { position: 'top', horizontalAlign: 'left', fontSize: '13px', fontWeight: 500, labels: { colors: isDark ? '#ccc' : '#555' }, markers: { size: 5, shape: 'circle', strokeWidth: 0, offsetX: -3 }, itemMargin: { horizontal: 12, vertical: 4 } },
+            markers: { size: 0, hover: { size: 6, sizeOffset: 3 }, strokeWidth: 2, strokeColors: isDark ? '#2b2c40' : '#fff' },
+            dataLabels: { enabled: false },
+            responsive: [{ breakpoint: 768, options: { chart: { height: 280 }, legend: { fontSize: '11px' }, stroke: { width: [2, 2] } } }]
+        };
+        try {
+            var trenChart = new ApexCharts(trenEl, trenOptions);
+            trenChart.render();
+            window.__trenLaporanChart = trenChart;
+        } catch (e) {
+            console.error('Gagal merender chart [trenLaporanChart]:', e);
         }
     }
-    // DataTable
+
+    // --- Donut Chart: Distribusi Status ---
+    var jenisLabels = {{ status_labels_json|safe }};
+    var jenisValues = {{ status_data_json|safe }};
+
+    var totalData = Array.isArray(jenisValues) ? jenisValues.reduce(function (a, b) { return a + b; }, 0) : 0;
+    if (!jenisLabels || !Array.isArray(jenisLabels) || jenisLabels.length === 0) {
+        jenisLabels = ['Belum ada data'];
+    }
+    if (totalData === 0) {
+        jenisValues = [1];
+        jenisLabels = ["Belum ada data"];
+    }
+
+    var statusEl = document.querySelector('#statusChart');
+    if (statusEl) {
+        var chartColors = ['#03c3ec', '#ff9f43', '#696cff', '#ffab00', '#28c76f', '#8592a3', '#ea5455'];
+        var donutOptions = {
+            chart: {
+                type: 'donut', height: 280, parentHeightOffset: 0,
+                fontFamily: '"Inter", sans-serif',
+                toolbar: { show: false },
+                animations: { enabled: true, easing: 'easeinout', speed: 800 }
+            },
+            series: totalData > 0 ? jenisValues : [1],
+            labels: jenisLabels,
+            colors: totalData > 0 ? chartColors.slice(0, jenisLabels.length) : ['#e9ecef'],
+            stroke: { width: 3, lineCap: 'round', colors: [cardBgColor] },
+            dataLabels: { enabled: false },
+            states: { hover: { filter: { type: "none" } }, active: { filter: { type: "none" } } },
+            plotOptions: {
+                pie: { endAngle: 130, startAngle: -130, customScale: 0.9,
+                    donut: {
+                        size: '83%',
+                        labels: {
+                            show: true,
+                            name: { show: true, offsetY: 25, fontSize: '0.9375rem', fontFamily: 'Inter', color: labelColor },
+                            value: { show: true, offsetY: -15, fontSize: '1.75rem', fontWeight: 500, fontFamily: 'Inter', color: isDark ? '#d0d2d6' : '#5e5873' },
+                            total: {
+                                show: true, label: 'Total Order',
+                                fontSize: '0.9375rem', fontFamily: 'Inter', color: labelColor,
+                                formatter: function (w) {
+                                    return totalData > 0 ? w.globals.seriesTotals.reduce(function (a, b) { return a + b; }, 0) : 0;
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            legend: { position: 'bottom', fontFamily: 'Inter', fontSize: '15px', labels: { colors: labelColor }, markers: { height: 10, width: 10, shape: 'circle', strokeWidth: 0, offsetX: -3 }, itemMargin: { horizontal: 24, vertical: 8 }, offsetY: -10 },
+            tooltip: {
+                enabled: totalData > 0,
+                theme: isDark ? 'dark' : 'light',
+                y: { formatter: function (val) { return val + ' order'; } }
+            },
+            responsive: [{ breakpoint: 480, options: { chart: { height: 240 }, legend: { position: 'bottom', fontSize: '11px' } } }]
+        };
+        try {
+            var donutChart = new ApexCharts(statusEl, donutOptions);
+            donutChart.render();
+            window.__statusLaporanChart = donutChart;
+        } catch (e) {
+            console.error('Gagal merender chart [statusLaporanChart]:', e);
+        }
+    }
+
+    // --- DataTable ---
     {% if order_list %}
-    {% if order_list %}$('#laporanTable').DataTable({language:{"sLengthMenu":"Tampilkan _MENU_","sSearch":"Cari:","sInfo":"_START_-_END_ dari _TOTAL_","oPaginate":{"sPrevious":"Sebelumnya","sNext":"Selanjutnya"}},order:[[5,'desc']],pageLength:25,dom:'<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'});{% endif %}
+    $('#laporanTable').DataTable({
+        language: {"sLengthMenu":"Tampilkan _MENU_","sSearch":"Cari:","sInfo":"_START_-_END_ dari _TOTAL_","oPaginate":{"sPrevious":"Sebelumnya","sNext":"Selanjutnya"}},
+        responsive: false, order: [[5, 'desc']], pageLength: 25,
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
+    });
     {% endif %}
 });
-    const COMPANY_INFO = {
-        name:    "{{ export_pdf_template.header_nama_perusahaan|default:'' }}",
-        address: "{{ export_pdf_template.header_alamat|default:'' }}",
-        phone:   "{{ export_pdf_template.header_telepon|default:'' }}",
-        email:   "{{ export_pdf_template.header_email|default:'' }}"
-    };
 
-    function exportToExcel() {
-        exportTableToExcel('laporanTable', 'Laporan Service Center', 'Laporan_Service', { skipFirstCol: false, skipLastCol: false });
+// ════════════════════════════════════════════════
+//  FUNGSI GLOBAL (dipanggil dari onclick HTML)
+// ════════════════════════════════════════════════
+function toggleColumns() {
+    {% if order_list %}
+    var dt = $('#laporanTable').DataTable();
+    document.querySelectorAll('.column-checkbox').forEach(function (cb) {
+        dt.column(parseInt(cb.value)).visible(cb.checked);
+    });
+    {% endif %}
+}
+function selectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(function (c) { c.checked = true; }); toggleColumns(); }
+function deselectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(function (c) { c.checked = false; }); toggleColumns(); }
+
+const COMPANY_INFO = {
+    name: "{{ export_pdf_template.header_nama_perusahaan|default:'' }}",
+    address: "{{ export_pdf_template.header_alamat|default:'' }}",
+    phone: "{{ export_pdf_template.header_telepon|default:'' }}",
+    email: "{{ export_pdf_template.header_email|default:'' }}"
+};
+
+function exportToExcel() {
+    var table = document.getElementById('laporanTable');
+    if (!table) { showExportEmpty(); return; }
+    if (table.querySelectorAll('tbody tr').length === 0) {
+        showExportEmpty();
+        return;
     }
-    function exportToPDF() {
-        exportTableToPDF('laporanTable', 'Laporan Service Center', 'Laporan_Service', 'landscape', { skipFirstCol: false, skipLastCol: false });
+    exportTableToExcel('laporanTable', 'Laporan Service Center', 'Laporan_Service', { skipFirstCol: false, skipLastCol: false });
+}
+function exportToPDF() {
+    var table = document.getElementById('laporanTable');
+    if (!table) { showExportEmpty(); return; }
+    if (table.querySelectorAll('tbody tr').length === 0) {
+        showExportEmpty();
+        return;
     }
+    exportTableToPDF('laporanTable', 'Laporan Service Center', 'Laporan_Service', 'landscape', { skipFirstCol: false, skipLastCol: false });
+}
 </script>{% endblock %}

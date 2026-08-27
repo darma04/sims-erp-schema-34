@@ -49,72 +49,56 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
     </div>
 
     <!-- Summary Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-lg-3 col-sm-6">
-            <div class="card">
+    <div class="row g-6 mb-6">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Total Slip Gaji</p>
-                            <h4 class="mb-0">{{ total_slip|default:0 }}</h4>
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-primary"><i class="ri-file-list-3-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Total Slip Gaji</span>
+<h5   class="mb-0 fw-bold fs-value-primary">{{ total_slip|default:0 }}</h5>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-primary rounded p-2">
-                                <i class="ri-file-list-3-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-sm-6">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Sudah Dibayar</p>
-                            <h4 class="mb-0 text-success">{{ total_dibayar|default:0 }}</h4>
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-success"><i class="ri-check-double-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Sudah Dibayar</span>
+<h5   class="mb-0 fw-bold fs-value-primary">{{ total_dibayar|default:0 }}</h5>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-success rounded p-2">
-                                <i class="ri-check-double-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-sm-6">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Sedang Diproses</p>
-                            <h4 class="mb-0 text-warning">{{ total_diproses|default:0 }}</h4>
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-warning"><i class="ri-time-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Sedang Diproses</span>
+<h5   class="mb-0 fw-bold fs-value-primary">{{ total_diproses|default:0 }}</h5>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-warning rounded p-2">
-                                <i class="ri-time-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-sm-6">
-            <div class="card">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="card-info">
-                            <p class="card-text text-muted">Total Pengeluaran</p>
-                            <h4 class="mb-0 text-info">Rp {{ grand_total|floatformat:0|default:"0" }}</h4>
+                    <div class="d-flex align-items-center gap-3">
+<div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-info"><i class="ri-money-dollar-box-line ri-24px"></i></span></div>
+<div class="card-info">
+                            <span class="d-block text-muted small">Total Pengeluaran</span>
+<h5   class="mb-0 fw-bold fs-value-primary">Rp {{ grand_total|floatformat:0|default:"0" }}</h5>
                         </div>
-                        <div class="card-icon">
-                            <span class="badge bg-label-info rounded p-2">
-                                <i class="ri-money-dollar-box-line ri-24px"></i>
-                            </span>
-                        </div>
-                    </div>
+</div>
                 </div>
             </div>
         </div>
@@ -124,7 +108,7 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <label class="form-label">Periode Bulan</label>
                     <select class="form-select" id="bulanFilter">
                         <option value="">Semua Bulan</option>
@@ -142,7 +126,7 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
                         <option value="Desember">Desember</option>
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <label class="form-label">Tahun</label>
                     <select class="form-select" id="tahunFilter">
                         <option value="">Semua Tahun</option>
@@ -151,7 +135,7 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
                         <option value="2024">2024</option>
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <label class="form-label">Status</label>
                     <select class="form-select" id="statusFilter">
                         <option value="">Semua Status</option>
@@ -240,7 +224,7 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
     <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Data Slip Gaji</h5>
+            <h5 class="mb-0 fs-card-title">Data Slip Gaji</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()">
                     <i class="ri-file-excel-2-line me-1"></i>Export Excel
@@ -275,7 +259,11 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
                         <td>
                             <div class="d-flex align-items-center">
                                 <div class="avatar avatar-sm me-2 flex-shrink-0">
+                                    {% if slip.karyawan.foto %}
+                                    <img src="{{ slip.karyawan.foto.url }}" alt="{{ slip.karyawan.nama }}" class="rounded-circle" style="object-fit: cover;">
+                                    {% else %}
                                     <span class="avatar-initial rounded-circle">{{ slip.karyawan.nama|slice:":2"|upper }}</span>
+                                    {% endif %}
                                 </div>
                                 <div>
                                     <strong>{{ slip.karyawan.nama }}</strong>
@@ -401,7 +389,7 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
                 </p>
                 <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
                     {% if can_create.hr %}
-                    <a href="{% url 'hr:penggajian_generate' %}" class="btn btn-primary btn-lg">
+                    <a href="{% url 'hr:penggajian-generate' %}" class="btn btn-primary btn-lg">
                         <i class="ri-calculator-line me-1"></i>Generate Penggajian
                     </a>
                     {% endif %}
@@ -484,7 +472,7 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
     .dataTables_wrapper .dataTables_info {
         padding: 1rem 1.5rem;
         font-size: 0.875rem;
-        color: #697a8d;
+        ;
     }
 
     .dataTables_wrapper .dataTables_paginate {
@@ -539,19 +527,7 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
         justify-content: center !important;
     }
 
-    .avatar-md {
-        width: 40px !important;
-        height: 40px !important;
-    }
 
-    .avatar-md .avatar-initial {
-        width: 40px !important;
-        height: 40px !important;
-    }
-
-    .avatar-md .avatar-initial i {
-        font-size: 1.25rem !important;
-    }
 
     @media (max-width: 768px) {
         .card-datatable {
@@ -652,9 +628,13 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
 
     function exportToExcel() {
         const table = document.getElementById('penggajianTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#penggajianTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         let colCount = 0;
         let visibleColumns = [];
@@ -742,9 +722,13 @@ Tabel: periode, karyawan, gaji pokok, tunjangan, potongan, total.
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('penggajianTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#penggajianTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         const headers = [];
         let visibleColumns = [];

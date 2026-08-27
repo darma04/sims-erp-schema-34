@@ -44,7 +44,7 @@
         <div class="col-md-4 mb-4">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="ri-information-line me-2"></i>Informasi Sparepart</h5>
+                    <h5 class="mb-0 fs-card-title"><i class="ri-information-line me-2"></i>Informasi Sparepart</h5>
                 </div>
                 <div class="card-body">
                     <table class="table table-sm table-borderless mb-0">
@@ -53,7 +53,7 @@
                         <tr><td class="text-muted">Satuan</td><td class="text-end">{{ sparepart.satuan.nama|default:'-' }}</td></tr>
                         <tr><td class="text-muted">Harga Beli</td><td class="text-end text-danger">{{ sparepart.harga_beli|rupiah }}</td></tr>
                         <tr><td class="text-muted">Harga Jual</td><td class="text-end text-success">{{ sparepart.harga_jual|rupiah }}</td></tr>
-                        <tr><td class="text-muted">Margin</td><td class="text-end fw-bold">{% with untung=sparepart.harga_jual|subtract:sparepart.harga_beli %}{% widthratio untung sparepart.harga_beli 100 %}{% endwith %}%</td></tr>
+                        <tr><td class="text-muted">Margin</td><td class="text-end fw-bold">{% widthratio sparepart.harga_jual|add:sparepart.harga_beli|cut:'-' sparepart.harga_beli 100 %}%</td></tr>
                         <tr><td class="text-muted">Status</td><td class="text-end">{% if sparepart.aktif %}<span class="badge bg-label-success">Aktif</span>{% else %}<span class="badge bg-label-secondary">Nonaktif</span>{% endif %}</td></tr>
                     </table>
                 </div>
@@ -61,7 +61,7 @@
 
             <div class="card mt-3">
                 <div class="card-header py-2">
-                    <h6 class="mb-0"><i class="ri-archive-line me-2"></i>Stok di Gudang</h6>
+                    <h6 class="mb-0 fs-card-title"><i class="ri-archive-line me-2"></i>Stok di Gudang</h6>
                 </div>
                 <div class="card-body">
                     {% if stok_list %}
@@ -94,11 +94,11 @@
             {% if sparepart.barcode %}
             <div class="card mt-3">
                 <div class="card-header py-2">
-                    <h6 class="mb-0"><i class="ri-barcode-line me-2"></i>Barcode</h6>
+                    <h6 class="mb-0 fs-card-title"><i class="ri-barcode-line me-2"></i>Barcode</h6>
                 </div>
                 <div class="card-body text-center">
                     <svg id="detailBarcodePreview" class="mb-2"></svg>
-                    <div><code>{{ sparepart.barcode }}</code></div>
+                    <div><code  class="fs-value-secondary">{{ sparepart.barcode }}</code></div>
                 </div>
             </div>
             {% endif %}
@@ -118,8 +118,8 @@
                 
                 <div class="tab-pane fade show active" id="tab-pemakaian" role="tabpanel">
                     <div class="card">
-                        <div class="card-header"><h5 class="mb-0">Riwayat Pemakaian di Service Center</h5></div>
-                        {% if stok_list %}
+                        <div class="card-header"><h5 class="mb-0 fs-card-title">Riwayat Pemakaian di Service Center</h5></div>
+                        {% if riwayat_pemakaian %}
 
                         <div class="card-datatable table-responsive">
                             <table class="table table-hover">
@@ -132,8 +132,8 @@
                                         <td>{{ sp.order_service.pelanggan.nama }}</td>
                                         <td>{{ sp.gudang.nama }}</td>
                                         <td>{{ sp.jumlah }}</td>
-                                        <td>{{ sp.harga_satuan|rupiah }}</td>
-                                        <td class="text-danger fw-medium">{{ sp.subtotal|rupiah }}</td>
+                                        <td class="text-end">{{ sp.harga_satuan|rupiah }}</td>
+                                        <td class="text-danger fw-medium text-end">{{ sp.subtotal|rupiah }}</td>
                                     </tr>
                     {% endfor %}
                                 </tbody>
@@ -158,11 +158,11 @@
 
                                 </div>
 
-                                <h5 class="mb-3">Belum Ada Sparepart</h5>
+                                <h5 class="mb-3">Belum Ada Riwayat Pemakaian</h5>
 
                                 <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
 
-                                    Daftar sparepart masih kosong.
+                                    Belum ada pemakaian sparepart ini di service center.
 
                                 </p>
 
@@ -176,7 +176,7 @@
 
                 <div class="tab-pane fade" id="tab-pembelian" role="tabpanel">
                     <div class="card">
-                        <div class="card-header"><h5 class="mb-0">Riwayat Pembelian (Purchase Order)</h5></div>
+                        <div class="card-header"><h5 class="mb-0 fs-card-title">Riwayat Pembelian (Purchase Order)</h5></div>
                         {% if riwayat_pembelian %}
                         <div class="card-datatable table-responsive">
                             <table class="table table-hover">
@@ -188,8 +188,8 @@
                                         <td>{{ item.purchase_order.tanggal|date:"d M Y" }}</td>
                                         <td>{{ item.purchase_order.supplier.nama }}</td>
                                         <td>{{ item.jumlah }}</td>
-                                        <td>{{ item.harga_satuan|rupiah }}</td>
-                                        <td class="text-danger fw-medium">{{ item.subtotal|rupiah }}</td>
+                                        <td class="text-end">{{ item.harga_satuan|rupiah }}</td>
+                                        <td class="text-danger fw-medium">{% widthratio item.jumlah 1 item.harga_satuan %}</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -216,7 +216,7 @@
 
                 <div class="tab-pane fade" id="tab-penjualan" role="tabpanel">
                     <div class="card">
-                        <div class="card-header"><h5 class="mb-0">Riwayat Penjualan (Sales Order)</h5></div>
+                        <div class="card-header"><h5 class="mb-0 fs-card-title">Riwayat Penjualan (Sales Order)</h5></div>
                         {% if riwayat_penjualan %}
                         <div class="card-datatable table-responsive">
                             <table class="table table-hover">
@@ -228,8 +228,8 @@
                                         <td>{{ item.sales_order.tanggal|date:"d M Y" }}</td>
                                         <td>{{ item.sales_order.customer.nama }}</td>
                                         <td>{{ item.jumlah }}</td>
-                                        <td>{{ item.harga_satuan|rupiah }}</td>
-                                        <td class="text-success fw-medium">{{ item.subtotal|rupiah }}</td>
+                                        <td class="text-end">{{ item.harga_satuan|rupiah }}</td>
+                                        <td class="text-success fw-medium">{% widthratio item.jumlah 1 item.harga_satuan %}</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -256,7 +256,7 @@
 
                 <div class="tab-pane fade" id="tab-pos" role="tabpanel">
                     <div class="card">
-                        <div class="card-header"><h5 class="mb-0">Riwayat Penjualan (POS)</h5></div>
+                        <div class="card-header"><h5 class="mb-0 fs-card-title">Riwayat Penjualan (POS)</h5></div>
                         {% if riwayat_pos %}
                         <div class="card-datatable table-responsive">
                             <table class="table table-hover">
@@ -264,12 +264,12 @@
                                 <tbody>
                                     {% for item in riwayat_pos %}
                                     <tr>
-                                        <td><code>{{ item.transaction.nomor_transaksi }}</code></td>
-                                        <td>{{ item.transaction.tanggal|date:"d M Y" }}</td>
-                                        <td>{{ item.transaction.gudang.nama }}</td>
+                                        <td><code>{{ item.transaksi.nomor_transaksi }}</code></td>
+                                        <td>{{ item.transaksi.tanggal|date:"d M Y" }}</td>
+                                        <td>{{ item.transaksi.gudang.nama }}</td>
                                         <td>{{ item.jumlah }}</td>
-                                        <td>{{ item.harga_satuan|rupiah }}</td>
-                                        <td class="text-success fw-medium">{{ item.subtotal|rupiah }}</td>
+                                        <td class="text-end">{{ item.harga_satuan|rupiah }}</td>
+                                        <td class="text-success fw-medium text-end">{{ item.subtotal|rupiah }}</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -296,7 +296,7 @@
 
                 <div class="tab-pane fade" id="tab-aktivitas" role="tabpanel">
                     <div class="card">
-                        <div class="card-header"><h5 class="mb-0">Riwayat Aktivitas</h5></div>
+                        <div class="card-header"><h5 class="mb-0 fs-card-title">Riwayat Aktivitas</h5></div>
                         {% if activity_logs %}
                         <div class="card-datatable table-responsive">
                             <table class="table table-hover">

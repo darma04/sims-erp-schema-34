@@ -128,55 +128,55 @@
         </div>
     </div>
     <!-- Summary Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-sm-6 col-lg-4">
-            <div class="card">
+    <div class="row g-6 mb-6">
+        <div class="col-lg-4 col-md-4 col-6">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-success"><i class="ri-arrow-up-circle-line ri-24px"></i></span></div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-success"><i class="ri-arrow-up-circle-line ri-24px"></i></span></div>
                         <div>
-                            <h5 class="mb-0 text-success">{{ total_keluaran|rupiah }}</h5>
-                            <small class="text-muted">PPN Keluaran (Penjualan)</small>
+                            <span class="d-block text-muted small">PPN Keluaran (Penjualan)</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_keluaran|rupiah }}</h5>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-lg-4">
-            <div class="card">
+        <div class="col-lg-4 col-md-4 col-6">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-warning"><i class="ri-arrow-down-circle-line ri-24px"></i></span></div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-warning"><i class="ri-arrow-down-circle-line ri-24px"></i></span></div>
                         <div>
-                            <h5 class="mb-0 text-warning">{{ total_masukan|rupiah }}</h5>
-                            <small class="text-muted">PPN Masukan (Pembelian)</small>
+                            <span class="d-block text-muted small">PPN Masukan (Pembelian)</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_masukan|rupiah }}</h5>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-12 col-lg-4">
-            <div class="card">
+        <div class="col-lg-4 col-md-4 col-12">
+            <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar avatar-md me-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar flex-shrink-0">
                             <span class="avatar-initial rounded {% if total_setor > 0 %}bg-label-danger{% else %}bg-label-info{% endif %}">
                                 <i class="{% if total_setor > 0 %}ri-error-warning-line{% else %}ri-refund-2-line{% endif %} ri-24px"></i>
                             </span>
                         </div>
                         <div>
-                            <h5 class="mb-0 {% if total_setor > 0 %}text-danger{% else %}text-info{% endif %}">{{ total_setor|rupiah }}</h5>
-                            <small class="text-muted">{% if total_setor > 0 %}PPN Kurang Bayar (Setor){% else %}PPN Lebih Bayar (Restitusi){% endif %}</small>
+                            <span class="d-block text-muted small">{% if total_setor > 0 %}PPN Kurang Bayar (Setor){% else %}PPN Lebih Bayar (Restitusi){% endif %}</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_setor|rupiah }}</h5>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="card mb-4" id="sec-grafik-ppn"><div class="card-header"><h5 class="mb-0"><i class="ri-bar-chart-2-line me-2"></i>Grafik PPN Bulanan</h5></div><div class="card-body"><div id="ppnChart" style="min-height:300px;"></div></div></div>
+    <div class="card mb-4" id="sec-grafik-ppn"><div class="card-header d-flex flex-nowrap align-items-center justify-content-between"><h5 class="mb-0 me-2 fs-card-title"><i class="ri-bar-chart-2-line me-2"></i>Grafik PPN Bulanan</h5><div class="dropdown flex-shrink-0"><button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button><div class="dropdown-menu dropdown-menu-end"><a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a></div></div></div><div class="card-body"><div id="ppnChart" style="min-height:300px;"></div></div></div>
     <div class="card" id="sec-rekap-ppn">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="ri-list-check me-2"></i>Rekap Bulanan {{ selected_tahun }}</h5>
+            <h5 class="mb-0 fs-card-title"><i class="ri-list-check me-2"></i>Rekap Bulanan {{ selected_tahun }}</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
                 <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
@@ -232,11 +232,11 @@ document.addEventListener('DOMContentLoaded', function () {
     var gridColor  = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
     var labelColor = isDark ? '#b4b5ba' : '#a5a3ae';
     var chartColors = ['#ff9f43','#28c76f','#ea5455'];
-    new ApexCharts(el, {
+    var __rekapPPNChart; try { __rekapPPNChart = new ApexCharts(el, {
         chart: {
             type: 'area', height: 300,
             fontFamily: 'Inter, -apple-system, sans-serif', background: 'transparent',
-            toolbar: { show: true, tools: { download: '<i class="ri-download-2-line" style="font-size:16px"></i>', selection:false,zoom:false,zoomin:false,zoomout:false,pan:false,reset:false } },
+            toolbar: { show: false },
             animations: { enabled:true, easing:'easeinout', speed:800, dynamicAnimation:{enabled:true,speed:350} },
             dropShadow: { enabled:true, top:6, left:0, blur:6, opacity:isDark?0.15:0.08, color:chartColors }
         },
@@ -262,7 +262,7 @@ document.addEventListener('DOMContentLoaded', function () {
         markers: { size:0, hover:{size:6,sizeOffset:3}, strokeWidth:2, strokeColors:isDark?'#2b2c40':'#fff' },
         grid: { borderColor:gridColor, strokeDashArray:4, padding:{top:-10,left:10,right:10,bottom:0}, xaxis:{lines:{show:false}}, yaxis:{lines:{show:true}} },
         responsive: [{ breakpoint:768, options:{ chart:{height:240}, legend:{fontSize:'11px'}, stroke:{width:2} } }]
-    }).render();
+    }); __rekapPPNChart.render(); window.__rekapPPNChart = __rekapPPNChart; } catch(e) { console.error('Gagal merender chart PPN:', e); }
 });
 
 
@@ -283,9 +283,13 @@ const PDF_INFO = {
     copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
 };
 
-function exportExcel() {
+function exportToExcel() {
     const tbl = document.getElementById('rekapTable');
-    if (!tbl) { alert('Tabel tidak ditemukan!'); return; }
+    if (!tbl) { showExportEmpty(); return; }
+    if (!tbl.querySelector('tbody tr') || tbl.querySelectorAll('tbody tr').length === 0) {
+        showExportEmpty();
+        return;
+    }
     
     let visibleColumns = [];
     const firstRow = tbl.querySelector('thead tr');
@@ -352,11 +356,15 @@ function exportExcel() {
     link.click();
 }
 
-function exportPDF() {
+function exportToPDF() {
     if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
     
     const tbl = document.getElementById('rekapTable');
-    if (!tbl) { alert('Tabel tidak ditemukan!'); return; }
+    if (!tbl) { showExportEmpty(); return; }
+    if (!tbl.querySelector('tbody tr') || tbl.querySelectorAll('tbody tr').length === 0) {
+        showExportEmpty();
+        return;
+    }
     
     const headers = [];
     let visibleColumns = [];
@@ -466,7 +474,7 @@ function exportPDF() {
 function toggleColumns() {
     var checkboxes = document.querySelectorAll('.column-checkbox');
     var table = document.getElementById('rekapTable');
-    if (!table) return;
+    if (!table) { showExportEmpty(); return; }
     checkboxes.forEach(function(cb) {
         var colIdx = parseInt(cb.value);
         var rows = table.querySelectorAll('tr');

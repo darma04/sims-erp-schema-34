@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, ProtectedError, Q, Sum
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
@@ -213,8 +213,14 @@ class KasBankAccountDeleteView(DeletePermissionMixin, DeleteView):
                 {"success": False, "message": "Akun tidak dapat dihapus karena sudah memiliki mutasi."},
                 status=400,
             )
-        self.object.delete()
-        return JsonResponse({"success": True, "message": "Akun Kas/Bank berhasil dihapus."})
+        try:
+            self.object.delete()
+            return JsonResponse({"success": True, "message": "Akun Kas/Bank berhasil dihapus."})
+        except ProtectedError:
+            return JsonResponse({
+                "success": False,
+                "message": "Akun tidak dapat dihapus karena masih memiliki relasi dengan data lain."
+            }, status=400)
 
 
 class KasBankTransactionListView(ReadPermissionMixin, ListView):
@@ -303,9 +309,14 @@ class KasBankTransactionDetailView(ReadPermissionMixin, DetailView):
         tx = self.object
         # Baris jurnal terkait (untuk audit trail)
         if tx.jurnal_entry_id:
-            context["jurnal_lines"] = tx.jurnal_entry.lines.select_related("akun").all()
+            jurnal_lines = tx.jurnal_entry.lines.select_related("akun").all()
+            context["jurnal_lines"] = jurnal_lines
+            context["total_debit"] = _sum_decimal(jurnal_lines, "debit")
+            context["total_kredit"] = _sum_decimal(jurnal_lines, "kredit")
         else:
             context["jurnal_lines"] = []
+            context["total_debit"] = Decimal("0")
+            context["total_kredit"] = Decimal("0")
         # Mutasi terkait (jika sumber adalah transfer, tampilkan pasangan mutasi)
         if tx.sumber_app == "kas_bank" and tx.sumber_model == "KasBankTransfer" and tx.sumber_id:
             context["related_transactions"] = KasBankTransaction.objects.filter(
@@ -585,12 +596,19 @@ class KasBankReconciliationDetailView(ReadPermissionMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))
-        context["transactions"] = KasBankTransaction.objects.filter(
+        base_qs = KasBankTransaction.objects.filter(
             akun_kas_bank=self.object.akun_kas_bank,
             status="posted",
             tanggal__date__gte=self.object.tanggal_mulai,
             tanggal__date__lte=self.object.tanggal_akhir,
-        ).order_by("-tanggal", "-id")[:50]
+        )
+        context["total_masuk"] = _sum_decimal(
+            base_qs.filter(tipe__in=["masuk", "transfer_masuk", "penyesuaian_masuk"]), "jumlah"
+        )
+        context["total_keluar"] = _sum_decimal(
+            base_qs.filter(tipe__in=["keluar", "transfer_keluar", "penyesuaian_keluar"]), "jumlah"
+        )
+        context["transactions"] = base_qs.order_by("-tanggal", "-id")[:50]
         return context
 
 
@@ -620,5 +638,11 @@ class KasBankReconciliationDeleteView(DeletePermissionMixin, DeleteView):
 
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
-        self.object.delete()
-        return JsonResponse({"success": True, "message": "Rekonsiliasi Kas/Bank berhasil dihapus."})
+        try:
+            self.object.delete()
+            return JsonResponse({"success": True, "message": "Rekonsiliasi Kas/Bank berhasil dihapus."})
+        except ProtectedError:
+            return JsonResponse({
+                "success": False,
+                "message": "Data tidak dapat dihapus karena masih memiliki relasi dengan data lain."
+            }, status=400)

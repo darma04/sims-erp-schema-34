@@ -140,7 +140,7 @@ Fitur: tambah user, edit, hapus, ubah status.
 
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Daftar Pengguna</h5>
+            <h5 class="mb-0 fs-card-title">Daftar Pengguna</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i
                         class="ri-file-excel-2-line me-1"></i>Export Excel</button>
@@ -169,9 +169,13 @@ Fitur: tambah user, edit, hapus, ubah status.
                         <td>
                             <div class="d-flex align-items-center">
                                 <div class="avatar avatar-sm me-2">
+                                    {% if user.profile.avatar %}
+                                    <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}" class="rounded-circle" style="object-fit: cover;">
+                                    {% else %}
                                     <span class="avatar-initial rounded-circle bg-label-primary">
-                                        <i class="ri-user-line"></i>
+                                        {{ user.username|first|upper }}
                                     </span>
+                                    {% endif %}
                                 </div>
                                 <strong>{{ user.username }}</strong>
                             </div>
@@ -216,7 +220,7 @@ Fitur: tambah user, edit, hapus, ubah status.
                                     {% if can_edit.user_management %}
                                     <a class="dropdown-item" href="{% url 'user_management:user_edit' user.pk %}"><i
                                             class="ri-edit-line me-2"></i>Edit User</a>
-                                    <a class="dropdown-item" href="#" onclick="toggleUserStatus({{ user.pk }})"><i
+                                    <a class="dropdown-item" href="#" onclick="toggleUserStatus({{ user.pk }}); return false;"><i
                                             class="ri-toggle-line me-2"></i>Toggle Status</a>
                                     {% endif %}
                                     {% if can_edit.user_management and can_delete.user_management %}
@@ -325,7 +329,7 @@ Fitur: tambah user, edit, hapus, ubah status.
     .dataTables_wrapper .dataTables_info {
         padding: 1rem 1.5rem;
         font-size: 0.875rem;
-        color: #697a8d
+        
     }
 
     .dataTables_wrapper .dataTables_paginate {
@@ -486,9 +490,13 @@ Fitur: tambah user, edit, hapus, ubah status.
 
     function exportToExcel() {
         const table = document.getElementById('userTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#userTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         let colCount = 0;
         let visibleColumns = [];
@@ -576,9 +584,13 @@ Fitur: tambah user, edit, hapus, ubah status.
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('userTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#userTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         const headers = [];
         let visibleColumns = [];

@@ -54,6 +54,7 @@ from django.contrib import messages
 from django.db.models import Sum, Q
 from decimal import Decimal
 from django.utils import timezone
+import json
 
 from apps.pajak.models import SettingPajak, FakturPajak
 from apps.pajak.forms import SettingPajakForm, FakturPajakForm
@@ -229,10 +230,10 @@ class RekapPPNView(ReadPermissionMixin, TemplateView):
         context['total_keluaran'] = total_keluaran_tahun
         context['total_setor'] = total_keluaran_tahun - total_masukan_tahun
 
-        context['chart_labels'] = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
-        context['chart_masukan'] = chart_masukan
-        context['chart_keluaran'] = chart_keluaran
-        context['chart_setor'] = chart_setor
+        context['chart_labels'] = json.dumps(['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'])
+        context['chart_masukan'] = json.dumps(chart_masukan)
+        context['chart_keluaran'] = json.dumps(chart_keluaran)
+        context['chart_setor'] = json.dumps(chart_setor)
 
         return context
 
@@ -498,4 +499,25 @@ class PembayaranPPNDetailView(ReadPermissionMixin, DetailView):
             context['jurnal_lines'] = self.object.jurnal.lines.select_related('akun').all()
         else:
             context['jurnal_lines'] = []
+
+        # Agregat ringkasan untuk baris footer tabel detail
+        agg_keluar = context['faktur_keluaran'].aggregate(
+            total_dpp=Sum('dpp'), total_ppn=Sum('ppn'),
+        )
+        agg_masuk = context['faktur_masukan'].aggregate(
+            total_dpp=Sum('dpp'), total_ppn=Sum('ppn'),
+        )
+        context['total_dpp_keluar'] = agg_keluar['total_dpp'] or 0
+        context['total_ppn_keluar'] = agg_keluar['total_ppn'] or 0
+        context['total_dpp_masuk'] = agg_masuk['total_dpp'] or 0
+        context['total_ppn_masuk'] = agg_masuk['total_ppn'] or 0
+        if self.object.jurnal:
+            agg_jurnal = self.object.jurnal.lines.aggregate(
+                total_debit=Sum('debit'), total_kredit=Sum('kredit'),
+            )
+            context['total_debit_jurnal'] = agg_jurnal['total_debit'] or 0
+            context['total_kredit_jurnal'] = agg_jurnal['total_kredit'] or 0
+        else:
+            context['total_debit_jurnal'] = 0
+            context['total_kredit_jurnal'] = 0
         return context

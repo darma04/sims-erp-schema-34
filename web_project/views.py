@@ -8,10 +8,11 @@
  - custom_error_403() → Halaman "Tidak Punya Akses" (403)
  - custom_error_400() → Halaman "Bad Request" (400)
  - custom_error_500() → Halaman "Server Error" (500)
+ - custom_error_401() → Halaman "Tidak Terotentikasi" (401)
  - SystemView        → View generik untuk halaman sistem
 
  Semua error handler menggunakan layout_blank.html (tanpa sidebar).
- Didaftarkan di config/urls.py: handler404, handler403, handler400, handler500
+ Didaftarkan di config/urls.py: handler404, handler403, handler400, handler500, handler401
 
  Terhubung dengan:
  - config/urls.py → Registrasi error handler
@@ -83,3 +84,13 @@ def custom_error_500(request):
         "style": request.COOKIES.get("style", "light"),
     }
     return render(request, "pages_misc_server_error.html", context, status=500)
+
+
+def custom_error_401(request, exception=None):
+    """Handler untuk error 401 - Unauthorized"""
+    context = {
+        "layout_path": "layout/layout_blank.html",
+        "status": 401,
+        "style": request.COOKIES.get("style", "light"),
+    }
+    return render(request, "errors/401.html", context, status=401)

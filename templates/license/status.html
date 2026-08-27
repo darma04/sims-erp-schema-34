@@ -11,7 +11,7 @@
     <div class="col-md-8">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <h5 class="mb-0">
+          <h5 class="mb-0 fs-card-title">
             <i class="ri-shield-keyhole-line me-2"></i>Informasi Lisensi
           </h5>
           {% if config.is_activated and config.validation_cache %}
@@ -31,7 +31,7 @@
               </tr>
               <tr>
                 <td class="text-muted">Hardware ID</td>
-                <td><code style="font-size: 0.8rem;">{{ config.hardware_id|default:"-" }}</code></td>
+                <td><code style="font-size: var(--fs-ui-sm);">{{ config.hardware_id|default:"-" }}</code></td>
               </tr>
               <tr>
                 <td class="text-muted">Nama Produk</td>

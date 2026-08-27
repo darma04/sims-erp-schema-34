@@ -727,6 +727,7 @@ def purchase_order_receive(request, pk):
     3. Panggil po.receive_goods() → tambah stok per item
     4. Log activity
     """
+    from django.http import JsonResponse
     po = get_object_or_404(PurchaseOrder, pk=pk)
     
     if po.status == 'received':

@@ -142,7 +142,7 @@ Tabel: produk, gudang, jumlah stok, satuan.
     <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Daftar Stok Produk per Gudang</h5>
+            <h5 class="mb-0 fs-card-title">Daftar Stok Produk per Gudang</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()">
                     <i class="ri-file-excel-2-line me-1"></i>Export Excel
@@ -199,7 +199,7 @@ Tabel: produk, gudang, jumlah stok, satuan.
                             </div>
                         </td>
                         <td class="text-end py-3 pe-4" style="vertical-align: middle;">
-                            <div class="badge bg-label-primary" style="font-size: 0.9rem; padding: 0.5rem 0.75rem;">
+                            <div class="badge bg-label-primary" style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem;">
                                 <i class="ri-stack-line me-1"></i>
                                 Total: {{ total_stok_jumlah|floatformat:0 }}
                             </div>
@@ -252,7 +252,7 @@ Tabel: produk, gudang, jumlah stok, satuan.
     .dataTables_wrapper .dataTables_info {
         padding: 1rem 1.5rem;
         font-size: 0.875rem;
-        color: #697a8d;
+        ;
     }
 
     .dataTables_wrapper .dataTables_paginate {
@@ -428,9 +428,13 @@ Tabel: produk, gudang, jumlah stok, satuan.
 
     function exportToExcel() {
         const table = document.getElementById('stokTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#stokTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         let colCount = 0;
         let visibleColumns = [];
@@ -526,9 +530,13 @@ Tabel: produk, gudang, jumlah stok, satuan.
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('stokTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#stokTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         const headers = [];
         let visibleColumns = [];

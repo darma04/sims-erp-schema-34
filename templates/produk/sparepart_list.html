@@ -1,5 +1,6 @@
-{% extends 'layout/layout_vertical.html' %}
-{% load static %}`r`n{% load currency_filters %}
+﻿{% extends 'layout/layout_vertical.html' %}
+{% load static %}`r
+{% load currency_filters %}
 
 {% block title %}Daftar Sparepart - ERP{% endblock title %}
 
@@ -16,7 +17,7 @@
 {{ block.super }}
 <script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
 <script src="{% static 'vendor/libs/flatpickr/flatpickr.js' %}"></script>
-<script src="{% static 'vendor/libs/sweetalert2/sweetalert2.js' %}"></script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 <!-- JsBarcode: Library untuk generate gambar barcode (EAN-13, Code128, dll) -->
@@ -169,7 +170,7 @@
     <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Data Sparepart</h5>
+            <h5 class="mb-0 fs-card-title">Data Sparepart</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()">
                     <i class="ri-file-excel-2-line me-1"></i>Export Excel
@@ -237,8 +238,8 @@
                             <span class="text-muted">Tidak ada stok</span>
                             {% endfor %}
                         </td>
-                        <td>{{ produk.harga_beli|rupiah }}</td>
-                        <td>{{ produk.harga_jual|rupiah }}</td>
+                        <td class="text-end">{{ produk.harga_beli|rupiah }}</td>
+                        <td class="text-end">{{ produk.harga_jual|rupiah }}</td>
                         <td>
                             <span class="fw-medium">{{ produk.stok_total|floatformat:0 }}</span>
                             <small class="text-muted">{{ produk.satuan.nama|default:"pcs" }}</small>
@@ -301,7 +302,7 @@
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-success d-flex align-items-center gap-1 mb-2"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
                                     <i class="ri-shopping-cart-line"></i>
                                     <span>{{ total_nilai_beli|rupiah }}</span>
                                 </span>
@@ -311,7 +312,7 @@
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-primary d-flex align-items-center gap-1 mb-2"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
                                     <i class="ri-price-tag-3-line"></i>
                                     <span>{{ total_nilai_jual|rupiah }}</span>
                                 </span>
@@ -321,7 +322,7 @@
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-info d-flex align-items-center gap-1 mb-2"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 100px;">
+                                    style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 100px;">
                                     <i class="ri-stack-line"></i>
                                     <span>{{ total_stok|floatformat:0 }}</span>
                                 </span>
@@ -361,7 +362,7 @@
                 </p>
                 <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
                     {% if can_create.produk %}
-                    <a href="{% url 'produk:sparepart_add' %}" class="btn btn-primary btn-lg">
+                    <a href="{% url 'produk:sparepart_tambah' %}" class="btn btn-primary btn-lg">
                         <i class="ri-add-line me-1"></i>Tambah Sparepart
                     </a>
                     {% endif %}
@@ -498,7 +499,7 @@
     .dataTables_wrapper .dataTables_info {
         padding: 1rem 1.5rem;
         font-size: 0.875rem;
-        color: #697a8d;
+        ;
     }
 
     .dataTables_wrapper .dataTables_paginate {
@@ -586,7 +587,7 @@
 
         /* Make badges slightly smaller on mobile */
         .datatables-produk tfoot .badge {
-            font-size: 0.8rem !important;
+            font-size: var(--fs-ui-sm) !important;
             min-width: 100px !important;
         }
 
@@ -733,9 +734,13 @@
 
     function exportToExcel() {
         const table = document.getElementById('produkTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#produkTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         let colCount = 0;
         let visibleColumns = [];
@@ -835,9 +840,13 @@
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('produkTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#produkTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         const headers = [];
         let visibleColumns = [];
@@ -1128,7 +1137,7 @@ function saveBarcodeToProduct(btn) {
     var barcodeValue = document.getElementById('bcInputKode').value.trim();
     var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
     if (!csrfEl) {
-        Swal.fire({ icon: 'error', title: 'Error', text: 'CSRF token tidak ditemukan. Refresh halaman.' });
+        //Swal.fire({ icon: 'error', title: 'Error', text: 'CSRF token tidak ditemukan. Refresh halaman.' });
         return;
     }
     var csrftoken = csrfEl.value;
@@ -1149,31 +1158,15 @@ function saveBarcodeToProduct(btn) {
         btn.disabled = false;
         btn.innerHTML = originalText;
         if (data.success) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Berhasil!',
-                text: data.message,
-                timer: 2000,
-                showConfirmButton: false
-            });
+            alert('Barcode berhasil disimpan!');
         } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Gagal',
-                text: data.message,
-                confirmButtonColor: '#696cff'
-            });
+            alert('Gagal: ' + (data.message || 'Terjadi kesalahan.'));
         }
     })
     .catch(err => {
         btn.disabled = false;
         btn.innerHTML = originalText;
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Gagal menyimpan barcode. Periksa koneksi.',
-            confirmButtonColor: '#696cff'
-        });
+        alert('Gagal menyimpan barcode. Periksa koneksi.');
     });
 }
 

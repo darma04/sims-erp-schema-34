@@ -10,7 +10,6 @@ Fitur: filter, export Excel & PDF, delete modal.
 {% load static %}
 {% load currency_filters %}
 
-
 {% block title %}Transaksi Biaya - Keuangan ERP{% endblock title %}
 
 {% block vendor_css %}
@@ -159,12 +158,12 @@ Fitur: filter, export Excel & PDF, delete modal.
     <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Riwayat Pengeluaran</h5>
+            <h5 class="mb-0 fs-card-title">Riwayat Pengeluaran</h5>
             <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-label-success" onclick="exportToExcel()">
+                <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcel()">
                     <i class="ri-file-excel-2-line me-1"></i>Export Excel
                 </button>
-                <button class="btn btn-sm btn-label-danger" onclick="exportToPDF()">
+                <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDF()">
                     <i class="ri-file-pdf-line me-1"></i>Export PDF
                 </button>
             </div>
@@ -172,7 +171,7 @@ Fitur: filter, export Excel & PDF, delete modal.
         {% if transaksi_list %}
 
         <div class="card-datatable table-responsive">
-            <table class="datatables-biaya table table-hover" id="biayaTable">
+            <table class="datatables-biaya accounting-data-table table table-hover" id="biayaTable" data-accounting-primary="true" data-export-title="Transaksi Biaya" data-export-filename="Transaksi_Biaya" data-search-placeholder="Cari transaksi biaya...">
                 <thead>
                     <tr>
                         <th>No. Transaksi</th>
@@ -184,7 +183,7 @@ Fitur: filter, export Excel & PDF, delete modal.
                         <th>Deskripsi</th>
                         <th>Dicatat Oleh</th>
                         <th>Status</th>
-                        <th>Aksi</th>
+                        <th data-action-icon="ri-more-2-line">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -212,7 +211,7 @@ Fitur: filter, export Excel & PDF, delete modal.
                             <span class="text-muted">-</span>
                             {% endif %}
                         </td>
-                        <td class="fw-bold text-danger">{{ trx.jumlah|rupiah }}</td>
+                        <td class="fw-bold text-danger text-end">{{ trx.jumlah|rupiah }}</td>
                         <td>
                             {% if trx.metode_pembayaran %}
                             <span class="badge bg-label-primary">{{ trx.metode_pembayaran.nama }}</span>
@@ -295,20 +294,20 @@ Fitur: filter, export Excel & PDF, delete modal.
                             <div class="d-flex align-items-center justify-content-start">
                                 <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
                                 <div class="text-start">
-                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
-                                    <small class="text-muted" style="font-size: 0.75rem;">{{ total_transaksi_biaya }}
+                                    <strong class="d-block">RINGKASAN</strong>
+                                    <small class="text-muted fs-label">{{ total_transaksi_biaya }}
                                         Transaksi Biaya</small>
                                 </div>
                             </div>
                         </td>
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
-                                <span class="badge bg-label-danger d-flex align-items-center gap-1 mb-2"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 120px;">
+                                <span class="badge bg-label-danger d-flex align-items-center gap-1 mb-2 fs-value-secondary"
+                                    style="padding: 0.5rem 0.75rem; min-width: 120px;">
                                     <i class="ri-money-dollar-circle-line"></i>
                                     <span>Rp {{ total_amount_biaya|floatformat:0 }}</span>
                                 </span>
-                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Biaya</small>
+                                <small class="text-muted fw-medium fs-label">Total Biaya</small>
                             </div>
                         </td>
                         <td colspan="5" class="py-3"></td>
@@ -452,134 +451,10 @@ Fitur: filter, export Excel & PDF, delete modal.
 {% endblock content %}
 
 {% block page_js %}
-<style>
-    /* DataTables Custom Styling */
-    .dataTables_wrapper .dataTables_info {
-        padding: 1rem 1.5rem;
-        font-size: 0.875rem;
-        color: #697a8d;
-    }
-
-    .dataTables_wrapper .dataTables_paginate {
-        padding: 1rem 1.5rem;
-    }
-
-    .dataTables_wrapper .dataTables_length,
-    .dataTables_wrapper .dataTables_filter {
-        padding: 0 1.5rem 1rem 1.5rem;
-    }
-
-    .dataTables_wrapper .dataTables_filter input {
-        border: 1px solid #d9dee3;
-        border-radius: 0.375rem;
-        padding: 0.4375rem 0.875rem;
-    }
-
-    .dataTables_wrapper .dataTables_length select {
-        border: 1px solid #d9dee3;
-        border-radius: 0.375rem;
-        padding: 0.4375rem 2rem 0.4375rem 0.875rem;
-    }
-
-    .dataTables_wrapper .dataTables_paginate .paginate_button {
-        padding: 0.438rem 0.875rem;
-        border-radius: 0.375rem;
-        margin: 0 0.125rem;
-        border: none;
-        background: transparent;
-        color: #697a8d;
-    }
-
-    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
-        background: #696cff !important;
-        color: white !important;
-        border: none;
-    }
-
-    .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.disabled) {
-        background: rgba(105, 108, 255, 0.08) !important;
-        border: none;
-        color: #696cff !important;
-    }
-
-    .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
-        color: #c7cdd4 !important;
-        cursor: not-allowed;
-    }
-
-    .card-datatable {
-        padding-bottom: 0;
-    }
-
-    .datatables-biaya thead th {
-        font-weight: 600;
-        font-size: 0.8125rem;
-        text-transform: none;
-        letter-spacing: 0;
-    }
-
-    /* Mobile Horizontal Scroll */
-    @media (max-width: 768px) {
-        .card-datatable {
-            overflow-x: hidden !important;
-            -webkit-overflow-scrolling: touch;
-            max-width: 100%;
-        }
-
-        .datatables-biaya {
-            min-width: 950px !important;
-            width: 950px !important;
-            table-layout: auto !important;
-        }
-
-        .dataTables_wrapper {
-            overflow-x: hidden !important;
-            max-width: 100% !important;
-        }
-    }
-</style>
-
 <script>
     $(document).ready(function () {
         flatpickr('#startDate', { dateFormat: 'Y-m-d', locale: 'id' });
         flatpickr('#endDate', { dateFormat: 'Y-m-d', locale: 'id' });
-
-        // Inisialisasi DataTable
-        {% if transaksi_list %}
-        {% if kategori_list %}
-        const table = $('#biayaTable').DataTable({
-            language: {
-                "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini",
-                "sProcessing": "Sedang memproses...",
-                "sLengthMenu": "Tampilkan _MENU_ data",
-                "sZeroRecords": "Tidak ditemukan data yang sesuai",
-                "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
-                "sInfoEmpty": "Menampilkan 0 sampai 0 dari 0 data",
-                "sInfoFiltered": "(disaring dari _MAX_ total data)",
-                "sInfoPostFix": "",
-                "sSearch": "Cari:",
-                "sUrl": "",
-                "oPaginate": {
-                    "sFirst": "Pertama",
-                    "sPrevious": "Sebelumnya",
-                    "sNext": "Selanjutnya",
-                    "sLast": "Terakhir"
-                }
-            },
-            order: [[1, 'desc']], // Sort by tanggal desc
-            pageLength: 25,
-            lengthMenu: [[10, 25, 50, 75, 100, -1], ['10', '25', '50', '75', '100', 'Semua']],
-            responsive: false,
-            columnDefs: [
-                { orderable: false, targets: [9] } // Nonaktifkan sort untuk kolom aksi (index 9 setelah tambah kolom Status)
-            ],
-            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-            initComplete: function () {
-                $('.dataTables_filter input').attr('placeholder', 'Cari transaksi biaya...');
-            }
-        });
-        {% endif %}
-        {% endif %}
     });
 
     function applyFilter() {
@@ -594,273 +469,6 @@ Fitur: filter, export Excel & PDF, delete modal.
         window.location.href = '{% url "biaya:transaksi" %}';
     }
 
-    // Toggle visibilitas kolom menggunakan DataTables API
-    function toggleColumns() {
-        const checkboxes = document.querySelectorAll('.column-checkbox');
-        const table = new $.fn.dataTable.Api('#biayaTable');
-        checkboxes.forEach(cb => {
-            const colIdx = parseInt(cb.value);
-            table.column(colIdx).visible(cb.checked);
-        });
-    }
-
-    function selectAllColumns() {
-        document.querySelectorAll('.column-checkbox').forEach(cb => { cb.checked = true; });
-        toggleColumns();
-    }
-
-    function deselectAllColumns() {
-        document.querySelectorAll('.column-checkbox').forEach(cb => { cb.checked = false; });
-        toggleColumns();
-    }
-
-    // Template Data for Independent Headers/Footers
-    const EXCEL_INFO = {
-        name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
-        address: "{{ export_excel_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
-        phone: "{{ export_excel_template.header_telepon|escapejs|default:'No Telp' }}",
-        email: "Email: {{ export_excel_template.header_email|escapejs|default:'email@domain.com' }}",
-        website: "{{ export_excel_template.header_website|escapejs|default:'' }}",
-        copyright: "{{ export_excel_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
-    };
-
-    const PDF_INFO = {
-        name: "{{ export_pdf_template.header_nama_perusahaan|escapejs|default:'Nama Perusahaan' }}",
-        address: "{{ export_pdf_template.header_alamat|escapejs|default:'Alamat Bisnis' }}",
-        phone: "{{ export_pdf_template.header_telepon|escapejs|default:'No Telp' }}",
-        email: "Email: {{ export_pdf_template.header_email|escapejs|default:'email@domain.com' }}",
-        website: "{{ export_pdf_template.header_website|escapejs|default:'' }}",
-        copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
-    };
-
-    // === FOOTER DATA: Explicit summary values per column index ===
-    const FOOTER_DATA = { 4: "Rp {{ total_amount_biaya|floatformat:0|escapejs }}" };
-    const FOOTER_LABEL = 'RINGKASAN';
-
-    function exportToExcel() {
-        const table = document.getElementById('biayaTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
-
-        const tableObj = new $.fn.dataTable.Api('#biayaTable');
-
-        let colCount = 0;
-        let visibleColumns = [];
-
-        tableObj.columns().every(function (index) {
-            const headerNode = this.header();
-            const headerText = headerNode ? headerNode.textContent.trim() : '';
-            if (this.visible() && headerText.toLowerCase() !== 'aksi' && headerText.toLowerCase() !== 'gambar') {
-                visibleColumns.push({ index: index, text: headerText });
-                colCount++;
-            }
-        });
-
-        let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
-        html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
-        html += '<body>';
-
-        // --- ADD EXCEL HEADER (Company Info) ---
-        html += '<table border="0">';
-        if (typeof EXCEL_INFO !== 'undefined') {
-            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
-            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
-            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
-            html += `<tr><td colspan="${colCount}"></td></tr>`; // empty row for spacing
-        }
-        html += '</table>';
-
-        html += '<table border="1">';
-        html += '<thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;">';
-
-        visibleColumns.forEach(col => {
-            html += `<th>${col.text}</th>`;
-        });
-
-        html += '</tr></thead><tbody>';
-
-        tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
-            html += '<tr>';
-            visibleColumns.forEach(col => {
-                let cellNode = tableObj.cell(rowIdx, col.index).node();
-                let text = cellNode ? cellNode.textContent.trim().replace(/\s+/g, ' ') : '';
-                html += `<td>${text}</td>`;
-            });
-            html += '</tr>';
-        });
-
-        // Build summary row from explicit FOOTER_DATA
-        if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
-            html += '<tr style="background-color: #f8f9fa; font-weight: bold;">';
-            let ri = 0;
-            while (ri < visibleColumns.length) {
-                let colIdx = visibleColumns[ri].index;
-                if (FOOTER_DATA[colIdx] !== undefined) {
-                    html += `<td>${FOOTER_DATA[colIdx]}</td>`;
-                    ri++;
-                } else {
-                    let spanCount = 0;
-                    let si = ri;
-                    while (si < visibleColumns.length && FOOTER_DATA[visibleColumns[si].index] === undefined) {
-                        spanCount++;
-                        si++;
-                    }
-                    if (ri === 0) {
-                        html += `<td colspan="${spanCount}">${FOOTER_LABEL}</td>`;
-                    } else {
-                        html += `<td colspan="${spanCount}"></td>`;
-                    }
-                    ri += spanCount;
-                }
-            }
-            html += '</tr>';
-        }
-        html += '</tbody></table>';
-
-        // --- ADD EXCEL FOOTER ---
-        html += '<table border="0">';
-        html += `<tr><td colspan="${colCount}"></td></tr>`;
-        if (typeof EXCEL_INFO !== 'undefined') {
-            html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</td></tr>`;
-            html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">${EXCEL_INFO.copyright}</td></tr>`;
-        }
-        html += '</table></body></html>';
-
-        const BOM = '\uFEFF';
-        const blob = new Blob([BOM + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
-        const link = document.createElement('a');
-        link.setAttribute('href', URL.createObjectURL(blob));
-        link.setAttribute('download', 'Transaksi_Biaya_' + new Date().toISOString().slice(0, 10) + '.xls');
-        link.click();
-    }
-
-    function exportToPDF() {
-        if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
-
-        const table = document.getElementById('biayaTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
-
-        const tableObj = new $.fn.dataTable.Api('#biayaTable');
-
-        const headers = [];
-        let visibleColumns = [];
-
-        tableObj.columns().every(function (index) {
-            const headerNode = this.header();
-            const headerText = headerNode ? headerNode.textContent.trim() : '';
-            if (this.visible() && headerText.toLowerCase() !== 'aksi' && headerText.toLowerCase() !== 'gambar') {
-                headers.push({
-                    text: headerText,
-                    style: 'tableHeader',
-                    fillColor: '#696CFF',
-                    color: '#FFFFFF',
-                    bold: true
-                });
-                visibleColumns.push({ index: index });
-            }
-        });
-
-        const body = [headers];
-
-        tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
-            const row = [];
-            visibleColumns.forEach(col => {
-                let cellNode = tableObj.cell(rowIdx, col.index).node();
-                let text = cellNode ? cellNode.textContent.trim().replace(/\s+/g, ' ') : '';
-                row.push(text);
-            });
-            if (row.length > 0) body.push(row);
-        });
-
-        // Build summary row from explicit FOOTER_DATA
-        if (typeof FOOTER_DATA !== 'undefined' && Object.keys(FOOTER_DATA).length > 0) {
-            const summaryRow = [];
-            let ri = 0;
-            while (ri < visibleColumns.length) {
-                let colIdx = visibleColumns[ri].index;
-                if (FOOTER_DATA[colIdx] !== undefined) {
-                    summaryRow.push({ text: String(FOOTER_DATA[colIdx]), bold: true, fillColor: '#f8f9fa' });
-                    ri++;
-                } else {
-                    let spanCount = 0;
-                    let si = ri;
-                    while (si < visibleColumns.length && FOOTER_DATA[visibleColumns[si].index] === undefined) {
-                        spanCount++;
-                        si++;
-                    }
-                    let labelText = (ri === 0) ? FOOTER_LABEL : '';
-                    summaryRow.push({ text: labelText, colSpan: spanCount, bold: true, fillColor: '#f8f9fa' });
-                    for (let k = 1; k < spanCount; k++) { summaryRow.push({}); }
-                    ri += spanCount;
-                }
-            }
-            if (summaryRow.length > 0) body.push(summaryRow);
-        }
-
-        let companyInfoExists = typeof PDF_INFO !== 'undefined';
-
-        const docDefinition = {
-            pageOrientation: 'landscape',
-            pageMargins: [40, 100, 40, 60],
-            header: function (currentPage) {
-                if (companyInfoExists) {
-                    return {
-                        margin: [40, 20, 40, 10],
-                        columns: [
-                            {
-                                width: '*',
-                                stack: [
-                                    { text: PDF_INFO.name, style: 'companyName' },
-                                    { text: PDF_INFO.address, style: 'companyInfo' },
-                                    { text: PDF_INFO.phone + ' | ' + PDF_INFO.email, style: 'companyInfo' }
-                                ]
-                            },
-                            { width: 'auto', stack: [{ text: 'Halaman ' + currentPage, style: 'pageNumber', alignment: 'right' }] }
-                        ]
-                    };
-                }
-                return { text: 'Halaman ' + currentPage, margin: [40, 20, 40, 10], alignment: 'right', style: 'pageNumber' };
-            },
-            content: [
-                { text: 'DAFTAR TRANSAKSI BIAYA', style: 'documentTitle', margin: [0, 0, 0, 5] },
-                { text: 'Tanggal: ' + new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }), style: 'dateText', margin: [0, 0, 0, 20] },
-                {
-                    table: { headerRows: 1, widths: Array(headers.length).fill('auto'), body: body },
-                    layout: {
-                        fillColor: (rowIndex) => (rowIndex === 0) ? '#696CFF' : ((rowIndex % 2 === 0) ? '#F5F5F9' : null),
-                        hLineWidth: () => 0.5,
-                        vLineWidth: () => 0.5,
-                        hLineColor: () => '#DBDADE',
-                        vLineColor: () => '#DBDADE'
-                    }
-                }
-            ],
-            footer: function (currentPage, pageCount) {
-                if (companyInfoExists) {
-                    return {
-                        margin: [40, 10, 40, 10],
-                        columns: [
-                            { text: 'Dicetak pada: ' + new Date().toLocaleString('id-ID'), style: 'footerText' },
-                            { text: PDF_INFO.copyright, style: 'footerText', alignment: 'right' }
-                        ]
-                    };
-                }
-                return { text: 'Dicetak pada: ' + new Date().toLocaleString('id-ID'), margin: [40, 10, 40, 10], style: 'footerText' };
-            },
-            styles: {
-                companyName: { fontSize: 14, bold: true, color: '#5F61E6' },
-                companyInfo: { fontSize: 9, color: '#697A8D' },
-                pageNumber: { fontSize: 9, color: '#697A8D' },
-                documentTitle: { fontSize: 18, bold: true, color: '#5F61E6' },
-                dateText: { fontSize: 10, color: '#697A8D' },
-                tableHeader: { bold: true, fontSize: 10, color: '#FFFFFF' },
-                footerText: { fontSize: 8, color: '#697A8D' }
-            },
-            defaultStyle: { fontSize: 9 }
-        };
-
-        pdfMake.createPdf(docDefinition).download('Transaksi_Biaya_' + new Date().toISOString().slice(0, 10) + '.pdf');
-    }
-
     function viewDetail(id) {
         window.location.href = `/biaya/transaksi/${id}/`;
     }
@@ -873,9 +481,6 @@ Fitur: filter, export Excel & PDF, delete modal.
         window.open(`/biaya/transaksi/${id}/print/`, '_blank');
     }
 
-    // ═══════════════════════════════════════════════════
-    // APPROVE / REJECT TRANSAKSI BIAYA — AJAX
-    // ═══════════════════════════════════════════════════
     let approveId = null;
     let rejectId = null;
 
@@ -947,7 +552,6 @@ Fitur: filter, export Excel & PDF, delete modal.
         });
     });
 
-    // Tangani Hapus Transaksi Biaya
     let deleteId = null;
 function confirmDelete(id, name) {
     deleteId = id;
@@ -984,20 +588,8 @@ $('#confirmDeleteBtn').on('click', function() {
         }
     });
 });
-
-    function showDeleteError(message) {
-        $('#deleteTransaksiModal').modal('hide');
-        const alertHtml = `
-            <div class="alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3"
-                 style="z-index: 9999; min-width: 300px;" role="alert">
-                <i class="ri-error-warning-line me-2"></i>${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        `;
-        $('body').append(alertHtml);
-        setTimeout(() => {
-            $('.alert-dismissible').alert('close');
-        }, 5000);
-    }
 </script>
+
+{% include 'accounting/partials/table_tools.html' %}
+
 {% endblock page_js %}

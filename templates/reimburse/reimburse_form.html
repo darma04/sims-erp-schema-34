@@ -1,0 +1,198 @@
+﻿{% extends 'layout/layout_vertical.html' %}
+{% comment %}
+==========================================================================
+   REIMBURSE FORM - Form Tambah/Edit Reimburse
+   Formulir untuk membuat atau mengedit pengajuan reimburse.
+   Field: tanggal, keterangan, metode pembayaran, item-item reimburse.
+==========================================================================
+{% endcomment %}
+{% load static %}
+{% load currency_filters %}
+
+{% block title %}{{ title }} - Reimburse ERP{% endblock title %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <h4 class="py-3 mb-4">
+        <span class="text-muted fw-light">Reimburse /</span> {{ title }}
+    </h4>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card mb-4">
+                <h5 class="card-header fs-value-primary">{{ title }}</h5>
+                <div class="card-body">
+
+                    <form method="post" enctype="multipart/form-data" id="reimburse-form">
+                        {% csrf_token %}
+
+                        {% if form.errors or item_formset.errors %}
+                        <div class="alert alert-danger alert-dismissible" role="alert">
+                            <h6 class="alert-heading mb-1"><i class="ri-error-warning-line me-1"></i>Error!</h6>
+                            <ul class="mb-0">
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <li>{{ field.label }}: {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                                {% for error in form.non_field_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                                {% for item_form in item_formset %}
+                                    {% for field in item_form %}
+                                        {% for error in field.errors %}
+                                            <li>Item {{ forloop.parentloop.counter }} - {{ field.label }}: {{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                {% endfor %}
+                                {% for error in item_formset.non_form_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label" for="{{ form.tanggal.id_for_label }}">{{ form.tanggal.label }} <span class="text-danger">*</span></label>
+                                    {{ form.tanggal }}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label" for="{{ form.keterangan.id_for_label }}">{{ form.keterangan.label }} <span class="text-danger">*</span></label>
+                                    {{ form.keterangan }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label" for="{{ form.metode_pembayaran.id_for_label }}">{{ form.metode_pembayaran.label }}</label>
+                                    {{ form.metode_pembayaran }}
+                                    <div class="form-text">Pilih metode pembayaran (opsional)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h5 class="mb-3"><i class="ri-list-check-2 me-2"></i>Item Reimburse</h5>
+
+                        {{ item_formset.management_form }}
+                        <div id="itemsContainer">
+                            {% for item_form in item_formset %}
+                            <div class="formset-row border rounded p-3 mb-3 {% if item_form.DELETE.value %}d-none{% endif %}">
+                                {{ item_form.id }}
+                                <div class="row g-2 g-lg-3">
+                                    <div class="col-12 col-lg-3">
+                                        <label class="form-label mb-1">Kategori <span class="text-danger">*</span></label>
+                                        {{ item_form.kategori }}
+                                    </div>
+                                    <div class="col-12 col-lg-4">
+                                        <label class="form-label mb-1">Deskripsi <span class="text-danger">*</span></label>
+                                        {{ item_form.deskripsi }}
+                                    </div>
+                                    <div class="col-6 col-lg-2">
+                                        <label class="form-label mb-1">Nominal <span class="text-danger">*</span></label>
+                                        {{ item_form.nominal }}
+                                    </div>
+                                    <div class="col-6 col-lg-2">
+                                        <label class="form-label mb-1">Bukti</label>
+                                        {% if item_form.instance.bukti %}
+                                        <small class="d-block text-muted mb-1">{{ item_form.instance.bukti.name|truncatechars:20 }}</small>
+                                        {% endif %}
+                                        {{ item_form.bukti }}
+                                    </div>
+                                    {% if item_formset.can_delete %}
+                                    <div class="col-12 col-lg-1 d-flex align-items-end">
+                                        <button type="button" class="btn btn-danger remove-item w-100" title="Hapus" style="min-height: calc(1.375em + 0.8555rem * 2 - 2px + 2px);">
+                                            <i class="ri-delete-bin-line"></i>
+                                        </button>
+                                        <div style="display:none">{{ item_form.DELETE }}</div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <button type="button" id="addItem" class="btn btn-sm btn-label-primary mt-2">
+                            <i class="ri-add-line me-1"></i>Tambah Item
+                        </button>
+
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <span class="text-muted">Total Reimburse</span>
+                            <h5 class="mb-0">Total: <strong id="totalDisplay">Rp 0</strong></h5>
+                        </div>
+
+                        {% if can_create.reimburse or can_edit.reimburse %}
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="ri-save-line me-1"></i>Simpan
+                            </button>
+                            <a href="{% url 'reimburse:list' %}" class="btn btn-outline-secondary">
+                                <i class="ri-close-line me-1"></i>Batal
+                            </a>
+                        </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block page_js %}
+<script>
+$(document).ready(function() {
+    function updateTotal() {
+        let total = 0;
+        $('.formset-row:not(.d-none) input[id$="-nominal"]').each(function() {
+            const val = parseFloat($(this).val()) || 0;
+            total += val;
+        });
+        $('#totalDisplay').text('Rp ' + total.toLocaleString('id-ID'));
+    }
+
+    updateTotal();
+
+    $(document).on('input', 'input[id$="-nominal"]', updateTotal);
+
+    $(document).on('click', '.remove-item', function() {
+        const row = $(this).closest('.formset-row');
+        const deleteCheckbox = row.find('input[id$="-DELETE"]');
+        if (deleteCheckbox.length) {
+            deleteCheckbox.prop('checked', true);
+            row.hide();
+        } else {
+            row.remove();
+        }
+        updateTotal();
+    });
+
+    $('#addItem').click(function() {
+        const totalForms = $('#id_items-TOTAL_FORMS');
+        const current = parseInt(totalForms.val());
+        const firstRow = $('.formset-row').first();
+        const newRow = firstRow.clone();
+        newRow.find('input, select').each(function() {
+            const name = $(this).attr('name');
+            if (name) {
+                const newName = name.replace(/items-\d+-/, 'items-' + current + '-');
+                $(this).attr('name', newName).attr('id', 'id_' + newName);
+                if ($(this).is('input[type=text], input[type=number]')) $(this).val('');
+                if ($(this).is('select')) $(this).val('');
+            }
+        });
+        newRow.find('input[id$="-DELETE"]').prop('checked', false);
+        newRow.find('input[id$="-id"]').remove();
+        newRow.removeClass('d-none').show();
+        newRow.find('small.text-muted').remove();
+        totalForms.val(current + 1);
+        $('#itemsContainer').append(newRow);
+    });
+});
+</script>
+{% endblock page_js %}

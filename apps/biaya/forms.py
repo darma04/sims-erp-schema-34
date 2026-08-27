@@ -15,6 +15,7 @@
 
 # Import dari framework Django
 from django import forms
+from django.core.validators import FileExtensionValidator
 # Import dari modul internal proyek
 from apps.biaya.models import KategoriBiaya, TransaksiBiaya
 # Import dari modul internal proyek
@@ -60,6 +61,12 @@ class TransaksiBiayaForm(forms.ModelForm):
     - Cabang: pilih gudang/cabang untuk biaya ini
     - Bukti: upload file (foto/PDF) sebagai lampiran
     """
+    bukti = forms.FileField(
+        validators=[FileExtensionValidator(['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'gif', 'webp'])],
+        required=False,
+        widget=forms.FileInput(attrs={'class': 'form-control'}),
+    )
+
     class Meta:
         """Konfigurasi metadata model untuk Django."""
         model = TransaksiBiaya

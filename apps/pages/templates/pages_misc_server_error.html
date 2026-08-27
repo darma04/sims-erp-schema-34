@@ -3,7 +3,7 @@
 {% load static %}
 {% load i18n %}
 
-{% block title %}Server Error - Pages{% endblock title %}
+{% block title %}Kesalahan Server{% endblock title %}
 
 {% block page_css %}
 {{ block.super }}
@@ -14,8 +14,8 @@
 
 <div class="misc-wrapper">
     <h1 class="mb-2 mx-2" style="font-size: 6rem;line-height: 6rem;">500</h1>
-    <h4 class="mb-2">Internal server error 🔐</h4>
-    <p class="mb-3 mx-2">Oops something went wrong.</p>
+    <h4 class="mb-2">Kesalahan Server Internal</h4>
+    <p class="mb-3 mx-2">Mohon maaf, terjadi masalah pada server kami. Tim teknis telah diberitahu.</p>
     <div class="d-flex justify-content-center mt-12">
         <img src="{% static 'img/illustrations/misc-error-object.png' %}" alt="misc-server-error"
             class="img-fluid misc-object d-none d-lg-inline-block" width="160">
@@ -35,7 +35,7 @@
                 class="img-fluid z-1" width="230">
             {% endif %}
             <div>
-                <a href="{% url 'dashboard:index' %}" class="btn btn-primary text-center my-10">Back to home</a>
+                <a href="{% url 'dashboard:index' %}" class="btn btn-primary text-center my-10">Kembali ke Beranda</a>
             </div>
         </div>
     </div>

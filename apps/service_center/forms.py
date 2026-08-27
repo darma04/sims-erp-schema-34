@@ -15,6 +15,7 @@
 """
 
 from django import forms
+from django.core.validators import FileExtensionValidator
 from django.forms import inlineformset_factory
 
 from .models import (
@@ -65,6 +66,12 @@ class KategoriServiceForm(forms.ModelForm):
 
 class JenisServiceForm(forms.ModelForm):
     """Form untuk CRUD jenis layanan service."""
+    foto = forms.ImageField(
+        validators=[FileExtensionValidator(['jpg', 'jpeg', 'png', 'gif', 'webp'])],
+        required=False,
+        widget=forms.ClearableFileInput(attrs={'class': 'form-control'}),
+    )
+
     class Meta:
         model = JenisService
         fields = ['kategori', 'nama', 'deskripsi', 'foto', 'harga_standar', 'estimasi_waktu', 'aktif']
@@ -81,6 +88,12 @@ class JenisServiceForm(forms.ModelForm):
 
 class OrderServiceForm(forms.ModelForm):
     """Form penerimaan unit service baru (intake)."""
+    gambar_perangkat = forms.ImageField(
+        validators=[FileExtensionValidator(['jpg', 'jpeg', 'png', 'gif', 'webp'])],
+        required=False,
+        widget=forms.ClearableFileInput(attrs={'class': 'form-control'}),
+    )
+
     class Meta:
         model = OrderService
         fields = [

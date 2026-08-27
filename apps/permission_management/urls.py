@@ -59,6 +59,9 @@ urlpatterns = [
     # URL: /permission_management/permissions/ajax/<int:pk>/delete/ — ajax_delete
     path('permissions/ajax/<int:pk>/delete/', views.RolePermissionDeleteView.as_view(), name='ajax_delete'),
     
+    # Matrix Permission
+    path('role-permissions/', views.RolePermissionMatrixView.as_view(), name='role_permission_matrix'),
+
     # Legacy full-page forms (fallback)
     path('tambah/', views.RolePermissionCreateView.as_view(), name='create'),
     # URL: /permission_management/<int:pk>/edit/ — edit

@@ -64,7 +64,7 @@
                     <!-- Role Name & Actions -->
                     <div class="d-flex justify-content-between align-items-end">
                         <div class="role-heading">
-                            <h5 class="mb-1">{{ role.name }}</h5>
+                            <h5 class="mb-1 fs-value-primary">{{ role.name }}</h5>
                             <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editRoleModal"
                                 data-role-code="{{ role.code }}" class="role-edit-link">
                                 <small>Edit Role</small>
@@ -239,8 +239,10 @@
                         <td>
                             <div class="d-flex align-items-center">
                                 {% if user.profile.avatar %}
-                                <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}"
-                                    class="rounded-circle me-3" width="38" height="38">
+                                <div class="avatar avatar-sm me-3">
+                                    <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}"
+                                        class="rounded-circle" style="object-fit: cover;">
+                                </div>
                                 {% else %}
                                 <div class="avatar avatar-sm me-3">
                                     <span class="avatar-initial rounded-circle bg-label-primary">
@@ -325,7 +327,7 @@
                 </p>
                 <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
                     {% if can_create.access_control %}
-                    <a href="{% url 'permission_management:role_add' %}" class="btn btn-primary btn-lg">
+                    <a href="{% url 'permission_management:role_create' %}" class="btn btn-primary btn-lg">
                         <i class="ri-add-line me-1"></i>Tambah Role
                     </a>
                     {% endif %}
@@ -430,7 +432,7 @@
     .dataTables_wrapper .dataTables_info {
         padding: 1rem 1.5rem;
         font-size: 0.875rem;
-        color: #697a8d
+        
     }
 
     .dataTables_wrapper .dataTables_paginate {

@@ -34,7 +34,7 @@
         <div class="col-lg-4 col-md-5 mb-4">
             <div class="card h-100">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="ri-list-check me-2"></i>Daftar Pengaturan</h5>
+                    <h5 class="mb-0 fs-card-title"><i class="ri-list-check me-2"></i>Daftar Pengaturan</h5>
                 </div>
                 <div class="card-body p-0">
                     <div class="list-group list-group-flush">
@@ -74,7 +74,7 @@
             {% if pengaturan_aktif %}
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
+                    <h5 class="mb-0 fs-card-title">
                         <i class="ri-checkbox-circle-line text-success me-2"></i>
                         {{ pengaturan_aktif.nama }}
                     </h5>
@@ -90,7 +90,7 @@
                         <div class="col-md-6">
                             <div class="card bg-label-primary h-100">
                                 <div class="card-body">
-                                    <h6 class="card-title"><i class="ri-time-line me-2"></i>Jam Kerja</h6>
+                                    <h6 class="card-title fs-card-title"><i class="ri-time-line me-2"></i>Jam Kerja</h6>
                                     <div class="d-flex justify-content-between mb-2">
                                         <span>Jam Masuk:</span>
                                         <strong>{{ pengaturan_aktif.jam_masuk|time:"H:i" }}</strong>
@@ -111,16 +111,16 @@
                         <div class="col-md-6">
                             <div class="card bg-label-info h-100">
                                 <div class="card-body">
-                                    <h6 class="card-title"><i class="ri-global-line me-2"></i>Zona Waktu & Hari Kerja</h6>
+                                    <h6 class="card-title fs-card-title"><i class="ri-global-line me-2"></i>Zona Waktu & Hari Kerja</h6>
                                     <div class="d-flex justify-content-between mb-2">
                                         <span>Zona Waktu:</span>
-                                        <strong>{{ pengaturan_aktif.get_zona_waktu_display }}</strong>
+                                        <strong  class="fs-value-primary">{{ pengaturan_aktif.get_zona_waktu_display }}</strong>
                                     </div>
                                     <div class="mb-2">
                                         <span>Hari Kerja:</span>
                                         <div class="d-flex flex-wrap gap-2 mt-1">
                                             {% for hari in pengaturan_aktif.hari_kerja_display %}
-                                            <span class="badge bg-primary">{{ hari }}</span>
+                                            <span class="badge bg-primary fs-value-secondary">{{ hari }}</span>
                                             {% endfor %}
                                         </div>
                                     </div>
@@ -132,15 +132,15 @@
                         <div class="col-md-6">
                             <div class="card bg-label-warning h-100">
                                 <div class="card-body">
-                                    <h6 class="card-title"><i class="ri-map-pin-line me-2"></i>Lokasi Kantor</h6>
+                                    <h6 class="card-title fs-card-title"><i class="ri-map-pin-line me-2"></i>Lokasi Kantor</h6>
                                     {% if pengaturan_aktif.nama_lokasi %}
-                                    <p class="mb-1"><strong>{{ pengaturan_aktif.nama_lokasi }}</strong></p>
+                                    <p class="mb-1"><strong  class="fs-value-primary">{{ pengaturan_aktif.nama_lokasi }}</strong></p>
                                     {% endif %}
                                     {% if pengaturan_aktif.alamat_lokasi %}
-                                    <p class="mb-2 text-muted small">{{ pengaturan_aktif.alamat_lokasi }}</p>
+                                    <p class="mb-2 text-muted small fs-value-secondary">{{ pengaturan_aktif.alamat_lokasi }}</p>
                                     {% endif %}
                                     {% if pengaturan_aktif.latitude and pengaturan_aktif.longitude %}
-                                    <small class="text-muted">
+                                    <small class="text-muted fs-value-secondary">
                                         <i class="ri-focus-3-line me-1"></i>
                                         {{ pengaturan_aktif.latitude }}, {{ pengaturan_aktif.longitude }}
                                     </small>
@@ -158,7 +158,7 @@
                         <div class="col-md-6">
                             <div class="card bg-label-success h-100">
                                 <div class="card-body">
-                                    <h6 class="card-title"><i class="ri-settings-4-line me-2"></i>Pengaturan Fitur</h6>
+                                    <h6 class="card-title fs-card-title"><i class="ri-settings-4-line me-2"></i>Pengaturan Fitur</h6>
                                     <div class="d-flex justify-content-between mb-2">
                                         <span>Wajib Foto:</span>
                                         {% if pengaturan_aktif.wajib_foto %}

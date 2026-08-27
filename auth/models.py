@@ -21,6 +21,7 @@
 ==========================================================================
 """
 
+import os
 from django.db import models                    # Django ORM untuk definisi model database
 from django.contrib.auth.models import User      # Model User bawaan Django
 from django.db.models.signals import post_save   # Signal yang terpicu SETELAH model disimpan
@@ -60,8 +61,8 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
 
     # ==================== FIELD DATA ====================
-    # Email unik — digunakan untuk login alternatif dan komunikasi
-    email = models.EmailField(max_length=100, unique=True)
+    # Email — opsional, validasi uniqueness di form (tidak di database)
+    email = models.EmailField(max_length=100, null=True, blank=True)
 
     # Role user — menentukan hak akses di seluruh sistem
     # max_length=50: Cukup untuk nama role kustom yang panjang
@@ -128,6 +129,8 @@ class Profile(models.Model):
         """
         if self.role:
             self.role = self.role.strip().upper()
+        if not self.email:
+            self.email = None
         super().save(*args, **kwargs)
 
     def get_role_display(self):
@@ -157,10 +160,15 @@ class Profile(models.Model):
 
         Jika user sudah upload avatar → kembalikan URL file yang diupload
         Jika belum → kembalikan avatar default (gambar bawaan)
+        Jika file avatar sudah dihapus dari disk → kembali ke default.
         """
         if self.avatar:
-            return self.avatar.url
-        return '/static/img/avatars/1.png'  # Avatar default
+            try:
+                if os.path.exists(self.avatar.path):
+                    return self.avatar.url
+            except Exception:
+                pass
+        return '/static/img/avatars/logo.webp'  # Avatar default (SERPGROUP LOGO)
 
     # ==================== SIGNAL: Auto-create Profile ====================
     @receiver(post_save, sender=User)

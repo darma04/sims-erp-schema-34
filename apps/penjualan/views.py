@@ -326,7 +326,7 @@ class SalesOrderCreateView(CreatePermissionMixin, CreateView):
 
 
     def form_valid(self, form):
-
+        from django.http import JsonResponse
         context = self.get_context_data()
         # Data konteks: formset - untuk ditampilkan di template
         formset = context['formset']
@@ -372,8 +372,10 @@ class SalesOrderDetailView(ReadPermissionMixin, TemplateView):
         """Menambahkan data konteks tambahan ke template."""
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))
         so_id = kwargs.get('pk')
-        # Data konteks: sales_order - untuk ditampilkan di template
-        sales_order = get_object_or_404(SalesOrder, pk=so_id)
+        sales_order = get_object_or_404(
+            SalesOrder.objects.prefetch_related('items__produk__satuan'),
+            pk=so_id
+        )
         context['sales_order'] = sales_order
         try:
             from apps.kas_bank.services import metode_is_credit
@@ -720,7 +722,9 @@ class TransactionListView(ReadPermissionMixin, ListView):
     def get_queryset(self):
         """Override queryset - filter atau optimasi query data."""
         from apps.pos.models import POSTransaction
-        return POSTransaction.objects.all().order_by('-tanggal')
+        return POSTransaction.objects.select_related(
+            'kasir', 'gudang', 'metode_pembayaran', 'customer'
+        ).order_by('-tanggal')
 
     def get_context_data(self, **kwargs):
         """Menambahkan data konteks tambahan ke template."""
@@ -770,8 +774,13 @@ class TransactionDetailView(ReadPermissionMixin, TemplateView):
         from apps.pos.models import POSTransaction
 
         transaction_id = kwargs.get('pk')
-        # Data konteks: transaction - untuk ditampilkan di template
-        context['transaction'] = get_object_or_404(POSTransaction, pk=transaction_id)
+        transaction = get_object_or_404(
+            POSTransaction.objects.select_related(
+                'kasir', 'gudang', 'metode_pembayaran', 'customer'
+            ).prefetch_related('items__produk__satuan'),
+            pk=transaction_id
+        )
+        context['transaction'] = transaction
         return context
 
 

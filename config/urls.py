@@ -27,7 +27,7 @@
  Fitur:
  - global_search_api()  → Pencarian global di semua model
  - debug_perms_view()   → Debug endpoint (development only)
- - Custom error handlers (404, 403, 400, 500)
+ - Custom error handlers (404, 403, 400, 500, 401)
 ==========================================================================
 """
 from django.contrib import admin
@@ -40,7 +40,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.views.generic.base import RedirectView
 from apps.core.cache_views import refresh_cache_view
-from web_project.views import custom_error_404, custom_error_403, custom_error_400, custom_error_500
+from web_project.views import custom_error_404, custom_error_403, custom_error_400, custom_error_500, custom_error_401
 
 
 @never_cache
@@ -278,6 +278,8 @@ urlpatterns += [
     path("automation/", include("apps.automation.urls")),  # Automasi Telegram
     path("ai/", include("apps.ai_assistant.urls")),  # AI Chat Assistant
     path("fraud/", include("apps.fraud_detection.urls")),  # Fraud Detection
+    path("reimburse/", include("apps.reimburse.urls")),
+    path("approval-center/", include("apps.approval_center.urls")),
     path("piutang/", include("apps.piutang.urls")),  # Piutang (Accounts Receivable)
     path("akuntansi/", include("apps.akuntansi.urls")),  # Akuntansi (Core Accounting)
     path("kas-bank/", include("apps.kas_bank.urls")),  # Kas & Bank (Treasury)
@@ -298,6 +300,7 @@ if settings.DEBUG:
         path("test-error/403/", lambda request: custom_error_403(request, Exception("Test 403"))),
         path("test-error/400/", lambda request: custom_error_400(request, Exception("Test 400"))),
         path("test-error/500/", lambda request: custom_error_500(request)),
+        path("test-error/401/", lambda request: custom_error_401(request, Exception("Test 401"))),
     ]
 
 # Media files — dilayani di semua environment (development & production)
@@ -310,3 +313,4 @@ handler404 = custom_error_404
 handler403 = custom_error_403
 handler400 = custom_error_400
 handler500 = custom_error_500
+handler401 = custom_error_401

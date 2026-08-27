@@ -44,6 +44,7 @@ from django.contrib import messages                      # Framework pesan flash
 # Import dari framework Django
 from django.core.exceptions import PermissionDenied      # Exception 403 Forbidden
 from django.core.cache import cache
+from django.conf import settings
 # Import dari modul internal proyek
 from apps.core.cache_utils import build_scoped_cache_key
 from apps.core.permissions import has_permission, is_superuser_role  # Fungsi cek permission
@@ -125,12 +126,22 @@ class SubModulePermissionMixin:
         Ini yang memutuskan apakah view boleh dijalankan atau tidak.
 
         Alur:
-        1. Jika superuser → langsung izinkan (bypass semua cek)
-        2. Validasi: pastikan permission_module sudah diisi
-        3. Panggil has_permission() dengan module + sub_module
-        4. Jika True → panggil super().dispatch() (jalankan view)
-        5. Jika False → raise PermissionDenied (halaman 403)
+        1. Jika user belum login → redirect ke LOGIN_URL (bukan 403!)
+        2. Jika superuser → langsung izinkan (bypass semua cek)
+        3. Validasi: pastikan permission_module sudah diisi
+        4. Panggil has_permission() dengan module + sub_module
+        5. Jika True → panggil super().dispatch() (jalankan view)
+        6. Jika False → raise PermissionDenied (halaman 403)
         """
+        # User belum login → redirect ke halaman login, BUKAN 403
+        if not request.user.is_authenticated:
+            from django.shortcuts import redirect as rd
+            from django.contrib.auth import REDIRECT_FIELD_NAME
+            from django.utils.http import urlencode
+            path = request.get_full_path()
+            login_url = settings.LOGIN_URL if hasattr(settings, 'LOGIN_URL') else '/login/'
+            return rd(f'{login_url}?{urlencode({REDIRECT_FIELD_NAME: path})}')
+
         # Superuser bypass semua pengecekan
         if is_superuser_role(request.user):
             return super().dispatch(request, *args, **kwargs)
@@ -273,6 +284,13 @@ class AdminOrSuperuserMixin:
     """
     def dispatch(self, request,  *args, **kwargs):
         """Dipanggil sebelum view dijalankan — cek permission."""
+        if not request.user.is_authenticated:
+            from django.shortcuts import redirect as rd
+            from django.contrib.auth import REDIRECT_FIELD_NAME
+            from django.utils.http import urlencode
+            path = request.get_full_path()
+            login_url = getattr(settings, 'LOGIN_URL', '/login/')
+            return rd(f'{login_url}?{urlencode({REDIRECT_FIELD_NAME: path})}')
         if not (is_superuser_role(request.user) or request.user.is_staff):
             # Tampilkan pesan error ke user
             messages.error(request, 'Akses ditolak. Hanya admin yang dapat mengakses halaman ini.')
@@ -288,6 +306,13 @@ class SuperuserRequiredMixin:
     """
     def dispatch(self, request, *args, **kwargs):
         """Dipanggil sebelum view dijalankan — cek permission."""
+        if not request.user.is_authenticated:
+            from django.shortcuts import redirect as rd
+            from django.contrib.auth import REDIRECT_FIELD_NAME
+            from django.utils.http import urlencode
+            path = request.get_full_path()
+            login_url = getattr(settings, 'LOGIN_URL', '/login/')
+            return rd(f'{login_url}?{urlencode({REDIRECT_FIELD_NAME: path})}')
         if not is_superuser_role(request.user):
             # Tampilkan pesan error ke user
             messages.error(request, 'Akses ditolak. Hanya superuser yang dapat mengakses halaman ini.')
@@ -331,6 +356,13 @@ class ReadPermissionMixin:
 
     def dispatch(self, request, *args, **kwargs):
         """Dipanggil sebelum view dijalankan — cek permission."""
+        if not request.user.is_authenticated:
+            from django.shortcuts import redirect as rd
+            from django.contrib.auth import REDIRECT_FIELD_NAME
+            from django.utils.http import urlencode
+            path = request.get_full_path()
+            login_url = getattr(settings, 'LOGIN_URL', '/login/')
+            return rd(f'{login_url}?{urlencode({REDIRECT_FIELD_NAME: path})}')
         if is_superuser_role(request.user):
             return super().dispatch(request, *args, **kwargs)
 
@@ -380,6 +412,13 @@ class CreatePermissionMixin:
 
     def dispatch(self, request, *args, **kwargs):
         """Dipanggil sebelum view dijalankan — cek permission."""
+        if not request.user.is_authenticated:
+            from django.shortcuts import redirect as rd
+            from django.contrib.auth import REDIRECT_FIELD_NAME
+            from django.utils.http import urlencode
+            path = request.get_full_path()
+            login_url = getattr(settings, 'LOGIN_URL', '/login/')
+            return rd(f'{login_url}?{urlencode({REDIRECT_FIELD_NAME: path})}')
         if is_superuser_role(request.user):
             return super().dispatch(request, *args, **kwargs)
 
@@ -405,6 +444,13 @@ class UpdatePermissionMixin:
 
     def dispatch(self, request, *args, **kwargs):
         """Dipanggil sebelum view dijalankan — cek permission."""
+        if not request.user.is_authenticated:
+            from django.shortcuts import redirect as rd
+            from django.contrib.auth import REDIRECT_FIELD_NAME
+            from django.utils.http import urlencode
+            path = request.get_full_path()
+            login_url = getattr(settings, 'LOGIN_URL', '/login/')
+            return rd(f'{login_url}?{urlencode({REDIRECT_FIELD_NAME: path})}')
         if is_superuser_role(request.user):
             return super().dispatch(request, *args, **kwargs)
 
@@ -456,6 +502,13 @@ class DeletePermissionMixin:
 
     def dispatch(self, request, *args, **kwargs):
         """Dipanggil sebelum view dijalankan — cek permission."""
+        if not request.user.is_authenticated:
+            from django.shortcuts import redirect as rd
+            from django.contrib.auth import REDIRECT_FIELD_NAME
+            from django.utils.http import urlencode
+            path = request.get_full_path()
+            login_url = getattr(settings, 'LOGIN_URL', '/login/')
+            return rd(f'{login_url}?{urlencode({REDIRECT_FIELD_NAME: path})}')
         if is_superuser_role(request.user):
             return super().dispatch(request, *args, **kwargs)
 

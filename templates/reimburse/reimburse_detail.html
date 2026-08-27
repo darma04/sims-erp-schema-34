@@ -1,0 +1,362 @@
+{% extends 'layout/layout_vertical.html' %}
+{% comment %}
+==========================================================================
+   REIMBURSE DETAIL - Detail Pengajuan Reimburse
+   Halaman detail satu pengajuan reimburse termasuk:
+   - Info reimburse (nomor, pemohon, tanggal, total, keterangan)
+   - Daftar item yang di-reimburse (kategori, deskripsi, nominal, bukti)
+   - Aksi: ajukan, setujui, tolak, bayar, selesaikan, batalkan
+   ==========================================================================
+{% endcomment %}
+{% load static %}
+{% load currency_filters %}
+{% load i18n %}
+
+{% block title %}Reimburse {{ reimburse.nomor }}{% endblock title %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb breadcrumb-style1">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'reimburse:list' %}">Reimburse</a>
+                    </li>
+                    <li class="breadcrumb-item active">{{ reimburse.nomor }}</li>
+                </ol>
+            </nav>
+            <h4 class="mb-1">Detail Reimburse</h4>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'reimburse:list' %}" class="btn btn-label-secondary">
+                <i class="ri-arrow-left-line me-1"></i>Kembali
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        
+        <div class="col-xl-9 col-md-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fs-card-title">{{ reimburse.nomor }}</h5>
+                    {% if reimburse.status == 'draft' %}
+                    <span class="badge bg-label-secondary fs-6">Draft</span>
+                    {% elif reimburse.status == 'submitted' %}
+                    <span class="badge bg-label-warning fs-6">Diajukan</span>
+                    {% elif reimburse.status == 'approved' %}
+                    <span class="badge bg-label-info fs-6">Disetujui</span>
+                    {% elif reimburse.status == 'rejected' %}
+                    <span class="badge bg-label-danger fs-6">Ditolak</span>
+                    {% elif reimburse.status == 'paid' %}
+                    <span class="badge bg-label-success fs-6">Dibayar</span>
+                    {% elif reimburse.status == 'completed' %}
+                    <span class="badge bg-label-primary fs-6">Selesai</span>
+                    {% elif reimburse.status == 'cancelled' %}
+                    <span class="badge bg-label-danger fs-6">Dibatalkan</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Informasi Reimburse</h6>
+                            <div class="mb-2">
+                                <small class="text-muted">Pemohon:</small>
+                                <div class="fw-medium fs-value-secondary">{{ reimburse.pemohon.username }}</div>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted">Tanggal Pengajuan:</small>
+                                <div class="fw-medium">{{ reimburse.tanggal|date:"d F Y" }}</div>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted">Total:</small>
+                                <div class="fw-medium fs-value-secondary">{{ reimburse.total|rupiah }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Informasi Tambahan</h6>
+                            {% if reimburse.metode_pembayaran %}
+                            <div class="mb-2">
+                                <small class="text-muted">Metode Pembayaran:</small>
+                                <div>
+                                    <span class="badge bg-label-info">{{ reimburse.metode_pembayaran.nama }}</span>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if reimburse.tanggal_bayar %}
+                            <div class="mb-2">
+                                <small class="text-muted">Tanggal Bayar:</small>
+                                <div class="fw-medium">{{ reimburse.tanggal_bayar|date:"d F Y" }}</div>
+                            </div>
+                            {% endif %}
+                            {% if reimburse.approved_by %}
+                            <div class="mb-2">
+                                <small class="text-muted">Disetujui Oleh:</small>
+                                <div class="fw-medium fs-value-secondary">{{ reimburse.approved_by.username }} ({{ reimburse.approved_at|date:"d/m/Y H:i" }})</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if reimburse.keterangan %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-muted mb-2">Keterangan</h6>
+                            <p class="mb-0">{{ reimburse.keterangan|linebreaksbr }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if reimburse.rejection_reason %}
+                    <div class="alert alert-danger">
+                        <h6 class="alert-heading mb-2">
+                            <i class="ri-close-circle-line me-2"></i>Alasan Penolakan
+                        </h6>
+                        <p class="mb-0">{{ reimburse.rejection_reason }}</p>
+                    </div>
+                    {% endif %}
+
+                    <hr class="my-4">
+
+                    <div class="table-responsive border rounded-3">
+                        <table class="table table-bordered mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="bg-label-secondary" style="width: 50px;">No</th>
+                                    <th class="bg-label-secondary">Kategori</th>
+                                    <th class="bg-label-secondary">Deskripsi</th>
+                                    <th class="bg-label-secondary text-end">Nominal</th>
+                                    <th class="bg-label-secondary">Bukti</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in reimburse.items.all %}
+                                <tr>
+                                    <td class="text-center">{{ forloop.counter }}</td>
+                                    <td>{{ item.kategori.nama }}</td>
+                                    <td>{{ item.deskripsi }}</td>
+                                    <td class="text-end">{{ item.nominal|rupiah }}</td>
+                                    <td>
+                                        {% if item.bukti %}
+                                        <a href="{{ item.bukti.url }}" target="_blank" class="btn btn-sm btn-label-primary">
+                                            <i class="ri-file-line me-1"></i>Lihat
+                                        </a>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-footer-summary">
+                                <tr class="bg-label-primary">
+                                    <td colspan="3" class="text-end fw-bold h5 mb-0 border-end-0">Total:</td>
+                                    <td class="text-end fw-bold h5 mb-0 text-primary border-start-0">
+                                        {{ reimburse.total|rupiah }}
+                                    </td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-4">
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0 fs-card-title">Aksi</h6>
+                </div>
+                <div class="card-body">
+                    {% if can_edit.reimburse %}
+                    <div class="d-grid gap-2">
+                        {% if reimburse.status == 'draft' or reimburse.status == 'rejected' %}
+                        <form method="post" action="{% url 'reimburse:action' reimburse.pk %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="submit">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="ri-send-plane-line me-1"></i>Ajukan Reimburse
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        {% if reimburse.status == 'submitted' %}
+                        <form method="post" action="{% url 'reimburse:action' reimburse.pk %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="approve">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="ri-check-line me-1"></i>Setujui
+                            </button>
+                        </form>
+                        <button type="button" class="btn btn-outline-danger w-100" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                            <i class="ri-close-line me-1"></i>Tolak
+                        </button>
+                        {% endif %}
+
+                        {% if reimburse.status == 'approved' %}
+                        <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#payModal">
+                            <i class="ri-bank-card-line me-1"></i>Bayar
+                        </button>
+                        {% endif %}
+
+                        {% if reimburse.status == 'paid' %}
+                        <form method="post" action="{% url 'reimburse:action' reimburse.pk %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="complete">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="ri-check-double-line me-1"></i>Selesaikan
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        {% if reimburse.status != 'cancelled' and reimburse.status != 'completed' %}
+                        <form method="post" action="{% url 'reimburse:action' reimburse.pk %}"
+                            onsubmit="return confirm('Batalkan reimburse ini?')">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="cancel">
+                            <button type="submit" class="btn btn-outline-danger w-100">
+                                <i class="ri-close-circle-line me-1"></i>Batalkan
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted small mb-0"><i class="ri-lock-line me-1"></i>Anda tidak memiliki hak akses untuk mengubah status pengajuan ini.</p>
+                    {% endif %}
+
+                    <hr>
+                    <small class="text-muted">
+                        Dibuat: {{ reimburse.dibuat_pada|date:"d/m/Y H:i" }}<br>
+                        Diupdate: {{ reimburse.diupdate_pada|date:"d/m/Y H:i" }}
+                    </small>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0 fs-card-title">Timeline</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="timeline mb-0">
+                        <li class="timeline-item timeline-item-transparent">
+                            <span class="timeline-point timeline-point-secondary"></span>
+                            <div class="timeline-event">
+                                <div class="timeline-header mb-1">
+                                    <h6 class="mb-0">Reimburse Dibuat</h6>
+                                    <small class="text-muted">{{ reimburse.dibuat_pada|date:"d M Y, H:i" }}</small>
+                                </div>
+                                <p class="mb-0 text-muted">Oleh {{ reimburse.pemohon.username }}</p>
+                            </div>
+                        </li>
+                        {% if reimburse.status == 'submitted' or reimburse.status == 'approved' or reimburse.status == 'paid' or reimburse.status == 'completed' %}
+                        <li class="timeline-item timeline-item-transparent">
+                            <span class="timeline-point timeline-point-warning"></span>
+                            <div class="timeline-event">
+                                <div class="timeline-header mb-1">
+                                    <h6 class="mb-0">Diajukan</h6>
+                                    <small class="text-muted">{{ reimburse.tanggal|date:"d M Y" }}</small>
+                                </div>
+                                <p class="mb-0 text-muted">Menunggu persetujuan</p>
+                            </div>
+                        </li>
+                        {% endif %}
+                        {% if reimburse.status == 'paid' or reimburse.status == 'completed' %}
+                        <li class="timeline-item timeline-item-transparent">
+                            <span class="timeline-point timeline-point-success"></span>
+                            <div class="timeline-event">
+                                <div class="timeline-header mb-1">
+                                    <h6 class="mb-0">Pembayaran</h6>
+                                    <small class="text-muted">{{ reimburse.tanggal_bayar|date:"d M Y"|default:"-" }}</small>
+                                </div>
+                                <p class="mb-0 text-muted">{{ reimburse.metode_pembayaran.nama|default:"-" }}</p>
+                            </div>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" action="{% url 'reimburse:action' reimburse.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="reject">
+                <div class="modal-header bg-danger align-items-center py-3">
+                    <h5 class="modal-title text-white mb-0">
+                        <i class="ri-close-circle-line me-2"></i>Tolak Reimburse
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label" for="rejectAlasan">Alasan Penolakan</label>
+                    <textarea name="alasan" id="rejectAlasan" class="form-control" rows="3" placeholder="Tulis alasan penolakan..." required></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
+                        <i class="ri-close-line me-1"></i>Batal
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="ri-close-circle-line me-1"></i>Tolak
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if reimburse.status == 'approved' %}
+<div class="modal fade" id="payModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" action="{% url 'reimburse:action' reimburse.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="pay">
+                <div class="modal-header bg-success align-items-center py-3">
+                    <h5 class="modal-title text-white mb-0">
+                        <i class="ri-bank-card-line me-2"></i>Bayar Reimburse
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Total: <strong>{{ reimburse.total|rupiah }}</strong></p>
+                    <div class="mb-3">
+                        <label class="form-label" for="payMetode">Metode Pembayaran</label>
+                        <select name="metode_pembayaran" id="payMetode" class="form-select" required>
+                            <option value="">Pilih Metode Pembayaran</option>
+                            {% for mp in metode_list %}
+                            <option value="{{ mp.id }}" {% if reimburse.metode_pembayaran.id == mp.id %}selected{% endif %}>{{ mp.nama }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="payTanggal">Tanggal Bayar</label>
+                        <input type="date" name="tanggal_bayar" id="payTanggal" class="form-control" required value="{% now 'Y-m-d' %}">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
+                        <i class="ri-close-line me-1"></i>Batal
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="ri-check-line me-1"></i>Konfirmasi Bayar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock content %}
+
+{% block page_js %}
+{{ block.super }}
+{% endblock page_js %}

@@ -61,6 +61,7 @@ from django.core.exceptions import ValidationError
 from decimal import Decimal
 from datetime import timedelta
 from django.utils import timezone
+import json
 
 from apps.piutang.models import Piutang, PembayaranPiutang
 from apps.piutang.forms import PiutangForm, PembayaranPiutangForm
@@ -310,8 +311,8 @@ class AgingReportView(ReadPermissionMixin, TemplateView):
         context['grand_total'] = sum(b['total'] for b in buckets.values())
 
         # Chart data
-        context['chart_labels'] = [b['label'] for b in buckets.values()]
-        context['chart_data'] = [float(b['total']) for b in buckets.values()]
+        context['chart_labels'] = json.dumps([b['label'] for b in buckets.values()])
+        context['chart_data'] = json.dumps([float(b['total']) for b in buckets.values()])
 
         from apps.produk.models import Gudang
         context['cabang_list'] = Gudang.objects.filter(aktif=True)

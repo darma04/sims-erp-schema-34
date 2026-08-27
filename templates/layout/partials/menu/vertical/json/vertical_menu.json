@@ -134,7 +134,7 @@
     },
     {
       "menu_header": "TRANSAKSI",
-      "permission": "pembelian:view,penjualan:view,pos:view,biaya:view"
+      "permission": "pembelian:view,penjualan:view,pos:view,biaya:view,reimburse:view"
     },
     {
       "name": "Pembelian",
@@ -233,6 +233,23 @@
           "url": "biaya:transaksi",
           "name": "Transaksi Biaya",
           "slug": "biaya-transaksi"
+        }
+      ]
+    },
+    {
+      "name": "Reimburse",
+      "icon": "menu-icon tf-icons ri-hand-coin-line",
+      "slug": "reimburse",
+      "submenu": [
+        {
+          "url": "reimburse:list",
+          "name": "Daftar Reimburse",
+          "slug": "reimburse-list"
+        },
+        {
+          "url": "reimburse:tambah",
+          "name": "Pengajuan Reimburse",
+          "slug": "reimburse-pengajuan"
         }
       ]
     },
@@ -581,6 +598,12 @@
       "name": "Log Aktivitas",
       "icon": "menu-icon tf-icons ri-history-line",
       "slug": "activity-log"
+    },
+    {
+      "url": "approval_center:index",
+      "name": "Approval Center",
+      "icon": "menu-icon tf-icons ri-check-double-line",
+      "slug": "approval-center"
     },
     {
       "name": "Pengaturan",

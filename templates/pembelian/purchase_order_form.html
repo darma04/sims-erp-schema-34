@@ -1,4 +1,4 @@
-{% extends 'layout/layout_vertical.html' %}
+﻿{% extends 'layout/layout_vertical.html' %}
 {% comment %}
 ==========================================================================
    PURCHASE ORDER FORM - Form Buat Purchase Order
@@ -23,8 +23,9 @@
     <div class="row">
         <div class="col-md-12">
             <div class="card mb-4">
-                <h5 class="card-header">{{ title }}</h5>
+                <h5 class="card-header fs-value-primary">{{ title }}</h5>
                 <div class="card-body">
+                    
                     <form method="post" id="po-form">
                         {% csrf_token %}
 
@@ -51,7 +52,7 @@
                         {% endif %}
 
                         <div class="row">
-                            <!-- Left Column -->
+                            
                             <div class="col-md-6">
                                 {% if form.nomor_po %}
                                 <div class="mb-3">
@@ -79,7 +80,6 @@
                                 </div>
                             </div>
 
-                            <!-- Right Column -->
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label class="form-label">{{ form.metode_pembayaran.label }}</label>
@@ -117,7 +117,6 @@
 
                         <hr class="my-4">
 
-                        <!-- Items Section - Input Produk BARU -->
                         <h5 class="mb-3"><i class="ri-shopping-cart-2-line me-2"></i>Produk yang Dipesan (Input Produk
                             Baru)</h5>
 
@@ -128,14 +127,13 @@
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
 
-                        <!-- Hidden management form fields -->
                         <input type="hidden" name="items-TOTAL_FORMS" id="id_items-TOTAL_FORMS" value="1">
                         <input type="hidden" name="items-INITIAL_FORMS" value="0">
                         <input type="hidden" name="items-MIN_NUM_FORMS" value="0">
                         <input type="hidden" name="items-MAX_NUM_FORMS" value="1000">
 
                         <div id="formset-container">
-                            <!-- Initial item row -->
+                            
                             <div class="formset-row border rounded p-3 mb-3">
                                 <div class="row g-2 g-lg-3">
                                     <div class="col-12 col-lg-3">
@@ -191,7 +189,6 @@
                             <i class="ri-add-line me-1"></i>Tambah Produk
                         </button>
 
-                        <!-- Total Summary -->
                         <div class="card border shadow-none">
                             <div class="card-body py-3">
                                 <div class="row">
@@ -218,6 +215,7 @@
                             </div>
                         </div>
 
+                        {% if can_create.pembelian or can_edit.pembelian %}
                         <div class="mt-4">
                                 <button type="submit" class="btn btn-primary me-2">
                                     <i class="ri-save-line me-1"></i> Simpan Purchase Order
@@ -226,6 +224,7 @@
                                     <i class="ri-close-line me-1"></i> Batal
                                 </a>
                         </div>
+                        {% endif %}
                     </form>
                 </div>
             </div>
@@ -241,7 +240,7 @@
 {% block page_js %}
 <script>
     $(document).ready(function () {
-        // Inisialisasi Select2
+        
         $('.select2').select2({
             placeholder: 'Pilih...',
             allowClear: true
@@ -252,12 +251,10 @@
             allowClear: true
         });
 
-        // Format mata uang
         function formatRupiah(amount) {
             return 'Rp ' + new Intl.NumberFormat('id-ID').format(amount);
         }
 
-        // Hitung total
         function calculateTotals() {
             let subtotal = 0;
 
@@ -278,22 +275,18 @@
             $('#total').text(formatRupiah(total));
         }
 
-        // Update total saat input berubah
         $(document).on('input', '[name$="-jumlah"], [name$="-harga_satuan"], [name="pajak"], [name="biaya_pengiriman"]', function () {
             calculateTotals();
         });
 
-        // Tambah item — untuk input produk baru
         $('#add-item').click(function () {
             const formsetContainer = $('#formset-container');
             const totalForms = $('#id_items-TOTAL_FORMS');
             const formIdx = parseInt(totalForms.val());
 
-            // Ambil opsi kategori dan satuan dari baris pertama
             const kategoriOptions = $('#id_items-0-kategori').html();
             const satuanOptions = $('#id_items-0-satuan').html();
 
-            // Bangun HTML form baru dengan field produk baru
             const newFormHTML = `
             <div class="formset-row border rounded p-3 mb-3">
                 <div class="row g-2 g-lg-3 align-items-end">
@@ -339,33 +332,29 @@
             </div>
         `;
 
-            // Append new form
             formsetContainer.append(newFormHTML);
 
-            // Update jumlah total forms
             totalForms.val(formIdx + 1);
 
             calculateTotals();
         });
 
-        // Hapus item
         $(document).on('click', '.remove-item', function () {
             const formRow = $(this).closest('.formset-row');
             const deleteCheckbox = formRow.find('[name$="-DELETE"]');
 
             if (deleteCheckbox.length) {
-                // Mark for deletion
+                
                 deleteCheckbox.prop('checked', true);
                 formRow.hide();
             } else {
-                // Hapus form baru
+                
                 formRow.remove();
             }
 
             calculateTotals();
         });
 
-        // Initial calculation
         calculateTotals();
     });
 </script>

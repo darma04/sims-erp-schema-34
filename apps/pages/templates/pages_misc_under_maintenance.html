@@ -3,7 +3,7 @@
 {% load static %}
 {% load i18n %}
 
-{% block title %}Under Maintenance - Pages{% endblock %}
+{% block title %}Sedang Dalam Pemeliharaan{% endblock %}
 
 {% block page_css %}
 {{ block.super }}
@@ -13,14 +13,14 @@
 {% block content %}
 
 <div class="misc-wrapper">
-  <h3 class="mb-2 mx-2">Under Maintenance! 🚧</h3>
+  <h3 class="mb-2 mx-2">Sedang Dalam Pemeliharaan!</h3>
   <p class="mb-4 mx-2">
     {% if license_config and license_config.is_maintenance %}
-      {{ license_config.maintenance_message|default:"Sistem sedang dalam perbaikan rutin." }}
+      {{ license_config.maintenance_message|default:"Sistem sedang dalam perbaikan rutin. Silakan coba lagi beberapa saat." }}
     {% elif pengaturan.maintenance_message %}
       {{ pengaturan.maintenance_message }}
     {% else %}
-      Sorry for the inconvenience but we're performing some maintenance at the moment
+      Sistem sedang dalam pemeliharaan untuk peningkatan kualitas. Kami mohon maaf atas ketidaknyamanan ini.
     {% endif %}
   </p>
   <div class="d-flex justify-content-center mt-5">
@@ -43,8 +43,8 @@
         class="img-fluid z-1" width="290">
       {% endif %}
       <div class="d-flex flex-wrap justify-content-center gap-2">
-        <a href="{% url 'dashboard:index' %}" class="btn btn-primary text-center my-5">Back to home</a>
-        <a href="/login/" class="btn btn-outline-secondary text-center my-5"><i class="ri-shield-user-line me-1"></i>Login sebagai Admin</a>
+        <a href="{% url 'dashboard:index' %}" class="btn btn-primary text-center my-5">Kembali ke Beranda</a>
+        <a href="/login/" class="btn btn-outline-secondary text-center my-5"><i class="ri-shield-user-line me-1"></i>Masuk sebagai Admin</a>
       </div>
     </div>
   </div>

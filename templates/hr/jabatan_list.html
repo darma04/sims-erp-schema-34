@@ -144,7 +144,7 @@
     <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Data Jabatan</h5>
+            <h5 class="mb-0 fs-card-title">Data Jabatan</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()">
                     <i class="ri-file-excel-2-line me-1"></i>Export Excel
@@ -154,7 +154,7 @@
                 </button>
             </div>
         </div>
-        {% if departemen_list %}
+        {% if jabatan_list %}
 
         <div class="card-datatable table-responsive">
             <table class="datatables-jabatan table table-hover" id="jabatanTable">
@@ -277,7 +277,7 @@
                 </p>
                 <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
                     {% if can_create.hr %}
-                    <a href="{% url 'hr:jabatan_add' %}" class="btn btn-primary btn-lg">
+                    <a href="{% url 'hr:jabatan-add' %}" class="btn btn-primary btn-lg">
                         <i class="ri-add-line me-1"></i>Tambah Jabatan
                     </a>
                     {% endif %}
@@ -316,7 +316,7 @@
 
 {% block page_js %}
 <style>
-    .dataTables_wrapper .dataTables_info { padding: 1rem 1.5rem; font-size: 0.875rem; color: #697a8d; }
+    .dataTables_wrapper .dataTables_info { padding: 1rem 1.5rem; font-size: 0.875rem; ; }
     .dataTables_wrapper .dataTables_paginate { padding: 1rem 1.5rem; }
     .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter { padding: 0 1.5rem 1rem 1.5rem; }
     .dataTables_wrapper .dataTables_filter input { border: 1px solid #d9dee3; border-radius: 0.375rem; padding: 0.4375rem 0.875rem; }
@@ -333,7 +333,7 @@ let dataTable;
 
 $(document).ready(function() {
     {% if jabatan_list %}
-    {% if departemen_list %}
+    {% if jabatan_list %}
     dataTable = $('#jabatanTable').DataTable({
         language: {
             "sEmptyTable": "Tidak ada data", "sLengthMenu": "Tampilkan _MENU_ data",
@@ -422,9 +422,13 @@ const FOOTER_LABEL = 'RINGKASAN';
 
     function exportToExcel() {
         const table = document.getElementById('jabatanTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#jabatanTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         let colCount = 0;
         let visibleColumns = [];
@@ -512,9 +516,13 @@ const FOOTER_LABEL = 'RINGKASAN';
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('jabatanTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#jabatanTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         const headers = [];
         let visibleColumns = [];

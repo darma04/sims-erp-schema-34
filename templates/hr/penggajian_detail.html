@@ -7,7 +7,7 @@
    ==========================================================================
 {% endcomment %}
 {% load static %}
-{% load humanize %}
+{% load humanize currency_filters %}
 
 {% block title %}Slip Gaji {{ slip.karyawan.nama }} - HR{% endblock title %}
 
@@ -17,7 +17,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4 d-print-none">
         <div>
             <h4 class="mb-1"><i class="ri-file-list-3-line me-2"></i>Detail Slip Gaji</h4>
-            <p class="text-muted mb-0">{{ slip.periode }}</p>
+            <p class="text-muted mb-0 fs-value-secondary">{{ slip.periode }}</p>
         </div>
         <div class="d-flex gap-2">
             {% if slip.status != 'dibayar' %}
@@ -64,7 +64,7 @@
                 </table>
                 <div class="header-divider"></div>
                 <h3 class="slip-title">SLIP GAJI KARYAWAN</h3>
-                <p class="slip-period">Periode: <strong>{{ slip.periode }}</strong></p>
+                <p class="slip-period">Periode: <strong  class="fs-value-primary">{{ slip.periode }}</strong></p>
             </div>
 
             <!-- ============================================ -->
@@ -122,6 +122,7 @@
                     <div class="section-header section-header-income">
                         <i class="ri-add-circle-line me-1"></i>PENDAPATAN
                     </div>
+                    <div class="table-responsive">
                     <table class="table table-sm table-bordered slip-table">
                         <thead>
                             <tr>
@@ -132,40 +133,41 @@
                         <tbody>
                             <tr>
                                 <td>Gaji Pokok</td>
-                                <td class="text-end">{{ slip.gaji_pokok|floatformat:0|intcomma }}</td>
+                                <td class="text-end">{{ slip.gaji_pokok|floatformat:0|thousands }}</td>
                             </tr>
                             <tr>
                                 <td>Tunjangan Jabatan</td>
-                                <td class="text-end">{{ slip.tunjangan_jabatan|floatformat:0|intcomma }}</td>
+                                <td class="text-end">{{ slip.tunjangan_jabatan|floatformat:0|thousands }}</td>
                             </tr>
                             <tr>
                                 <td>Tunjangan Makan</td>
-                                <td class="text-end">{{ slip.tunjangan_makan|floatformat:0|intcomma }}</td>
+                                <td class="text-end">{{ slip.tunjangan_makan|floatformat:0|thousands }}</td>
                             </tr>
                             <tr>
                                 <td>Tunjangan Transport</td>
-                                <td class="text-end">{{ slip.tunjangan_transport|floatformat:0|intcomma }}</td>
+                                <td class="text-end">{{ slip.tunjangan_transport|floatformat:0|thousands }}</td>
                             </tr>
                             <tr>
                                 <td>Tunjangan Lainnya</td>
-                                <td class="text-end">{{ slip.tunjangan_lainnya|floatformat:0|intcomma }}</td>
+                                <td class="text-end">{{ slip.tunjangan_lainnya|floatformat:0|thousands }}</td>
                             </tr>
                             <tr>
                                 <td>Lembur</td>
-                                <td class="text-end">{{ slip.lembur|floatformat:0|intcomma }}</td>
+                                <td class="text-end">{{ slip.lembur|floatformat:0|thousands }}</td>
                             </tr>
                             <tr>
                                 <td>Bonus</td>
-                                <td class="text-end">{{ slip.bonus|floatformat:0|intcomma }}</td>
+                                <td class="text-end">{{ slip.bonus|floatformat:0|thousands }}</td>
                             </tr>
                         </tbody>
                         <tfoot>
                             <tr class="total-row total-row-income">
                                 <td><strong>Total Pendapatan</strong></td>
-                                <td class="text-end"><strong>{{ slip.total_pendapatan|floatformat:0|intcomma }}</strong></td>
+                                <td class="text-end"><strong>{{ slip.total_pendapatan|floatformat:0|thousands }}</strong></td>
                             </tr>
                         </tfoot>
                     </table>
+                    </div>
                 </div>
 
                 <!-- Kolom Potongan -->
@@ -173,6 +175,7 @@
                     <div class="section-header section-header-deduction">
                         <i class="ri-subtract-line me-1"></i>POTONGAN
                     </div>
+                    <div class="table-responsive">
                     <table class="table table-sm table-bordered slip-table">
                         <thead>
                             <tr>
@@ -183,28 +186,29 @@
                         <tbody>
                             <tr>
                                 <td>BPJS Kesehatan</td>
-                                <td class="text-end">{{ slip.potongan_bpjs_kesehatan|floatformat:0|intcomma }}</td>
+                                <td class="text-end">{{ slip.potongan_bpjs_kesehatan|floatformat:0|thousands }}</td>
                             </tr>
                             <tr>
                                 <td>BPJS Ketenagakerjaan</td>
-                                <td class="text-end">{{ slip.potongan_bpjs_ketenagakerjaan|floatformat:0|intcomma }}</td>
+                                <td class="text-end">{{ slip.potongan_bpjs_ketenagakerjaan|floatformat:0|thousands }}</td>
                             </tr>
                             <tr>
                                 <td>PPh 21</td>
-                                <td class="text-end">{{ slip.potongan_pph21|floatformat:0|intcomma }}</td>
+                                <td class="text-end">{{ slip.potongan_pph21|floatformat:0|thousands }}</td>
                             </tr>
                             <tr>
                                 <td>Potongan Lainnya</td>
-                                <td class="text-end">{{ slip.potongan_lainnya|floatformat:0|intcomma }}</td>
+                                <td class="text-end">{{ slip.potongan_lainnya|floatformat:0|thousands }}</td>
                             </tr>
                         </tbody>
                         <tfoot>
                             <tr class="total-row total-row-deduction">
                                 <td><strong>Total Potongan</strong></td>
-                                <td class="text-end"><strong>{{ slip.total_potongan|floatformat:0|intcomma }}</strong></td>
+                                <td class="text-end"><strong>{{ slip.total_potongan|floatformat:0|thousands }}</strong></td>
                             </tr>
                         </tfoot>
                     </table>
+                    </div>
                 </div>
             </div>
 
@@ -217,7 +221,7 @@
                         <span class="net-salary-label">GAJI BERSIH (Take Home Pay)</span>
                     </div>
                     <div class="col-6 text-end">
-                        <span class="net-salary-amount">Rp {{ slip.gaji_bersih|floatformat:0|intcomma }}</span>
+                        <span class="net-salary-amount fs-value-primary">Rp {{ slip.gaji_bersih|floatformat:0|thousands }}</span>
                     </div>
                 </div>
             </div>
@@ -439,7 +443,7 @@ function cancelPenggajian(pk) {
     .info-table td {
         border: none;
         padding: 4px 8px 4px 0;
-        font-size: 0.925rem;
+        font-size: var(--fs-ui-body);
         background: transparent !important;
     }
     .info-label {
@@ -454,7 +458,7 @@ function cancelPenggajian(pk) {
     /* Section header (Pendapatan / Potongan) */
     .section-header {
         font-weight: 700;
-        font-size: 0.85rem;
+        font-size: var(--fs-ui-sm);
         letter-spacing: 0.5px;
         padding: 8px 12px;
         border-radius: 6px 6px 0 0;
@@ -474,13 +478,13 @@ function cancelPenggajian(pk) {
         margin-bottom: 0;
     }
     .slip-table thead th {
-        font-size: 0.8rem;
+        font-size: var(--fs-ui-sm);
         text-transform: uppercase;
         letter-spacing: 0.5px;
         background: rgba(255,255,255,0.05);
     }
     .slip-table tbody td {
-        font-size: 0.9rem;
+        font-size: var(--fs-ui-value);
         padding: 8px 12px;
     }
 

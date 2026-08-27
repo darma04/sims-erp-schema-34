@@ -1,4 +1,4 @@
-{% extends layout_path %}
+﻿{% extends layout_path %}
 
 {% load i18n %}
 
@@ -7,7 +7,7 @@
 {% block content %}
 <div class="d-flex align-items-center justify-content-between mb-6">
   <div>
-    <h4 class="mb-1"><i class="ri-user-heart-line me-2"></i>{{ form_title }}</h4>
+    <h4 class="mb-1 fs-value-primary"><i class="ri-user-heart-line me-2"></i>{{ form_title }}</h4>
     <p class="text-muted mb-0">Isi data pelanggan dengan lengkap</p>
   </div>
   <a href="{% url 'service_center:pelanggan_list' %}" class="btn btn-outline-secondary">
@@ -61,12 +61,14 @@
         </div>
       </div>
 
+      {% if can_create.service_center or can_edit.service_center %}
       <div class="mt-4">
         <button type="submit" class="btn btn-primary me-2">
           <i class="ri-save-line me-1"></i> Simpan
         </button>
         <a href="{% url 'service_center:pelanggan_list' %}" class="btn btn-outline-secondary">Batal</a>
       </div>
+      {% endif %}
     </form>
   </div>
 </div>

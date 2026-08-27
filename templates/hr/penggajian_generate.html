@@ -1,4 +1,4 @@
-{% extends 'layout/layout_vertical.html' %}
+﻿{% extends 'layout/layout_vertical.html' %}
 {% comment %}
 ==========================================================================
    PENGGAJIAN GENERATE - Generate Slip Gaji Batch
@@ -28,10 +28,11 @@
                 <div class="card-body">
                     <div class="alert alert-info mb-4">
                         <i class="ri-information-line me-1"></i>
-                        Generate akan membuat slip gaji untuk <strong>{{ karyawan_count }}</strong> karyawan aktif.
+                        Generate akan membuat slip gaji untuk <strong  class="fs-value-primary">{{ karyawan_count }}</strong> karyawan aktif.
                         Karyawan yang sudah memiliki slip gaji untuk periode yang dipilih akan dilewati.
                     </div>
 
+                    
                     <form method="post">
                         {% csrf_token %}
                         <div class="row mb-4">
@@ -63,9 +64,11 @@
 
                         <div class="d-flex justify-content-end gap-2">
                             <a href="{% url 'hr:penggajian' %}" class="btn btn-label-secondary">Batal</a>
+                            {% if can_create.hr or can_edit.hr %}
                             <button type="submit" class="btn btn-success">
                                 <i class="ri-refresh-line me-1"></i>Generate Slip Gaji
                             </button>
+                            {% endif %}
                         </div>
                     </form>
                 </div>

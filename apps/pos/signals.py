@@ -278,5 +278,5 @@ def recalculate_pos_on_item_delete(sender, instance, **kwargs):
             pos = instance.transaction
             pos.calculate_total()
             pos.save()
-        except Exception:
-            pass  # POS might already be deleted (CASCADE)
+        except Exception as e:
+            logger.warning("Gagal recalculate pos_on_item_delete: %s", e)

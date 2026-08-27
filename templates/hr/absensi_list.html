@@ -1,4 +1,4 @@
-﻿{% extends 'layout/layout_vertical.html' %}
+{% extends 'layout/layout_vertical.html' %}
 {% comment %}
 ==========================================================================
    ABSENSI LIST - Daftar Absensi Karyawan
@@ -54,14 +54,14 @@
                 <div class="col-md-3">
                     <label class="form-label" for="tanggalMulai">Tanggal Mulai</label>
                     <div class="input-group input-group-merge">
-                        <span class="input-group-text"><i class="ri-search-line"></i></span>
+                        <span class="input-group-text"><i class="ri-calendar-line"></i></span>
                         <input type="text" id="tanggalMulai" class="form-control" placeholder="Pilih tanggal">
                     </div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label" for="tanggalAkhir">Tanggal Akhir</label>
                     <div class="input-group input-group-merge">
-                        <span class="input-group-text"><i class="ri-search-line"></i></span>
+                        <span class="input-group-text"><i class="ri-calendar-line"></i></span>
                         <input type="text" id="tanggalAkhir" class="form-control" placeholder="Pilih tanggal">
                     </div>
                 </div>
@@ -152,7 +152,7 @@
     <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Data Absensi</h5>
+            <h5 class="mb-0 fs-card-title">Data Absensi</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()">
                     <i class="ri-file-excel-2-line me-1"></i>Export Excel
@@ -162,7 +162,7 @@
                 </button>
             </div>
         </div>
-        {% if karyawan_list %}
+        {% if absensi_list %}
 
         <div class="card-datatable table-responsive">
             <table class="datatables-absensi table table-hover" id="absensiTable">
@@ -379,7 +379,7 @@
 
 {% block page_js %}
 <style>
-    .dataTables_wrapper .dataTables_info { padding: 1rem 1.5rem; font-size: 0.875rem; color: #697a8d; }
+    .dataTables_wrapper .dataTables_info { padding: 1rem 1.5rem; font-size: 0.875rem; ; }
     .dataTables_wrapper .dataTables_paginate { padding: 1rem 1.5rem; }
     .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter { padding: 0 1.5rem 1rem 1.5rem; }
     .dataTables_wrapper .dataTables_filter input { border: 1px solid #d9dee3; border-radius: 0.375rem; padding: 0.4375rem 0.875rem; }
@@ -402,7 +402,7 @@ $(document).ready(function() {
 
     // Initialize DataTable
     {% if absensi_list %}
-    {% if karyawan_list %}
+    {% if absensi_list %}
     dataTable = $('#absensiTable').DataTable({
         language: {
             "sEmptyTable": "Tidak ada data", "sLengthMenu": "Tampilkan _MENU_ data",
@@ -424,9 +424,20 @@ function applyFilter() {
     if (!dataTable) return;
     const karyawan = $('#karyawanFilter').val();
     const status = $('#statusFilter').val();
+    const tglMulai = $('#tanggalMulai').val();
+    const tglAkhir = $('#tanggalAkhir').val();
     dataTable.column(1).search(karyawan);
     dataTable.column(4).search(status);
+    $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+        if (!tglMulai && !tglAkhir) return true;
+        const tgl = data[0];
+        if (!tgl) return true;
+        if (tglMulai && tgl < tglMulai) return false;
+        if (tglAkhir && tgl > tglAkhir) return false;
+        return true;
+    });
     dataTable.draw();
+    $.fn.dataTable.ext.search.pop();
 }
 
 function resetFilter() {
@@ -487,9 +498,13 @@ const FOOTER_LABEL = 'RINGKASAN';
 
     function exportToExcel() {
         const table = document.getElementById('absensiTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#absensiTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         let colCount = 0;
         let visibleColumns = [];
@@ -577,9 +592,13 @@ const FOOTER_LABEL = 'RINGKASAN';
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('absensiTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#absensiTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         const headers = [];
         let visibleColumns = [];

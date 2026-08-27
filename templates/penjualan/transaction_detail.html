@@ -13,7 +13,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    <!-- Header -->
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <nav aria-label="breadcrumb">
@@ -21,7 +21,7 @@
                     <li class="breadcrumb-item">
                         <a href="{% url 'penjualan:transaksi' %}">Transaksi POS</a>
                     </li>
-                    <li class="breadcrumb-item active">{{ transaction.nomor_transaksi }}</li>
+                    <li class="breadcrumb-item active fs-value-secondary">{{ transaction.nomor_transaksi }}</li>
                 </ol>
             </nav>
             <h4 class="mb-1">Detail Transaksi POS</h4>
@@ -37,11 +37,11 @@
     </div>
 
     <div class="row">
-        <!-- Transaction Details -->
+        
         <div class="col-xl-9 col-md-8">
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Transaksi #{{ transaction.nomor_transaksi }}</h5>
+                    <h5 class="mb-0 fs-card-title">Transaksi #{{ transaction.nomor_transaksi }}</h5>
                     {% if transaction.status == 'paid' %}
                     <span class="badge bg-label-success fs-6">Lunas</span>
                     {% elif transaction.status == 'unpaid' %}
@@ -53,7 +53,7 @@
                     {% endif %}
                 </div>
                 <div class="card-body">
-                    <!-- Transaction Info -->
+                    
                     <div class="row mb-4">
                         <div class="col-md-6">
                             <h6 class="text-muted mb-3">Informasi Transaksi</h6>
@@ -89,7 +89,7 @@
                         </div>
                     </div>
 
-                    <!-- Items Table -->
+                    {% if transaction.items.all %}
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead class="table-light">
@@ -131,7 +131,7 @@
                                 </tr>
                                 {% endfor %}
                             </tbody>
-                            <tfoot class="table-light">
+                            <tfoot class="table-footer-summary">
                                 <tr>
                                     <td colspan="5" class="text-end fw-bold">Subtotal:</td>
                                     <td class="text-end fw-bold">{{ transaction.subtotal|rupiah }}</td>
@@ -157,19 +157,33 @@
                             </tfoot>
                         </table>
                     </div>
+                    {% else %}
+                    <div class="card-body">
+                        <div class="text-center py-4 py-md-5 px-3 px-md-4">
+                            <div class="mb-4">
+                                <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 88px; height: 88px;">
+                                    <i class="ri-shopping-bag-3-line" style="font-size: 2.8rem;"></i>
+                                </div>
+                            </div>
+                            <h5 class="mb-3">Belum Ada Item Transaksi</h5>
+                            <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+                                Belum ada item produk pada transaksi ini.
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
 
-                    <!-- Payment Info -->
                     <div class="row mt-4">
                         <div class="col-md-6 offset-md-6">
                             <div class="card bg-light">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between mb-2">
                                         <span>Jumlah Bayar:</span>
-                                        <span class="fw-bold">{{ transaction.jumlah_bayar|rupiah }}</span>
+                                        <span class="fw-bold fs-value-primary">{{ transaction.jumlah_bayar|rupiah }}</span>
                                     </div>
                                     <div class="d-flex justify-content-between">
                                         <span>Kembalian:</span>
-                                        <span class="fw-bold text-success">{{ transaction.kembalian|rupiah }}</span>
+                                        <span class="fw-bold fs-value-primary">{{ transaction.kembalian|rupiah }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -188,12 +202,11 @@
             </div>
         </div>
 
-        <!-- Timeline & Actions -->
         <div class="col-xl-3 col-md-4">
-            <!-- Actions Card -->
+            
             <div class="card mb-4">
                 <div class="card-header">
-                    <h6 class="mb-0">Aksi</h6>
+                    <h6 class="mb-0 fs-card-title">Aksi</h6>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
@@ -207,10 +220,9 @@
                 </div>
             </div>
 
-            <!-- Timeline Card -->
             <div class="card">
                 <div class="card-header">
-                    <h6 class="mb-0">Timeline</h6>
+                    <h6 class="mb-0 fs-card-title">Timeline</h6>
                 </div>
                 <div class="card-body">
                     <ul class="timeline mb-0">
@@ -243,3 +255,6 @@
     </div>
 </div>
 {% endblock content %}
+{% block page_js %}
+{{ block.super }}
+{% endblock page_js %}

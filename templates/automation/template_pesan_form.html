@@ -19,7 +19,7 @@
     <div class="row">
         <div class="col-lg-8 mb-4">
             <div class="card mb-4">
-                <h5 class="card-header">Edit Template Pesan</h5>
+                <h5 class="card-header fs-card-title">Edit Template Pesan</h5>
                 <div class="card-body">
                     <form method="post">
                         {% csrf_token %}
@@ -33,7 +33,7 @@
                         <div class="mb-3">
                             <label class="form-label" for="id_template_pesan">Template Pesan</label>
                             <textarea class="form-control" id="id_template_pesan" name="template_pesan"
-                                      rows="15" style="font-family: monospace; font-size: 0.85rem;" required>{{ object.template_pesan }}</textarea>
+                                      rows="15" style="font-family: monospace; font-size: var(--fs-ui-sm);" required>{{ object.template_pesan }}</textarea>
                             <small class="text-muted">Gunakan variabel dengan format <code>{% templatetag openvariable %}variabel{% templatetag closevariable %}</code></small>
                         </div>
 
@@ -57,7 +57,7 @@
         <!-- Variabel yang Tersedia -->
         <div class="col-lg-4 mb-4">
             <div class="card mb-4">
-                <h5 class="card-header">Variabel Tersedia</h5>
+                <h5 class="card-header fs-card-title">Variabel Tersedia</h5>
                 <div class="card-body p-0">
                     <div class="list-group list-group-flush">
                         {% for var in variabel_tersedia %}
@@ -74,7 +74,7 @@
             </div>
 
             <div class="card">
-                <h5 class="card-header">Tips Formatting</h5>
+                <h5 class="card-header fs-card-title">Tips Formatting</h5>
                 <div class="card-body">
                     <div class="alert alert-info mb-0" role="alert">
                         <ul class="mb-0 ps-3">

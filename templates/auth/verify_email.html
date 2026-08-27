@@ -108,19 +108,11 @@
             {# ── Tombol Aksi (berbeda per skenario) ── #}
             {% if request.user.is_authenticated %}
             {# Skenario 1: Tombol Verifikasi + Kembali #}
-            <a id="btnSubmit" class="btn btn-primary w-100" href="{% url 'send-verification' %}" style="margin-bottom: 1rem !important;">
-              <span id="btnText" class="me-1">Verifikasi Email</span>
-              <span id="btnLoader" class="spinner-border spinner-border-sm visually-hidden" role="status"
-                aria-hidden="true"></span>
-            </a>
             <a class="btn btn-outline-secondary w-100" href="{% url 'dashboard:index' %}">
               Kembali ke Dashboard
             </a>
             {% else %}
             {# Skenario 2: Tombol Lewati + Link Kirim Ulang #}
-            <a class="btn btn-primary w-100" href="{% url 'login' %}" style="margin-bottom: 1.5rem !important;">
-              Lewati & Masuk
-            </a>
             <p class="text-center mb-0">Tidak menerima email?
               <a id="btnSubmit" class="text-center" href="{% url 'send-verification' %}">
                 <span id="btnText" class="me-1">Kirim Ulang</span>

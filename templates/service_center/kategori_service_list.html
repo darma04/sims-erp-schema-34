@@ -1,4 +1,4 @@
-{% extends 'layout/layout_vertical.html' %}
+﻿{% extends 'layout/layout_vertical.html' %}
 {% load static %}
 {% block title %}Kategori Service{% endblock %}
 {% block vendor_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" /><link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />{% endblock %}
@@ -12,10 +12,47 @@
         <a href="{% url 'service_center:kategori_create' %}" class="btn btn-primary"><i class="ri-add-line me-1"></i>Tambah Kategori</a>
         {% endif %}
     </div>
-    <div class="card mb-4"><div class="card-body"><div class="row g-3"><div class="col-md-6"><label class="form-label">Cari Kategori</label><input type="text" class="form-control" id="searchInput" placeholder="Nama kategori..."></div></div><div class="row g-3 mt-2 align-items-end"><div class="col-md-3"><div class="d-grid gap-2"><button class="btn btn-primary" onclick="applyFilter()"><i class="ri-filter-3-line me-1"></i>Terapkan</button><button class="btn btn-label-secondary" onclick="resetFilter()"><i class="ri-refresh-line me-1"></i>Reset</button></div></div></div></div></div>
+    <!-- Filter Card -->
+    <div class="card mb-4"><div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-12">
+                <label class="form-label">Cari Kategori</label>
+                <input type="text" class="form-control" id="searchInput" placeholder="Nama kategori...">
+            </div>
+        </div>
+        <div class="row g-3 mt-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Pilih Kolom</label>
+                <div class="dropdown">
+                    <button class="btn btn-label-secondary dropdown-toggle w-100" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside"><i class="ri-layout-column-line me-1"></i>Pilih Kolom</button>
+                    <div class="dropdown-menu p-3" style="min-width:280px">
+                        <h6 class="dropdown-header px-0 mb-2">Kolom Tabel</h6>
+                        <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="0" checked onchange="toggleColumns()"><label class="form-check-label">Icon</label></div>
+                        <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="1" checked onchange="toggleColumns()"><label class="form-check-label">Nama Kategori</label></div>
+                        <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="2" checked onchange="toggleColumns()"><label class="form-check-label">Deskripsi</label></div>
+                        <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="3" checked onchange="toggleColumns()"><label class="form-check-label">Jenis Service</label></div>
+                        <div class="form-check mb-2"><input class="form-check-input column-checkbox" type="checkbox" value="4" checked onchange="toggleColumns()"><label class="form-check-label">Status</label></div>
+                        <div class="dropdown-divider my-2"></div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-primary flex-fill" onclick="selectAllColumns()">Semua</button>
+                            <button class="btn btn-sm btn-label-secondary flex-fill" onclick="deselectAllColumns()">Kosongkan</button>
+                        </div>
+                    </div>
+                </div>
+                <small class="text-muted d-block mt-1">Klik untuk memilih kolom</small>
+            </div>
+            <div class="col-md-6"></div>
+            <div class="col-md-3">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary" onclick="applyFilter()"><i class="ri-filter-3-line me-1"></i>Terapkan Filter</button>
+                    <button class="btn btn-label-secondary" onclick="resetFilter()"><i class="ri-refresh-line me-1"></i>Reset</button>
+                </div>
+            </div>
+        </div>
+    </div></div>
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Daftar Kategori</h5>
+            <h5 class="mb-0 fs-card-title">Daftar Kategori</h5>
             <div class="d-flex gap-2"><button class="btn btn-sm btn-label-success" onclick="exportToExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button><button class="btn btn-sm btn-label-danger" onclick="exportToPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button></div>
         </div>
         {% if kategori_list %}
@@ -72,7 +109,7 @@
                 </p>
                 <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
                     {% if can_create.service_center %}
-                    <a href="{% url 'service_center:kategori_service_add' %}" class="btn btn-primary btn-lg">
+                    <a href="{% url 'service_center:kategori_create' %}" class="btn btn-primary btn-lg">
                         <i class="ri-add-line me-1"></i>Tambah Kategori
                     </a>
                     {% endif %}
@@ -134,12 +171,21 @@ document.getElementById('confirmDeleteBtn').addEventListener('click',function(){
     };
 
     function exportToExcel() {
+        const table = document.getElementById('dataTable');
+        if (!table) { showExportEmpty(); return; }
+
         const tableObj = new $.fn.dataTable.Api('#dataTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
+
         let colCount = 0;
         let visibleColumns = [];
 
         tableObj.columns().every(function (index) {
-            const headerText = this.header() ? this.header().textContent.trim() : '';
+            const headerNode = this.header();
+            const headerText = headerNode ? headerNode.textContent.trim() : '';
             if (this.visible() && headerText.toLowerCase() !== 'aksi' && headerText.toLowerCase() !== 'icon') {
                 visibleColumns.push({ index: index, text: headerText });
                 colCount++;
@@ -147,19 +193,29 @@ document.getElementById('confirmDeleteBtn').addEventListener('click',function(){
         });
 
         let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
-        html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head><body>';
+        html += '<head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
+        html += '<body>';
 
+        // --- ADD EXCEL HEADER (Company Info) ---
         html += '<table border="0">';
-        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
-        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
-        html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
-        html += `<tr><td colspan="${colCount}"></td></tr></table>`;
+        if (typeof EXCEL_INFO !== 'undefined') {
+            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:16px; font-weight:bold; color:#5F61E6;">${EXCEL_INFO.name}</td></tr>`;
+            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.address}</td></tr>`;
+            html += `<tr><td colspan="${colCount}" style="text-align:center; font-size:12px;">${EXCEL_INFO.phone} | ${EXCEL_INFO.email}</td></tr>`;
+            html += `<tr><td colspan="${colCount}"></td></tr>`;
+        }
+        html += '</table>';
 
-        html += '<table border="1"><thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;">';
-        visibleColumns.forEach(col => { html += `<th>${col.text}</th>`; });
+        html += '<table border="1">';
+        html += '<thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;">';
+
+        visibleColumns.forEach(col => {
+            html += `<th>${col.text}</th>`;
+        });
+
         html += '</tr></thead><tbody>';
 
-        tableObj.rows({ search: 'applied' }).every(function (rowIdx) {
+        tableObj.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
             html += '<tr>';
             visibleColumns.forEach(col => {
                 let cellNode = tableObj.cell(rowIdx, col.index).node();
@@ -175,10 +231,14 @@ document.getElementById('confirmDeleteBtn').addEventListener('click',function(){
         html += '</tr>';
 
         html += '</tbody></table>';
+
+        // --- ADD EXCEL FOOTER ---
         html += '<table border="0">';
         html += `<tr><td colspan="${colCount}"></td></tr>`;
-        html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</td></tr>`;
-        html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">${EXCEL_INFO.copyright}</td></tr>`;
+        if (typeof EXCEL_INFO !== 'undefined') {
+            html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</td></tr>`;
+            html += `<tr><td colspan="${colCount}" style="text-align:right; font-size:10px; color:#697A8D;">${EXCEL_INFO.copyright}</td></tr>`;
+        }
         html += '</table></body></html>';
 
         const BOM = '\uFEFF';
@@ -195,7 +255,15 @@ document.getElementById('confirmDeleteBtn').addEventListener('click',function(){
 
     function exportToPDF() {
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
+
+        const table = document.getElementById('dataTable');
+        if (!table) { showExportEmpty(); return; }
+
         const tableObj = new $.fn.dataTable.Api('#dataTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
         
         const headers = [];
         const visibleColumns = [];
@@ -208,7 +276,7 @@ document.getElementById('confirmDeleteBtn').addEventListener('click',function(){
         });
 
         const body = [headers];
-        tableObj.rows({ search: 'applied' }).every(function (rowIdx) {
+        tableObj.rows({ page: 'current' }).every(function (rowIdx) {
             const rowData = [];
             visibleColumns.forEach(colIndex => {
                 let cellNode = tableObj.cell(rowIdx, colIndex).node();

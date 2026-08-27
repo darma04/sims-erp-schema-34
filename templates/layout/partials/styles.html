@@ -26,7 +26,7 @@
 {% endif %}
 
 
-<link rel="stylesheet" href="{% static 'css/demo.css' %}?v=5" />
+<link rel="stylesheet" href="{% static 'css/demo.css' %}?v=14" />
 
 <!--Vendor CSS-->
 <link rel="stylesheet" href="{% static 'vendor/libs/perfect-scrollbar/perfect-scrollbar.css' %}" />
@@ -35,6 +35,31 @@
 
 <!-- Fix Mobile: Pagination Scrollbar + Export Buttons (inline agar bypass WhiteNoise cache) -->
 <style>
+
+/* ══════════════════════════════════════════════════════════════
+   FONT SCALE 2 TINGKAT — SKALA RESMI (satu sumber)
+   Tingkat 1: Heading (h3-h6) — Tingkat 2: Body & UI.
+   Ubah nilai di :root ini → seluruh komponen menyesuaikan.
+   ══════════════════════════════════════════════════════════════ */
+:root {
+  /* TINGKAT 1 — HEADING (Judul & Sub-judul) */
+  --fs-h3: 0.875rem;      /* 21.6px — judul section besar */
+  --fs-h4: 1.125rem;     /* 18px   — judul halaman */
+  --fs-h5: 0.875rem;         /* 16px   — judul card / sub-judul */
+  --fs-h6: 0.75rem;     /* 14px   — judul kecil / label section */
+  /* TINGKAT 2 — BODY & UI (Isi & Kontrol) */
+  --fs-ui-title: 1.125rem;      /* 24px — .fs-title (angka statistik besar) */
+  --fs-ui-subtitle: 0.875rem; /* 18px — .fs-subtitle */
+  --fs-ui-stat: 0.875rem;         /* 16px — .fs-card-title & . */
+  --fs-ui-value: 0.75rem;    /* 14px — ., modal-title */
+  --fs-ui-body: 0.75rem;    /* 15px — .fs-body = body default Bootstrap */
+  --fs-ui-sm: 0.75rem;      /* 13px — .fs-small, tombol, form, modal-body */
+  --fs-ui-xs: 0.75rem;        /* 12px — .fs-label, form-label, alert */
+  --fs-ui-xxs: 0.6875rem;     /* 11px — btn-sm, pagination, dataTables info */
+  --fs-ui-3xs: 0.625rem;      /* 10px — badge, tombol aksi tabel */
+  --fs-ui-micro: 0.5625rem;   /* 9px  — badge HP kecil (≤480px) */
+  --fs-brand: 1.25rem;        /* 20px — .app-brand-text.demo */
+}
 @media (max-width: 991px) {
   /* === PAGINATION SCROLLBAR FIX === */
   .card-datatable,
@@ -101,7 +126,7 @@
   .card-header.d-flex.justify-content-between > .d-flex.gap-2 > .btn {
     flex: 1 1 0 !important;
     text-align: center !important;
-    font-size: 0.8125rem !important;
+    font-size: var(--fs-ui-sm) !important;
     padding: 0.5rem 0.75rem !important;
     min-height: 2.25rem !important;
   }
@@ -115,7 +140,7 @@
   }
   .card-header.d-flex.justify-content-between > .d-flex.gap-2 > .btn {
     width: 100% !important;
-    font-size: 0.8125rem !important;
+    font-size: var(--fs-ui-sm) !important;
     padding: 0.5rem 0.75rem !important;
     min-height: 2.25rem !important;
   }
@@ -126,6 +151,22 @@
    Berlaku untuk: Dashboard, CRUD, SUBCRUD, Form, Tabel, Modal, dll.
    ═══════════════════════════════════════════════════════════════════════ */
 @media (max-width: 576px) {
+
+  :root {
+  --fs-h3: 0.75rem;             /* 16px — h3 mobile */
+  --fs-h4: 0.9375rem;        /* 15px — judul halaman mobile */
+  --fs-h5: 0.875rem;        /* 14px — judul card mobile */
+  --fs-h6: 0.625rem;          /* 12px — judul kecil mobile */
+  --fs-ui-title: 0.9375rem;   /* 18px — .fs-title mobile */
+  --fs-ui-subtitle: 0.875rem; /* 14px — .fs-subtitle mobile */
+  --fs-ui-stat: 0.875rem;    /* 14px — .fs-card-title mobile */
+  --fs-ui-value: 0.625rem;    /* 12px — . mobile */
+  --fs-ui-body: 0.625rem;   /* 13px — .fs-body mobile */
+  --fs-ui-xs: 0.625rem;     /* 11px — .fs-label & badge mobile */
+  --fs-ui-xxs: 0.6875rem;    /* 11px — pagination & info mobile */
+  --fs-ui-3xs: 0.625rem;     /* 10px — .fs-tiny mobile */
+  --fs-ui-micro: 0.5625rem;  /* 9px  — badge HP kecil */
+}
 
   /* ─── Container utama: kurangi padding samping ─── */
   .container-p-y {
@@ -164,10 +205,10 @@
   }
 
   /* ─── Heading: sedikit lebih kecil ─── */
-  h3, .h3 { font-size: 1.15rem !important; }
-  h4, .h4 { font-size: 1rem !important; }
-  h5, .h5 { font-size: 0.9375rem !important; }
-  h6, .h6 { font-size: 0.8125rem !important; }
+  h3, .h3 { font-size: var(--fs-h3) !important; }
+  h4, .h4 { font-size: var(--fs-h4) !important; }
+  h5, .h5 { font-size: var(--fs-h5) !important; }
+  h6, .h6 { font-size: var(--fs-h6) !important; }
 
   /* ─── Page header (judul + tombol aksi) ─── */
   .d-flex.justify-content-between.align-items-center.mb-4 {
@@ -200,11 +241,11 @@
     margin-bottom: 0.5rem !important;
   }
   .form-label {
-    font-size: 0.8125rem !important;
+    font-size: var(--fs-ui-sm) !important;
     margin-bottom: 0.25rem !important;
   }
   .form-control, .form-select {
-    font-size: 0.8125rem !important;
+    font-size: var(--fs-ui-sm) !important;
     padding: 0.4375rem 0.75rem !important;
   }
   .form-floating > .form-control,
@@ -214,56 +255,51 @@
     min-height: 2.5rem !important;
   }
   .form-floating > label {
-    font-size: 0.8125rem !important;
+    font-size: var(--fs-ui-sm) !important;
   }
   .form-text, small.text-muted {
-    font-size: 0.75rem !important;
+    font-size: var(--fs-ui-xs) !important;
   }
 
   /* ─── Tabel: padding sel lebih compact ─── */
   .table th,
   .table td {
     padding: 0.5rem 0.625rem !important;
-    font-size: 0.8rem !important;
+    font-size: var(--fs-ui-sm) !important;
   }
-  .table .avatar.avatar-sm {
-    width: 28px !important;
-    height: 28px !important;
-  }
-
   /* ─── DataTables: wrapper lebih compact ─── */
   .dataTables_wrapper .dataTables_length,
   .dataTables_wrapper .dataTables_filter,
   .dataTables_wrapper .dataTables_info,
   .dataTables_wrapper .dataTables_paginate {
-    font-size: 0.75rem !important;
+    font-size: var(--fs-ui-xxs) !important;
     padding: 0.375rem 0.5rem !important;
   }
   .dataTables_wrapper .dataTables_length select {
-    font-size: 0.75rem !important;
+    font-size: var(--fs-ui-xxs) !important;
     padding: 0.25rem 0.375rem !important;
   }
   .dataTables_wrapper .dataTables_filter input {
-    font-size: 0.8rem !important;
+    font-size: var(--fs-ui-sm) !important;
     padding: 0.375rem 0.5rem !important;
   }
 
   /* ─── Pagination: lebih compact ─── */
   .pagination .page-link {
     padding: 0.3rem 0.6rem !important;
-    font-size: 0.75rem !important;
+    font-size: var(--fs-ui-xxs) !important;
   }
   .dataTables_paginate .paginate_button {
     padding: 0.25rem 0.5rem !important;
-    font-size: 0.75rem !important;
+    font-size: var(--fs-ui-xxs) !important;
   }
 
   /* ─── Button: font lebih kecil pada mobile ─── */
   .btn {
-    font-size: 0.8125rem !important;
+    font-size: var(--fs-ui-sm) !important;
   }
   .btn-sm {
-    font-size: 0.75rem !important;
+    font-size: var(--fs-ui-xxs) !important;
     padding: 0.3rem 0.6rem !important;
   }
   .btn-icon.btn-sm {
@@ -276,24 +312,24 @@
     padding-top: 0.5rem !important;
     padding-bottom: 0.5rem !important;
     margin-bottom: 0.75rem !important;
-    font-size: 1rem !important;
+    font-size: var(--fs-h4) !important;
   }
   h4.py-3.mb-4 .text-muted.fw-light {
-    font-size: 0.85rem !important;
+    font-size: var(--fs-ui-sm) !important;
   }
 
   /* ─── Alert: lebih compact ─── */
   .alert {
     padding: 0.625rem 0.75rem !important;
-    font-size: 0.8125rem !important;
+    font-size: var(--fs-ui-sm) !important;
   }
   .alert .alert-heading {
-    font-size: 0.875rem !important;
+    font-size: var(--fs-ui-stat) !important;
   }
 
   /* ─── Badge: font lebih kecil ─── */
   .badge {
-    font-size: 0.7rem !important;
+    font-size: var(--fs-ui-xs) !important;
     padding: 0.3em 0.55em !important;
   }
 
@@ -308,7 +344,7 @@
     padding: 0.5rem 0.875rem !important;
   }
   .modal .modal-title {
-    font-size: 0.9375rem !important;
+    font-size: 0.875rem !important; /* 14px — modal title mobile */
   }
 
   /* ─── Divider, separator ─── */
@@ -319,17 +355,17 @@
 
   /* ─── Dropdown ─── */
   .dropdown-menu {
-    font-size: 0.8125rem !important;
+    font-size: var(--fs-ui-sm) !important;
   }
   .dropdown-item {
     padding: 0.375rem 0.875rem !important;
-    font-size: 0.8125rem !important;
+    font-size: var(--fs-ui-sm) !important;
   }
 
   /* ─── Tab navigation ─── */
   .nav-tabs .nav-link,
   .nav-pills .nav-link {
-    font-size: 0.8125rem !important;
+    font-size: var(--fs-ui-sm) !important;
     padding: 0.4375rem 0.75rem !important;
   }
 
@@ -350,13 +386,13 @@
   /* ─── List group ─── */
   .list-group-item {
     padding: 0.5rem 0.75rem !important;
-    font-size: 0.8125rem !important;
+    font-size: var(--fs-ui-sm) !important;
   }
 
   /* ─── Accordion ─── */
   .accordion-button {
     padding: 0.625rem 0.875rem !important;
-    font-size: 0.8125rem !important;
+    font-size: var(--fs-ui-sm) !important;
   }
   .accordion-body {
     padding: 0.625rem 0.875rem !important;
@@ -364,7 +400,7 @@
 
   /* ─── Input group (filter, search) ─── */
   .input-group-text {
-    font-size: 0.8rem !important;
+    font-size: var(--fs-ui-sm) !important;
     padding: 0.375rem 0.5rem !important;
   }
 
@@ -377,13 +413,22 @@
   }
 
   /* ─── Teks muted dan caption ─── */
-  .text-muted { font-size: 0.8rem; }
-  p.mb-0 { font-size: 0.8125rem; }
+  .text-muted { font-size: var(--fs-ui-sm); }
+  p.mb-0 { font-size: var(--fs-ui-sm); }
 
   /* ─── Action column: tombol aksi lebih compact ─── */
   .btn-text-secondary.btn-icon {
     width: 28px !important;
     height: 28px !important;
+  }
+
+  /* Pagination: center di mobile */
+  .dataTables_wrapper .dataTables_paginate {
+    justify-content: center !important;
+    text-align: center !important;
+  }
+  .dataTables_wrapper .dataTables_paginate ul.pagination {
+    justify-content: center !important;
   }
 }
 
@@ -411,7 +456,7 @@
   }
   .table th, .table td {
     padding: 0.5rem 0.75rem !important;
-    font-size: 0.8125rem !important;
+    font-size: var(--fs-ui-sm) !important;
   }
   h4.py-3.mb-4 {
     padding-top: 0.625rem !important;
@@ -419,10 +464,50 @@
     margin-bottom: 0.875rem !important;
   }
   .btn {
-    font-size: 0.8125rem !important;
+    font-size: var(--fs-ui-sm) !important;
   }
   .form-control, .form-select {
-    font-size: 0.8125rem !important;
+    font-size: var(--fs-ui-sm) !important;
+  }
+}
+
+/* ═══ NAVBAR SEARCH: icon-click only, inline professional ═══ */
+.navbar-nav .navbar-search-wrapper {
+  display: flex !important;
+  align-items: center;
+}
+.layout-navbar .search-input-wrapper {
+  display: none !important;
+  position: relative !important;
+  width: 260px !important;
+  height: auto !important;
+  left: auto !important;
+  top: auto !important;
+  z-index: 1;
+}
+.layout-navbar .search-input-wrapper.show-search {
+  display: flex !important;
+  align-items: center;
+}
+.layout-navbar .search-input-wrapper .search-input {
+  height: auto !important;
+  padding: 0.4rem 2.25rem 0.4rem 0.75rem !important;
+  box-shadow: none !important;
+  font-size: var(--fs-ui-sm) !important;
+  border-radius: 0.5rem !important;
+}
+.layout-navbar .search-input-wrapper .search-toggler {
+  position: absolute;
+  top: 50% !important;
+  right: 0.5rem !important;
+  transform: translateY(-50%);
+  z-index: 1;
+  cursor: pointer;
+  font-size: 1.125rem; /* icon toggle — normalisasi 1.1→1.125 */
+}
+@media (max-width: 575px) {
+  .layout-navbar .search-input-wrapper {
+    width: 200px !important;
   }
 }
 
@@ -431,211 +516,652 @@
    Masalah: Beberapa teks (menu header sidebar, label, dll) terlalu gelap
    sehingga "hilang" di background gelap dark mode.
 
-   Selector: [data-theme="dark"] — aktif saat user memilih mode Gelap
+   Selector: .dark-style — aktif saat user memilih mode Gelap
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ─── SIDEBAR: Menu Header (MASTER DATA, TRANSAKSI, dll) ─── */
-[data-theme="dark"] .menu-header-text {
+.dark-style .menu-header-text {
   color: rgba(255, 255, 255, 0.45) !important;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 /* ─── SIDEBAR: Menu Link teks (Dashboard, Produk, dll) ─── */
-[data-theme="dark"] .menu-link {
+.dark-style .menu-link {
   color: rgba(255, 255, 255, 0.75) !important;
 }
-[data-theme="dark"] .menu-link:hover {
+.dark-style .menu-link:hover {
   color: rgba(255, 255, 255, 0.95) !important;
 }
-[data-theme="dark"] .menu-item.active > .menu-link,
-[data-theme="dark"] .menu-item.open > .menu-link {
+.dark-style .menu-item.active > .menu-link,
+.dark-style .menu-item.open > .menu-link {
   color: #ffffff !important;
 }
 
 /* ─── SIDEBAR: Sub-menu link ─── */
-[data-theme="dark"] .menu-sub .menu-link {
+.dark-style .menu-sub .menu-link {
   color: rgba(255, 255, 255, 0.6) !important;
 }
-[data-theme="dark"] .menu-sub .menu-item.active > .menu-link {
+.dark-style .menu-sub .menu-item.active > .menu-link {
   color: #ffffff !important;
 }
-[data-theme="dark"] .menu-sub .menu-link:hover {
+.dark-style .menu-sub .menu-link:hover {
   color: rgba(255, 255, 255, 0.9) !important;
 }
 
 /* ─── SIDEBAR: Icon menu ─── */
-[data-theme="dark"] .menu-link i {
+.dark-style .menu-link i {
   color: rgba(255, 255, 255, 0.55) !important;
 }
-[data-theme="dark"] .menu-item.active > .menu-link i,
-[data-theme="dark"] .menu-item.open > .menu-link i {
+.dark-style .menu-item.active > .menu-link i,
+.dark-style .menu-item.open > .menu-link i {
   color: #ffffff !important;
 }
 
 /* ─── SIDEBAR: Brand/Logo title ─── */
-[data-theme="dark"] .app-brand-text {
+.dark-style .app-brand-text {
   color: #ffffff !important;
 }
 
 /* ─── SIDEBAR: Toggle arrow ─── */
-[data-theme="dark"] .menu-toggle::after {
+.dark-style .menu-toggle::after {
   border-color: rgba(255, 255, 255, 0.5) !important;
 }
 
 /* ─── NAVBAR: Search dan teks ─── */
-[data-theme="dark"] .navbar-search-wrapper .search-input {
+.dark-style .navbar-search-wrapper .search-input {
   color: rgba(255, 255, 255, 0.8) !important;
 }
-[data-theme="dark"] .navbar-nav .nav-link {
+.dark-style .navbar-nav .nav-link {
   color: rgba(255, 255, 255, 0.75) !important;
 }
 
 /* ─── CARD: Heading dan body text ─── */
-[data-theme="dark"] .card {
+.dark-style .card {
   color: rgba(255, 255, 255, 0.85);
 }
-[data-theme="dark"] .card h1,
-[data-theme="dark"] .card h2,
-[data-theme="dark"] .card h3,
-[data-theme="dark"] .card h4,
-[data-theme="dark"] .card h5,
-[data-theme="dark"] .card h6 {
+.dark-style .card h1,
+.dark-style .card h2,
+.dark-style .card h3,
+.dark-style .card h4,
+.dark-style .card h5,
+.dark-style .card h6 {
   color: rgba(255, 255, 255, 0.9) !important;
 }
-[data-theme="dark"] .card .card-header h5,
-[data-theme="dark"] .card .card-header h6 {
+.dark-style .card .card-header h5,
+.dark-style .card .card-header h6 {
   color: rgba(255, 255, 255, 0.9) !important;
 }
 
 /* ─── CARD: Subtitle dan text-muted ─── */
-[data-theme="dark"] .text-muted {
-  color: rgba(255, 255, 255, 0.5) !important;
+.dark-style .text-muted { color: rgba(255, 255, 255, 0.7) !important;
 }
 
 /* ─── TABEL: Header dan body ─── */
-[data-theme="dark"] .table thead th {
+.dark-style .table thead th {
   color: rgba(255, 255, 255, 0.7) !important;
 }
-[data-theme="dark"] .table tbody td {
+.dark-style .table tbody td {
   color: rgba(255, 255, 255, 0.8) !important;
 }
-[data-theme="dark"] .table tbody td a {
+.dark-style .table tbody td a {
   color: rgba(255, 255, 255, 0.85) !important;
 }
 
 /* ─── FORM: Label dan input text ─── */
-[data-theme="dark"] .form-label,
-[data-theme="dark"] label {
+.dark-style .form-label,
+.dark-style label {
   color: rgba(255, 255, 255, 0.75) !important;
 }
-[data-theme="dark"] .form-control,
-[data-theme="dark"] .form-select {
+.dark-style .form-control,
+.dark-style .form-select {
   color: rgba(255, 255, 255, 0.85) !important;
   border-color: rgba(255, 255, 255, 0.15) !important;
 }
-[data-theme="dark"] .form-control::placeholder {
+.dark-style .form-control::placeholder {
   color: rgba(255, 255, 255, 0.35) !important;
 }
 
 /* ─── BREADCRUMB ─── */
-[data-theme="dark"] .breadcrumb-item,
-[data-theme="dark"] .breadcrumb-item a {
+.dark-style .breadcrumb-item,
+.dark-style .breadcrumb-item a {
   color: rgba(255, 255, 255, 0.6) !important;
 }
-[data-theme="dark"] .breadcrumb-item.active {
+.dark-style .breadcrumb-item.active {
   color: rgba(255, 255, 255, 0.8) !important;
 }
 
 /* ─── MODAL ─── */
-[data-theme="dark"] .modal-title {
+.dark-style .modal-title {
   color: rgba(255, 255, 255, 0.9) !important;
 }
-[data-theme="dark"] .modal-body {
+.dark-style .modal-body {
   color: rgba(255, 255, 255, 0.8) !important;
 }
 
 /* ─── DROPDOWN ─── */
-[data-theme="dark"] .dropdown-item {
+.dark-style .dropdown-item {
   color: rgba(255, 255, 255, 0.75) !important;
 }
-[data-theme="dark"] .dropdown-item:hover {
+.dark-style .dropdown-item:hover {
   color: #ffffff !important;
 }
 
 /* ─── PAGINATION ─── */
-[data-theme="dark"] .page-link {
+.dark-style .page-link {
   color: rgba(255, 255, 255, 0.7) !important;
 }
 
 /* ─── DATATABLES: Info dan filter text ─── */
-[data-theme="dark"] .dataTables_info {
+.dark-style .dataTables_info {
   color: rgba(255, 255, 255, 0.6) !important;
 }
-[data-theme="dark"] .dataTables_filter label,
-[data-theme="dark"] .dataTables_length label {
+.dark-style .dataTables_filter label,
+.dark-style .dataTables_length label {
   color: rgba(255, 255, 255, 0.7) !important;
 }
 
 /* ─── ALERT ─── */
-[data-theme="dark"] .alert {
+.dark-style .alert {
   color: rgba(255, 255, 255, 0.85) !important;
 }
 
 /* ─── TABS / NAV ─── */
-[data-theme="dark"] .nav-tabs .nav-link {
+.dark-style .nav-tabs .nav-link {
   color: rgba(255, 255, 255, 0.6) !important;
 }
-[data-theme="dark"] .nav-tabs .nav-link.active {
+.dark-style .nav-tabs .nav-link.active {
   color: #ffffff !important;
 }
 
 /* ─── ACCORDION ─── */
-[data-theme="dark"] .accordion-button {
+.dark-style .accordion-button {
   color: rgba(255, 255, 255, 0.85) !important;
 }
-[data-theme="dark"] .accordion-body {
+.dark-style .accordion-body {
   color: rgba(255, 255, 255, 0.75) !important;
 }
 
 /* ─── LIST GROUP ─── */
-[data-theme="dark"] .list-group-item {
+.dark-style .list-group-item {
   color: rgba(255, 255, 255, 0.8) !important;
 }
 
 /* ─── FOOTER ─── */
-[data-theme="dark"] .footer {
+.dark-style .footer {
   color: rgba(255, 255, 255, 0.5) !important;
 }
 
 /* ─── PAGE HEADER: judul halaman (h4) dan deskripsi ─── */
-[data-theme="dark"] .container-xxl h4,
-[data-theme="dark"] .container-p-y h4,
-[data-theme="dark"] .content-wrapper h4 {
+.dark-style .container-xxl h4,
+.dark-style .container-p-y h4,
+.dark-style .content-wrapper h4 {
   color: rgba(255, 255, 255, 0.9) !important;
 }
-[data-theme="dark"] .container-xxl p,
-[data-theme="dark"] .container-p-y p {
+.dark-style .container-xxl p,
+.dark-style .container-p-y p {
   color: rgba(255, 255, 255, 0.7);
 }
 
 /* ─── FILTER CARD ─── */
-[data-theme="dark"] .card .form-control,
-[data-theme="dark"] .card .form-select {
+.dark-style .card .form-control,
+.dark-style .card .form-select {
   background-color: rgba(255, 255, 255, 0.05) !important;
   color: rgba(255, 255, 255, 0.85) !important;
 }
 
 /* ─── TIMELINE (Dashboard) ─── */
-[data-theme="dark"] .timeline .timeline-header span {
+.dark-style .timeline .timeline-header span {
   color: rgba(255, 255, 255, 0.85) !important;
 }
-[data-theme="dark"] .timeline .timeline-event p {
+.dark-style .timeline .timeline-event p {
   color: rgba(255, 255, 255, 0.65) !important;
 }
 
 /* ─── SVG path fill di sidebar (toggle arrow) ─── */
-[data-theme="dark"] .layout-menu-toggle svg path {
+.dark-style .layout-menu-toggle svg path {
   fill: rgba(255, 255, 255, 0.6) !important;
 }
+
+/* ================================================================
+   TABLE SCROLL CONTROL - Global DataTables consistency
+   Satu scrollbar horizontal hanya pada tabel, bukan pagination/card
+   ================================================================ */
+.card-datatable,
+.card-datatable.table-responsive,
+div.card-datatable {
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
+  max-width: 100% !important;
+}
+
+.card-datatable .dataTables_wrapper {
+  overflow-x: hidden !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+.card-datatable .dataTables_wrapper > .row {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.card-datatable .dataTables_wrapper > .table-responsive {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+.dataTables_wrapper .pagination {
+  flex-wrap: wrap !important;
+  overflow-x: hidden !important;
+}
+
+.dataTables_wrapper .dataTables_paginate,
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter {
+  overflow-x: hidden !important;
+}
+
+/* --- DARK MODE: DataTable Pagination --- */
+.dark-style .dataTables_paginate .paginate_button {
+  color: rgba(255, 255, 255, 0.65) !important;
+  background: transparent !important;
+}
+.dark-style .dataTables_paginate .paginate_button:hover:not(.disabled) {
+  background: rgba(105, 108, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border: none !important;
+}
+.dark-style .dataTables_paginate .paginate_button.current {
+  background: #696cff !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+.dark-style .dataTables_paginate .paginate_button.disabled {
+  color: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* --- DARK MODE: Chart Labels & Grid (ApexCharts & Chart.js) --- */
+.dark-style .apexcharts-text {
+  fill: rgba(255, 255, 255, 0.75) !important;
+}
+.dark-style .apexcharts-title-text,
+.dark-style .apexcharts-subtitle-text {
+  fill: rgba(255, 255, 255, 0.85) !important;
+}
+.dark-style .apexcharts-gridline {
+  stroke: rgba(255, 255, 255, 0.1) !important;
+}
+.dark-style .apexcharts-xaxis-label,
+.dark-style .apexcharts-yaxis-label {
+  fill: rgba(255, 255, 255, 0.6) !important;
+}
+.dark-style .apexcharts-tooltip {
+  background: #2f3349 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+.dark-style .apexcharts-tooltip-title {
+  background: #1e2130 !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+/* --- DARK MODE: Stat/Summary Cards --- */
+.dark-style .card .card-body h5,
+.dark-style .card .card-body h6,
+.dark-style .card .card-body .fw-bold {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+.dark-style .card .card-body .text-success {
+  color: #28c76f !important;
+}
+.dark-style .card .card-body .text-warning {
+  color: #ff9f43 !important;
+}
+.dark-style .card .card-body .text-danger {
+  color: #ea5455 !important;
+}
+.dark-style .card .avatar .avatar-initial {
+  color: inherit !important;
+}
+/* FIX: Ikon avatar-initial bg-label-* jangan putih di dark mode */
+.dark-style .card .avatar .avatar-initial.bg-label-primary {
+  color: var(--bs-primary) !important;
+}
+.dark-style .card .avatar .avatar-initial.bg-label-danger {
+  color: var(--bs-danger) !important;
+}
+.dark-style .card .avatar .avatar-initial.bg-label-success {
+  color: var(--bs-success) !important;
+}
+.dark-style .card .avatar .avatar-initial.bg-label-warning {
+  color: var(--bs-warning) !important;
+}
+.dark-style .card .avatar .avatar-initial.bg-label-info {
+  color: var(--bs-info) !important;
+}
+.dark-style .card .avatar .avatar-initial.bg-label-secondary {
+  color: var(--bs-secondary) !important;
+}
+
+/* --- DARK MODE: Alert text --- */
+.dark-style .alert strong,
+.dark-style .alert h5 {
+  color: inherit !important;
+}
+
+/* --- DARK MODE: Badges inside tables --- */
+.dark-style .table .badge {
+  color: inherit !important;
+}
+
+/* --- DARK MODE: code/pre elements (SKU display) --- */
+.dark-style table code {
+  color: rgba(255, 255, 255, 0.8) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* --- DARK MODE: Form inside cards --- */
+.dark-style .card .form-control,
+.dark-style .card .form-select {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+.dark-style .card .form-label {
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+.dark-style .card .input-group-text {
+  color: rgba(255, 255, 255, 0.6) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* --- DARK MODE: Stat card small text --- */
+.dark-style .card .card-body small,
+.dark-style .card .card-body .small,
+.dark-style .card .card-body .text-muted {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* --- DARK MODE: Chart canvas background --- */
+.dark-style canvas[id*="Chart"] {
+  filter: none;
+}
+.dark-style .card-header .dropdown .btn-text-secondary {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+.dark-style .card-header .dropdown .btn-text-secondary:hover {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* --- DARK MODE: ApexCharts Legend & Data Labels --- */
+.dark-style .apexcharts-legend-text,
+.dark-style .apexcharts-legend-text span {
+  color: rgba(255, 255, 255, 0.75) !important;
+  fill: rgba(255, 255, 255, 0.75) !important;
+}
+.dark-style .apexcharts-datalabel,
+.dark-style .apexcharts-datalabels text {
+  fill: rgba(255, 255, 255, 0.8) !important;
+}
+.dark-style .apexcharts-xaxistooltip,
+.dark-style .apexcharts-yaxistooltip {
+  background: #2f3349 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* DARK MODE -- Override hardcoded inline light backgrounds */
+.dark-style [style*="background: #f8f9ff"],
+.dark-style [style*="background:#f8f9ff"],
+.dark-style [style*="background: #f8f9"] {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+.dark-style [style*="background: #ffffff"],
+.dark-style [style*="background:#ffffff"],
+.dark-style [style*="background: #fff"],
+.dark-style [style*="background:#fff"],
+.dark-style [style*="background: white"] {
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+.dark-style [style*="color: #333"],
+.dark-style [style*="color:#333"],
+.dark-style [style*="color: #000"] {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+@media (max-width: 575.98px) {
+  /* Override BS5: pagination center instead of left */
+  div.dataTables_wrapper div.dataTables_paginate ul.pagination {
+    justify-content: center !important;
+  }
+}
+
+/* ═══ SEARCH INPUT: spacing placeholder + border icon konsisten ═══ */
+.layout-wrapper .card .input-group.input-group-merge > input.form-control {
+    padding-left: 1rem !important;
+    margin-left: 0 !important;
+}
+.layout-wrapper .card .input-group.input-group-merge .input-group-text:first-child {
+    border-right: 1px solid #cfd0d6 !important;
+}
+.dark-style .card .input-group.input-group-merge .input-group-text:first-child {
+    border-right-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   UTILITY CLASSES — Konsistensi Font Size di Semua Komponen
+   Heading: .fs-title, .fs-subtitle, .fs-card-title
+   Nominal: . (utama), . (sub-item)
+   Text:    .fs-body, .fs-small, .fs-tiny, .fs-label
+   ══════════════════════════════════════════════════════════════ */
+
+/* --- Desktop Default --- */
+.fs-title        { font-size: var(--fs-ui-title); }       /* 24px — judul section halaman */
+.fs-subtitle     { font-size: var(--fs-ui-subtitle); }     /* 18px — sub-judul section */
+.fs-card-title.fs-card-title { font-size: 0.875rem !important; }         /* 16px — judul card (setara h5) */
+.fs-value-primary.fs-value-primary { font-size: var(--fs-num-lg) !important; font-variant-numeric: tabular-nums; white-space: nowrap; }        /* 14px — nominal utama card (Aktiva, LabaRugi) — Desktop/Tablet */
+.fs-value-secondary.fs-value-secondary { font-size: var(--fs-num-sm) !important; font-variant-numeric: tabular-nums; white-space: nowrap; }  /* 12px — nominal sub-item card (Kewajiban, Pendapatan) — Desktop/Tablet */
+.fs-label        { font-size: var(--fs-ui-xs); }      /* 12px — label keterangan card */
+.fs-body         { font-size: var(--fs-ui-body); }    /* 15px — body text (sama dgn Bootstrap default) */
+.fs-small        { font-size: var(--fs-ui-sm); }    /* 13px — text kecil/muted */
+.fs-tiny         { font-size: var(--fs-ui-xxs); }       /* 11.2px — badge/pill kecil */
+
+/* --- Tablet (768px - 1199px) --- */
+@media (min-width: 768px) and (max-width: 1199.98px) {
+
+  :root {
+  --fs-ui-title: 1.35rem;    /* 21.6px — .fs-title tablet */
+  --fs-ui-subtitle: 1rem;    /* 16px — .fs-subtitle tablet */
+  --fs-ui-stat: 0.9375rem;   /* 15px — .fs-card-title tablet */
+  --fs-ui-value: 0.8125rem;  /* 13px — . tablet */
+  --fs-ui-body: 0.875rem;    /* 14px — .fs-body tablet */
+}
+  .fs-title        { font-size: var(--fs-ui-title); }
+  .fs-subtitle     { font-size: var(--fs-ui-subtitle); }
+  .fs-card-title.fs-card-title { font-size: 0.875rem !important; }
+  .fs-value-primary.fs-value-primary { font-size: var(--fs-num-lg) !important; }
+  .fs-value-secondary.fs-value-secondary { font-size: var(--fs-num-sm) !important; }
+  .fs-label        { font-size: var(--fs-ui-xs); }
+  .fs-body         { font-size: var(--fs-ui-body); }
+  .fs-small        { font-size: var(--fs-ui-sm); }
+  .fs-tiny         { font-size: var(--fs-ui-xxs); }
+}
+
+/* ═══ HEADING SCALE — Sistem Tabel: normalisasi heading tablet & desktop ═══ */
+@media (min-width: 768px) {
+  h3, .h3 { font-size: var(--fs-h3) !important; }    /* 14px */
+  h4, .h4 { font-size: var(--fs-h4) !important; }   /* 18px */
+  h5, .h5 { font-size: var(--fs-h5) !important; }   /* 14px */
+  h6, .h6 { font-size: var(--fs-h6) !important; }   /* 12px */
+}
+
+/* Nominal & angka di heading: digit sejajar (tabular-nums), rapi utk 13 digit */
+h4, .h4, h5, .h5 { font-variant-numeric: tabular-nums; }
+
+/* Digit nominal di sel tabel: sejajar (tabular-nums) agar angka 13 digit rapi */
+table td, table th { font-variant-numeric: tabular-nums; }
+
+/* --- Mobile (max-width: 576px) --- */
+@media (max-width: 576px) {
+  :root {
+    --fs-num-lg: 0.75rem;   /* 12px — nominal BESAR Mobile */
+    --fs-num-sm: 0.625rem;  /* 10px — nominal KECIL Mobile */
+  }
+  .fs-title        { font-size: var(--fs-ui-title); }
+  .fs-subtitle     { font-size: var(--fs-ui-subtitle); }
+  .fs-card-title.fs-card-title { font-size: 0.875rem !important; }
+  .fs-value-primary.fs-value-primary { font-size: var(--fs-num-lg) !important; }
+  .fs-value-secondary.fs-value-secondary { font-size: var(--fs-num-sm) !important; }
+  .fs-label        { font-size: var(--fs-ui-xs); }
+  .fs-body         { font-size: var(--fs-ui-body); }
+  .fs-small        { font-size: var(--fs-ui-sm); }
+  .fs-tiny         { font-size: var(--fs-ui-3xs); }
+}
+
+
+/* ═══ PAGINATION DATATABLES: 1 angka (current) + tombol prev/next, selalu center ═══ */
+.dataTables_wrapper > .row:last-child > div {
+  flex: 0 0 100% !important;
+  max-width: 100% !important;
+  text-align: center !important;
+}
+.dataTables_wrapper .dataTables_paginate {
+  float: none !important;
+  display: flex !important;
+  justify-content: center !important;
+  width: 100% !important;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button:not(.previous):not(.next):not(.active):not(.current) {
+  display: none !important;
+}
+@media (min-width: 577px) {
+  :root {
+    /* TIER NOMINAL — 2 ukuran: BESAR 14px / KECIL 12px — Desktop/Tablet */
+    --fs-num-lg: 0.875rem;  /* 14px — nominal BESAR (Desktop/Tablet) */
+    --fs-num-sm: 0.75rem;   /* 12px — nominal KECIL (Desktop/Tablet) */
+  }
+}
+/* 2 ukuran wajib — menang atas heading h4/h5/h6 (yang !important) dan konsisten di 13 project */
+.fs-value-primary.fs-value-primary { font-size: var(--fs-num-lg) !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fs-value-secondary.fs-value-secondary { font-size: var(--fs-num-sm) !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* Nominal di dalam TABEL tidak ikut skala card (tetap) */
+.table .fs-value-primary.fs-value-primary, td .fs-value-primary.fs-value-primary, th .fs-value-primary.fs-value-primary { font-size: var(--fs-ui-stat) !important; }
+.table .fs-value-secondary.fs-value-secondary, td .fs-value-secondary.fs-value-secondary, th .fs-value-secondary.fs-value-secondary { font-size: var(--fs-ui-value) !important; }
+
+/* ══════════════════════════════════════════════════════════════
+   SIDEBAR MENU — Konsistensi Font Size 14px Semua Device
+   Override core.css (0.9375rem / 15px) → 0.875rem (14px)
+   Berlaku untuk: menu utama + sub-menu + menu horizontal
+   ══════════════════════════════════════════════════════════════ */
+.menu-vertical .menu-item .menu-link {
+  font-size: 0.875rem !important; /* 14px — semua device */
+}
+.menu-vertical .menu-sub .menu-link {
+  font-size: 0.875rem !important; /* 14px — sub-menu */
+}
+.menu-horizontal .menu-item .menu-link {
+  font-size: 0.875rem !important; /* 14px — horizontal menu */
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BUTTON FONT SIZE — Desktop/Tablet: 14px | Mobile: 12px
+   Menggunakan CSS variable khusus agar tidak mengganggu
+   komponen lain (form, alert, table) yang pakai --fs-ui-sm.
+   ══════════════════════════════════════════════════════════════ */
+:root {
+  --fs-btn: 0.875rem;   /* 14px — button desktop & tablet */
+}
+@media (max-width: 576px) {
+  :root {
+    --fs-btn: 0.75rem;  /* 12px — button mobile */
+  }
+}
+.btn {
+  font-size: var(--fs-btn) !important;
+}
+.btn-group .btn,
+.btn-toolbar .btn {
+  font-size: var(--fs-btn) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MODAL TITLE — 14px Desktop/Tablet, 10px Mobile
+   Override --fs-ui-value (12px) khusus untuk modal-title.
+   --fs-ui-value tetap 12px untuk fs-value-secondary & table.
+   ══════════════════════════════════════════════════════════════ */
+.modal-title,
+.modal .modal-title {
+  font-size: 0.875rem !important; /* 14px — judul modal = 1 big text */
+}
+@media (max-width: 576px) {
+  .modal-title,
+  .modal .modal-title {
+    font-size: 0.875rem !important; /* 14px — mobile */
+  }
+}
+
+/* === COMPREHENSIVE TYPOGRAPHY CONSISTENCY === */
+/* All text -> 12px desktop / 10px mobile. Exceptions: card title 14px, numbers, badges */
+
+/* 1. ALL text in card-body -> body size */
+.card-body, .card-body div, .card-body td, .card-body th,
+.card-body li, .card-body a, .card-body strong, .card-body em,
+.card-body span, .card-body h5, .card-body h6 {
+  font-size: var(--fs-ui-sm) !important;
+}
+
+/* 2. ALL table cells -> body size */
+.table td, .table th {
+  font-size: var(--fs-ui-sm) !important;
+}
+
+/* 3. ALL alert text -> body size */
+.alert, .alert div, .alert p, .alert span {
+  font-size: var(--fs-ui-sm) !important;
+}
+
+/* 4. ALL dropdown/list/accordion/form -> body size */
+.dropdown-item { font-size: var(--fs-ui-sm) !important; }
+.list-group-item { font-size: var(--fs-ui-sm) !important; }
+.accordion-button, .accordion-body { font-size: var(--fs-ui-sm) !important; }
+.form-control, .form-select, .form-label, label { font-size: var(--fs-ui-sm) !important; }
+
+/* === EXCEPTIONS === */
+
+/* Card title -> 14px */
+.card .fs-card-title, .card-header .fs-card-title { font-size: var(--fs-ui-stat) !important; }
+
+/* Card header headings -> 14px */
+.card-header h3, .card-header h4, .card-header h5, .card-header h6 { font-size: var(--fs-ui-stat) !important; }
+
+/* Number values -> keep own size */
+.fs-value-primary, .fs-value-primary.fs-value-primary { font-size: var(--fs-num-lg) !important; }
+.fs-value-secondary, .fs-value-secondary.fs-value-secondary { font-size: var(--fs-num-sm) !important; }
+
+/* Badges -> small size */
+.badge { font-size: var(--fs-ui-xs) !important; }
+
+/* Alert heading -> 14px */
+.alert .alert-heading { font-size: var(--fs-ui-stat) !important; }
+
+/* Bootstrap fs-5 (16px) -> 12px for text */
+.card .fs-5:not(i), .alert .fs-5:not(i), .modal .fs-5:not(i) { font-size: var(--fs-ui-sm) !important; }
+
+/* Bootstrap fs-4 (24px) -> 14px for text */
+.card .fs-4:not(i), .alert .fs-4:not(i) { font-size: var(--fs-ui-stat) !important; }
+
+/* Override inline font-size: 1rem in card bodies */
+.card-body [style*="font-size: 1rem"] { font-size: var(--fs-ui-sm) !important; }
+
+/* Override 0.8125rem to 12px in tables */
+table th[style*="0.8125rem"], table td[style*="0.8125rem"] { font-size: 0.75rem !important; }
+
+/* Override pre/code with inline font-size */
+pre[style*="font-size"], code[style*="font-size"] { font-size: var(--fs-ui-sm) !important; }
 </style>

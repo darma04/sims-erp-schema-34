@@ -139,55 +139,54 @@ def create_po_journal_and_hutang(sender, instance, created, **kwargs):
             sumber='po',
             sumber_id=instance.pk
         ).exists()
-    
+
         if existing:
             ensure_po_faktur_pajak(instance, subtotal, pajak, biaya_pengiriman)
             ensure_po_hutang(instance, total)
             return
-    
-    # Validasi: total harus > 0
-    if total <= 0:
-        logger.warning(f"[PO] Skip auto-jurnal untuk {instance.nomor_po}: total = {total}")
-        return
-    
-    from apps.kas_bank.services import create_operational_mutation, metode_is_credit, resolve_kas_bank_mapping
-    is_credit = instance.metode_pembayaran is None or metode_is_credit(instance.metode_pembayaran)
-    kas_bank_account, _, kas_bank_akun_kode = resolve_kas_bank_mapping(instance.metode_pembayaran)
-    akun_kredit = '2-1000' if is_credit else kas_bank_akun_kode
-    desc_kredit = 'Hutang pembelian ke supplier' if is_credit else 'Pembayaran kas untuk pembelian'
-    
-    # Build lines data
-    lines_data = [
-        {
-            'akun_kode': '1-3000',  # Persediaan Barang
-            'debit': subtotal + biaya_pengiriman,
-            'kredit': Decimal('0'),
-            'keterangan': f'Pembelian barang PO {instance.nomor_po}'
-        }
-    ]
-    
-    # Tambah PPN Masukan jika ada
-    if pajak > 0:
-        lines_data.append({
-            'akun_kode': '1-1500',  # PPN Masukan (Dibayar Dimuka)
-            'debit': pajak,
-            'kredit': Decimal('0'),
-            'keterangan': f'PPN Masukan PO {instance.nomor_po}'
-        })
-    
-    # Tambah akun kredit (Kas/Bank atau Hutang)
-    lines_data.append({
-        'akun_kode': akun_kredit,
-        'debit': Decimal('0'),
-        'kredit': total,
-        'keterangan': f'{desc_kredit} PO {instance.nomor_po}'
-    })
-    
-    # Create jurnal
-    try:
-        from apps.akuntansi.services import create_jurnal
 
-        with db_transaction.atomic():
+        # Validasi: total harus > 0
+        if total <= 0:
+            logger.warning(f"[PO] Skip auto-jurnal untuk {instance.nomor_po}: total = {total}")
+            return
+
+        from apps.kas_bank.services import create_operational_mutation, metode_is_credit, resolve_kas_bank_mapping
+        is_credit = instance.metode_pembayaran is None or metode_is_credit(instance.metode_pembayaran)
+        kas_bank_account, _, kas_bank_akun_kode = resolve_kas_bank_mapping(instance.metode_pembayaran)
+        akun_kredit = '2-1000' if is_credit else kas_bank_akun_kode
+        desc_kredit = 'Hutang pembelian ke supplier' if is_credit else 'Pembayaran kas untuk pembelian'
+
+        # Build lines data
+        lines_data = [
+            {
+                'akun_kode': '1-3000',  # Persediaan Barang
+                'debit': subtotal + biaya_pengiriman,
+                'kredit': Decimal('0'),
+                'keterangan': f'Pembelian barang PO {instance.nomor_po}'
+            }
+        ]
+
+        # Tambah PPN Masukan jika ada
+        if pajak > 0:
+            lines_data.append({
+                'akun_kode': '1-1500',  # PPN Masukan (Dibayar Dimuka)
+                'debit': pajak,
+                'kredit': Decimal('0'),
+                'keterangan': f'PPN Masukan PO {instance.nomor_po}'
+            })
+
+        # Tambah akun kredit (Kas/Bank atau Hutang)
+        lines_data.append({
+            'akun_kode': akun_kredit,
+            'debit': Decimal('0'),
+            'kredit': total,
+            'keterangan': f'{desc_kredit} PO {instance.nomor_po}'
+        })
+
+        # Create jurnal
+        try:
+            from apps.akuntansi.services import create_jurnal
+
             jurnal = create_jurnal(
                 tanggal=instance.tanggal.date() if hasattr(instance.tanggal, 'date') else instance.tanggal,
                 deskripsi=f'Pembelian - {instance.nomor_po}',
@@ -216,39 +215,39 @@ def create_po_journal_and_hutang(sender, instance, created, **kwargs):
                     jurnal_entry=jurnal,
                     user=instance.dibuat_oleh,
                 )
-            
+
             # Jika credit, buat hutang
             if is_credit:
                 ensure_po_hutang(instance, total)
                 logger.info(f'[PO] Auto-hutang created for {instance.nomor_po}')
 
             ensure_po_faktur_pajak(instance, subtotal, pajak, biaya_pengiriman)
-        
-        logger.info(f'[PO] Auto-jurnal created for {instance.nomor_po}: {jurnal.nomor}')
-        
-    except IntegrityError as e:
-        logger.warning(f"[PO] Duplicate jurnal untuk {instance.nomor_po}: {e}")
-    except Exception as e:
-        logger.error(f'[PO] Failed to create auto-jurnal for {instance.nomor_po}: {e}', exc_info=True)
-        # Catat kegagalan ke activity log agar terdeteksi di Rekonsiliasi Keuangan
-        try:
-            from apps.activity_log.models import UserActivity
-            UserActivity.objects.create(
-                user=instance.dibuat_oleh,
-                action='create',
-                model_name='JurnalEntry',
-                object_id=str(instance.pk),
-                object_repr=f'GAGAL: Jurnal PO {instance.nomor_po}',
-                description=f'[JURNAL GAGAL] Auto-jurnal untuk PO {instance.nomor_po} gagal dibuat. '
-                            f'Error: {str(e)[:200]}. Transaksi tetap berstatus received tapi TIDAK memiliki jurnal. '
-                            f'Perbaiki via Rekonsiliasi Keuangan.',
-                source_type='purchase',
-                source_id=str(instance.pk),
-                source_repr=instance.nomor_po,
-            )
+
+            logger.info(f'[PO] Auto-jurnal created for {instance.nomor_po}: {jurnal.nomor}')
+
+        except IntegrityError as e:
+            logger.warning(f"[PO] Duplicate jurnal untuk {instance.nomor_po}: {e}")
         except Exception as e:
-            logger.warning("Gagal mencatat activity log: %s", e)
-        # raise  # Disabled: transaksi tetap tersimpan meskipun jurnal gagal
+            logger.error(f'[PO] Failed to create auto-jurnal for {instance.nomor_po}: {e}', exc_info=True)
+            # Catat kegagalan ke activity log agar terdeteksi di Rekonsiliasi Keuangan
+            try:
+                from apps.activity_log.models import UserActivity
+                UserActivity.objects.create(
+                    user=instance.dibuat_oleh,
+                    action='create',
+                    model_name='JurnalEntry',
+                    object_id=str(instance.pk),
+                    object_repr=f'GAGAL: Jurnal PO {instance.nomor_po}',
+                    description=f'[JURNAL GAGAL] Auto-jurnal untuk PO {instance.nomor_po} gagal dibuat. '
+                                f'Error: {str(e)[:200]}. Transaksi tetap berstatus received tapi TIDAK memiliki jurnal. '
+                                f'Perbaiki via Rekonsiliasi Keuangan.',
+                    source_type='purchase',
+                    source_id=str(instance.pk),
+                    source_repr=instance.nomor_po,
+                )
+            except Exception as log_e:
+                logger.warning("Gagal mencatat activity log: %s", log_e)
+            # raise  # Disabled: transaksi tetap tersimpan meskipun jurnal gagal
 
 
 @receiver(post_delete, sender='pembelian.PurchaseOrderItem')
@@ -259,5 +258,5 @@ def recalculate_po_on_item_delete(sender, instance, **kwargs):
             po = instance.purchase_order
             po.calculate_total()
             po.save()
-        except Exception:
-            pass  # PO might already be deleted (CASCADE)
+        except Exception as e:
+            logger.warning("Gagal recalculate po_on_item_delete: %s", e)

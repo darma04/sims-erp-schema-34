@@ -90,7 +90,8 @@ from django.views.generic import TemplateView, ListView, DetailView
 # Import dari framework Django
 from django.utils.decorators import method_decorator
 # Import dari framework Django
-from django.db.models import Count, Sum, Q, F, ExpressionWrapper
+from django.db.models import Count, Sum, Q, F, ExpressionWrapper, Subquery, OuterRef, Value
+from django.db.models.functions import Coalesce
 from django.db import models
 from web_project import TemplateLayout
 # Import dari modul internal proyek
@@ -151,7 +152,7 @@ class LaporanProdukView(TenantScopedResponseCacheMixin, ReadPermissionMixin, Lis
         from decimal import Decimal
         from datetime import datetime
         # Import dari framework Django
-        from django.db.models import Sum, Q
+        from django.db.models import Sum, Q, DecimalField
         # Import dari modul internal proyek
         from apps.penjualan.models import SalesOrderItem
         # Import dari modul internal proyek
@@ -236,30 +237,37 @@ class LaporanProdukView(TenantScopedResponseCacheMixin, ReadPermissionMixin, Lis
         total_nilai_jual = Decimal('0')
         produk_count = 0
         
-        for produk in Produk.objects.prefetch_related('stok_set').all():
-            stok_saat_ini = sum(s.jumlah for s in produk.stok_set.all())
-            
-            # Qty yang sudah terjual/keluar (SO + POS + SC sparepart + Adjustment Out)
-            qty_sold_so = so_sold_by_produk.get(produk.pk, Decimal('0'))
-            qty_sold_pos = pos_sold_by_produk.get(produk.pk, Decimal('0'))
-            qty_used_sc = sc_used_by_produk.get(produk.pk, Decimal('0'))
-            qty_adj_out = adj_out_by_produk.get(produk.pk, Decimal('0'))
-            qty_total_pernah_masuk = stok_saat_ini + qty_sold_so + qty_sold_pos + qty_used_sc + qty_adj_out
-            
-            # Card 1: Total Keseluruhan Aset = harga_beli × total stok pernah masuk
-            total_keseluruhan_aset += produk.harga_beli * qty_total_pernah_masuk
-            
-            # Untuk ringkasan tfoot
-            total_stok += stok_saat_ini
-            total_nilai_beli += produk.harga_beli * stok_saat_ini
-            total_nilai_jual += produk.harga_jual * stok_saat_ini
-            produk_count += 1
-            
-            # Cards 2,3,4: Hanya produk ready (stok > 0)
-            if stok_saat_ini > 0:
-                total_harga_beli_ready += produk.harga_beli * stok_saat_ini
-                total_harga_jual_ready += produk.harga_jual * stok_saat_ini
-        
+        # Gunakan aggregation untuk menghindari Python loop over all products
+        stok_agg = Stok.objects.aggregate(
+            total_stok=Coalesce(Sum('jumlah'), Value(0, output_field=DecimalField())),
+            total_nilai_beli=Coalesce(Sum(F('produk__harga_beli') * F('jumlah')), Value(0, output_field=DecimalField())),
+            total_nilai_jual=Coalesce(Sum(F('produk__harga_jual') * F('jumlah')), Value(0, output_field=DecimalField())),
+        )
+        total_stok = stok_agg['total_stok']
+        total_nilai_beli = stok_agg['total_nilai_beli']
+        total_nilai_jual = stok_agg['total_nilai_jual']
+
+        stok_ready_agg = Stok.objects.filter(jumlah__gt=0).aggregate(
+            total_harga_beli_ready=Coalesce(Sum(F('produk__harga_beli') * F('jumlah')), Value(0, output_field=DecimalField())),
+            total_harga_jual_ready=Coalesce(Sum(F('produk__harga_jual') * F('jumlah')), Value(0, output_field=DecimalField())),
+        )
+        total_harga_beli_ready = stok_ready_agg['total_harga_beli_ready']
+        total_harga_jual_ready = stok_ready_agg['total_harga_jual_ready']
+
+        produk_count = Produk.objects.count()
+
+        # Total keseluruhan aset: aggregate stok per produk lalu hitung
+        stok_per_produk = dict(Stok.objects.values_list('produk_id').annotate(total=Coalesce(Sum('jumlah'), Value(0, output_field=DecimalField()))))
+        all_produk_ids = set(stok_per_produk.keys()) | set(so_sold_by_produk.keys()) | set(pos_sold_by_produk.keys())
+        harga_beli_map = dict(Produk.objects.filter(pk__in=all_produk_ids).values_list('pk', 'harga_beli'))
+
+        total_keseluruhan_aset = Decimal('0')
+        for pk in all_produk_ids:
+            stok = stok_per_produk.get(pk, 0)
+            qty_sold = (so_sold_by_produk.get(pk, 0) + pos_sold_by_produk.get(pk, 0)
+                        + sc_used_by_produk.get(pk, 0) + adj_out_by_produk.get(pk, 0))
+            total_keseluruhan_aset += harga_beli_map.get(pk, 0) * (stok + qty_sold)
+
         estimasi_keuntungan = total_harga_jual_ready - total_harga_beli_ready
         
         # Data konteks: total_keseluruhan_aset — untuk ditampilkan di template
@@ -394,49 +402,54 @@ class LaporanPenjualanView(TenantScopedResponseCacheMixin, ReadPermissionMixin, 
             so_filter['tanggal__date__lte'] = filter_end
             pos_filter['tanggal__date__lte'] = filter_end
         
-        # ===== Sales Order: hitung harga_beli dan keuntungan per SO =====
-        so_qs = SalesOrder.objects.filter(**so_filter).prefetch_related('items__produk')
-        so_list_annotated = []
-        so_total = Decimal('0')
-        so_harga_beli_total = Decimal('0')
-        so_keuntungan_total = Decimal('0')
-        
-        for so in so_qs:
-            harga_beli_so = Decimal('0')
-            for item in so.items.all():
-                harga_beli_so += item.produk.harga_beli * item.jumlah
-            keuntungan_so = so.total_harga - harga_beli_so
-            so.harga_beli_calc = harga_beli_so
-            so.keuntungan_calc = keuntungan_so
-            so_list_annotated.append(so)
-            so_total += so.total_harga
-            so_harga_beli_total += harga_beli_so
-            so_keuntungan_total += keuntungan_so
-        
-        so_count = len(so_list_annotated)
-        
-        # ===== POS Transaction: hitung harga_beli dan keuntungan per POS =====
-        # CATATAN (Fix Maret 2026 — K8): Sebelumnya query ini dibatasi [:50] transaksi,
-        # yang menyebabkan laporan penjualan POS tidak lengkap. Limit dihapus.
-        pos_qs = POSTransaction.objects.filter(**pos_filter).prefetch_related('items__produk').order_by('-tanggal')
-        pos_list_annotated = []
-        pos_total = Decimal('0')
-        pos_harga_beli_total = Decimal('0')
-        pos_keuntungan_total = Decimal('0')
-        
-        for pos in pos_qs:
-            harga_beli_pos = Decimal('0')
-            for item in pos.items.all():
-                harga_beli_pos += item.produk.harga_beli * item.jumlah
-            keuntungan_pos = pos.total_harga - harga_beli_pos
-            pos.harga_beli_calc = harga_beli_pos
-            pos.keuntungan_calc = keuntungan_pos
-            pos_list_annotated.append(pos)
-            pos_total += pos.total_harga
-            pos_harga_beli_total += harga_beli_pos
-            pos_keuntungan_total += keuntungan_pos
-        
-        pos_count = len(pos_list_annotated)
+        # ===== Sales Order: aggregate totals via subquery =====
+        from django.db.models import Subquery, OuterRef, Sum as SumAnnotate, DecimalField
+        so_item_cogs = SalesOrderItem.objects.filter(
+            sales_order=OuterRef('pk')
+        ).values('sales_order').annotate(
+            total_cogs=SumAnnotate(F('produk__harga_beli') * F('jumlah'), output_field=DecimalField())
+        ).values('total_cogs')[:1]
+
+        so_qs = SalesOrder.objects.filter(**so_filter).annotate(
+            harga_beli_calc=Coalesce(Subquery(so_item_cogs), Value(0, output_field=DecimalField())),
+            keuntungan_calc=F('total_harga') - Coalesce(Subquery(so_item_cogs), Value(0, output_field=DecimalField())),
+        )
+
+        so_agg = so_qs.aggregate(
+            so_total=Coalesce(SumAnnotate('total_harga', output_field=DecimalField()), Value(0, output_field=DecimalField())),
+            so_harga_beli_total=Coalesce(SumAnnotate('harga_beli_calc', output_field=DecimalField()), Value(0, output_field=DecimalField())),
+            so_keuntungan_total=Coalesce(SumAnnotate('keuntungan_calc', output_field=DecimalField()), Value(0, output_field=DecimalField())),
+            so_count=Coalesce(Count('id'), Value(0)),
+        )
+        so_total = so_agg['so_total']
+        so_harga_beli_total = so_agg['so_harga_beli_total']
+        so_keuntungan_total = so_agg['so_keuntungan_total']
+        so_count = so_agg['so_count']
+        so_list_annotated = list(so_qs)
+
+        # ===== POS Transaction: aggregate totals via subquery =====
+        pos_item_cogs = POSTransactionItem.objects.filter(
+            transaction=OuterRef('pk')
+        ).values('transaction').annotate(
+            total_cogs=SumAnnotate(F('produk__harga_beli') * F('jumlah'), output_field=DecimalField())
+        ).values('total_cogs')[:1]
+
+        pos_qs = POSTransaction.objects.filter(**pos_filter).annotate(
+            harga_beli_calc=Coalesce(Subquery(pos_item_cogs), Value(0, output_field=DecimalField())),
+            keuntungan_calc=F('total_harga') - Coalesce(Subquery(pos_item_cogs), Value(0, output_field=DecimalField())),
+        ).order_by('-tanggal')
+
+        pos_agg = pos_qs.aggregate(
+            pos_total=Coalesce(SumAnnotate('total_harga', output_field=DecimalField()), Value(0, output_field=DecimalField())),
+            pos_harga_beli_total=Coalesce(SumAnnotate('harga_beli_calc', output_field=DecimalField()), Value(0, output_field=DecimalField())),
+            pos_keuntungan_total=Coalesce(SumAnnotate('keuntungan_calc', output_field=DecimalField()), Value(0, output_field=DecimalField())),
+            pos_count=Coalesce(Count('id'), Value(0)),
+        )
+        pos_total = pos_agg['pos_total']
+        pos_harga_beli_total = pos_agg['pos_harga_beli_total']
+        pos_keuntungan_total = pos_agg['pos_keuntungan_total']
+        pos_count = pos_agg['pos_count']
+        pos_list_annotated = list(pos_qs)
         
         # ===== Combined stats =====
         total_penjualan = so_total + pos_total
@@ -1294,11 +1307,16 @@ class LaporanProdukDetailView(ReadPermissionMixin, DetailView):
         context['po_items'] = PurchaseOrderItem.objects.filter(
             produk=produk
         ).select_related('purchase_order', 'purchase_order__supplier').order_by('-purchase_order__tanggal')[:10]
+        # Agregat ringkasan untuk baris footer tabel
+        agg_po = PurchaseOrderItem.objects.filter(produk=produk).aggregate(total_nilai=Sum('subtotal'))
+        context['total_nilai_po'] = agg_po['total_nilai'] or 0
         
         # Related data - Item di Sales Orders
         context['so_items'] = SalesOrderItem.objects.filter(
             produk=produk
         ).select_related('sales_order', 'sales_order__customer').order_by('-sales_order__tanggal')[:10]
+        agg_so = SalesOrderItem.objects.filter(produk=produk).aggregate(total_nilai=Sum('subtotal'))
+        context['total_nilai_so'] = agg_so['total_nilai'] or 0
         
         return context
 
@@ -1403,12 +1421,21 @@ class LaporanStokDetailView(ReadPermissionMixin, DetailView):
             produk=stok.produk,
             purchase_order__gudang=stok.gudang
         ).select_related('purchase_order', 'purchase_order__supplier').order_by('-purchase_order__tanggal')[:20]
+        # Agregat ringkasan untuk baris footer tabel
+        agg_po = PurchaseOrderItem.objects.filter(
+            produk=stok.produk, purchase_order__gudang=stok.gudang
+        ).aggregate(total_nilai=Sum('subtotal'))
+        context['total_nilai_po'] = agg_po['total_nilai'] or 0
         
         # Related - SO items yang mempengaruhi stok produk ini (di gudang ini)
         context['so_items'] = SalesOrderItem.objects.filter(
             produk=stok.produk,
             sales_order__gudang=stok.gudang
         ).select_related('sales_order', 'sales_order__customer').order_by('-sales_order__tanggal')[:20]
+        agg_so = SalesOrderItem.objects.filter(
+            produk=stok.produk, sales_order__gudang=stok.gudang
+        ).aggregate(total_nilai=Sum('subtotal'))
+        context['total_nilai_so'] = agg_so['total_nilai'] or 0
         
         # Related - Adjustment pada produk+gudang ini
         from apps.inventory.models import AdjustmentStok, TransferStok

@@ -9,14 +9,15 @@
    - Tombol cetak invoice
    ==========================================================================
 {% endcomment %}
-{% load static %}`r`n{% load currency_filters %}
+{% load static %}
+{% load currency_filters %}
 {% load i18n %}
 
 {% block title %}Invoice {{ transaction.nomor_transaksi }} - POS{% endblock title %}
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    <!-- Header -->
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <nav aria-label="breadcrumb">
@@ -24,7 +25,7 @@
                     <li class="breadcrumb-item">
                         <a href="{% url 'pos:invoice_list' %}">Invoice</a>
                     </li>
-                    <li class="breadcrumb-item active">{{ transaction.nomor_transaksi }}</li>
+                    <li class="breadcrumb-item active fs-value-secondary">{{ transaction.nomor_transaksi }}</li>
                 </ol>
             </nav>
             <h4 class="mb-1">Detail Invoice</h4>
@@ -42,11 +43,11 @@
     </div>
 
     <div class="row">
-        <!-- Invoice Details -->
+        
         <div class="col-xl-9 col-md-8">
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Invoice #{{ transaction.nomor_transaksi }}</h5>
+                    <h5 class="mb-0 fs-card-title">Invoice #{{ transaction.nomor_transaksi }}</h5>
                     {% if transaction.status == 'paid' %}
                     <span class="badge bg-label-success fs-6">Lunas</span>
                     {% elif transaction.status == 'unpaid' %}
@@ -58,7 +59,7 @@
                     {% endif %}
                 </div>
                 <div class="card-body">
-                    <!-- Transaction Info -->
+                    
                     <div class="row mb-4">
                         <div class="col-md-6">
                             <h6 class="text-muted mb-3">Informasi Transaksi</h6>
@@ -94,7 +95,6 @@
                         </div>
                     </div>
 
-                    <!-- Items Table -->
                     <div class="table-responsive border rounded-3">
                         <table class="table table-bordered mb-0">
                             <thead>
@@ -136,7 +136,7 @@
                                 </tr>
                                 {% endfor %}
                             </tbody>
-                            <tfoot>
+                            <tfoot class="table-footer-summary">
                                 <tr>
                                     <td colspan="5" class="text-end fw-bold border-end-0">Subtotal:</td>
                                     <td class="text-end fw-bold border-start-0">{{ transaction.subtotal|rupiah }}</td>
@@ -163,21 +163,20 @@
                         </table>
                     </div>
 
-                    <!-- Payment Info -->
                     <div class="row mt-4">
                         <div class="col-md-6 offset-md-6">
                             <div class="card border">
                                 <div class="card-header py-2">
-                                    <h6 class="mb-0"><i class="ri-wallet-3-line me-2"></i>Informasi Pembayaran</h6>
+                                    <h6 class="mb-0 fs-card-title"><i class="ri-wallet-3-line me-2"></i>Informasi Pembayaran</h6>
                                 </div>
                                 <div class="card-body py-3">
                                     <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
                                         <span class="fw-medium">Jumlah Bayar:</span>
-                                        <span class="fs-5 fw-bold text-primary">{{ transaction.jumlah_bayar|rupiah }}</span>
+                                        <span class="fw-bold fs-value-primary">{{ transaction.jumlah_bayar|rupiah }}</span>
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center">
                                         <span class="fw-medium">Kembalian:</span>
-                                        <span class="fs-5 fw-bold text-success">{{ transaction.kembalian|rupiah }}</span>
+                                        <span class="fw-bold fs-value-primary">{{ transaction.kembalian|rupiah }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -196,12 +195,11 @@
             </div>
         </div>
 
-        <!-- Timeline & Actions -->
         <div class="col-xl-3 col-md-4">
-            <!-- Actions Card -->
+            
             <div class="card mb-4">
                 <div class="card-header">
-                    <h6 class="mb-0">Aksi</h6>
+                    <h6 class="mb-0 fs-card-title">Aksi</h6>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
@@ -235,10 +233,9 @@
                 </div>
             </div>
 
-            <!-- Timeline Card -->
             <div class="card">
                 <div class="card-header">
-                    <h6 class="mb-0">Timeline</h6>
+                    <h6 class="mb-0 fs-card-title">Timeline</h6>
                 </div>
                 <div class="card-body">
                     <ul class="timeline mb-0">
@@ -273,9 +270,10 @@
 {% endblock content %}
 
 {% block page_js %}
+{{ block.super }}
 <script>
     function downloadPDF() {
-        // Buka halaman cetak invoice di tab baru (user bisa Save as PDF dari sana)
+        
         window.open("{% url 'pos:invoice_print' transaction.pk %}", '_blank');
     }
 
@@ -284,19 +282,16 @@
         const title = 'Invoice {{ transaction.nomor_transaksi }}';
         const text = 'Invoice transaksi POS - {{ transaction.nomor_transaksi }}';
 
-        // 1. Android WebView — gunakan SerpApp.shareUrl() bridge
         if (typeof SerpApp !== 'undefined' && typeof SerpApp.shareUrl === 'function') {
             SerpApp.shareUrl(url, title, text);
             return;
         }
 
-        // 2. Web Share API (browser modern / PWA)
         if (navigator.share) {
             navigator.share({ title: title, text: text, url: url }).catch(() => {});
             return;
         }
 
-        // 3. Fallback: Copy to clipboard
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(url).then(() => {
                 if (typeof Swal !== 'undefined') {
@@ -309,7 +304,6 @@
         }
     }
 
-    // Fallback copy untuk browser lama / WebView yang tidak mendukung clipboard API
     function _fallbackCopyText(text) {
         try {
             const ta = document.createElement('textarea');

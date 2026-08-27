@@ -1,4 +1,4 @@
-{% extends 'layout/layout_vertical.html' %}
+﻿{% extends 'layout/layout_vertical.html' %}
 {% comment %}
 ==========================================================================
    BIAYA FORM - Form Tambah/Edit Transaksi Biaya
@@ -19,10 +19,11 @@
     <div class="row">
         <div class="col-md-12">
             <div class="card mb-4">
-                <h5 class="card-header">
+                <h5 class="card-header fs-value-primary">
                     <i class="ri-money-dollar-circle-line me-2"></i>{{ title }}
                 </h5>
                 <div class="card-body">
+                    
                     <form method="post" enctype="multipart/form-data" id="biaya-form">
                         {% csrf_token %}
                         
@@ -95,7 +96,6 @@
                                 </div>
                                 {% endif %}
 
-                                <!-- Preview Area -->
                                 <div id="preview-container" class="text-center p-3 border rounded" style="display: none;">
                                     <p class="text-muted mb-2">Preview:</p>
                                     <img id="image-preview" src="" alt="Preview" class="img-fluid rounded" style="max-height: 150px; display: none;">
@@ -118,6 +118,7 @@
 
                         <hr class="my-4">
 
+                        {% if can_create.biaya or can_edit.biaya %}
                         <div class="mt-4">
                             <button type="submit" class="btn btn-primary me-2">
                                 <i class="ri-save-line me-1"></i> Simpan Transaksi
@@ -126,6 +127,7 @@
                                 <i class="ri-close-line me-1"></i> Batal
                             </a>
                         </div>
+                        {% endif %}
                     </form>
                 </div>
             </div>
@@ -136,7 +138,7 @@
 
 {% block page_js %}
 <script>
-    // Preview upload bukti
+    
     document.querySelector('#id_bukti').addEventListener('change', function(e) {
         const file = e.target.files[0];
         const previewContainer = document.querySelector('#preview-container');
@@ -148,7 +150,7 @@
             previewContainer.style.display = 'block';
             
             if (file.type.startsWith('image/')) {
-                // Image preview
+                
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     imagePreview.src = e.target.result;
@@ -157,7 +159,7 @@
                 };
                 reader.readAsDataURL(file);
             } else if (file.type === 'application/pdf') {
-                // PDF indicator
+                
                 imagePreview.style.display = 'none';
                 pdfPreview.style.display = 'block';
                 pdfFilename.textContent = file.name;
@@ -167,7 +169,6 @@
         }
     });
 
-    // Format input mata uang
     document.querySelector('#id_jumlah').addEventListener('blur', function(e) {
         const val = parseFloat(e.target.value);
         if (!isNaN(val) && val > 0) {

@@ -235,5 +235,5 @@ def recalculate_so_on_item_delete(sender, instance, **kwargs):
             so = instance.sales_order
             so.calculate_total()
             so.save()
-        except Exception:
-            pass  # SO might already be deleted (CASCADE)
+        except Exception as e:
+            logger.warning("Gagal recalculate so_on_item_delete: %s", e)

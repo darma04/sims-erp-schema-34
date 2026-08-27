@@ -3,6 +3,32 @@
 * File include item demo only specific css only
 ******************************************************************************/
 
+
+/* ══════════════════════════════════════════════════════════════
+   FONT SCALE 2 TINGKAT — SKALA RESMI (satu sumber)
+   Tingkat 1: Heading (h3-h6) — Tingkat 2: Body & UI.
+   Ubah nilai di :root ini → seluruh komponen menyesuaikan.
+   ══════════════════════════════════════════════════════════════ */
+:root {
+  /* TINGKAT 1 — HEADING (Judul & Sub-judul) */
+  --fs-h3: 0.875rem;      /* 21.6px — judul section besar */
+  --fs-h4: 1.125rem;     /* 18px   — judul halaman */
+  --fs-h5: 0.875rem;         /* 16px   — judul card / sub-judul */
+  --fs-h6: 0.75rem;     /* 14px   — judul kecil / label section */
+  /* TINGKAT 2 — BODY & UI (Isi & Kontrol) */
+  --fs-ui-title: 1.125rem;      /* 24px — .fs-title (angka statistik besar) */
+  --fs-ui-subtitle: 0.875rem; /* 18px — .fs-subtitle */
+  --fs-ui-stat: 0.875rem;         /* 16px — .fs-card-title & .fs-value-primary */
+  --fs-ui-value: 0.75rem;    /* 14px — .fs-value-secondary, modal-title */
+  --fs-ui-body: 0.75rem;    /* 15px — .fs-body = body default Bootstrap */
+  --fs-ui-sm: 0.75rem;      /* 13px — .fs-small, tombol, form, modal-body */
+  --fs-ui-xs: 0.75rem;        /* 12px — .fs-label, form-label, alert */
+  --fs-ui-xxs: 0.6875rem;     /* 11px — btn-sm, pagination, dataTables info */
+  --fs-ui-3xs: 0.625rem;      /* 10px — badge, tombol aksi tabel */
+  --fs-ui-micro: 0.5625rem;   /* 9px  — badge HP kecil (≤480px) */
+  --fs-brand: 1.25rem;        /* 20px — .app-brand-text.demo */
+}
+
 .light-style .menu .app-brand.demo {
   height: 64px;
 }
@@ -17,7 +43,7 @@
 }
 
 .app-brand-text.demo {
-  font-size: 1.25rem;
+  font-size: var(--fs-brand);
   letter-spacing: 0.15px;
 }
 
@@ -167,6 +193,16 @@
    ───────────────────────────────────────────────── */
 @media (max-width: 768px) {
 
+  :root {
+  --fs-h4: 0.9375rem;         /* 16px — judul halaman mobile */
+  --fs-h5: 0.75rem;     /* 14px — judul card mobile */
+  --fs-h6: 0.625rem;    /* 13px — judul kecil mobile */
+  --fs-ui-xs: 0.625rem;   /* 12px — tabel, label, alert mobile */
+  --fs-ui-xxs: 0.6875rem;/* 11px — btn-sm, pagination, info mobile */
+  --fs-ui-3xs: 0.625rem; /* 10px — badge, aksi tabel mobile */
+  --fs-ui-micro: 0.5625rem; /* 9px — badge HP kecil */
+}
+
   /* ═══════════════════════════════════════════════
      2a. HEADER HALAMAN (Judul + Tombol Aksi)
      ═══════════════════════════════════════════════
@@ -202,7 +238,7 @@
   .container-xxl > .d-flex.justify-content-between.mb-4 > .btn {
     width: 100% !important;
     text-align: center !important;
-    font-size: 0.75rem !important;    /* 12px — compact untuk mobile */
+    font-size: var(--fs-ui-xs) !important;    /* 12px — compact untuk mobile */
     padding: 0.4rem 0.75rem !important; /* Padding hemat ruang */
   }
 
@@ -224,7 +260,7 @@
   .container-xxl h4,
   .container-p-y h4,
   .content-wrapper h4 {
-    font-size: 1rem !important;       /* 16px */
+    font-size: var(--fs-h4) ;       /* 16px */
     line-height: 1.3 !important;
   }
 
@@ -232,25 +268,25 @@
   .container-xxl h5,
   .container-p-y h5,
   .card-header h5 {
-    font-size: 0.875rem !important;   /* 14px */
+    font-size: var(--fs-h5) ;   /* 14px */
   }
 
   /* h6: Judul kecil — 13px */
   .container-xxl h6,
   .container-p-y h6 {
-    font-size: 0.8125rem !important;  /* 13px */
+    font-size: var(--fs-h6) ;  /* 13px */
   }
 
   /* Teks deskripsi/subtitle — 12px */
   .container-xxl p.text-muted,
   .container-p-y p.text-muted {
-    font-size: 0.75rem !important;    /* 12px */
+    font-size: var(--fs-ui-xs) !important;    /* 12px */
     margin-bottom: 0 !important;
   }
 
   /* Breadcrumb / page path — 13px */
   .py-3.mb-4 {
-    font-size: 0.8125rem !important;
+    font-size: var(--fs-ui-sm) !important;
   }
 
   /* ═══════════════════════════════════════════════
@@ -290,7 +326,7 @@
   .card-header.d-flex.justify-content-between > .d-flex.gap-2 > .btn {
     flex: 1 1 0 !important;
     text-align: center !important;
-    font-size: 0.8125rem !important;  /* 13px — override btn-sm 11px */
+    font-size: var(--fs-ui-sm) !important;  /* 13px — override btn-sm 11px */
     padding: 0.5rem 0.75rem !important; /* padding proporsional */
     min-height: 2.25rem !important;   /* tinggi minimum 36px */
   }
@@ -322,19 +358,19 @@
 
   /* Tombol standar: 13px, compact */
   .btn {
-    font-size: 0.8125rem !important;  /* 13px */
+    font-size: var(--fs-ui-sm) !important;  /* 13px */
     white-space: nowrap !important;
   }
 
   /* Tombol kecil (btn-sm): 11px — untuk export, aksi tabel, dll */
   .btn-sm {
-    font-size: 0.6875rem !important;  /* 11px */
+    font-size: var(--fs-ui-xxs) !important;  /* 11px */
     padding: 0.25rem 0.5rem !important;
   }
 
   /* Tombol di card header khusus export: extra compact */
   .card-header .btn-sm {
-    font-size: 0.6875rem !important;  /* 11px */
+    font-size: var(--fs-ui-xxs) !important;  /* 11px */
     padding: 0.25rem 0.5rem !important;
   }
 
@@ -375,21 +411,21 @@
 
   /* Header tabel: 12px, padding compact */
   .table thead th {
-    font-size: 0.75rem !important;    /* 12px */
+    font-size: var(--fs-ui-xs) !important;    /* 12px */
     padding: 0.4rem 0.5rem !important;
     white-space: nowrap !important;
   }
 
   /* Body tabel: 12px, padding compact */
   .table tbody td {
-    font-size: 0.75rem !important;    /* 12px */
+    font-size: var(--fs-ui-xs) !important;    /* 12px */
     padding: 0.4rem 0.5rem !important;
   }
 
   /* Tombol aksi di dalam tabel: extra kecil */
   .table tbody td .btn-sm,
   .table tbody td .btn-icon {
-    font-size: 0.625rem !important;   /* 10px */
+    font-size: var(--fs-ui-3xs) !important;   /* 10px */
     padding: 0.2rem 0.35rem !important;
   }
 
@@ -403,24 +439,24 @@
      2g. FOOTER RINGKASAN TABEL
      ═══════════════════════════════════════════════ */
   .table-footer-summary td {
-    font-size: 0.6875rem !important;  /* 11px */
+    font-size: var(--fs-ui-xxs) !important;  /* 11px */
     padding: 0.4rem !important;
   }
 
   .table-footer-summary .badge {
-    font-size: 0.625rem !important;   /* 10px */
+    font-size: var(--fs-ui-3xs) !important;   /* 10px */
     padding: 0.2rem 0.4rem !important;
   }
 
   .table-footer-summary strong {
-    font-size: 0.75rem !important;    /* 12px */
+    font-size: var(--fs-ui-xs) !important;    /* 12px */
   }
 
   /* ═══════════════════════════════════════════════
      2h. BADGE — Ukuran Compact di Mobile
      ═══════════════════════════════════════════════ */
   .badge {
-    font-size: 0.625rem !important;   /* 10px */
+    font-size: var(--fs-ui-3xs) !important;   /* 10px */
     padding: 0.2rem 0.35rem !important;
   }
 
@@ -428,7 +464,7 @@
      2i. ALERT & NOTIFIKASI
      ═══════════════════════════════════════════════ */
   .alert {
-    font-size: 0.75rem !important;    /* 12px */
+    font-size: var(--fs-ui-xs) !important;    /* 12px */
     padding: 0.6rem 0.75rem !important;
   }
 
@@ -441,16 +477,16 @@
   }
 
   .modal-title {
-    font-size: 0.875rem !important;   /* 14px */
+    font-size: var(--fs-ui-value) !important;   /* 14px */
   }
 
   .modal-body {
-    font-size: 0.8125rem !important;  /* 13px */
+    font-size: var(--fs-ui-sm) !important;  /* 13px */
     padding: 0.75rem !important;
   }
 
   .modal-footer .btn {
-    font-size: 0.75rem !important;    /* 12px */
+    font-size: var(--fs-ui-xs) !important;    /* 12px */
     padding: 0.3rem 0.6rem !important;
   }
 
@@ -469,13 +505,13 @@
      2l. FORM INPUT & LABEL — Compact
      ═══════════════════════════════════════════════ */
   .form-label {
-    font-size: 0.75rem !important;    /* 12px */
+    font-size: var(--fs-ui-xs) !important;    /* 12px */
     margin-bottom: 0.2rem !important;
   }
 
   .form-control,
   .form-select {
-    font-size: 0.8125rem !important;  /* 13px */
+    font-size: var(--fs-ui-sm) !important;  /* 13px */
     padding: 0.35rem 0.6rem !important;
   }
 
@@ -493,7 +529,7 @@
      Solusi: overflow-x hidden, width 100%, flex-wrap.
      ═══════════════════════════════════════════════ */
   .dataTables_wrapper .dataTables_info {
-    font-size: 0.6875rem !important;  /* 11px */
+    font-size: var(--fs-ui-xxs) !important;  /* 11px */
     padding: 0.4rem 0.75rem !important;
     text-align: center !important;
     overflow-x: hidden !important;
@@ -513,7 +549,7 @@
 
   .dataTables_wrapper .dataTables_paginate .paginate_button {
     padding: 0.2rem 0.4rem !important;
-    font-size: 0.6875rem !important;  /* 11px */
+    font-size: var(--fs-ui-xxs) !important;  /* 11px */
     margin: 0 !important;
     min-width: auto !important;
   }
@@ -638,7 +674,7 @@
   }
 
   .nav-tabs .nav-link {
-    font-size: 0.75rem !important;    /* 12px */
+    font-size: var(--fs-ui-xs) !important;    /* 12px */
     padding: 0.4rem 0.6rem !important;
     white-space: nowrap !important;
   }
@@ -656,7 +692,7 @@
   }
 
   .card .card-body h4 {
-    font-size: 1rem !important;       /* 16px */
+    font-size: var(--fs-h4) ;       /* 16px */
   }
 }
 
@@ -668,23 +704,31 @@
    ───────────────────────────────────────────────── */
 @media (max-width: 480px) {
 
+  :root {
+  --fs-h4: 0.9375rem;    /* 15px — judul halaman HP kecil */
+  --fs-h5: 0.8125rem;    /* 13px — judul card HP kecil */
+  --fs-ui-xs: 0.6875rem; /* 11px — tabel & label HP kecil */
+  --fs-ui-xxs: 0.6875rem;/* 11px — footer tabel HP kecil */
+  --fs-ui-micro: 0.5625rem; /* 9px — badge HP kecil */
+}
+
   /* ═══════════════════════════════════════════════
      3a. HEADING — Lebih Kecil Lagi
      ═══════════════════════════════════════════════ */
   .container-xxl h4,
   .container-p-y h4,
   .content-wrapper h4 {
-    font-size: 0.9375rem !important;  /* 15px */
+    font-size: var(--fs-h4) ;  /* 15px */
   }
 
   .container-xxl h5,
   .container-p-y h5 {
-    font-size: 0.8125rem !important;  /* 13px */
+    font-size: var(--fs-h5) ;  /* 13px */
   }
 
   .container-xxl p.text-muted,
   .container-p-y p.text-muted {
-    font-size: 0.6875rem !important;  /* 11px */
+    font-size: var(--fs-ui-xs) !important;  /* 11px */
   }
 
   /* ═══════════════════════════════════════════════
@@ -704,7 +748,7 @@
   /* Tombol export: full width, ukuran proporsional */
   .card-header.d-flex.justify-content-between > .d-flex.gap-2 > .btn {
     width: 100% !important;
-    font-size: 0.8125rem !important;  /* 13px — cukup besar untuk dibaca */
+    font-size: var(--fs-ui-sm) !important;  /* 13px — cukup besar untuk dibaca */
     padding: 0.5rem 0.75rem !important;
     min-height: 2.25rem !important;   /* tinggi minimum 36px */
   }
@@ -715,7 +759,7 @@
   .container-xxl > .d-flex.justify-content-between.align-items-center.mb-4 > a.btn,
   .container-xxl > .d-flex.justify-content-between.mb-4 > a.btn,
   .container-xxl > .d-flex.justify-content-between.align-items-center.mb-4 > .btn {
-    font-size: 0.6875rem !important;  /* 11px */
+    font-size: var(--fs-ui-xxs) !important;  /* 11px */
     padding: 0.35rem 0.6rem !important;
   }
 
@@ -723,7 +767,7 @@
      3d. BADGE — Extra Kecil
      ═══════════════════════════════════════════════ */
   .badge {
-    font-size: 0.5625rem !important;  /* 9px */
+    font-size: var(--fs-ui-micro) !important;  /* 9px */
     padding: 0.15rem 0.3rem !important;
   }
 
@@ -747,12 +791,12 @@
      3f. TABEL — Font Extra Kecil
      ═══════════════════════════════════════════════ */
   .table thead th {
-    font-size: 0.6875rem !important;  /* 11px */
+    font-size: var(--fs-ui-xxs) !important;  /* 11px */
     padding: 0.3rem 0.4rem !important;
   }
 
   .table tbody td {
-    font-size: 0.6875rem !important;  /* 11px */
+    font-size: var(--fs-ui-xxs) !important;  /* 11px */
     padding: 0.3rem 0.4rem !important;
   }
 
@@ -761,12 +805,12 @@
      ═══════════════════════════════════════════════ */
   .form-control,
   .form-select {
-    font-size: 0.75rem !important;    /* 12px */
+    font-size: var(--fs-ui-sm) !important;    /* 12px */
     padding: 0.3rem 0.5rem !important;
   }
 
   .form-label {
-    font-size: 0.6875rem !important;  /* 11px */
+    font-size: var(--fs-ui-xs) !important;  /* 11px */
   }
 }
 
@@ -790,3 +834,20 @@
   text-align: center;
   margin-top: 1.25rem;
 }
+
+:root {
+  /* TIER NOMINAL — 2 ukuran flat (spesifikasi opsi C): BESAR 12px / KECIL 10px — semua device */
+  --fs-num-lg: 0.75rem;  /* 12px — nominal BESAR (flat semua device) */
+  --fs-num-sm: 0.625rem; /* 10px — nominal KECIL (flat semua device) */
+}
+/* 2 ukuran wajib — menang atas heading h4/h5/h6 (yang !important) dan konsisten di 13 project */
+.fs-value-primary.fs-value-primary { font-size: var(--fs-num-lg) !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fs-value-secondary.fs-value-secondary { font-size: var(--fs-num-sm) !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* Nominal di dalam TABEL tidak ikut skala card (tetap) */
+.table .fs-value-primary.fs-value-primary, td .fs-value-primary.fs-value-primary, th .fs-value-primary.fs-value-primary { font-size: var(--fs-ui-stat) !important; }
+.table .fs-value-secondary.fs-value-secondary, td .fs-value-secondary.fs-value-secondary, th .fs-value-secondary.fs-value-secondary { font-size: var(--fs-ui-value) !important; }
+
+/* Judul card — konsisten 16/15/14px, menang atas heading h4/h5/h6 !important */
+.fs-card-title.fs-card-title { font-size: 0.875rem !important; }
+
+

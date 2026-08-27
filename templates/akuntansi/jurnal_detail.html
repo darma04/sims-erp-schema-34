@@ -9,6 +9,20 @@ JURNAL DETAIL - Detail Jurnal Entry + Lines + Audit Trail
 
 {% block title %}{{ jurnal.nomor }} - Detail Jurnal{% endblock title %}
 
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+{% endblock vendor_js %}
+
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="py-3 mb-4">
@@ -18,7 +32,7 @@ JURNAL DETAIL - Detail Jurnal Entry + Lines + Audit Trail
     <!-- Header Info Card -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="ri-file-text-line me-2"></i>{{ jurnal.nomor }}</h5>
+            <h5 class="mb-0 fs-card-title"><i class="ri-file-text-line me-2"></i>{{ jurnal.nomor }}</h5>
             <div class="d-flex gap-2">
                 {% if not jurnal.is_posted and rbac_can_edit %}
                 <button class="btn btn-success" onclick="postJurnal({{ jurnal.pk }})">
@@ -74,12 +88,17 @@ JURNAL DETAIL - Detail Jurnal Entry + Lines + Audit Trail
 
     <!-- Lines Table Card -->
     <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="ri-list-check-2 me-2"></i>Detail Jurnal Lines</h5>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fs-card-title"><i class="ri-list-check-2 me-2"></i>Detail Jurnal Lines</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcelFromButton(this)"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDFFromButton(this)"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+            </div>
         </div>
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead class="table-light">
+        {% if lines %}
+        <div class="card-datatable table-responsive">
+            <table id="jurnalLinesDetailTable" class="datatables-kas-bank accounting-data-table table table-hover mb-0" data-export-title="Detail Jurnal Lines - {{ jurnal.nomor }}" data-search-placeholder="Cari baris jurnal...">
+                <thead>
                     <tr>
                         <th>#</th>
                         <th>Kode Akun</th>
@@ -105,34 +124,82 @@ JURNAL DETAIL - Detail Jurnal Entry + Lines + Audit Trail
                     </tr>
                     {% endfor %}
                 </tbody>
-                <tfoot class="table-light">
-                    <tr class="fw-bold">
-                        <td colspan="3" class="text-end">TOTAL:</td>
-                        <td class="text-end text-success">{{ total_debit|rupiah }}</td>
-                        <td class="text-end text-danger">{{ total_kredit|rupiah }}</td>
-                        <td>
-                            {% if total_debit == total_kredit %}
-                            <span class="badge bg-success"><i class="ri-check-line me-1"></i>Balance</span>
-                            {% else %}
-                            <span class="badge bg-danger"><i class="ri-close-line me-1"></i>TIDAK BALANCE!</span>
-                            {% endif %}
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="3" class="text-start ps-4 py-3">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ lines|length }} baris jurnal</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="badge bg-label-success d-flex align-items-center gap-1 mb-2" style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    <i class="ri-arrow-up-circle-line"></i><span>{{ total_debit|rupiah }}</span>
+                                </span>
+                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Debit</small>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="badge bg-label-danger d-flex align-items-center gap-1 mb-2" style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    <i class="ri-arrow-down-circle-line"></i><span>{{ total_kredit|rupiah }}</span>
+                                </span>
+                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Kredit</small>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="d-flex flex-column align-items-center">
+                                {% if total_debit == total_kredit %}
+                                <span class="badge bg-label-success d-flex align-items-center gap-1 mb-2" style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem;">
+                                    <i class="ri-check-line"></i><span>Balance</span>
+                                </span>
+                                {% else %}
+                                <span class="badge bg-label-danger d-flex align-items-center gap-1 mb-2" style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem;">
+                                    <i class="ri-close-line"></i><span>TIDAK BALANCE!</span>
+                                </span>
+                                {% endif %}
+                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Status</small>
+                            </div>
                         </td>
                     </tr>
                 </tfoot>
             </table>
         </div>
+        {% else %}
+        <div class="card-body">
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+                <div class="mb-4">
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 88px; height: 88px;">
+                        <i class="ri-list-check-2" style="font-size: 2.8rem;"></i>
+                    </div>
+                </div>
+                <h5 class="mb-3">Belum Ada Baris Jurnal</h5>
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+                    Belum ada baris jurnal pada jurnal ini.
+                </p>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Jurnal Pembalik (jika ada) -->
     {% if jurnal_pembalik_list %}
     <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="ri-arrow-go-back-line me-2"></i>Jurnal Pembalik</h5>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fs-card-title"><i class="ri-arrow-go-back-line me-2"></i>Jurnal Pembalik</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcelFromButton(this)"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDFFromButton(this)"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+            </div>
         </div>
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead class="table-light">
-                    <tr><th>Nomor</th><th>Tanggal</th><th>Deskripsi</th><th>Aksi</th></tr>
+        <div class="card-datatable table-responsive">
+            <table id="jurnalPembalikTable" class="datatables-kas-bank accounting-data-table table table-hover mb-0" data-export-title="Jurnal Pembalik - {{ jurnal.nomor }}" data-search-placeholder="Cari jurnal pembalik...">
+                <thead>
+                    <tr><th>Nomor</th><th>Tanggal</th><th>Deskripsi</th><th data-export-ignore="true" data-action-icon="ri-eye-line">Aksi</th></tr>
                 </thead>
                 <tbody>
                     {% for p in jurnal_pembalik_list %}
@@ -144,6 +211,27 @@ JURNAL DETAIL - Detail Jurnal Entry + Lines + Audit Trail
                     </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="3" class="text-start ps-4 py-3">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ jurnal_pembalik_list|length }} jurnal pembalik</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="badge bg-label-info d-flex align-items-center gap-1 mb-2" style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    <i class="ri-arrow-go-back-line"></i><span>{{ jurnal_pembalik_list|length }}</span>
+                                </span>
+                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Jumlah</small>
+                            </div>
+                        </td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
@@ -153,7 +241,7 @@ JURNAL DETAIL - Detail Jurnal Entry + Lines + Audit Trail
     {% if activity_logs %}
     <div class="card">
         <div class="card-header">
-            <h5 class="mb-0"><i class="ri-history-line me-2"></i>Riwayat Aktivitas</h5>
+            <h5 class="mb-0 fs-card-title"><i class="ri-history-line me-2"></i>Riwayat Aktivitas</h5>
         </div>
         <div class="card-body">
             <div class="timeline">
@@ -167,7 +255,7 @@ JURNAL DETAIL - Detail Jurnal Entry + Lines + Audit Trail
                         </span>
                     </div>
                     <div>
-                        <p class="mb-0 fw-medium">{{ log.description }}</p>
+                        <p class="mb-0 fw-medium fs-value-secondary">{{ log.description }}</p>
                         <small class="text-muted">{{ log.user.username }} — {{ log.timestamp|date:"d/m/Y H:i:s" }}</small>
                     </div>
                 </div>
@@ -181,6 +269,8 @@ JURNAL DETAIL - Detail Jurnal Entry + Lines + Audit Trail
 {% endblock content %}
 
 {% block page_js %}
+{{ block.super }}
+{% include 'kas_bank/partials/list_tools.html' %}
 <script>
 const csrfToken = () => document.querySelector('[name=csrfmiddlewaretoken]').value;
 

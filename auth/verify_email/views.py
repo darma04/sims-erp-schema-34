@@ -65,6 +65,11 @@ class VerifyEmailTokenView(AuthView):
             # Cari Profile dengan token yang sesuai
             profile = Profile.objects.filter(email_token=token).first()
 
+            if profile is None:
+                # Token tidak ditemukan / sudah dipakai -> perlakukan sebagai invalid
+                messages.error(request, "Token tidak valid, silakan coba lagi")
+                return redirect("verify-email-page")
+
             # Update status verifikasi
             profile.is_verified = True
             profile.email_token = ""  # Hapus token (sudah dipakai)

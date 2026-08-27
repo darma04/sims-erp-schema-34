@@ -1,7 +1,45 @@
 {% extends 'layout/layout_vertical.html' %}
+{% load static %}
 {% load currency_filters %}
 
+{% comment %}
+  ==========================================================================
+  KAS BANK - Detail Account
+  ==========================================================================
+  Menampilkan informasi lengkap satu account termasuk data relasi.
+  Detail page biasanya menampilkan data read-only (tidak bisa diedit langsung).
+
+  FLOW DATA:
+  - URL: /kas_bank/account/<pk>/- View: DetailView mengambil 1 object berdasarkan primary key- Context: object + data relasi (items, history, dll)- Template: Render semua informasi ke HTML
+
+  RELASI KE MODUL LAIN:
+  - apps/kas_bank/views.py -> AccountDetailView- apps/kas_bank/models.py -> Model Account- get_context_data(): Menambahkan data relasi ke context
+
+  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
+  - BOLEH diubah: Layout detail, urutan informasi- BOLEH ditambah: Informasi baru dari relasi- JANGAN diubah: {% extends %} dan {% block %} structure
+
+  TIPS & DEBUGGING:
+  - Error 'DoesNotExist'? Primary key tidak ditemukan di database- Data relasi kosong? Cek get_context_data() di views.py
+
+  ==========================================================================
+{% endcomment %}
+
+
 {% block title %}{{ account.kode }} - Detail Akun Kas & Bank{% endblock title %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+{% endblock vendor_js %}
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
@@ -11,11 +49,13 @@
 
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="ri-bank-card-line me-2"></i>{{ account.kode }} - {{ account.nama }}</h5>
+            <h5 class="mb-0 fs-card-title"><i class="ri-bank-card-line me-2"></i>{{ account.kode }} - {{ account.nama }}</h5>
             <div class="d-flex gap-2">
+                {% if can_edit.kas_bank %}
                 <a href="{% url 'kas_bank:account_edit' account.pk %}" class="btn btn-primary">
                     <i class="ri-edit-line me-1"></i>Edit
                 </a>
+                {% endif %}
                 <a href="{% url 'kas_bank:account_list' %}" class="btn btn-outline-secondary">
                     <i class="ri-arrow-left-line me-1"></i>Kembali
                 </a>
@@ -26,19 +66,19 @@
                 <div class="col-md-3">
                     <div class="border rounded p-3 h-100">
                         <small class="text-muted d-block mb-1">Saldo Terhitung</small>
-                        <h5 class="mb-0">{{ account.saldo_terhitung|rupiah }}</h5>
+                        <h5 class="mb-0 fs-value-primary">{{ account.saldo_terhitung|rupiah }}</h5>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="border rounded p-3 h-100">
                         <small class="text-muted d-block mb-1">Total Masuk</small>
-                        <h5 class="mb-0 text-success">{{ account.total_masuk|rupiah }}</h5>
+                        <h5 class="mb-0 fs-value-primary">{{ account.total_masuk|rupiah }}</h5>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="border rounded p-3 h-100">
                         <small class="text-muted d-block mb-1">Total Keluar</small>
-                        <h5 class="mb-0 text-danger">{{ account.total_keluar|rupiah }}</h5>
+                        <h5 class="mb-0 fs-value-primary">{{ account.total_keluar|rupiah }}</h5>
                     </div>
                 </div>
                 <div class="col-md-3">
@@ -56,46 +96,12 @@
 
             <div class="row mt-4">
                 <div class="col-md-6">
-                    {% if recent_transactions %}
-
                     <table class="table table-borderless">
                         <tr><td class="text-muted" style="width:160px;">Kode</td><td class="fw-semibold">{{ account.kode }}</td></tr>
                         <tr><td class="text-muted">Nama</td><td>{{ account.nama }}</td></tr>
                         <tr><td class="text-muted">Tipe</td><td><span class="badge bg-label-info">{{ account.get_tipe_display }}</span></td></tr>
                         <tr><td class="text-muted">Akun CoA</td><td>{{ account.akun.kode }} - {{ account.akun.nama }}</td></tr>
                     </table>
-
-                    {% else %}
-
-                    <div class="card-body">
-
-                        <div class="text-center py-4 py-md-5 px-3 px-md-4">
-
-                            <div class="mb-4">
-
-                                <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
-
-                                     style="width: 88px; height: 88px;">
-
-                                    <i class="ri-bank-card-line" style="font-size: 2.8rem;"></i>
-
-                                </div>
-
-                            </div>
-
-                            <h5 class="mb-3">Belum Ada Akun</h5>
-
-                            <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
-
-                                Daftar data masih kosong.
-
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                    {% endif %}
                 </div>
                 <div class="col-md-6">
                     <table class="table table-borderless">
@@ -110,12 +116,17 @@
     </div>
 
     <div class="card">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="ri-file-list-3-line me-2"></i>Mutasi Terakhir</h5>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fs-card-title"><i class="ri-file-list-3-line me-2"></i>Mutasi Terakhir</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
+                <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
+            </div>
         </div>
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead class="table-light">
+        {% if recent_transactions %}
+        <div class="card-datatable table-responsive">
+            <table id="mutasiTable" class="datatables-kas-bank accounting-data-table table table-hover" data-accounting-primary="true" data-export-title="Mutasi Terakhir - {{ account.kode }} {{ account.nama }}" data-search-placeholder="Cari mutasi...">
+                <thead>
                     <tr>
                         <th>Nomor</th>
                         <th>Tanggal</th>
@@ -137,8 +148,65 @@
                     </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td class="text-start ps-4 py-3">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ recent_transactions|length }} mutasi terakhir</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3" colspan="2">
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="badge bg-label-success d-flex align-items-center gap-1 mb-2" style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    <i class="ri-arrow-up-circle-line"></i><span>{{ account.total_masuk|rupiah }}</span>
+                                </span>
+                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Masuk</small>
+                            </div>
+                        </td>
+                        <td class="py-3" colspan="2">
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="badge bg-label-danger d-flex align-items-center gap-1 mb-2" style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    <i class="ri-arrow-down-circle-line"></i><span>{{ account.total_keluar|rupiah }}</span>
+                                </span>
+                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Keluar</small>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="badge bg-label-info d-flex align-items-center gap-1 mb-2" style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    <i class="ri-wallet-3-line"></i><span>{{ account.saldo_terhitung|rupiah }}</span>
+                                </span>
+                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Saldo Terhitung</small>
+                            </div>
+                        </td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
+        {% else %}
+        <div class="card-body">
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+                <div class="mb-4">
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 88px; height: 88px;">
+                        <i class="ri-file-list-3-line" style="font-size: 2.8rem;"></i>
+                    </div>
+                </div>
+                <h5 class="mb-3">Belum Ada Mutasi Terakhir</h5>
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+                    Belum ada mutasi terakhir pada akun ini.
+                </p>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock content %}
+
+{% block page_js %}
+{{ block.super }}
+{% include 'kas_bank/partials/list_tools.html' %}
+{% endblock page_js %}

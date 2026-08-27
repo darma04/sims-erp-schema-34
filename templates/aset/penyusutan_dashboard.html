@@ -124,18 +124,22 @@
         </div>
     </div>
 
-    <div class="row g-3 mb-4">
-        <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><div class="d-flex align-items-center"><div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-primary"><i class="ri-money-dollar-box-line ri-24px"></i></span></div><div><h5 class="mb-0">{{ total_perolehan|rupiah }}</h5><small class="text-muted">Total Perolehan</small></div></div></div></div></div>
-        <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><div class="d-flex align-items-center"><div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-warning"><i class="ri-arrow-down-circle-line ri-24px"></i></span></div><div><h5 class="mb-0">{{ total_penyusutan_tahun|rupiah }}</h5><small class="text-muted">Penyusutan {{ selected_tahun }}</small></div></div></div></div></div>
-        <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><div class="d-flex align-items-center"><div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-danger"><i class="ri-bar-chart-box-line ri-24px"></i></span></div><div><h5 class="mb-0">{{ total_akumulasi|rupiah }}</h5><small class="text-muted">Total Akumulasi</small></div></div></div></div></div>
-        <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><div class="d-flex align-items-center"><div class="avatar avatar-md me-3"><span class="avatar-initial rounded bg-label-info"><i class="ri-price-tag-3-line ri-24px"></i></span></div><div><h5 class="mb-0 text-info">{{ total_nilai_buku|rupiah }}</h5><small class="text-muted">Total Nilai Buku</small></div></div></div></div></div>
+    <div class="row g-6 mb-6">
+        <div class="col-6 col-md-3 col-lg-3"><div class="card h-100"><div class="card-body"><div class="d-flex align-items-center gap-3"><div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-primary"><i class="ri-money-dollar-box-line ri-24px"></i></span></div><div><span class="d-block text-muted small">Total Perolehan</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_perolehan|rupiah }}</h5></div></div></div></div></div>
+        <div class="col-6 col-md-3 col-lg-3"><div class="card h-100"><div class="card-body"><div class="d-flex align-items-center gap-3"><div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-warning"><i class="ri-arrow-down-circle-line ri-24px"></i></span></div><div><span class="d-block text-muted small">Penyusutan {{ selected_tahun }}</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_penyusutan_tahun|rupiah }}</h5></div></div></div></div></div>
+        <div class="col-6 col-md-3 col-lg-3"><div class="card h-100"><div class="card-body"><div class="d-flex align-items-center gap-3"><div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-danger"><i class="ri-bar-chart-box-line ri-24px"></i></span></div><div><span class="d-block text-muted small">Total Akumulasi</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_akumulasi|rupiah }}</h5></div></div></div></div></div>
+        <div class="col-6 col-md-3 col-lg-3"><div class="card h-100"><div class="card-body"><div class="d-flex align-items-center gap-3"><div class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-info"><i class="ri-price-tag-3-line ri-24px"></i></span></div><div><span class="d-block text-muted small">Total Nilai Buku</span>
+<h5  class="mb-0 fw-bold fs-value-primary">{{ total_nilai_buku|rupiah }}</h5></div></div></div></div></div>
     </div>
 
-    <div class="card mb-4" id="sec-grafik"><div class="card-header"><h5 class="mb-0"><i class="ri-bar-chart-2-line me-2"></i>Penyusutan Bulanan {{ selected_tahun }}</h5></div><div class="card-body"><div id="monthlyChart" style="min-height:300px;"></div></div></div>
+    <div class="card mb-4" id="sec-grafik"><div class="card-header d-flex flex-nowrap align-items-center justify-content-between"><h5 class="mb-0 me-2 fs-card-title"><i class="ri-bar-chart-2-line me-2 text-primary"></i>Penyusutan Bulanan {{ selected_tahun }}</h5><div class="dropdown flex-shrink-0"><button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button><div class="dropdown-menu dropdown-menu-end"><a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a></div></div></div><div class="card-body"><div id="monthlyChart" style="min-height:300px;"></div></div></div>
 
     <div class="card" id="sec-tabel">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="ri-list-check me-2"></i>Detail per Aset — {{ selected_tahun }}</h5>
+            <h5 class="mb-0 fs-card-title"><i class="ri-list-check me-2 text-primary" style="color: var(--bs-primary)"></i>Detail per Aset — {{ selected_tahun }}</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportAccountingTableExcel()"><i class="ri-file-excel-2-line me-1"></i>Export Excel</button>
                 <button class="btn btn-sm btn-label-danger" onclick="exportAccountingTablePDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
@@ -234,11 +238,11 @@ document.addEventListener('DOMContentLoaded', function () {
     var gridColor  = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
     var labelColor = isDark ? '#b4b5ba' : '#a5a3ae';
     var chartColors = ['#ff9f43'];
-    new ApexCharts(el, {
+    var monthlyChart; try { monthlyChart = new ApexCharts(el, {
         chart: {
             type: 'area', height: 300,
             fontFamily: 'Inter, -apple-system, sans-serif', background: 'transparent',
-            toolbar: { show: true, tools: { download: '<i class="ri-download-2-line" style="font-size:16px"></i>', selection:false,zoom:false,zoomin:false,zoomout:false,pan:false,reset:false } },
+            toolbar: { show: false },
             animations: { enabled:true, easing:'easeinout', speed:800, dynamicAnimation:{enabled:true,speed:350} },
             dropShadow: { enabled:true, top:6, left:0, blur:6, opacity:isDark?0.15:0.08, color:chartColors }
         },
@@ -263,8 +267,14 @@ document.addEventListener('DOMContentLoaded', function () {
         legend: { position:'top', horizontalAlign:'left', fontSize:'13px', fontWeight:500, labels:{colors:isDark?'#ccc':'#555'}, markers:{size:5,strokeWidth:0,offsetX:-3}, itemMargin:{horizontal:12,vertical:4} },
         markers: { size:0, hover:{size:6,sizeOffset:3}, strokeWidth:2, strokeColors:isDark?'#2b2c40':'#fff' },
         grid: { borderColor:gridColor, strokeDashArray:4, padding:{top:-10,left:10,right:10,bottom:0}, xaxis:{lines:{show:false}}, yaxis:{lines:{show:true}} },
-        responsive: [{ breakpoint:768, options:{ chart:{height:240}, legend:{fontSize:'11px'}, stroke:{width:2} } }]
-    }).render();
+        responsive: [{ breakpoint:768, options:{ chart:{height:240}, legend:{fontSize:'11px'}, stroke:{width:2} } }],
+        noData: {
+            text: 'Tidak ada data',
+            align: 'center',
+            verticalAlign: 'middle',
+            style: { color: isDark ? '#b4b5ba' : '#6e6b7b', fontSize: '13px' }
+        }
+    }); monthlyChart.render(); window.__monthlyChart = monthlyChart; } catch(e) { console.error('Gagal merender chart penyusutan:', e); }
 });
 
 
@@ -285,9 +295,9 @@ const PDF_INFO = {
     copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'Hak Cipta Dilindungi' }}"
 };
 
-function exportExcel() {
+function exportToExcel() {
     const tbl = document.querySelector('#sec-tabel table');
-    if (!tbl) { alert('Tabel tidak ditemukan!'); return; }
+    if (!tbl) { showExportEmpty(); return; }
     
     let visibleColumns = [];
     const firstRow = tbl.querySelector('thead tr');
@@ -350,11 +360,11 @@ function exportExcel() {
     link.click();
 }
 
-function exportPDF() {
+function exportToPDF() {
     if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
     
     const tbl = document.querySelector('#sec-tabel table');
-    if (!tbl) { alert('Tabel tidak ditemukan!'); return; }
+    if (!tbl) { showExportEmpty(); return; }
     
     const headers = [];
     let visibleColumns = [];
@@ -454,7 +464,7 @@ function exportPDF() {
 function toggleColumns() {
     var checkboxes = document.querySelectorAll('.column-checkbox');
     var table = document.getElementById('penyusutanTable');
-    if (!table) return;
+    if (!table) { showExportEmpty(); return; }
     checkboxes.forEach(function(cb) {
         var colIdx = parseInt(cb.value);
         var rows = table.querySelectorAll('tr');

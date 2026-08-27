@@ -37,6 +37,19 @@
 {% block page_js %}
 {{ block.super }}
 <script src="{% static 'js/pages-auth.js' %}?v=2"></script>
+
+<!-- Flag: tandai bahwa user baru saja login -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var form = document.getElementById('formAuthentication');
+  if (form) {
+    form.addEventListener('submit', function() {
+      sessionStorage.setItem('justLoggedIn', 'true');
+    });
+  }
+});
+</script>
+
 {% endblock page_js %}
 
 {% block content %}

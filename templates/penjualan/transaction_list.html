@@ -162,7 +162,7 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
     <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Daftar Transaksi POS</h5>
+            <h5 class="mb-0 fs-card-title">Daftar Transaksi POS</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-label-success" onclick="exportToExcel()">
                     <i class="ri-file-excel-2-line me-1"></i>Export Excel
@@ -220,7 +220,7 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
                         <td class="text-center">
                             <span class="badge bg-label-primary">{{ trans.items.count }}</span>
                         </td>
-                        <td class="fw-bold">{{ trans.total_harga|rupiah }}</td>
+                        <td class="fw-bold text-end">{{ trans.total_harga|rupiah }}</td>
                         <td>
                             {% if trans.metode_pembayaran %}
                             <span class="badge bg-label-secondary">{{ trans.metode_pembayaran.nama }}</span>
@@ -291,7 +291,7 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
                         <td class="py-3 text-center" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-primary d-flex align-items-center gap-1 mb-2"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 60px;">
+                                    style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 60px;">
                                     <i class="ri-shopping-bag-line"></i>
                                     <span>{{ total_qty }}</span>
                                 </span>
@@ -301,7 +301,7 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-success d-flex align-items-center gap-1 mb-2"
-                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 120px;">
+                                    style="font-size: var(--fs-ui-value); padding: 0.5rem 0.75rem; min-width: 120px;">
                                     <i class="ri-money-dollar-circle-line"></i>
                                     <span>Rp {{ total_pendapatan|floatformat:0 }}</span>
                                 </span>
@@ -388,7 +388,7 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
     .dataTables_wrapper .dataTables_info {
         padding: 1rem 1.5rem;
         font-size: 0.875rem;
-        color: #697a8d;
+        ;
     }
 
     .dataTables_wrapper .dataTables_paginate {
@@ -593,9 +593,13 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
 
     function exportToExcel() {
         const table = document.getElementById('transactionTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#transactionTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         let colCount = 0;
         let visibleColumns = [];
@@ -691,9 +695,13 @@ Tabel: nomor transaksi, tanggal, customer, total, status.
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('transactionTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportEmpty(); return; }
 
         const tableObj = new $.fn.dataTable.Api('#transactionTable');
+        if (!tableObj || tableObj.rows().count() === 0) {
+            showExportEmpty();
+            return;
+        }
 
         const headers = [];
         let visibleColumns = [];

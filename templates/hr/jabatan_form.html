@@ -1,4 +1,4 @@
-{% extends 'layout/layout_vertical.html' %}
+﻿{% extends 'layout/layout_vertical.html' %}
 {% comment %}
 ==========================================================================
    JABATAN FORM - Form Tambah/Edit Jabatan
@@ -13,7 +13,7 @@
 <div class="container-xxl flex-grow-1 container-p-y">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h4 class="mb-1"><i class="ri-user-settings-line me-2"></i>{{ title }}</h4>
+            <h4 class="mb-1 fs-value-primary"><i class="ri-user-settings-line me-2"></i>{{ title }}</h4>
             <p class="text-muted mb-0">Isi data jabatan</p>
         </div>
         <a href="{% url 'hr:jabatan' %}" class="btn btn-label-secondary">
@@ -23,6 +23,7 @@
 
     <div class="card">
         <div class="card-body">
+            
             <form method="post">
                 {% csrf_token %}
                 <div class="row">
@@ -62,6 +63,7 @@
                         </div>
                     </div>
                 </div>
+                {% if can_create.hr or can_edit.hr %}
                 <div class="mt-4">
                     <button type="submit" class="btn btn-primary me-2">
                         <i class="ri-save-line me-1"></i> Simpan
@@ -70,6 +72,7 @@
                         <i class="mdi mdi-close me-1"></i> Batal
                     </a>
                 </div>
+                {% endif %}
             </form>
         </div>
     </div>

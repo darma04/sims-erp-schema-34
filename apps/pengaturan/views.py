@@ -231,9 +231,13 @@ class ProfilView(ReadPermissionMixin, TemplateView):
         profile = user.profile
         profile.phone = request.POST.get('phone', '')
 
-        # Tangani upload avatar
+        # Tangani upload avatar (maks 800KB)
         if 'avatar' in request.FILES:
-            profile.avatar = request.FILES['avatar']
+            avatar_file = request.FILES['avatar']
+            if avatar_file.size > 800 * 1024:
+                messages.error(request, 'Ukuran foto profil maksimal 800KB. File yang diupload terlalu besar.')
+            else:
+                profile.avatar = avatar_file
 
         # Tangani penghapusan avatar
         if request.POST.get('remove_avatar') == '1':
@@ -805,6 +809,8 @@ class ManajemenDataView(ReadPermissionMixin, TemplateView):
         # Import dari modul internal proyek
         from apps.biaya.models import TransaksiBiaya, KategoriBiaya
         # Import dari modul internal proyek
+        from apps.reimburse.models import ReimburseRequest, ReimburseItem
+        # Import dari modul internal proyek
         from apps.hr.models import Karyawan, Departemen, Jabatan, Absensi, Penggajian
         # Import dari modul internal proyek
         from apps.activity_log.models import UserActivity
@@ -850,6 +856,9 @@ class ManajemenDataView(ReadPermissionMixin, TemplateView):
             'adjustment_stok': AdjustmentStok.objects.count(),
             'biaya': TransaksiBiaya.objects.count(),
             'kategori_biaya': KategoriBiaya.objects.count(),
+            # Reimburse
+            'reimburse': ReimburseRequest.objects.count(),
+            'reimburse_item': ReimburseItem.objects.count(),
             # Relasi Bisnis
             'customer': Customer.objects.count(),
             'supplier': Supplier.objects.count(),
@@ -917,6 +926,7 @@ class ManajemenDataView(ReadPermissionMixin, TemplateView):
         context['total_transaksi'] = (
             context['stats']['pos'] + context['stats']['sales_order'] + 
             context['stats']['purchase_order'] + context['stats']['biaya'] +
+            context['stats']['reimburse'] + context['stats']['reimburse_item'] +
             context['stats']['transfer_stok'] + context['stats']['adjustment_stok'] +
             context['stats']['kas_bank_transaction'] + context['stats']['kas_bank_transfer'] +
             context['stats']['kas_bank_reconciliation'] + context['stats']['jurnal_entry'] +
@@ -1038,8 +1048,6 @@ def backup_data(request):
         response['Content-Disposition'] = f'attachment; filename="{nama_file}"'
         return response
 
-    except ProtectedError:
-        return JsonResponse({'success': False, 'message': 'Data tidak dapat dihapus karena sedang digunakan atau terkait dengan data lain.'}, status=400)
     except Exception as e:
         # Simpan riwayat gagal
         BackupHistory.objects.create(
@@ -1234,6 +1242,7 @@ def restore_data(request):
         from apps.produk.models import Produk, Stok, Gudang, Kategori, Satuan, KonversiSatuan
         from apps.inventory.models import TransferStok, TransferStokItem, AdjustmentStok
         from apps.biaya.models import TransaksiBiaya, KategoriBiaya
+        from apps.reimburse.models import ReimburseRequest, ReimburseItem
         from apps.hr.models import Karyawan, Departemen, Jabatan, Absensi, Penggajian
         from apps.activity_log.models import UserActivity
         from apps.automation.models import LogNotifikasi, TemplatePesan
@@ -1294,6 +1303,8 @@ def restore_data(request):
         TransferStok.objects.all().delete()
         AdjustmentStok.objects.all().delete()
         TransaksiBiaya.objects.all().delete()
+        ReimburseItem.objects.all().delete()
+        ReimburseRequest.objects.all().delete()
         KategoriBiaya.objects.all().delete()
 
         # Hapus data Fraud Detection
@@ -1536,9 +1547,23 @@ def restore_data(request):
             messages.success(request, f'Data berhasil di-restore dari "{backup_file.name}"! ({len(filtered_data)} objek dimuat{media_info}) {load_error_msg}')
     except ProtectedError as e:
         restore_atomic = _rollback_atomic(restore_atomic, e)
+        try:
+            _set_database_constraints(True)
+        except Exception:
+            pass
         messages.error(request, 'Data tidak dapat dihapus karena sedang digunakan atau terkait dengan data lain.')
     except Exception as e:
         restore_atomic = _rollback_atomic(restore_atomic, e)
+        try:
+            _set_database_constraints(True)
+        except Exception:
+            pass
+        try:
+            from django.db.models.signals import post_save as _ps
+            from auth.models import Profile as _P
+            _ps.connect(_P.create_profile, sender=User)
+        except Exception:
+            pass
         logger.error("[RESTORE] Error: %s", e, exc_info=True)
 
         try:
@@ -1624,6 +1649,8 @@ def reset_data(request):
         # Import dari modul internal proyek
         from apps.biaya.models import TransaksiBiaya, KategoriBiaya
         # Import dari modul internal proyek
+        from apps.reimburse.models import ReimburseRequest, ReimburseItem
+        # Import dari modul internal proyek
         from apps.produk.models import Produk, Kategori, Satuan, Gudang, Stok, KonversiSatuan
         # Import dari modul internal proyek
         from apps.hr.models import Karyawan, Departemen, Jabatan, Absensi, Penggajian
@@ -1667,6 +1694,8 @@ def reset_data(request):
             'Adjustment Stok': AdjustmentStok.objects.count(),
             'Transaksi Biaya': TransaksiBiaya.objects.count(),
             'Kategori Biaya': KategoriBiaya.objects.count(),
+            'Reimburse': ReimburseRequest.objects.count(),
+            'Item Reimburse': ReimburseItem.objects.count(),
             'Produk': Produk.objects.count(),
             'Stok': Stok.objects.count(),
             'Kategori': Kategori.objects.count(),
@@ -1771,6 +1800,8 @@ def reset_data(request):
         TransferStok.objects.all().delete()
         AdjustmentStok.objects.all().delete()
         TransaksiBiaya.objects.all().delete()
+        ReimburseItem.objects.all().delete()
+        ReimburseRequest.objects.all().delete()
         KategoriBiaya.objects.all().delete()
 
         # 3. Hapus stok & produk
@@ -1911,6 +1942,11 @@ def reset_data(request):
             fraud_signals._BYPASS_FRAUD_SIGNALS = False
         except Exception as e:
             logger.warning("Error pada signal handler: %s", e)
+        # Pastikan FK constraints aktif
+        try:
+            _set_database_constraints(True)
+        except Exception:
+            pass
 
     return redirect('pengaturan:manajemen_data')
 
